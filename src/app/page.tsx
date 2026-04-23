@@ -75,7 +75,7 @@ function RouteRow({
         normalizeScrollPosition(segmentWidth);
 
         if (!isHoveringRef.current && Date.now() >= pauseUntilRef.current) {
-          element.scrollLeft += 2.0;
+          element.scrollLeft += 0.8;
         }
       } else {
         hasInitializedPositionRef.current = false;
@@ -103,7 +103,7 @@ function RouteRow({
     };
   }, [hasDestinations]);
 
-  const pauseAutoScroll = (duration = 2800) => {
+  const pauseAutoScroll = (duration = 2000) => {
     pauseUntilRef.current = Date.now() + duration;
 
     if (pauseTimeoutRef.current !== null) {
