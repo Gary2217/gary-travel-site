@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getRegionsWithDestinations, trackClick } from "@/lib/supabase";
+import DevModeToggle from "@/components/DevModeToggle";
+import ImageEditor from "@/components/ImageEditor";
 
 type Destination = {
   id: string;
@@ -23,8 +25,12 @@ const lineHref = `https://line.me/ti/p/${lineId.replace('@', '')}`;
 
 function RouteRow({
   section,
+  isDevMode,
+  onImageUpdate,
 }: {
   section: RouteSection;
+  isDevMode: boolean;
+  onImageUpdate: (destinationId: string, newImageUrl: string) => void;
 }) {
   const hasDestinations = section.destinations.length > 0;
   const rowRef = useRef<HTMLDivElement | null>(null);
@@ -198,6 +204,14 @@ function RouteRow({
                 onClick={() => handleDestinationClick(destination.id)}
                 className="group relative h-[144px] min-w-[280px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
               >
+                {isDevMode && (
+                  <ImageEditor
+                    destinationId={destination.id}
+                    currentImageUrl={destination.image_url}
+                    title={destination.title}
+                    onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
+                  />
+                )}
                 <div
                   className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105"
                   style={{ backgroundImage: `url(${destination.image_url})` }}
@@ -227,6 +241,7 @@ function RouteRow({
 export default function HomePage() {
   const [sections, setSections] = useState<RouteSection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDevMode, setIsDevMode] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -276,8 +291,20 @@ export default function HomePage() {
     );
   }
 
+  const handleImageUpdate = (destinationId: string, newImageUrl: string) => {
+    setSections(prevSections =>
+      prevSections.map(section => ({
+        ...section,
+        destinations: section.destinations.map(dest =>
+          dest.id === destinationId ? { ...dest, image_url: newImageUrl } : dest
+        )
+      }))
+    );
+  };
+
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+      <DevModeToggle onToggle={setIsDevMode} />
       <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-3 py-3 md:flex-row md:items-center md:gap-4 md:px-6 md:py-2.5">
           <div className="flex items-center justify-between gap-2">
@@ -351,7 +378,12 @@ export default function HomePage() {
 
         <div className="space-y-3">
           {sections.map((section) => (
-            <RouteRow key={section.id} section={section} />
+            <RouteRow
+              key={section.id}
+              section={section}
+              isDevMode={isDevMode}
+              onImageUpdate={handleImageUpdate}
+            />
           ))}
         </div>
 
