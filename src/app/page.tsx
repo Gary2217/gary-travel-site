@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getRegionsWithDestinations, trackClick } from "@/lib/supabase";
 
 type Destination = {
+  id: string;
   title: string;
   subtitle: string;
-  image: string;
+  image_url: string;
 };
 
 type RouteSection = {
@@ -16,468 +18,8 @@ type RouteSection = {
   destinations: Destination[];
 };
 
-const lineHref = "https://line.me/ti/p/YOUR_LINE_ID";
-
-const sections: RouteSection[] = [
-  {
-    id: "japan",
-    categoryLabel: "日本",
-    title: "日本旅遊",
-    description: "東京、大阪到北海道，快速瀏覽熱門日本城市與度假路線。",
-    destinations: [
-      {
-        title: "東京",
-        subtitle: "都會購物 / 美食散策",
-        image:
-          "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "大阪",
-        subtitle: "關西人氣 / 樂園行程",
-        image:
-          "https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "北海道",
-        subtitle: "雪景溫泉 / 四季自然",
-        image:
-          "https://images.unsplash.com/photo-1513407030348-c983a97b98d8?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "沖繩",
-        subtitle: "海島度假 / 親子首選",
-        image:
-          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "九州",
-        subtitle: "溫泉鐵道 / 深度慢旅",
-        image:
-          "https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "korea",
-    categoryLabel: "韓國",
-    title: "韓國旅遊",
-    description: "適合短天數出遊，從城市購物到海岸景點都能快速安排。",
-    destinations: [
-      {
-        title: "首爾",
-        subtitle: "潮流購物 / 韓劇景點",
-        image:
-          "https://images.unsplash.com/photo-1549693578-d683be217e58?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "釜山",
-        subtitle: "海景咖啡 / 美食市場",
-        image:
-          "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "濟州",
-        subtitle: "自然療癒 / 海岸風光",
-        image:
-          "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "china",
-    categoryLabel: "中港澳旅遊",
-    title: "中港澳旅遊",
-    description: "城市探索・自然奇景・經典熱門路線",
-    destinations: [
-      {
-        title: "上海",
-        subtitle: "都會購物與夜景",
-        image:
-          "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?q=80&w=1200&auto=format&fit=crop",
-      },
-      {
-        title: "北京",
-        subtitle: "歷史文化與古蹟",
-        image:
-          "https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "張家界",
-        subtitle: "山水奇景人氣爆款",
-        image:
-          "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "九寨溝",
-        subtitle: "夢幻湖景",
-        image:
-          "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "香港",
-        subtitle: "購物美食短天數首選",
-        image:
-          "https://images.unsplash.com/photo-1506970845246-18f21d533b20?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "澳門",
-        subtitle: "渡假娛樂與美食",
-        image:
-          "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "sea",
-    categoryLabel: "東南亞",
-    title: "東南亞旅遊",
-    description: "輕鬆度假與高性價比首選，熱門海島與城市一次掌握。",
-    destinations: [
-      {
-        title: "曼谷",
-        subtitle: "夜市購物 / 寺廟文化",
-        image:
-          "https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "新加坡",
-        subtitle: "城市花園 / 親子旅遊",
-        image:
-          "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "峇里島",
-        subtitle: "Villa 度假 / 浪漫放鬆",
-        image:
-          "https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "峴港",
-        subtitle: "海濱假期 / 中越景點",
-        image:
-          "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "富國島",
-        subtitle: "海島慢旅 / 放空首選",
-        image:
-          "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "europe",
-    categoryLabel: "歐洲",
-    title: "歐洲旅遊",
-    description: "經典藝術、人文與自然景色並行，適合深度旅行規劃。",
-    destinations: [
-      {
-        title: "巴黎",
-        subtitle: "浪漫城市 / 精品藝術",
-        image:
-          "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "羅馬",
-        subtitle: "歷史古城 / 義式風情",
-        image:
-          "https://images.unsplash.com/photo-1525874684015-58379d421a52?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "瑞士",
-        subtitle: "雪山湖景 / 火車旅行",
-        image:
-          "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "倫敦",
-        subtitle: "英倫城市 / 博物館漫遊",
-        image:
-          "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "布拉格",
-        subtitle: "童話古城 / 河岸夜景",
-        image:
-          "https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "usa",
-    categoryLabel: "美國加拿大",
-    title: "美國加拿大",
-    description: "城市地標、自然景觀與度假海島，適合多元組合式行程。",
-    destinations: [
-      {
-        title: "紐約",
-        subtitle: "經典地標 / 百老匯",
-        image:
-          "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "洛杉磯",
-        subtitle: "影城景點 / 海岸公路",
-        image:
-          "https://images.unsplash.com/photo-1534196511436-921a4e99f297?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "夏威夷",
-        subtitle: "海島假期 / 悠閒度假",
-        image:
-          "https://images.unsplash.com/photo-1505881502353-a1986add3762?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "溫哥華",
-        subtitle: "城市自然 / 輕奢慢旅",
-        image:
-          "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "aus",
-    categoryLabel: "澳洲紐西蘭",
-    title: "澳洲紐西蘭",
-    description: "適合自然景色與城市假期並重的中長天數旅行。",
-    destinations: [
-      {
-        title: "雪梨",
-        subtitle: "海港城市 / 地標建築",
-        image:
-          "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "墨爾本",
-        subtitle: "藝術街區 / 大洋路",
-        image:
-          "https://images.unsplash.com/photo-1514395462725-fb4566210144?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "皇后鎮",
-        subtitle: "湖畔山景 / 蜜月精選",
-        image:
-          "https://images.unsplash.com/photo-1502780402662-acc019177b56?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "middle",
-    categoryLabel: "中東非洲",
-    title: "中東非洲",
-    description: "異國文化與沙漠古文明，適合特色主題旅行。",
-    destinations: [
-      {
-        title: "杜拜",
-        subtitle: "奢華城市 / 沙漠體驗",
-        image:
-          "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "土耳其",
-        subtitle: "熱氣球 / 東西文化",
-        image:
-          "https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "埃及",
-        subtitle: "金字塔 / 尼羅河風情",
-        image:
-          "https://images.unsplash.com/photo-1539768942893-daf53e448371?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "cruise",
-    categoryLabel: "郵輪旅遊",
-    title: "郵輪旅遊",
-    description: "精選熱門郵輪航線，從台灣短線到歐洲經典路線一次掌握。",
-    destinations: [
-      {
-        title: "沖繩",
-        subtitle: "台灣出發短線首選",
-        image:
-          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "石垣島",
-        subtitle: "跳島人氣航點",
-        image:
-          "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "宮古島",
-        subtitle: "海島度假輕鬆玩",
-        image:
-          "https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "九州／日韓雙國",
-        subtitle: "一次玩兩地",
-        image:
-          "https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "地中海",
-        subtitle: "歐洲人氣郵輪航線",
-        image:
-          "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "luxury",
-    categoryLabel: "奢華旅遊",
-    title: "奢華旅遊",
-    description: "高端住宿、商務艙與私人訂製服務靈感，適合追求品質與體驗的旅客。",
-    destinations: [
-      {
-        title: "巴黎",
-        subtitle: "經典高端歐洲之旅",
-        image:
-          "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "瑞士",
-        subtitle: "雪山景觀與奢華飯店",
-        image:
-          "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "杜拜",
-        subtitle: "都市奢華與頂級享受",
-        image:
-          "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "馬爾地夫",
-        subtitle: "頂級度假與私人島嶼",
-        image:
-          "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "義大利",
-        subtitle: "精品文化與高端旅行",
-        image:
-          "https://images.unsplash.com/photo-1525874684015-58379d421a52?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "honeymoon",
-    categoryLabel: "蜜月旅遊",
-    title: "蜜月旅遊",
-    description: "精選浪漫海島與蜜月度假靈感，適合情侶、夫妻與新婚旅行規劃。",
-    destinations: [
-      {
-        title: "馬爾地夫",
-        subtitle: "奢華水上屋蜜月首選",
-        image:
-          "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "薄荷島",
-        subtitle: "悠閒海景與雙人度假",
-        image:
-          "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "峇里島",
-        subtitle: "浪漫海島與Villa體驗",
-        image:
-          "https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "長灘島",
-        subtitle: "白沙灘蜜月人氣航點",
-        image:
-          "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "普吉島",
-        subtitle: "海景放鬆與雙人小旅行",
-        image:
-          "https://images.unsplash.com/photo-1468413253725-0d5181091126?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "free",
-    categoryLabel: "自由行",
-    title: "自由行",
-    description: "機加酒、交通票券與彈性路線建議，適合喜歡自主安排的旅客。",
-    destinations: [
-      {
-        title: "東京",
-        subtitle: "都會購物與自由行首選",
-        image:
-          "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "大阪",
-        subtitle: "美食購物人氣城市",
-        image:
-          "https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "首爾",
-        subtitle: "短天數自由行熱門",
-        image:
-          "https://images.unsplash.com/photo-1549693578-d683be217e58?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "曼谷",
-        subtitle: "高CP值自由行",
-        image:
-          "https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "新加坡",
-        subtitle: "親子與城市輕旅行",
-        image:
-          "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "香港",
-        subtitle: "近程快閃自由行",
-        image:
-          "https://images.unsplash.com/photo-1506970845246-18f21d533b20?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-  {
-    id: "custom",
-    categoryLabel: "客製旅遊",
-    title: "客製旅遊",
-    description: "依照你的同行對象與旅行目的，安排最適合的客製化玩法。",
-    destinations: [
-      {
-        title: "家庭旅遊",
-        subtitle: "親子友善 / 輕鬆安排",
-        image:
-          "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "蜜月旅遊",
-        subtitle: "浪漫假期 / 精緻住宿",
-        image:
-          "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "公司旅遊",
-        subtitle: "團體安排 / 行程效率",
-        image:
-          "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
-      },
-      {
-        title: "小團包車",
-        subtitle: "彈性路線 / 專人帶玩",
-        image:
-          "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80",
-      },
-    ],
-  },
-];
+const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
+const lineHref = `https://line.me/R/ti/p/${lineId.replace('@', '%40')}`;
 
 function RouteRow({
   section,
@@ -487,9 +29,10 @@ function RouteRow({
   const hasDestinations = section.destinations.length > 0;
   const rowRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
-  const setupFrameRef = useRef<number | null>(null);
   const pauseTimeoutRef = useRef<number | null>(null);
   const pauseUntilRef = useRef(0);
+  const isHoveringRef = useRef(false);
+  const hasInitializedPositionRef = useRef(false);
   const loopedDestinations = [...section.destinations, ...section.destinations, ...section.destinations];
 
   useEffect(() => {
@@ -499,20 +42,11 @@ function RouteRow({
       return;
     }
 
-    const setInitialPosition = () => {
-      const segmentWidth = element.scrollWidth / 3;
+    hasInitializedPositionRef.current = false;
+    isHoveringRef.current = false;
+    pauseUntilRef.current = 0;
 
-      if (segmentWidth > 0 && element.scrollWidth > element.clientWidth) {
-        element.scrollLeft = segmentWidth;
-        return true;
-      }
-
-      return false;
-    };
-
-    const normalizeScrollPosition = () => {
-      const segmentWidth = element.scrollWidth / 3;
-
+    const normalizeScrollPosition = (segmentWidth: number) => {
       if (segmentWidth <= 0) {
         return;
       }
@@ -529,49 +63,48 @@ function RouteRow({
         return;
       }
 
-      normalizeScrollPosition();
+      const segmentWidth = element.scrollWidth / 3;
+      const isMeasurable = segmentWidth > 0 && element.scrollWidth > element.clientWidth;
 
-      if (Date.now() >= pauseUntilRef.current) {
-        element.scrollLeft += 0.45;
+      if (isMeasurable) {
+        if (!hasInitializedPositionRef.current) {
+          element.scrollLeft = segmentWidth;
+          hasInitializedPositionRef.current = true;
+        }
+
+        normalizeScrollPosition(segmentWidth);
+
+        if (!isHoveringRef.current && Date.now() >= pauseUntilRef.current) {
+          element.scrollLeft += 0.9;
+        }
+      } else {
+        hasInitializedPositionRef.current = false;
       }
 
       frameRef.current = window.requestAnimationFrame(tick);
     };
 
-    const initialize = () => {
-      if (!element) {
-        return;
-      }
-
-      const ready = setInitialPosition();
-
-      if (ready) {
-        frameRef.current = window.requestAnimationFrame(tick);
-        return;
-      }
-
-      setupFrameRef.current = window.requestAnimationFrame(initialize);
-    };
-
-    setupFrameRef.current = window.requestAnimationFrame(initialize);
+    frameRef.current = window.requestAnimationFrame(tick);
 
     return () => {
       if (pauseTimeoutRef.current !== null) {
         window.clearTimeout(pauseTimeoutRef.current);
-      }
-
-      if (setupFrameRef.current !== null) {
-        window.cancelAnimationFrame(setupFrameRef.current);
+        pauseTimeoutRef.current = null;
       }
 
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
       }
-    };
-  }, [hasDestinations, loopedDestinations.length]);
 
-  const pauseAutoScroll = () => {
-    pauseUntilRef.current = Date.now() + 3000;
+      hasInitializedPositionRef.current = false;
+      isHoveringRef.current = false;
+      pauseUntilRef.current = 0;
+    };
+  }, [hasDestinations]);
+
+  const pauseAutoScroll = (duration = 2800) => {
+    pauseUntilRef.current = Date.now() + duration;
 
     if (pauseTimeoutRef.current !== null) {
       window.clearTimeout(pauseTimeoutRef.current);
@@ -580,7 +113,15 @@ function RouteRow({
     pauseTimeoutRef.current = window.setTimeout(() => {
       pauseUntilRef.current = 0;
       pauseTimeoutRef.current = null;
-    }, 3000);
+    }, duration);
+  };
+
+  const handleMouseEnter = () => {
+    isHoveringRef.current = true;
+  };
+
+  const handleMouseLeave = () => {
+    isHoveringRef.current = false;
   };
 
   const scroll = (direction: number) => {
@@ -609,10 +150,14 @@ function RouteRow({
     element.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
   };
 
+  const handleDestinationClick = async (destinationId: string) => {
+    await trackClick(destinationId);
+  };
+
   return (
     <section
       id={section.id}
-      className="scroll-mt-20 rounded-[1.75rem] border border-white/10 bg-[rgba(20,20,30,0.6)] p-3 shadow-lg shadow-black/20 backdrop-blur-[12px] md:p-4 lg:p-5"
+      className="scroll-mt-20 rounded-[1.75rem] bg-[rgba(20,20,30,0.38)] px-0.5 py-3 shadow-lg shadow-black/10 backdrop-blur-[12px] md:px-1 md:py-4 lg:px-1.5 lg:py-5"
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
@@ -630,7 +175,7 @@ function RouteRow({
           {section.description}
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <button
             type="button"
             onClick={() => scroll(-1)}
@@ -650,11 +195,12 @@ function RouteRow({
                 href={lineHref}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => handleDestinationClick(destination.id)}
                 className="group relative h-[144px] min-w-[280px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${destination.image})` }}
+                  style={{ backgroundImage: `url(${destination.image_url})` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-3 text-white md:p-4">
@@ -679,6 +225,36 @@ function RouteRow({
 }
 
 export default function HomePage() {
+  const [sections, setSections] = useState<RouteSection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await getRegionsWithDestinations();
+        const formattedSections = data.map((region: any) => ({
+          id: region.id,
+          categoryLabel: region.category_label,
+          title: region.title,
+          description: region.description || '',
+          destinations: (region.destinations || []).map((dest: any) => ({
+            id: dest.id,
+            title: dest.title,
+            subtitle: dest.subtitle || '',
+            image_url: dest.image_url
+          }))
+        }));
+        setSections(formattedSections);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
 
@@ -689,20 +265,36 @@ export default function HomePage() {
     element.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent"></div>
+          <p className="mt-4 text-white/70">載入中...</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
       <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-2.5 md:px-6">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300 sm:text-sm">
-              Route Browser
-            </p>
-            <p className="mt-0.5 text-sm font-semibold text-white sm:text-base">
-              快速瀏覽熱門旅遊目的地
-            </p>
+        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-2.5 md:gap-4 md:px-6">
+          <div className="flex shrink-0 items-center gap-2">
+            <svg className="h-8 w-8 text-sky-400 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+            </svg>
+            <div className="hidden md:block">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+                Route Browser
+              </p>
+              <p className="text-sm font-semibold text-white">
+                快速瀏覽熱門旅遊目的地
+              </p>
+            </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
             <p className="hidden text-[11px] font-medium text-white/70 sm:block sm:text-sm">
               旅遊規劃師 蓋瑞 GARY｜LINE 詢問行程
             </p>
@@ -718,9 +310,9 @@ export default function HomePage() {
         </div>
       </div>
 
-      <section id="routes" className="mx-auto max-w-[1800px] px-2 py-6 md:px-3">
-        <div className="mb-3 overflow-x-auto rounded-xl border border-white/10 bg-[rgba(20,20,30,0.6)] p-2 shadow-lg shadow-black/20 backdrop-blur-[12px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-3">
-          <div className="flex min-w-max gap-3 md:min-w-0 md:flex-wrap">
+      <section id="routes" className="w-full px-1 py-6 md:px-2 xl:px-2">
+        <div className="mb-3 overflow-x-auto rounded-xl bg-[rgba(20,20,30,0.34)] py-2 shadow-lg shadow-black/10 backdrop-blur-[12px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-1">
+          <div className="flex min-w-max justify-center gap-3 md:min-w-0 md:flex-wrap">
             {sections.map((section) => (
               <button
                 key={section.id}
@@ -736,7 +328,7 @@ export default function HomePage() {
 
         <div className="space-y-3">
           {sections.map((section) => (
-            <RouteRow key={section.title} section={section} />
+            <RouteRow key={section.id} section={section} />
           ))}
         </div>
       </section>
