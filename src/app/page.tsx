@@ -279,30 +279,44 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
       <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-2.5 md:gap-4 md:px-6">
-          <div className="flex shrink-0 items-center gap-2">
-            <svg className="h-8 w-8 text-sky-400 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-            </svg>
-            <div className="hidden md:block">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
-                Route Browser
-              </p>
-              <p className="text-sm font-semibold text-white">
-                快速瀏覽熱門旅遊目的地
-              </p>
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-3 py-3 md:flex-row md:items-center md:gap-4 md:px-6 md:py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+              <svg className="h-7 w-7 text-sky-400 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+              </svg>
+              <div className="hidden md:block">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+                  Route Browser
+                </p>
+                <p className="text-sm font-semibold text-white">
+                  快速瀏覽熱門旅遊目的地
+                </p>
+              </div>
             </div>
+            <a
+              href={lineHref}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-[#05b64d] md:hidden"
+            >
+              LINE 諮詢
+            </a>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            <p className="hidden text-[11px] font-medium text-white/70 sm:block sm:text-sm">
+          <div className="flex items-center justify-between gap-2 md:ml-auto">
+            <p className="text-[10px] font-medium leading-tight text-white/80 md:hidden">
+              旅遊規劃師 蓋瑞 GARY<br />
+              <span className="text-white/60">LINE 詢問行程</span>
+            </p>
+            <p className="hidden text-sm font-medium text-white/70 md:block">
               旅遊規劃師 蓋瑞 GARY｜LINE 詢問行程
             </p>
             <a
               href={lineHref}
               target="_blank"
               rel="noreferrer"
-              className="shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#05b64d] sm:px-5 sm:text-sm"
+              className="hidden shrink-0 rounded-full bg-[#06C755] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] md:block"
             >
               LINE 諮詢
             </a>
@@ -310,7 +324,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <section id="routes" className="w-full px-1 py-6 md:px-2 xl:px-2">
+      <section id="routes" className="w-full px-2 py-4 md:px-2 md:py-6 xl:px-2">
         <div className="relative mb-3 overflow-x-auto rounded-xl bg-[rgba(20,20,30,0.34)] py-2 shadow-lg shadow-black/10 backdrop-blur-[12px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-1">
           <div className="pointer-events-none absolute left-0 top-0 z-10 flex h-full items-center bg-gradient-to-r from-[rgba(20,20,30,0.8)] to-transparent px-2 md:hidden">
             <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
