@@ -39,6 +39,7 @@ function RouteRow({
   const pauseUntilRef = useRef(0);
   const isHoveringRef = useRef(false);
   const hasInitializedPositionRef = useRef(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const loopedDestinations = [...section.destinations, ...section.destinations, ...section.destinations];
 
   useEffect(() => {
@@ -80,7 +81,7 @@ function RouteRow({
 
         normalizeScrollPosition(segmentWidth);
 
-        if (!isHoveringRef.current && Date.now() >= pauseUntilRef.current) {
+        if (!isHoveringRef.current && !isEditorOpen && Date.now() >= pauseUntilRef.current) {
           element.scrollLeft += 0.8;
         }
       } else {
@@ -107,7 +108,7 @@ function RouteRow({
       isHoveringRef.current = false;
       pauseUntilRef.current = 0;
     };
-  }, [hasDestinations]);
+  }, [hasDestinations, isEditorOpen]);
 
   const pauseAutoScroll = (duration = 2000) => {
     pauseUntilRef.current = Date.now() + duration;
@@ -202,6 +203,7 @@ function RouteRow({
                     currentImageUrl={destination.image_url}
                     title={destination.title}
                     onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
+                    onOpenChange={setIsEditorOpen}
                   />
                 )}
                 <div

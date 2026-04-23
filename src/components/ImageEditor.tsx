@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, MouseEvent, useState } from "react";
+import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 
 interface ImageEditorProps {
@@ -8,12 +9,22 @@ interface ImageEditorProps {
   currentImageUrl: string;
   title: string;
   onUpdate: (newImageUrl: string) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export default function ImageEditor({ destinationId, currentImageUrl, title, onUpdate }: ImageEditorProps) {
+export default function ImageEditor({ destinationId, currentImageUrl, title, onUpdate, onOpenChange }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   const handleModalClick = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -93,9 +104,9 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
         </svg>
       </button>
 
-      {isOpen && (
+      {mounted && isOpen && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -105,7 +116,7 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
           }}
         >
           <div
-            className="w-full max-w-md rounded-xl bg-[rgba(20,20,30,0.95)] p-6 shadow-2xl backdrop-blur-xl"
+            className="w-full max-w-2xl rounded-xl bg-[rgba(20,20,30,0.98)] p-6 shadow-2xl backdrop-blur-xl"
             onClick={handleModalClick}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -125,10 +136,9 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
             </div>
 
             <div className="space-y-4">
-              {/* 當前圖片預覽 */}
               <div>
                 <p className="mb-2 text-sm text-white/70">當前圖片：</p>
-                <div className="h-32 w-full overflow-hidden rounded-lg">
+                <div className="h-48 w-full overflow-hidden rounded-lg">
                   <div
                     className="h-full w-full bg-cover bg-center"
                     style={{ backgroundImage: `url(${currentImageUrl})` }}
@@ -159,7 +169,8 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
