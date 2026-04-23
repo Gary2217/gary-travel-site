@@ -36,11 +36,12 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     }
   };
 
+  // 始終顯示按鈕
   if (!isAuthorized && !isDevMode) {
     return (
       <button
         onClick={handleToggle}
-        className="fixed right-4 top-4 z-50 rounded-full bg-gray-800/50 p-2 text-white/50 backdrop-blur-sm transition hover:bg-gray-700/50 hover:text-white"
+        className="fixed right-4 top-20 z-50 rounded-full bg-gray-800/80 p-2.5 text-white/70 backdrop-blur-sm transition hover:bg-gray-700/80 hover:text-white hover:scale-110"
         title="開發者模式"
       >
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
