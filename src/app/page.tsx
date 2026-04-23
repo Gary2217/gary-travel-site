@@ -304,10 +304,9 @@ export default function HomePage() {
             </a>
           </div>
 
-          <div className="flex items-center justify-between gap-2 md:ml-auto">
-            <p className="text-[10px] font-medium leading-tight text-white/80 md:hidden">
-              旅遊規劃師 蓋瑞 GARY<br />
-              <span className="text-white/60">LINE 詢問行程</span>
+          <div className="flex items-center gap-2 md:ml-auto">
+            <p className="text-[10px] font-medium text-white/70 md:hidden">
+              旅遊規劃師 蓋瑞 GARY｜LINE 詢問行程
             </p>
             <p className="hidden text-sm font-medium text-white/70 md:block">
               旅遊規劃師 蓋瑞 GARY｜LINE 詢問行程
