@@ -102,7 +102,11 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(true);
+        }}
         className="absolute right-2 top-2 z-10 rounded-full bg-blue-600 p-2 text-white shadow-lg transition hover:bg-blue-700"
         title="編輯圖片"
       >
@@ -112,12 +116,23 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsOpen(false);
+            }
+          }}
+        >
           <div className="w-full max-w-md rounded-xl bg-[rgba(20,20,30,0.95)] p-6 shadow-2xl backdrop-blur-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-white">編輯圖片 - {title}</h3>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }}
                 className="text-white/70 transition hover:text-white"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
