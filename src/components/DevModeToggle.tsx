@@ -24,7 +24,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const handleToggle = () => {
     if (!isAuthorized) {
       const password = prompt('請輸入開發者密碼：');
-      const envPassword = process.env.NEXT_PUBLIC_DEV_PASSWORD || 'Gary2217';
+      const envPassword = process.env.NEXT_PUBLIC_DEV_PASSWORD || 'efe3122130';
       if (password === envPassword) {
         localStorage.setItem('dev_password', password);
         setIsAuthorized(true);

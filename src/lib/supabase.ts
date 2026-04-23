@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // 臨時硬編碼用於測試
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://soujehqympampcze1wcz.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvdWplaHF5bXBhbXBjemVpd2N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MjExMjcsImV4cCI6MjA5MjQ5NzEyN30.J74ujkoa51ucKkv0LkkOaxZHbn37F0LY0asOYgWFjAk';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://soujehqympampczeiwcz.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_E84OmshG2Xy81VlHxcASKQ_W0EhqZEN';
 
 console.log('Supabase URL:', supabaseUrl);
 console.log('Supabase Key (first 20 chars):', supabaseAnonKey.substring(0, 20));
