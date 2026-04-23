@@ -19,7 +19,7 @@ type RouteSection = {
 };
 
 const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
-const lineHref = `https://line.me/R/ti/p/${lineId.replace('@', '%40')}`;
+const lineHref = `https://line.me/ti/p/${lineId.replace('@', '')}`;
 
 function RouteRow({
   section,
