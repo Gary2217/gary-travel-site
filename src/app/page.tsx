@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getRegionsWithDestinations, trackClick } from "@/lib/supabase";
+import { getRegionsWithDestinations } from "@/lib/supabase";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 
@@ -140,7 +140,7 @@ function RouteRow({
     pauseAutoScroll();
 
     const segmentWidth = element.scrollWidth / 3;
-    const firstCard = element.querySelector("[data-destination-card='true']") as HTMLAnchorElement | null;
+    const firstCard = element.querySelector("[data-destination-card='true']") as HTMLDivElement | null;
     const gapValue = window.getComputedStyle(element).columnGap || window.getComputedStyle(element).gap;
     const gap = Number.parseFloat(gapValue || "0") || 0;
     const cardWidth = firstCard ? firstCard.offsetWidth + gap : 320;
@@ -154,10 +154,6 @@ function RouteRow({
     }
 
     element.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
-  };
-
-  const handleDestinationClick = async (destinationId: string) => {
-    await trackClick(destinationId);
   };
 
   return (
@@ -195,13 +191,9 @@ function RouteRow({
             className="flex gap-4 overflow-x-auto px-10 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-12"
           >
             {loopedDestinations.map((destination, destinationIndex) => (
-              <a
+              <div
                 key={`${section.title}-${destination.title}-${destinationIndex}`}
                 data-destination-card="true"
-                href={lineHref}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => handleDestinationClick(destination.id)}
                 className="group relative h-[144px] min-w-[280px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
               >
                 {isDevMode && (
@@ -221,7 +213,7 @@ function RouteRow({
                   <h3 className="text-xl font-semibold sm:text-2xl">{destination.title}</h3>
                   <p className="mt-1 text-sm text-white/85">{destination.subtitle}</p>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
 
