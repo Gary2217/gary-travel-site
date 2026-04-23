@@ -75,7 +75,7 @@ function RouteRow({
         normalizeScrollPosition(segmentWidth);
 
         if (!isHoveringRef.current && Date.now() >= pauseUntilRef.current) {
-          element.scrollLeft += 1.2;
+          element.scrollLeft += 2.0;
         }
       } else {
         hasInitializedPositionRef.current = false;
