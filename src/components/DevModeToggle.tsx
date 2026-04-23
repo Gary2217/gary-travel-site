@@ -9,11 +9,14 @@ interface DevModeToggleProps {
 export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const [isDevMode, setIsDevMode] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // 檢查是否為授權用戶（使用簡單的密碼驗證）
     const devPassword = localStorage.getItem('dev_password');
-    if (devPassword === process.env.NEXT_PUBLIC_DEV_PASSWORD) {
+    const envPassword = process.env.NEXT_PUBLIC_DEV_PASSWORD;
+    if (devPassword && envPassword && devPassword === envPassword) {
       setIsAuthorized(true);
     }
   }, []);
@@ -21,7 +24,8 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const handleToggle = () => {
     if (!isAuthorized) {
       const password = prompt('請輸入開發者密碼：');
-      if (password === process.env.NEXT_PUBLIC_DEV_PASSWORD) {
+      const envPassword = process.env.NEXT_PUBLIC_DEV_PASSWORD || 'Gary2217';
+      if (password === envPassword) {
         localStorage.setItem('dev_password', password);
         setIsAuthorized(true);
         setIsDevMode(true);
@@ -35,6 +39,11 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
       onToggle(newState);
     }
   };
+
+  // 避免 hydration 錯誤
+  if (!mounted) {
+    return null;
+  }
 
   // 始終顯示按鈕
   if (!isAuthorized && !isDevMode) {
