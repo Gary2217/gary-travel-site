@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -31,6 +31,13 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json(
+        { error: 'Missing server upload configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' },
+        { status: 500 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const destinationId = formData.get('destination_id') as string | null;
@@ -47,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Max 5MB' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const { data: existingDestination, error: destinationError } = await supabase
       .from('destinations')
@@ -82,13 +89,19 @@ export async function POST(request: NextRequest) {
       .from('images')
       .getPublicUrl(filePath);
 
-    const { error: updateError } = await supabase
+    const { data: updatedDestination, error: updateError } = await supabase
       .from('destinations')
       .update({ image_url: publicUrl })
-      .eq('id', destinationId);
+      .eq('id', destinationId)
+      .select('id,image_url,updated_at')
+      .single();
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    if (!updatedDestination || updatedDestination.image_url !== publicUrl) {
+      return NextResponse.json({ error: 'Destination image update did not persist.' }, { status: 500 });
     }
 
     const oldStoragePath = getStoragePathFromPublicUrl(existingDestination?.image_url || '');
@@ -103,7 +116,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ url: publicUrl });
+    return NextResponse.json({
+      url: publicUrl,
+      destination: updatedDestination,
+    });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
