@@ -33,7 +33,17 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   }
 
   if (!isDevMode) {
-    return null;
+    return (
+      <button
+        onClick={handleToggle}
+        className="fixed right-3 top-3 z-[9999] inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-800/90 text-white shadow-none backdrop-blur-sm transition hover:bg-gray-700 hover:scale-105"
+        title="LINE 登入驗證"
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.77 1.52 5.2 3.89 6.82V22l4.28-2.35c.59.16 1.21.25 1.83.25 5.52 0 10-3.94 10-8.8S17.52 2 12 2z" />
+        </svg>
+      </button>
+    );
   }
 
   return (
