@@ -48,7 +48,7 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
             href={lineHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] md:h-11 md:px-6"
+            className="inline-flex h-10 min-w-[148px] items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] md:h-11 md:min-w-[164px] md:px-6"
             title="LINE 諮詢"
           >
             <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white">
@@ -63,7 +63,7 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
             href={fbHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-[#1877F2] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1565d8] md:h-11 md:px-6"
+            className="inline-flex h-10 min-w-[148px] items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#1877F2] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1565d8] md:h-11 md:min-w-[164px] md:px-6"
             title="Facebook 粉專"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
             href={igHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-[#E4405F] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] md:h-11 md:px-6"
+            className="inline-flex h-10 min-w-[148px] items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#E4405F] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] md:h-11 md:min-w-[164px] md:px-6"
             title="Instagram"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -85,6 +85,7 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
             </svg>
             <span>IG私訊</span>
           </a>
+
         </div>
       </div>
       <div className="border-t border-white/5 px-3 pb-2 pt-1 lg:hidden">

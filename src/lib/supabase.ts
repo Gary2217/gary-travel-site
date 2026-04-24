@@ -3,6 +3,7 @@ const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
 export const lineHref = `https://line.me/ti/p/${lineId.replace("@", "")}`;
 export const fbHref = process.env.NEXT_PUBLIC_FB_URL || "#";
 export const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
+export const flightHref = process.env.NEXT_PUBLIC_FLIGHT_URL || lineHref;
 
 // 資料型別定義
 export type Destination = {
