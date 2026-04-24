@@ -27,7 +27,10 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
   }, [isOpen, onOpenChange]);
 
   const handleModalClick = (e: MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const stopMouseEvent = (e: MouseEvent<HTMLElement>) => {
     e.stopPropagation();
   };
 
@@ -59,7 +62,8 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
       alert('圖片已上傳並更新！');
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('上傳失敗，請稍後再試');
+      const message = error instanceof Error ? error.message : '上傳失敗，請稍後再試';
+      alert(`上傳失敗：${message}`);
     } finally {
       setUploading(false);
     }
@@ -85,7 +89,6 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
             if (e.target === e.currentTarget) {
               setIsOpen(false);
@@ -95,6 +98,8 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
           <div
             className="w-full max-w-2xl rounded-xl bg-[rgba(20,20,30,0.98)] p-6 shadow-2xl backdrop-blur-xl"
             onClick={handleModalClick}
+            onMouseDown={stopMouseEvent}
+            onMouseUp={stopMouseEvent}
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-white">編輯圖片 - {title}</h3>
@@ -131,6 +136,9 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
+                  onClick={stopMouseEvent}
+                  onMouseDown={stopMouseEvent}
+                  onMouseUp={stopMouseEvent}
                   disabled={uploading}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white file:mr-4 file:rounded-full file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-700 disabled:opacity-50"
                 />

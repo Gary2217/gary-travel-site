@@ -7,6 +7,28 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
+function getStoragePathFromPublicUrl(publicUrl: string) {
+  try {
+    const currentProjectUrl = new URL(supabaseUrl);
+    const url = new URL(publicUrl);
+
+    if (url.origin !== currentProjectUrl.origin) {
+      return null;
+    }
+
+    const prefix = '/storage/v1/object/public/images/';
+
+    if (!url.pathname.startsWith(prefix)) {
+      return null;
+    }
+
+    const storagePath = url.pathname.slice(prefix.length);
+    return storagePath || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -26,6 +48,16 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const { data: existingDestination, error: destinationError } = await supabase
+      .from('destinations')
+      .select('image_url')
+      .eq('id', destinationId)
+      .single();
+
+    if (destinationError) {
+      return NextResponse.json({ error: destinationError.message }, { status: 500 });
+    }
 
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const sanitizedExt = fileExt.replace(/[^a-z0-9]/g, '');
@@ -57,6 +89,18 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    const oldStoragePath = getStoragePathFromPublicUrl(existingDestination?.image_url || '');
+
+    if (oldStoragePath && oldStoragePath !== filePath) {
+      const { error: removeError } = await supabase.storage
+        .from('images')
+        .remove([oldStoragePath]);
+
+      if (removeError) {
+        console.error('Failed to remove old image:', removeError.message);
+      }
     }
 
     return NextResponse.json({ url: publicUrl });

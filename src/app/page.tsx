@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getRegionsWithDestinations } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+import { getRegionsWithDestinations, trackClick } from "@/lib/supabase";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
+import SocialCta from "@/components/SocialCta";
+import StickyHeader from "@/components/StickyHeader";
 
 type Destination = {
   id: string;
@@ -20,17 +23,16 @@ type RouteSection = {
   destinations: Destination[];
 };
 
-const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
-const lineHref = `https://line.me/ti/p/${lineId.replace('@', '')}`;
-
 function RouteRow({
   section,
   isDevMode,
   onImageUpdate,
+  onDestinationClick,
 }: {
   section: RouteSection;
   isDevMode: boolean;
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
+  onDestinationClick: (destinationId: string) => void;
 }) {
   const hasDestinations = section.destinations.length > 0;
   const rowRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +42,7 @@ function RouteRow({
   const isHoveringRef = useRef(false);
   const hasInitializedPositionRef = useRef(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
   const loopedDestinations = [...section.destinations, ...section.destinations, ...section.destinations];
 
   useEffect(() => {
@@ -195,7 +198,17 @@ function RouteRow({
               <div
                 key={`${section.title}-${destination.title}-${destinationIndex}`}
                 data-destination-card="true"
-                className="group relative h-[144px] min-w-[280px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
+                className="group relative h-[144px] min-w-[280px] cursor-pointer overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
+                onMouseDown={(e) => { mouseDownPos.current = { x: e.clientX, y: e.clientY }; }}
+                onMouseUp={(e) => {
+                  if (!mouseDownPos.current) return;
+                  const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+                  const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+                  if (dx < 5 && dy < 5 && !isDevMode) {
+                    onDestinationClick(destination.id);
+                  }
+                  mouseDownPos.current = null;
+                }}
               >
                 {isDevMode && (
                   <ImageEditor
@@ -237,6 +250,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function loadData() {
@@ -315,53 +329,15 @@ export default function HomePage() {
     );
   };
 
+  const handleDestinationClick = (destinationId: string) => {
+    trackClick(destinationId);
+    router.push(`/destination/${destinationId}`);
+  };
+
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
       <DevModeToggle onToggle={setIsDevMode} />
-      <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-3 py-3 md:flex-row md:items-center md:gap-4 md:px-6 md:py-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex shrink-0 items-center gap-2">
-              <svg className="h-7 w-7 text-sky-400 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-              </svg>
-              <div className="hidden md:block">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
-                  Route Browser
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  快速瀏覽熱門旅遊目的地
-                </p>
-              </div>
-            </div>
-            <a
-              href={lineHref}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-[#05b64d] md:hidden"
-            >
-              LINE 諮詢
-            </a>
-          </div>
-
-          <div className="flex items-center gap-2 md:ml-auto">
-            <p className="text-[10px] font-medium text-white/70 md:hidden">
-              旅遊規劃師 蓋瑞 GARY｜LINE 詢問行程
-            </p>
-            <p className="hidden text-sm font-medium text-white/70 md:block">
-              旅遊規劃師 蓋瑞 GARY｜LINE 詢問行程
-            </p>
-            <a
-              href={lineHref}
-              target="_blank"
-              rel="noreferrer"
-              className="hidden shrink-0 rounded-full bg-[#06C755] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] md:block"
-            >
-              LINE 諮詢
-            </a>
-          </div>
-        </div>
-      </div>
+      <StickyHeader />
 
       <section id="routes" className="w-full px-2 py-4 md:px-2 md:py-6 xl:px-2">
         <div className="relative mb-3 overflow-x-auto rounded-xl bg-[rgba(20,20,30,0.34)] py-2 shadow-lg shadow-black/10 backdrop-blur-[12px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-1">
@@ -396,32 +372,16 @@ export default function HomePage() {
               section={section}
               isDevMode={isDevMode}
               onImageUpdate={handleImageUpdate}
+              onDestinationClick={handleDestinationClick}
             />
           ))}
         </div>
 
-        {/* 底部 LINE 諮詢區塊 */}
-        <div className="mt-8 rounded-xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-6 text-center backdrop-blur-[12px] md:p-8">
-          <div className="mx-auto max-w-2xl">
-            <h3 className="mb-2 text-xl font-bold text-white md:text-2xl">
-              找到心儀的旅遊目的地了嗎？
-            </h3>
-            <p className="mb-4 text-sm text-white/70 md:text-base">
-              立即聯繫旅遊規劃師 蓋瑞 GARY，為您量身打造專屬行程
-            </p>
-            <a
-              href={lineHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-[#06C755] px-8 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-[#05b64d] hover:shadow-xl"
-            >
-              <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-              </svg>
-              LINE 諮詢行程
-            </a>
-          </div>
-        </div>
+        <SocialCta
+          className="mt-8"
+          title="找到心儀的旅遊目的地了嗎？"
+          description="立即聯繫旅遊規劃師 蓋瑞 GARY，為您量身打造專屬行程"
+        />
       </section>
     </main>
   );
