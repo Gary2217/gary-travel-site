@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getRegionsWithDestinations, trackClick } from "@/lib/supabase";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
@@ -27,12 +27,10 @@ function RouteRow({
   section,
   isDevMode,
   onImageUpdate,
-  onDestinationClick,
 }: {
   section: RouteSection;
   isDevMode: boolean;
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
-  onDestinationClick: (destinationId: string) => void;
 }) {
   const hasDestinations = section.destinations.length > 0;
   const rowRef = useRef<HTMLDivElement | null>(null);
@@ -195,24 +193,29 @@ function RouteRow({
             className="flex gap-4 overflow-x-auto px-10 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-12"
           >
             {loopedDestinations.map((destination, destinationIndex) => (
-              <div
+              <Link
                 key={`${section.title}-${destination.title}-${destinationIndex}`}
+                href={`/destination/${destination.id}`}
+                prefetch={true}
                 data-destination-card="true"
-                className="group relative h-[144px] min-w-[280px] cursor-pointer overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
+                draggable={false}
+                className="group relative block h-[144px] min-w-[280px] cursor-pointer overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[168px] md:min-w-[320px] lg:min-w-[340px]"
                 onMouseDown={(e) => { mouseDownPos.current = { x: e.clientX, y: e.clientY }; }}
-                onMouseUp={(e) => {
+                onClick={(e) => {
                   if (!mouseDownPos.current) return;
                   const dx = Math.abs(e.clientX - mouseDownPos.current.x);
                   const dy = Math.abs(e.clientY - mouseDownPos.current.y);
-                  if (dx < 5 && dy < 5 && !isDevMode) {
-                    onDestinationClick(destination.id);
+                  if (dx >= 5 || dy >= 5 || isDevMode) {
+                    e.preventDefault();
+                  } else {
+                    trackClick(destination.id);
                   }
                   mouseDownPos.current = null;
                 }}
               >
                 {isDevMode && (
                   <ImageEditor
-                    destinationId={destination.id}
+                    entityId={destination.id}
                     currentImageUrl={destination.image_url}
                     title={destination.title}
                     onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
@@ -228,7 +231,7 @@ function RouteRow({
                   <h3 className="text-xl font-semibold sm:text-2xl">{destination.title}</h3>
                   <p className="mt-1 text-sm text-white/85">{destination.subtitle}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
@@ -250,7 +253,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     async function loadData() {
@@ -329,11 +331,6 @@ export default function HomePage() {
     );
   };
 
-  const handleDestinationClick = (destinationId: string) => {
-    trackClick(destinationId);
-    router.push(`/destination/${destinationId}`);
-  };
-
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
       <DevModeToggle onToggle={setIsDevMode} />
@@ -372,7 +369,6 @@ export default function HomePage() {
               section={section}
               isDevMode={isDevMode}
               onImageUpdate={handleImageUpdate}
-              onDestinationClick={handleDestinationClick}
             />
           ))}
         </div>

@@ -5,14 +5,15 @@ import { createPortal } from "react-dom";
 import { uploadImage } from "@/lib/supabase";
 
 interface ImageEditorProps {
-  destinationId: string;
+  entityId: string;
   currentImageUrl: string;
   title: string;
   onUpdate: (newImageUrl: string) => void;
   onOpenChange?: (open: boolean) => void;
+  uploadFn?: (entityId: string, file: File) => Promise<string>;
 }
 
-export default function ImageEditor({ destinationId, currentImageUrl, title, onUpdate, onOpenChange }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -94,7 +95,7 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
     setUploading(true);
 
     try {
-      const publicUrl = await uploadImage(destinationId, selectedFile);
+      const publicUrl = await uploadFn(entityId, selectedFile);
       onUpdate(publicUrl);
 
       resetSelection();

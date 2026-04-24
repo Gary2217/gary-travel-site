@@ -132,20 +132,26 @@ export async function submitInquiry(data: {
   return res.json();
 }
 
-// 記錄點擊事件
-export async function trackClick(destinationId: string) {
+// 記錄點擊事件（使用 sendBeacon 避免阻塞頁面跳轉）
+export function trackClick(destinationId: string) {
   try {
-    await fetch('/api/track-click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ destination_id: destinationId }),
-    });
+    const data = JSON.stringify({ destination_id: destinationId });
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon('/api/track-click', new Blob([data], { type: 'application/json' }));
+    } else {
+      fetch('/api/track-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: data,
+        keepalive: true,
+      });
+    }
   } catch {
     // 靜默失敗
   }
 }
 
-// 上傳圖片
+// 上傳目的地圖片
 export async function uploadImage(destinationId: string, file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
@@ -159,6 +165,26 @@ export async function uploadImage(destinationId: string, file: File): Promise<st
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.error || 'Upload failed');
+  }
+
+  const data = await res.json();
+  return data.url;
+}
+
+// 上傳行程封面圖片
+export async function uploadTripImage(tripId: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('trip_id', tripId);
+
+  const res = await fetch('/api/upload-trip-image', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '上傳失敗');
   }
 
   const data = await res.json();

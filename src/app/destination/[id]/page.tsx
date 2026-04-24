@@ -6,6 +6,7 @@ import { getDestination, getDestinationTrips, type Destination, type Trip } from
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
+import DevModeToggle from "@/components/DevModeToggle";
 
 export default function DestinationPage() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function DestinationPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDevMode, setIsDevMode] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -33,6 +35,14 @@ export default function DestinationPage() {
     }
     loadData();
   }, [destinationId]);
+
+  const handleTripImageUpdate = (tripId: string, newImageUrl: string) => {
+    setTrips(prev =>
+      prev.map(trip =>
+        trip.id === tripId ? { ...trip, cover_image_url: newImageUrl } : trip
+      )
+    );
+  };
 
   if (loading) {
     return (
@@ -69,6 +79,7 @@ export default function DestinationPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+      <DevModeToggle onToggle={setIsDevMode} />
       <StickyHeader showBackButton />
 
       {/* Hero 區塊 */}
@@ -102,17 +113,16 @@ export default function DestinationPage() {
             <h2 className="mb-6 text-xl font-bold text-white md:text-2xl">
               可選行程（{trips.length}）
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-5">
               {trips.map((trip) => (
                 <TripCard
                   key={trip.id}
                   id={trip.id}
                   title={trip.title}
-                  subtitle={trip.subtitle}
                   duration={trip.duration}
-                  price_range={trip.price_range}
                   cover_image_url={trip.cover_image_url}
-                  highlights={trip.highlights || []}
+                  isDevMode={isDevMode}
+                  onImageUpdate={handleTripImageUpdate}
                 />
               ))}
             </div>
