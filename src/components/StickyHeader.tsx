@@ -46,18 +46,18 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
         </div>
 
         {/* 右側：社群按鈕 */}
-        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
           {/* LINE */}
           <a
             href={lineHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] md:h-11 md:px-5"
+            className="inline-flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] md:h-11 md:px-6"
             title="LINE 諮詢"
           >
             <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white">
               <span className="text-[7px] font-black leading-none text-[#06C755] md:text-[8px]">LINE</span>
-              <span className="absolute -bottom-[2px] left-[4px] h-0 w-0 border-l-[3px] border-r-[3px] border-t-[4px] border-l-transparent border-r-transparent border-t-white md:left-[5px] md:border-l-[4px] md:border-r-[4px] md:border-t-[5px]" />
+              <span className="absolute -bottom-[2px] left-[5px] h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-white" />
             </span>
             <span>LINE立即洽詢</span>
           </a>
@@ -67,7 +67,7 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
             href={fbHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full bg-[#1877F2] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1565d8] md:h-11 md:px-5"
+            className="inline-flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-[#1877F2] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1565d8] md:h-11 md:px-6"
             title="Facebook 粉專"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -81,7 +81,7 @@ export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
             href={igHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full bg-[#E4405F] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] md:h-11 md:px-5"
+            className="inline-flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-[#E4405F] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] md:h-11 md:px-6"
             title="Instagram"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
