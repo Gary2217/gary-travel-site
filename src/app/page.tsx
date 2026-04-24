@@ -235,11 +235,13 @@ function RouteRow({
 export default function HomePage() {
   const [sections, setSections] = useState<RouteSection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       try {
+        setError(null);
         const data = await getRegionsWithDestinations();
         const formattedSections = data.map((region: any) => ({
           id: region.id,
@@ -254,8 +256,9 @@ export default function HomePage() {
           }))
         }));
         setSections(formattedSections);
-      } catch (error) {
-        console.error('Error loading data:', error);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('無法載入資料，請重新整理頁面');
       } finally {
         setLoading(false);
       }
@@ -280,6 +283,22 @@ export default function HomePage() {
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent"></div>
           <p className="mt-4 text-white/70">載入中...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white flex items-center justify-center">
+        <div className="text-center px-4">
+          <p className="text-lg text-red-400">{error}</p>
+          <button
+            onClick={() => { setLoading(true); setError(null); window.location.reload(); }}
+            className="mt-4 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+          >
+            重新載入
+          </button>
         </div>
       </main>
     );

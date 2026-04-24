@@ -2,7 +2,7 @@
 
 import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/supabase";
 
 interface ImageEditorProps {
   destinationId: string;
@@ -51,30 +51,7 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${destinationId}-${Date.now()}.${fileExt}`;
-      const filePath = `destinations/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      const { error: updateError } = await supabase
-        .from('destinations')
-        .update({ image_url: publicUrl })
-        .eq('id', destinationId);
-
-      if (updateError) throw updateError;
-
+      const publicUrl = await uploadImage(destinationId, file);
       onUpdate(publicUrl);
       setIsOpen(false);
       setSelectedFileName("");
@@ -105,7 +82,7 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
       </button>
 
       {mounted && isOpen && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => {
             e.preventDefault();
@@ -161,7 +138,7 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
                   <p className="mt-2 text-sm text-white/70">已選擇：{selectedFileName}</p>
                 )}
                 <p className="mt-2 text-xs text-white/50">
-                  選擇圖片後會直接上傳到 Supabase Storage，並同步更新資料庫。支援 JPG、PNG、WebP，大小限制 5MB。
+                  選擇圖片後會直接上傳並同步更新資料庫。支援 JPG、PNG、WebP，大小限制 5MB。
                 </p>
                 {uploading && (
                   <p className="mt-2 text-sm text-sky-300">圖片上傳中，請稍候...</p>
