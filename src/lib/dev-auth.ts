@@ -32,7 +32,7 @@ export function verifyDevAuthCookie(cookieValue?: string | null) {
   }
 
   const ageMs = Date.now() - Number(timestamp);
-  const maxAgeMs = 1000 * 60 * 60 * 24 * 7;
+  const maxAgeMs = 1000 * 60 * 60 * 8;
 
   return Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= maxAgeMs;
 }

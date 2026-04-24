@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     sameSite: "lax",
     secure: true,
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: 60 * 60 * 8,
   });
   response.cookies.set("dev_auth_state", "", { path: "/", maxAge: 0 });
   return response;
