@@ -2,11 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Toast from "@/components/Toast";
-
-const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
-const lineHref = `https://line.me/ti/p/${lineId.replace("@", "")}`;
-const fbHref = process.env.NEXT_PUBLIC_FB_URL || "#";
-const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
+import { lineHref, fbHref, igHref } from "@/lib/supabase";
 
 interface InquiryButtonsProps {
   tripTitle: string;

@@ -1,17 +1,15 @@
+"use client";
+
+import { lineHref, fbHref, igHref } from "@/lib/supabase";
+
 interface SocialCtaProps {
   title: string;
   description: string;
-  helperText?: string;
   lineLabel?: string;
   facebookLabel?: string;
   instagramLabel?: string;
   className?: string;
 }
-
-const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
-const lineHref = `https://line.me/ti/p/${lineId.replace("@", "")}`;
-const fbHref = process.env.NEXT_PUBLIC_FB_URL || "#";
-const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 
 export default function SocialCta({
   title,

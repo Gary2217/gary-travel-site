@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 * {
@@ -18,8 +18,8 @@ body {
 
 body {
   min-height: 100vh;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: #0a0a0a;
+  color: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
 }
 

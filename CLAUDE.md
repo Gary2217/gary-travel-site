@@ -5,10 +5,29 @@
 技術棧：Next.js 14 App Router + TypeScript + Tailwind CSS + Supabase，部署於 Vercel。
 所有 UI 文字使用繁體中文（zh-TW）。
 
-## 模型分流規則
-- **Opus**：架構設計、多檔案重構、資料庫 schema 設計、複雜除錯、CLAUDE.md 更新
-- **Sonnet**：功能開發（新頁面/元件/API route）、code review、中等複雜度任務
-- **Haiku**：簡單修改（文案、樣式微調、env 設定）、格式修正、明確的小 bug
+## 模型分流規則（省點數優先）
+預設用 Sonnet，只有真正需要時才升 Opus。
+
+- **Opus（少用，僅限高複雜度）**：
+  - 跨 5 檔以上的架構重構
+  - 資料庫 schema 重新設計（非新增欄位）
+  - 找不出原因的 bug，需要跨檔推理
+  - 安全性審查
+- **Sonnet（主力模型）**：
+  - 新功能開發（頁面、元件、API route）
+  - 單檔或 2-4 檔的重構
+  - Code review、效能優化
+  - 新增資料表欄位、寫 SQL migration
+  - CLAUDE.md 更新
+  - 中等複雜度除錯
+- **Haiku（能用就用）**：
+  - 文案修改、翻譯調整
+  - Tailwind 樣式微調（顏色、間距、字體）
+  - 新增 / 修改 env 變數
+  - 格式修正、import 排序
+  - 明確的單行 bug fix
+  - 已知解法的套用（如加 "use client"）
+  - git commit message 撰寫
 
 ## 程式碼慣例
 - 所有頁面使用 `"use client"` + 透過 API route 取資料

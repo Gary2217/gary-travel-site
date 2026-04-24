@@ -145,12 +145,12 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
               <h3 className="text-lg font-bold text-white">編輯圖片 - {title}</h3>
               <button
                 onClick={(e) => {
-                   e.preventDefault();
-                   e.stopPropagation();
-                   resetSelection();
-                   setIsOpen(false);
-                 }}
-                 className="text-white/70 transition hover:text-white"
+                  e.preventDefault();
+                  e.stopPropagation();
+                  resetSelection();
+                  setIsOpen(false);
+                }}
+                className="text-white/70 transition hover:text-white"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

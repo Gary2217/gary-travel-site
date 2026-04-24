@@ -1,13 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 社群連結常數
+const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
+export const lineHref = `https://line.me/ti/p/${lineId.replace("@", "")}`;
+export const fbHref = process.env.NEXT_PUBLIC_FB_URL || "#";
+export const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 
 // 資料型別定義
 export type Destination = {
