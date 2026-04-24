@@ -13,7 +13,7 @@ interface StickyHeaderProps {
 
 export default function StickyHeader({ showBackButton }: StickyHeaderProps) {
   const router = useRouter();
-  const lineHelperText = "詢問行程｜拿行程檔案｜客製｜旅遊規劃師 蓋瑞 GARY";
+  const lineHelperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY";
 
   return (
     <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">

@@ -16,7 +16,7 @@ const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 export default function SocialCta({
   title,
   description,
-  helperText = "詢問行程｜拿行程檔案｜客製｜旅遊規劃師 蓋瑞 GARY",
+  helperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY",
   lineLabel = "LINE立即洽詢",
   facebookLabel = "FB粉專看優惠",
   instagramLabel = "IG私訊",
