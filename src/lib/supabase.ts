@@ -35,7 +35,50 @@ export type Region = {
   destinations?: Destination[];
 };
 
-// 取得所有啟用的區域和目的地（透過 API route）
+export type Trip = {
+  id: string;
+  destination_id: string;
+  title: string;
+  subtitle: string;
+  duration: string;
+  price_range: string;
+  cover_image_url: string;
+  highlights: string[];
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+  trip_days?: TripDay[];
+  destinations?: Destination;
+};
+
+export type TripDay = {
+  id: string;
+  trip_id: string;
+  day_number: number;
+  title: string;
+  description: string;
+  meals: string;
+  accommodation: string;
+  activities: string[];
+  created_at: string;
+};
+
+export type Inquiry = {
+  id: string;
+  trip_id: string;
+  trip_title: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  message: string;
+  source: 'LINE' | 'IG' | 'FB' | 'FORM';
+  status: 'pending' | 'contacted' | 'completed';
+  created_at: string;
+  updated_at: string;
+};
+
+// 取得所有啟用的區域和目的地
 export async function getRegionsWithDestinations() {
   const res = await fetch('/api/regions');
   if (!res.ok) {
@@ -44,7 +87,55 @@ export async function getRegionsWithDestinations() {
   return res.json();
 }
 
-// 記錄點擊事件（透過 API route，可取得 IP）
+// 取得單一目的地資訊
+export async function getDestination(destinationId: string) {
+  const res = await fetch(`/api/destinations/${destinationId}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch destination: ${res.status}`);
+  }
+  return res.json();
+}
+
+// 取得目的地的所有行程
+export async function getDestinationTrips(destinationId: string) {
+  const res = await fetch(`/api/destinations/${destinationId}/trips`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch trips: ${res.status}`);
+  }
+  return res.json();
+}
+
+// 取得單一行程（含每日明細）
+export async function getTripWithDays(tripId: string) {
+  const res = await fetch(`/api/trips/${tripId}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch trip: ${res.status}`);
+  }
+  return res.json();
+}
+
+// 提交諮詢
+export async function submitInquiry(data: {
+  trip_id?: string;
+  trip_title: string;
+  customer_name: string;
+  customer_phone?: string;
+  customer_email?: string;
+  message?: string;
+  source: string;
+}) {
+  const res = await fetch('/api/inquiries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error('提交失敗，請稍後再試');
+  }
+  return res.json();
+}
+
+// 記錄點擊事件
 export async function trackClick(destinationId: string) {
   try {
     await fetch('/api/track-click', {
@@ -53,11 +144,11 @@ export async function trackClick(destinationId: string) {
       body: JSON.stringify({ destination_id: destinationId }),
     });
   } catch {
-    // 靜默失敗，不影響使用者體驗
+    // 靜默失敗
   }
 }
 
-// 上傳圖片（透過 API route）
+// 上傳圖片
 export async function uploadImage(destinationId: string, file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
