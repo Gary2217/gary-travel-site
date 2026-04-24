@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
+import { ChangeEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { uploadImage } from "@/lib/supabase";
 
@@ -14,9 +14,18 @@ interface ImageEditorProps {
 
 export default function ImageEditor({ destinationId, currentImageUrl, title, onUpdate, onOpenChange }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const previewUrl = useMemo(() => {
+    if (!selectedFile) {
+      return null;
+    }
+
+    return URL.createObjectURL(selectedFile);
+  }, [selectedFile]);
 
   useEffect(() => {
     setMounted(true);
@@ -26,6 +35,14 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
     onOpenChange?.(isOpen);
   }, [isOpen, onOpenChange]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   const handleModalClick = (e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
   };
@@ -34,35 +51,58 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
     e.stopPropagation();
   };
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const resetSelection = () => {
+    setSelectedFile(null);
+    setSelectedFileName("");
+  };
+
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
     const file = e.target.files?.[0];
-    if (!file) return;
 
-    setSelectedFileName(file.name);
+    if (!file) {
+      resetSelection();
+      return;
+    }
 
-    if (!file.type.startsWith('image/')) {
-      alert('請選擇圖片檔案');
+    if (!file.type.startsWith("image/")) {
+      alert("請選擇圖片檔案");
+      e.target.value = "";
+      resetSelection();
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('圖片檔案不能超過 5MB');
+      alert("圖片檔案不能超過 5MB");
+      e.target.value = "";
+      resetSelection();
+      return;
+    }
+
+    setSelectedFile(file);
+    setSelectedFileName(file.name);
+  };
+
+  const handleSave = async () => {
+    if (!selectedFile) {
+      alert("請先選擇圖片");
       return;
     }
 
     setUploading(true);
+
     try {
-      const publicUrl = await uploadImage(destinationId, file);
+      const publicUrl = await uploadImage(destinationId, selectedFile);
       onUpdate(publicUrl);
+
+      resetSelection();
       setIsOpen(false);
-      setSelectedFileName("");
-      e.target.value = "";
-      alert('圖片已上傳並更新！');
+      alert("圖片已儲存並同步更新！");
     } catch (error) {
-      console.error('Error uploading image:', error);
-      const message = error instanceof Error ? error.message : '上傳失敗，請稍後再試';
+      console.error("Error uploading image:", error);
+      const message = error instanceof Error ? error.message : "上傳失敗，請稍後再試";
       alert(`上傳失敗：${message}`);
     } finally {
       setUploading(false);
@@ -105,11 +145,12 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
               <h3 className="text-lg font-bold text-white">編輯圖片 - {title}</h3>
               <button
                 onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsOpen(false);
-                }}
-                className="text-white/70 transition hover:text-white"
+                   e.preventDefault();
+                   e.stopPropagation();
+                   resetSelection();
+                   setIsOpen(false);
+                 }}
+                 className="text-white/70 transition hover:text-white"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -120,11 +161,35 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
             <div className="space-y-4">
               <div>
                 <p className="mb-2 text-sm text-white/70">當前圖片：</p>
-                <div className="h-48 w-full overflow-hidden rounded-lg">
-                  <div
-                    className="h-full w-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${currentImageUrl})` }}
-                  />
+                <div className="h-48 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                  {currentImageUrl ? (
+                    <img
+                      src={currentImageUrl}
+                      alt={`${title} 當前圖片`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-white/50">
+                      目前尚未設定圖片
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm text-white/70">預覽圖片：</p>
+                <div className="h-48 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt={`${title} 預覽圖片`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-white/50">
+                      選擇新圖片後，這裡會顯示預覽
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -135,7 +200,7 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleFileUpload}
+                  onChange={handleFileSelect}
                   onClick={stopMouseEvent}
                   onMouseDown={stopMouseEvent}
                   onMouseUp={stopMouseEvent}
@@ -146,10 +211,30 @@ export default function ImageEditor({ destinationId, currentImageUrl, title, onU
                   <p className="mt-2 text-sm text-white/70">已選擇：{selectedFileName}</p>
                 )}
                 <p className="mt-2 text-xs text-white/50">
-                  選擇圖片後會直接上傳並同步更新資料庫。支援 JPG、PNG、WebP，大小限制 5MB。
+                  請先選檔確認預覽，再按儲存同步更新資料庫。支援 JPG、PNG、WebP，大小限制 5MB。
                 </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!selectedFile || uploading}
+                    className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {uploading ? "儲存中..." : "儲存圖片"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetSelection();
+                    }}
+                    disabled={!selectedFile || uploading}
+                    className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    清除選擇
+                  </button>
+                </div>
                 {uploading && (
-                  <p className="mt-2 text-sm text-sky-300">圖片上傳中，請稍候...</p>
+                  <p className="mt-2 text-sm text-sky-300">圖片儲存中，請稍候...</p>
                 )}
               </div>
             </div>

@@ -80,7 +80,9 @@ export type Inquiry = {
 
 // 取得所有啟用的區域和目的地
 export async function getRegionsWithDestinations() {
-  const res = await fetch('/api/regions');
+  const res = await fetch('/api/regions', {
+    cache: 'no-store',
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch regions: ${res.status}`);
   }
