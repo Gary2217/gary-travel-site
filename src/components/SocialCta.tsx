@@ -1,6 +1,7 @@
 interface SocialCtaProps {
   title: string;
   description: string;
+  helperText?: string;
   lineLabel?: string;
   facebookLabel?: string;
   instagramLabel?: string;
@@ -15,9 +16,10 @@ const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 export default function SocialCta({
   title,
   description,
-  lineLabel = "LINE 諮詢",
-  facebookLabel = "FB 粉專",
-  instagramLabel = "Instagram",
+  helperText = "詢問行程｜拿行程檔案｜客製｜旅遊規劃師 蓋瑞 GARY",
+  lineLabel = "LINE立即洽詢",
+  facebookLabel = "FB粉專看優惠",
+  instagramLabel = "IG私訊",
   className = "",
 }: SocialCtaProps) {
   return (
@@ -25,16 +27,20 @@ export default function SocialCta({
       <div className="mx-auto max-w-2xl">
         <h3 className="mb-2 text-xl font-bold text-white md:text-2xl">{title}</h3>
         <p className="mb-4 text-sm text-white/70 md:text-base">{description}</p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-col items-center gap-3 md:flex-row md:justify-center">
+          <p className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-[11px] font-semibold tracking-[0.06em] text-sky-200 shadow-[0_0_18px_rgba(56,189,248,0.12)] md:text-sm">
+            {helperText}
+          </p>
           <a
             href={lineHref}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-full bg-[#06C755] px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-[#05b64d] hover:shadow-xl md:text-base"
           >
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-            </svg>
+            <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white">
+              <span className="text-[8px] font-black leading-none text-[#06C755]">LINE</span>
+              <span className="absolute -bottom-[2px] left-[5px] h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-white" />
+            </span>
             {lineLabel}
           </a>
           <a
