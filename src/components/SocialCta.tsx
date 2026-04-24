@@ -16,7 +16,6 @@ const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 export default function SocialCta({
   title,
   description,
-  helperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY",
   lineLabel = "LINE立即洽詢",
   facebookLabel = "FB粉專看優惠",
   instagramLabel = "IG私訊",
@@ -24,12 +23,13 @@ export default function SocialCta({
 }: SocialCtaProps) {
   return (
     <div className={`rounded-xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-6 text-center backdrop-blur-[12px] md:p-8 ${className}`.trim()}>
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-4xl">
         <h3 className="mb-2 text-xl font-bold text-white md:text-2xl">{title}</h3>
         <p className="mb-4 text-sm text-white/70 md:text-base">{description}</p>
         <div className="flex flex-col items-center gap-3 md:flex-row md:justify-center">
-          <p className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-[11px] font-semibold tracking-[0.06em] text-sky-200 shadow-[0_0_18px_rgba(56,189,248,0.12)] md:text-sm">
-            {helperText}
+          <p className="w-full text-center text-sm font-medium leading-6 text-white md:text-base md:leading-7">
+            <span className="block">詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊</span>
+            <span className="block">旅遊規劃師 蓋瑞 GARY</span>
           </p>
           <a
             href={lineHref}
