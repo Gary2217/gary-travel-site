@@ -108,31 +108,41 @@ export default function DestinationPage() {
 
       {/* 行程列表 */}
       <section className="mx-auto max-w-[1400px] px-4 py-6 md:px-8 md:py-10">
-        {trips.length > 0 ? (
-          <>
-            <h2 className="mb-6 text-xl font-bold text-white md:text-2xl">
-              可選行程（{trips.length}）
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-5">
-              {trips.map((trip) => (
-                <TripCard
-                  key={trip.id}
-                  id={trip.id}
-                  title={trip.title}
-                  duration={trip.duration}
-                  cover_image_url={trip.cover_image_url}
-                  isDevMode={isDevMode}
-                  onImageUpdate={handleTripImageUpdate}
-                />
-              ))}
+        <h2 className="mb-6 text-xl font-bold text-white md:text-2xl">
+          可選行程（{trips.length}）
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-5">
+          {trips.map((trip) => (
+            <TripCard
+              key={trip.id}
+              id={trip.id}
+              title={trip.title}
+              duration={trip.duration}
+              cover_image_url={trip.cover_image_url}
+              isDevMode={isDevMode}
+              onImageUpdate={handleTripImageUpdate}
+            />
+          ))}
+          {/* 空白行程框，補滿至少 10 個 */}
+          {Array.from({ length: Math.max(0, 10 - trips.length) }).map((_, i) => (
+            <div
+              key={`placeholder-${i}`}
+              className="overflow-hidden rounded-[1.5rem] border border-dashed border-white/10 bg-[rgba(20,20,30,0.3)]"
+            >
+              <div className="flex h-36 items-center justify-center sm:h-40 md:h-44">
+                <svg className="h-10 w-10 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div className="p-3 sm:p-4">
+                <p className="min-h-[2.5rem] text-sm text-white/30">敬請期待</p>
+                <div className="mt-3 flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/30 sm:text-sm">
+                  即將上架
+                </div>
+              </div>
             </div>
-          </>
-        ) : (
-          <div className="rounded-xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-8 text-center backdrop-blur-[12px]">
-            <p className="text-lg text-white/70">目前尚無此目的地的行程方案</p>
-            <p className="mt-2 text-sm text-white/50">歡迎聯繫蓋瑞，為您量身客製專屬行程</p>
-          </div>
-        )}
+          ))}
+        </div>
 
         <SocialCta
           className="mt-10"
