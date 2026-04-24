@@ -337,8 +337,8 @@ export default function HomePage() {
       <DevModeToggle onToggle={setIsDevMode} />
       <StickyHeader />
 
-      <section id="routes" className="w-full px-2 py-4 md:px-2 md:py-6 xl:px-2">
-        <div className="relative mb-3 overflow-x-auto rounded-xl bg-[rgba(20,20,30,0.34)] py-2 shadow-lg shadow-black/10 backdrop-blur-[12px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-1">
+      <section id="routes" className="w-full px-0 py-2 md:py-3">
+        <div className="sticky top-[56px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[64px] md:px-3">
           <div className="pointer-events-none absolute left-0 top-0 z-10 flex h-full items-center bg-gradient-to-r from-[rgba(20,20,30,0.8)] to-transparent px-2 md:hidden">
             <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

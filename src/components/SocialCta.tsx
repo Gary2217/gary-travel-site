@@ -27,6 +27,8 @@ export default function SocialCta({
         <p className="mb-4 text-sm font-medium leading-6 text-white md:text-base md:leading-7">
           <span className="block">詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊</span>
           <span className="block">旅遊規劃師 蓋瑞 GARY</span>
+          <span className="block">信箱：sc666555@gmail.com</span>
+          <span className="block">歡迎公司／政府／學校包團出遊，留下回憶</span>
         </p>
         <div className="flex items-center justify-center gap-2 md:gap-3">
           <a
