@@ -16,8 +16,9 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
   const lineHelperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY";
 
   return (
-    <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">
-      <div className="mx-auto grid max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 md:gap-4 md:px-6">
+    <>
+    <div className="fixed inset-x-0 top-0 z-[60] border-b border-white/10 bg-[rgba(20,20,30,0.82)] backdrop-blur-[6px]">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-1.5 md:gap-4 md:px-6 md:py-2">
         {/* 左側：返回 + Logo + 品牌 */}
         <div className="flex items-center gap-2 justify-self-start">
         <Link href="/" className="flex shrink-0 items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
@@ -32,8 +33,8 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
               </svg>
             </button>
           )}
-          <img src={logoUrl} alt="旅行沒有終點 LOGO" className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
-          <p className="-ml-1 text-xs font-semibold tracking-wide text-white sm:text-sm md:text-[15px]">
+          <img src={logoUrl} alt="旅行沒有終點 LOGO" className="h-12 w-12 shrink-0 object-contain md:h-14 md:w-14" />
+          <p className="-ml-1 text-xs font-semibold tracking-wide text-white sm:text-sm md:text-sm">
             旅行沒有終點
           </p>
         </Link>
@@ -53,7 +54,7 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
             href={lineHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#06C755] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#05b64d] sm:h-10 sm:gap-2.5 sm:px-4 sm:text-sm md:h-11 md:min-w-[164px] md:px-6"
+            className="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#06C755] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#05b64d] sm:h-9 sm:gap-2 sm:px-4 sm:text-sm md:h-10 md:min-w-[154px] md:px-5"
             title="LINE 諮詢"
           >
             <span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white sm:h-5 sm:w-5">
@@ -69,7 +70,7 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
             href={fbHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#1877F2] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1565d8] sm:h-10 sm:gap-2.5 sm:px-4 sm:text-sm md:h-11 md:min-w-[164px] md:px-6"
+            className="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#1877F2] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1565d8] sm:h-9 sm:gap-2 sm:px-4 sm:text-sm md:h-10 md:min-w-[154px] md:px-5"
             title="Facebook 粉專"
           >
             <svg className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -84,7 +85,7 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
             href={igHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#E4405F] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] sm:h-10 sm:gap-2.5 sm:px-4 sm:text-sm md:h-11 md:min-w-[164px] md:px-6"
+            className="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#E4405F] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] sm:h-9 sm:gap-2 sm:px-4 sm:text-sm md:h-10 md:min-w-[154px] md:px-5"
             title="Instagram"
           >
             <svg className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -96,11 +97,14 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
           {devModeSlot}
         </div>
       </div>
-      <div className="border-t border-white/5 px-3 pb-2 pt-1 lg:hidden">
+    </div>
+    <div className="fixed inset-x-0 top-[50px] z-[59] border-b border-white/5 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px] lg:hidden">
+      <div className="px-3 pb-2 pt-1">
         <p className="overflow-x-auto whitespace-nowrap text-center text-[11px] font-medium text-white/68 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {lineHelperText}
         </p>
       </div>
     </div>
+    </>
   );
 }
