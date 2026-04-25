@@ -163,7 +163,7 @@ function RouteRow({
   return (
     <section
       id={section.id}
-      className="scroll-mt-20 rounded-[1.75rem] bg-[rgba(20,20,30,0.38)] px-0.5 py-3 shadow-lg shadow-black/10 backdrop-blur-[12px] md:px-1 md:py-4 lg:px-1.5 lg:py-5"
+      className="scroll-mt-20 rounded-[1.75rem] bg-[rgba(20,20,30,0.65)] px-0.5 py-3 shadow-lg shadow-black/10 backdrop-blur-[6px] md:px-1 md:py-4 lg:px-1.5 lg:py-5"
     >
       <div className="mb-2 flex items-start justify-between gap-2 px-2 sm:mb-3 sm:gap-3 sm:px-0">
         <div>
@@ -348,15 +348,15 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] pt-[90px] text-white md:pt-[72px]">
       <StickyHeader
         logoUrl={siteLogoUrl}
         logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} /> : null}
         devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
       />
 
-      <section id="routes" className="w-full px-0 py-2 md:py-3">
-        <div className="sticky top-[56px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[64px] md:px-3">
+      <section id="routes" className="w-full px-0 pb-2 pt-0 md:pb-3 md:pt-0">
+        <div className="sticky top-[90px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[72px] md:px-3">
           <div className="pointer-events-none absolute left-0 top-0 z-10 flex h-full items-center bg-gradient-to-r from-[rgba(20,20,30,0.8)] to-transparent px-2 md:hidden">
             <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -406,6 +406,7 @@ export default function HomePage() {
           className="mt-8"
           title="找到心儀的旅遊目的地了嗎？"
           description="立即聯繫旅遊規劃師 蓋瑞 GARY，為您量身打造專屬行程"
+          logoUrl={siteLogoUrl}
         />
       </section>
     </main>
