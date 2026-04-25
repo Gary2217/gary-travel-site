@@ -15,8 +15,7 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
   const router = useRouter();
   const lineHelperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY";
 
-  return (
-    <>
+return (
     <div className="fixed inset-x-0 top-0 z-[60] border-b border-white/10 bg-[rgba(20,20,30,0.82)] backdrop-blur-[6px]">
       <div className="mx-auto grid max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-1.5 md:gap-4 md:px-6 md:py-2">
         {/* 左側：返回 + Logo + 品牌 */}
@@ -97,14 +96,12 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
           {devModeSlot}
         </div>
       </div>
-    </div>
-    <div className="fixed inset-x-0 top-[50px] z-[59] border-b border-white/5 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px] lg:hidden">
-      <div className="px-3 pb-2 pt-1">
+      {/* 手機版說明文字 - 合併到同一層 */}
+      <div className="border-b border-white/5 bg-[rgba(20,20,30,0.82)] px-3 pb-2 pt-1 lg:hidden">
         <p className="overflow-x-auto whitespace-nowrap text-center text-[11px] font-medium text-white/68 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {lineHelperText}
         </p>
       </div>
     </div>
-    </>
   );
 }

@@ -34,7 +34,7 @@ export default function SocialCta({
           <img
             src={logoUrl || "/travel-logo.svg"}
             alt="旅行沒有終點 LOGO 背景"
-            className="absolute inset-x-1/2 top-0 z-0 block h-[240px] w-[240px] -translate-x-1/2 object-contain opacity-[0.16] md:hidden"
+            className="absolute inset-x-1/2 top-1/2 z-0 block h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.16] md:hidden"
           />
           <div className="relative z-10">
           <h3 className="mb-2 text-lg font-bold text-white md:text-2xl">{title}</h3>

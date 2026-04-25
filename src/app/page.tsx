@@ -163,7 +163,7 @@ function RouteRow({
   return (
     <section
       id={section.id}
-      className="scroll-mt-20 rounded-[1.75rem] bg-[rgba(20,20,30,0.65)] px-0.5 py-3 shadow-lg shadow-black/10 backdrop-blur-[6px] md:px-1 md:py-4 lg:px-1.5 lg:py-5"
+      className="scroll-mt-[130px] rounded-[1.75rem] bg-[rgba(20,20,30,0.65)] px-0.5 py-3 shadow-lg shadow-black/10 backdrop-blur-[6px] md:scroll-mt-[142px] md:px-1 md:py-4 lg:scroll-mt-[118px] lg:px-1.5 lg:py-5"
     >
       <div className="mb-2 flex items-start justify-between gap-2 px-2 sm:mb-3 sm:gap-3 sm:px-0">
         <div>
@@ -348,7 +348,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] pt-[90px] text-white md:pt-[72px]">
+    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] pt-[86px] text-white md:pt-[98px] lg:pt-[74px]">
       <StickyHeader
         logoUrl={siteLogoUrl}
         logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} /> : null}
@@ -356,7 +356,7 @@ export default function HomePage() {
       />
 
       <section id="routes" className="w-full px-0 pb-2 pt-0 md:pb-3 md:pt-0">
-        <div className="sticky top-[90px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[72px] md:px-3">
+        <div className="sticky top-[84px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[96px] md:px-3 lg:top-[72px]">
           <div className="pointer-events-none absolute left-0 top-0 z-10 flex h-full items-center bg-gradient-to-r from-[rgba(20,20,30,0.8)] to-transparent px-2 md:hidden">
             <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
