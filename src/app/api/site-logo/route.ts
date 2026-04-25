@@ -33,6 +33,17 @@ export async function GET() {
       return NextResponse.json({ url: '/travel-logo.svg' });
     }
 
+    const stalePaths = files
+      .filter((file) => file.name && file.name !== latestFile.name)
+      .map((file) => `${LOGO_DIR}/${file.name}`);
+
+    if (stalePaths.length > 0) {
+      const { error: removeError } = await supabase.storage.from('images').remove(stalePaths);
+      if (removeError) {
+        console.error('Failed to remove old site logos:', removeError.message);
+      }
+    }
+
     return NextResponse.json({
       url: buildLogoPublicUrl(`${LOGO_DIR}/${latestFile.name}`, latestFile.updated_at || Date.now().toString()),
     });

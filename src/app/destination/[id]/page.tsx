@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getDestination, getDestinationTrips, type Destination, type Trip } from "@/lib/supabase";
+import { getDestination, getDestinationTrips, getSiteLogo, type Destination, type Trip } from "@/lib/supabase";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
@@ -17,6 +17,7 @@ export default function DestinationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
+  const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
 
   useEffect(() => {
     async function loadData() {
@@ -35,6 +36,19 @@ export default function DestinationPage() {
     }
     loadData();
   }, [destinationId]);
+
+  useEffect(() => {
+    async function loadSiteLogo() {
+      try {
+        const url = await getSiteLogo();
+        setSiteLogoUrl(url);
+      } catch {
+        setSiteLogoUrl('/travel-logo.svg');
+      }
+    }
+
+    loadSiteLogo();
+  }, []);
 
   const handleTripImageUpdate = (tripId: string, newImageUrl: string) => {
     setTrips(prev =>
@@ -55,7 +69,7 @@ export default function DestinationPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton />
+        <StickyHeader showBackButton logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
@@ -69,7 +83,7 @@ export default function DestinationPage() {
   if (error || !destination) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton />
+        <StickyHeader showBackButton logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
             <p className="text-lg text-red-400">{error || "找不到此目的地"}</p>
@@ -87,7 +101,7 @@ export default function DestinationPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] pt-[86px] text-white md:pt-[98px] lg:pt-[74px]">
-      <StickyHeader showBackButton devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
+      <StickyHeader showBackButton logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
       <div className="relative h-40 overflow-hidden sm:h-48 md:h-64">
@@ -157,6 +171,7 @@ export default function DestinationPage() {
           className="mt-10"
           title="找不到想要的行程？"
           description={`聯繫旅遊規劃師蓋瑞 GARY，為您客製專屬的 ${destination.title} 行程`}
+          logoUrl={siteLogoUrl}
         />
       </section>
     </main>
