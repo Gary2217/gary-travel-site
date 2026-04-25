@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import ImageEditor from "@/components/ImageEditor";
-import { uploadTripImage } from "@/lib/supabase";
+import { uploadTripImage, uploadTripDocument } from "@/lib/supabase";
 
 interface TripCardProps {
   id: string;
   title: string;
   duration: string;
   cover_image_url?: string;
+  document_url?: string;
   isDevMode?: boolean;
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
+  onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
 }
 
 export default function TripCard({
@@ -18,13 +20,24 @@ export default function TripCard({
   title,
   duration,
   cover_image_url,
+  document_url,
   isDevMode = false,
   onImageUpdate,
+  onDocumentUpdate,
 }: TripCardProps) {
+  const handleCoverClick = () => {
+    if (!isDevMode && document_url) {
+      window.open(document_url, '_blank');
+    }
+  };
+
   return (
     <div className="group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[1.5rem]">
       {/* 封面圖 */}
-      <div className="relative h-28 overflow-hidden sm:h-36 md:h-44">
+      <div
+        className={`relative h-28 overflow-hidden sm:h-36 md:h-44${!isDevMode && document_url ? ' cursor-pointer' : ''}`}
+        onClick={handleCoverClick}
+      >
         {cover_image_url ? (
           <div
             className="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
@@ -44,6 +57,15 @@ export default function TripCard({
           {duration}
         </div>
 
+        {/* 有檔案時顯示小圖示 */}
+        {!isDevMode && document_url && (
+          <div className="absolute left-2 top-2 rounded-full bg-emerald-500/90 p-1 backdrop-blur-sm" title="點擊查看行程表">
+            <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+        )}
+
         {/* Dev mode 圖片編輯 */}
         {isDevMode && onImageUpdate && (
           <ImageEditor
@@ -52,6 +74,9 @@ export default function TripCard({
             title={title}
             onUpdate={(newUrl) => onImageUpdate(id, newUrl)}
             uploadFn={uploadTripImage}
+            documentUrl={document_url}
+            onDocumentUpdate={onDocumentUpdate ? (url) => onDocumentUpdate(id, url) : undefined}
+            documentUploadFn={uploadTripDocument}
           />
         )}
       </div>

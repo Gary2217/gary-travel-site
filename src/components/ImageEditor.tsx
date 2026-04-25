@@ -11,14 +11,20 @@ interface ImageEditorProps {
   onUpdate: (newImageUrl: string) => void;
   onOpenChange?: (open: boolean) => void;
   uploadFn?: (entityId: string, file: File) => Promise<string>;
+  documentUrl?: string;
+  onDocumentUpdate?: (url: string) => void;
+  documentUploadFn?: (entityId: string, file: File) => Promise<string>;
 }
 
-export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
+  const [selectedDocFileName, setSelectedDocFileName] = useState("");
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (!selectedFile) {
@@ -238,6 +244,104 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                   <p className="mt-2 text-sm text-sky-300">圖片儲存中，請稍候...</p>
                 )}
               </div>
+
+              {/* 行程檔案上傳區塊 */}
+              {documentUploadFn && onDocumentUpdate && (
+                <div className="border-t border-white/10 pt-4">
+                  <label className="mb-2 block text-sm font-medium text-white">
+                    上傳行程檔案
+                  </label>
+
+                  {documentUrl && (
+                    <div className="mb-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                      <svg className="h-5 w-5 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <a
+                        href={documentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="min-w-0 flex-1 truncate text-sm text-sky-300 underline hover:text-sky-200"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {documentUrl.split('/').pop() || '查看檔案'}
+                      </a>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,image/*"
+                    onChange={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const file = e.target.files?.[0];
+                      if (!file) {
+                        setSelectedDocFile(null);
+                        setSelectedDocFileName("");
+                        return;
+                      }
+                      if (file.size > 10 * 1024 * 1024) {
+                        alert("檔案不能超過 10MB");
+                        e.target.value = "";
+                        return;
+                      }
+                      setSelectedDocFile(file);
+                      setSelectedDocFileName(file.name);
+                    }}
+                    onClick={stopMouseEvent}
+                    onMouseDown={stopMouseEvent}
+                    onMouseUp={stopMouseEvent}
+                    disabled={uploadingDoc}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white file:mr-4 file:rounded-full file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50"
+                  />
+                  {selectedDocFileName && (
+                    <p className="mt-2 text-sm text-white/70">已選擇：{selectedDocFileName}</p>
+                  )}
+                  <p className="mt-2 text-xs text-white/50">
+                    支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP，大小限制 10MB。
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedDocFile || !documentUploadFn) return;
+                        setUploadingDoc(true);
+                        try {
+                          const url = await documentUploadFn(entityId, selectedDocFile);
+                          onDocumentUpdate(url);
+                          setSelectedDocFile(null);
+                          setSelectedDocFileName("");
+                          alert("行程檔案已儲存！");
+                        } catch (error) {
+                          const msg = error instanceof Error ? error.message : "上傳失敗";
+                          alert(`上傳失敗：${msg}`);
+                        } finally {
+                          setUploadingDoc(false);
+                        }
+                      }}
+                      disabled={!selectedDocFile || uploadingDoc}
+                      className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {uploadingDoc ? "上傳中..." : "儲存檔案"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDocFile(null);
+                        setSelectedDocFileName("");
+                      }}
+                      disabled={!selectedDocFile || uploadingDoc}
+                      className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      清除選擇
+                    </button>
+                  </div>
+                  {uploadingDoc && (
+                    <p className="mt-2 text-sm text-emerald-300">檔案上傳中，請稍候...</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>,

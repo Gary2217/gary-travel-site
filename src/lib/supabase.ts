@@ -39,6 +39,7 @@ export type Trip = {
   duration: string;
   price_range: string;
   cover_image_url: string;
+  document_url?: string;
   highlights: string[];
   is_active: boolean;
   display_order: number;
@@ -179,6 +180,26 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
   formData.append('trip_id', tripId);
 
   const res = await fetch('/api/upload-trip-image', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '上傳失敗');
+  }
+
+  const data = await res.json();
+  return data.url;
+}
+
+// 上傳行程檔案（PDF、DOC 等）
+export async function uploadTripDocument(tripId: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('trip_id', tripId);
+
+  const res = await fetch('/api/upload-trip-document', {
     method: 'POST',
     body: formData,
   });
