@@ -85,16 +85,16 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
             <div className="space-y-4">
               <div>
                 <p className="mb-2 text-sm text-white/70">目前 LOGO：</p>
-                <div className="flex h-24 items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                  <img src={currentLogoUrl} alt="目前 LOGO" className="h-16 w-16 object-contain" />
+                <div className="flex h-36 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+                  <img src={currentLogoUrl} alt="目前 LOGO" className="h-28 w-28 object-contain" />
                 </div>
               </div>
 
               <div>
                 <p className="mb-2 text-sm text-white/70">預覽：</p>
-                <div className="flex h-24 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+                <div className="flex h-36 items-center justify-center rounded-lg border border-white/10 bg-white/5">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="LOGO 預覽" className="h-16 w-16 object-contain" />
+                    <img src={previewUrl} alt="LOGO 預覽" className="h-28 w-28 object-contain" />
                   ) : (
                     <span className="text-sm text-white/50">選擇新圖片後顯示</span>
                   )}

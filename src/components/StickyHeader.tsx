@@ -32,7 +32,7 @@ export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/
               </svg>
             </button>
           )}
-          <img src={logoUrl} alt="旅行沒有終點 LOGO" className="h-10 w-10 shrink-0 object-contain md:h-11 md:w-11" />
+          <img src={logoUrl} alt="旅行沒有終點 LOGO" className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
           <p className="-ml-1 text-xs font-semibold tracking-wide text-white sm:text-sm md:text-[15px]">
             旅行沒有終點
           </p>
