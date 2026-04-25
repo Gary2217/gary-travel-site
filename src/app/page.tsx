@@ -408,15 +408,12 @@ export default function HomePage() {
               </button>
             ))}
 
-            <a
-              href={flightHref}
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href="/flights"
               className="cursor-pointer rounded-full border border-white/10 bg-[rgba(255,255,255,0.08)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[rgba(255,255,255,0.14)] hover:shadow"
-              title="機票諮詢"
             >
               機票
-            </a>
+            </Link>
           </div>
         </div>
 
