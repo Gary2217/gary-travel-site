@@ -79,39 +79,38 @@ export default function DestinationPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <DevModeToggle onToggle={setIsDevMode} />
-      <StickyHeader showBackButton />
+      <StickyHeader showBackButton devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
-      <div className="relative h-48 overflow-hidden md:h-64">
+      <div className="relative h-40 overflow-hidden sm:h-48 md:h-64">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${destination.image_url})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-4 md:p-8">
+        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
           <div className="mx-auto max-w-[1400px]">
             {destination.regions && (
-              <span className="mb-2 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+              <span className="mb-1.5 inline-block rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:mb-2 sm:px-3 sm:py-1 sm:text-xs">
                 {destination.regions.category_label}
               </span>
             )}
-            <h1 className="text-3xl font-bold text-white md:text-4xl">
+            <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">
               {destination.title}
             </h1>
             {destination.subtitle && (
-              <p className="mt-1 text-base text-white/80 md:text-lg">{destination.subtitle}</p>
+              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{destination.subtitle}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* 行程列表 */}
-      <section className="mx-auto max-w-[1400px] px-4 py-6 md:px-8 md:py-10">
-        <h2 className="mb-6 text-xl font-bold text-white md:text-2xl">
+      <section className="mx-auto max-w-[1400px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
+        <h2 className="mb-4 text-lg font-bold text-white sm:mb-6 sm:text-xl md:text-2xl">
           可選行程（{trips.length}）
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
           {trips.map((trip) => (
             <TripCard
               key={trip.id}
@@ -127,16 +126,16 @@ export default function DestinationPage() {
           {Array.from({ length: Math.max(0, 10 - trips.length) }).map((_, i) => (
             <div
               key={`placeholder-${i}`}
-              className="overflow-hidden rounded-[1.5rem] border border-dashed border-white/10 bg-[rgba(20,20,30,0.3)]"
+              className="overflow-hidden rounded-[1.25rem] border border-dashed border-white/10 bg-[rgba(20,20,30,0.3)] sm:rounded-[1.5rem]"
             >
-              <div className="flex h-36 items-center justify-center sm:h-40 md:h-44">
-                <svg className="h-10 w-10 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex h-28 items-center justify-center sm:h-36 md:h-44">
+                <svg className="h-8 w-8 text-white/10 sm:h-10 sm:w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
                 </svg>
               </div>
-              <div className="p-3 sm:p-4">
-                <p className="min-h-[2.5rem] text-sm text-white/30">敬請期待</p>
-                <div className="mt-3 flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/30 sm:text-sm">
+              <div className="p-2 sm:p-3 md:p-4">
+                <p className="min-h-[2rem] text-xs text-white/30 sm:min-h-[2.5rem] sm:text-sm">敬請期待</p>
+                <div className="mt-2 flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/30 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
                   即將上架
                 </div>
               </div>

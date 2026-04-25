@@ -22,9 +22,9 @@ export default function TripCard({
   onImageUpdate,
 }: TripCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[1.5rem]">
       {/* 封面圖 */}
-      <div className="relative h-36 overflow-hidden sm:h-40 md:h-44">
+      <div className="relative h-28 overflow-hidden sm:h-36 md:h-44">
         {cover_image_url ? (
           <div
             className="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
@@ -57,16 +57,16 @@ export default function TripCard({
       </div>
 
       {/* 行程名稱 + 按鈕 */}
-      <div className="p-3 sm:p-4">
-        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold leading-tight text-white sm:text-base">
+      <div className="p-2 sm:p-3 md:p-4">
+        <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
           {title}
         </h3>
         <Link
           href={`/trip/${id}`}
-          className="mt-3 flex w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow transition hover:bg-sky-500 sm:text-sm"
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm"
         >
           點我看行程
-          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
