@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -25,17 +25,6 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
   } catch {
     return null;
   }
-}
-
-async function isStorageObjectReadable(supabase: SupabaseClient, publicUrl?: string | null) {
-  const storagePath = getStoragePathFromPublicUrl(publicUrl || '');
-
-  if (!storagePath) {
-    return false;
-  }
-
-  const { error } = await supabase.storage.from('images').download(storagePath);
-  return !error;
 }
 
 // POST: 建立 signed upload URL（檔案不經過 Vercel）
@@ -178,9 +167,7 @@ export async function PUT(request: NextRequest) {
       await supabase.storage.from('images').remove([oldStoragePath]);
     }
 
-    const documentIsReadable = await isStorageObjectReadable(supabase, url);
-
-    return NextResponse.json({ url, document_is_available: documentIsReadable, trip: updatedTrip });
+    return NextResponse.json({ url, document_is_available: true, trip: updatedTrip });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
