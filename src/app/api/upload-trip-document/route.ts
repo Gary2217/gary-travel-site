@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -27,7 +27,7 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
   }
 }
 
-async function isStorageObjectReadable(supabase: ReturnType<typeof createClient>, publicUrl?: string | null) {
+async function isStorageObjectReadable(supabase: SupabaseClient, publicUrl?: string | null) {
   const storagePath = getStoragePathFromPublicUrl(publicUrl || '');
 
   if (!storagePath) {
