@@ -254,6 +254,50 @@ export async function deleteTripDocument(tripId: string): Promise<void> {
   }
 }
 
+// 更新行程欄位（天數、標題等）
+export async function updateTrip(tripId: string, fields: Record<string, any>): Promise<Trip> {
+  const res = await fetch(`/api/trips/${tripId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '更新失敗');
+  }
+
+  return res.json();
+}
+
+// 新增行程
+export async function createTrip(destinationId: string, title?: string): Promise<Trip> {
+  const res = await fetch('/api/trips', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destination_id: destinationId, title }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '新增失敗');
+  }
+
+  return res.json();
+}
+
+// 刪除行程
+export async function deleteTrip(tripId: string): Promise<void> {
+  const res = await fetch(`/api/trips/${tripId}`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '刪除失敗');
+  }
+}
+
 export async function getSiteLogo(): Promise<string> {
   const res = await fetch('/api/site-logo', { cache: 'no-store' });
   if (!res.ok) {

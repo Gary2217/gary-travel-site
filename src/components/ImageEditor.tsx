@@ -2,7 +2,7 @@
 
 import { ChangeEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { uploadImage, deleteTripDocument } from "@/lib/supabase";
+import { uploadImage, deleteTripDocument, updateTrip } from "@/lib/supabase";
 
 interface ImageEditorProps {
   entityId: string;
@@ -15,9 +15,11 @@ interface ImageEditorProps {
   onDocumentUpdate?: (url: string) => void;
   documentUploadFn?: (entityId: string, file: File) => Promise<{ url: string; document_is_available: boolean }>;
   onDocumentAvailabilityUpdate?: (available: boolean) => void;
+  duration?: string;
+  onDurationUpdate?: (newDuration: string) => void;
 }
 
-export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -27,6 +29,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
   const [selectedDocFileName, setSelectedDocFileName] = useState("");
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState(false);
+  const [durationValue, setDurationValue] = useState(duration || "");
+  const [savingDuration, setSavingDuration] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (!selectedFile) {
@@ -247,6 +251,47 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                 )}
               </div>
 
+              {/* 天數編輯區塊 */}
+              {onDurationUpdate && (
+                <div className="border-t border-white/10 pt-2.5">
+                  <label className="mb-2 block text-sm font-medium text-white">
+                    行程天數
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={durationValue}
+                      onChange={(e) => setDurationValue(e.target.value)}
+                      onClick={stopMouseEvent}
+                      onMouseDown={stopMouseEvent}
+                      placeholder="例：5天4夜"
+                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-sky-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={savingDuration || durationValue === duration}
+                      onClick={async () => {
+                        if (!durationValue.trim()) return;
+                        setSavingDuration(true);
+                        try {
+                          await updateTrip(entityId, { duration: durationValue.trim() });
+                          onDurationUpdate(durationValue.trim());
+                          alert("天數已更新！");
+                        } catch (err) {
+                          const msg = err instanceof Error ? err.message : "更新失敗";
+                          alert(`更新失敗：${msg}`);
+                        } finally {
+                          setSavingDuration(false);
+                        }
+                      }}
+                      className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingDuration ? "儲存中..." : "儲存"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 行程檔案上傳區塊 */}
               {documentUploadFn && onDocumentUpdate && (
                 <div className="border-t border-white/10 pt-2.5">
@@ -279,6 +324,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                             await deleteTripDocument(entityId);
                             onDocumentUpdate?.("");
                             onDocumentAvailabilityUpdate?.(false);
+                            setIsOpen(false);
                             alert("行程檔案已刪除");
                           } catch (err) {
                             const msg = err instanceof Error ? err.message : "刪除失敗";
@@ -341,6 +387,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                            onDocumentAvailabilityUpdate?.(result.document_is_available);
                            setSelectedDocFile(null);
                            setSelectedDocFileName("");
+                           setIsOpen(false);
                            alert("行程檔案已儲存！");
                         } catch (error) {
                           const msg = error instanceof Error ? error.message : "上傳失敗";

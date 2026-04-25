@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getDestination, getDestinationTrips, getSiteLogo, type Destination, type Trip } from "@/lib/supabase";
+import { getDestination, getDestinationTrips, getSiteLogo, createTrip, deleteTrip, type Destination, type Trip } from "@/lib/supabase";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
@@ -72,6 +72,34 @@ export default function DestinationPage() {
         trip.id === tripId ? { ...trip, document_is_available: available } : trip
       )
     );
+  };
+
+  const handleTripDurationUpdate = (tripId: string, newDuration: string) => {
+    setTrips(prev =>
+      prev.map(trip =>
+        trip.id === tripId ? { ...trip, duration: newDuration } : trip
+      )
+    );
+  };
+
+  const handleAddTrip = async () => {
+    try {
+      const newTrip = await createTrip(destinationId);
+      setTrips(prev => [...prev, { ...newTrip, document_is_available: false }]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "新增失敗";
+      alert(`新增行程失敗：${msg}`);
+    }
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    try {
+      await deleteTrip(tripId);
+      setTrips(prev => prev.filter(trip => trip.id !== tripId));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "刪除失敗";
+      alert(`刪除行程失敗：${msg}`);
+    }
   };
 
   if (loading) {
@@ -154,10 +182,32 @@ export default function DestinationPage() {
               onImageUpdate={handleTripImageUpdate}
               onDocumentUpdate={handleTripDocumentUpdate}
               onDocumentAvailabilityUpdate={handleTripDocumentAvailabilityUpdate}
+              onDurationUpdate={handleTripDurationUpdate}
+              onDelete={handleDeleteTrip}
             />
           ))}
+          {/* Dev mode: 新增行程按鈕 */}
+          {isDevMode && (
+            <button
+              key="add-trip"
+              onClick={handleAddTrip}
+              className="group/add flex flex-col overflow-hidden rounded-[1.25rem] border-2 border-dashed border-sky-500/30 bg-[rgba(20,20,30,0.3)] transition hover:border-sky-400/50 hover:bg-sky-500/10 sm:rounded-[1.5rem]"
+            >
+              <div className="flex h-28 items-center justify-center sm:h-36 md:h-44">
+                <svg className="h-10 w-10 text-sky-500/50 transition group-hover/add:text-sky-400/70 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div className="p-2 sm:p-3 md:p-4">
+                <p className="min-h-[2rem] text-xs font-semibold text-sky-400/70 sm:min-h-[2.5rem] sm:text-sm">新增行程</p>
+                <div className="mt-2 flex w-full items-center justify-center rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-[11px] font-semibold text-sky-400/80 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
+                  點擊新增
+                </div>
+              </div>
+            </button>
+          )}
           {/* 空白行程框，補滿至少 10 個 */}
-          {Array.from({ length: Math.max(0, 10 - trips.length) }).map((_, i) => (
+          {!isDevMode && Array.from({ length: Math.max(0, 10 - trips.length) }).map((_, i) => (
             <div
               key={`placeholder-${i}`}
               className="overflow-hidden rounded-[1.25rem] border border-dashed border-white/10 bg-[rgba(20,20,30,0.3)] sm:rounded-[1.5rem]"

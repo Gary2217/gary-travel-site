@@ -17,6 +17,8 @@ interface TripCardProps {
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
   onDocumentAvailabilityUpdate?: (tripId: string, available: boolean) => void;
+  onDurationUpdate?: (tripId: string, newDuration: string) => void;
+  onDelete?: (tripId: string) => void;
 }
 
 export default function TripCard({
@@ -30,6 +32,8 @@ export default function TripCard({
   onImageUpdate,
   onDocumentUpdate,
   onDocumentAvailabilityUpdate,
+  onDurationUpdate,
+  onDelete,
 }: TripCardProps) {
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [showShareGate, setShowShareGate] = useState(false);
@@ -132,6 +136,8 @@ export default function TripCard({
               onDocumentUpdate={onDocumentUpdate ? (url) => onDocumentUpdate(id, url) : undefined}
               onDocumentAvailabilityUpdate={onDocumentAvailabilityUpdate ? (available) => onDocumentAvailabilityUpdate(id, available) : undefined}
               documentUploadFn={uploadTripDocument}
+              duration={duration}
+              onDurationUpdate={onDurationUpdate ? (newDur) => onDurationUpdate(id, newDur) : undefined}
             />
           )}
         </div>
@@ -158,6 +164,24 @@ export default function TripCard({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+
+          {/* Dev mode 刪除行程 */}
+          {isDevMode && onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`確定要刪除「${title}」嗎？此操作無法復原。`)) {
+                  onDelete(id);
+                }
+              }}
+              className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-full border border-red-500/30 bg-red-600/20 px-3 py-1.5 text-[11px] font-semibold text-red-300 shadow transition hover:bg-red-600/30 active:scale-95 sm:mt-2 sm:px-4 sm:py-2 sm:text-xs md:text-sm"
+            >
+              <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              刪除行程
+            </button>
+          )}
 
           {/* 下載 PDF 行程檔 */}
           {!isDevMode && document_url && document_is_available && (
