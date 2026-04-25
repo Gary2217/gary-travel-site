@@ -143,12 +143,12 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
           }}
         >
           <div
-            className="w-full max-w-lg rounded-xl bg-[rgba(20,20,30,0.98)] p-4 shadow-2xl backdrop-blur-xl sm:p-5"
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl bg-[rgba(20,20,30,0.98)] p-3 shadow-2xl backdrop-blur-xl sm:p-4"
             onClick={handleModalClick}
             onMouseDown={stopMouseEvent}
             onMouseUp={stopMouseEvent}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-bold text-white sm:text-lg">編輯圖片 - {title}</h3>
               <button
                 onClick={(e) => {
@@ -165,10 +165,10 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <p className="mb-2 text-sm text-white/70">當前圖片：</p>
-                <div className="h-32 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-40">
+                <p className="mb-1.5 text-sm text-white/70">當前圖片：</p>
+                <div className="h-20 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-28">
                   {currentImageUrl ? (
                     <img
                       src={currentImageUrl}
@@ -184,8 +184,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
               </div>
 
               <div>
-                <p className="mb-2 text-sm text-white/70">預覽圖片：</p>
-                <div className="h-32 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-40">
+                <p className="mb-1.5 text-sm text-white/70">預覽圖片：</p>
+                <div className="h-20 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-28">
                   {previewUrl ? (
                     <img
                       src={previewUrl}
@@ -217,10 +217,10 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                 {selectedFileName && (
                   <p className="mt-2 text-sm text-white/70">已選擇：{selectedFileName}</p>
                 )}
-                <p className="mt-2 text-xs text-white/50">
-                  請先選檔確認預覽，再按儲存同步更新資料庫。支援 JPG、PNG、WebP，大小限制 5MB。
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
+                  <p className="mt-1.5 text-xs text-white/50">
+                    支援 JPG、PNG、WebP，大小限制 5MB。
+                  </p>
+                <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-[rgba(20,20,30,0.98)] pb-1 pt-1.5">
                   <button
                     type="button"
                     onClick={handleSave}
@@ -247,7 +247,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
               {/* 行程檔案上傳區塊 */}
               {documentUploadFn && onDocumentUpdate && (
-                <div className="border-t border-white/10 pt-4">
+                <div className="border-t border-white/10 pt-2.5">
                   <label className="mb-2 block text-sm font-medium text-white">
                     上傳行程檔案
                   </label>
@@ -298,10 +298,10 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                   {selectedDocFileName && (
                     <p className="mt-2 text-sm text-white/70">已選擇：{selectedDocFileName}</p>
                   )}
-                  <p className="mt-2 text-xs text-white/50">
-                    支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP，大小限制 50MB。建議使用 PDF 格式，所有手機都能直接開啟。
+                  <p className="mt-1.5 text-xs text-white/50">
+                    支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP，大小限制 50MB。
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-3">
+                  <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-[rgba(20,20,30,0.98)] pb-1 pt-1.5">
                     <button
                       type="button"
                       onClick={async () => {
