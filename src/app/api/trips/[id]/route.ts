@@ -16,7 +16,7 @@ export async function GET(
     const { data, error } = await supabase
       .from('trips')
       .select(`
-        *,
+        id, destination_id, title, subtitle, duration, price_range, cover_image_url, document_url, highlights, is_active, display_order, created_at, updated_at,
         destinations (*),
         trip_days (*)
       `)
@@ -31,9 +31,9 @@ export async function GET(
       data.trip_days.sort((a: any, b: any) => a.day_number - b.day_number);
     }
 
-    data.document_is_available = Boolean(data.document_url);
+    const responseData = { ...data, document_is_available: Boolean(data.document_url) };
 
-    return NextResponse.json(data, {
+    return NextResponse.json(responseData, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch {

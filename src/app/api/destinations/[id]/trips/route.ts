@@ -15,7 +15,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('trips')
-      .select('*')
+      .select('id, destination_id, title, subtitle, duration, price_range, cover_image_url, document_url, highlights, is_active, display_order, created_at, updated_at')
       .eq('destination_id', params.id)
       .eq('is_active', true)
       .order('display_order', { ascending: true });
