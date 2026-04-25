@@ -104,6 +104,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Destination image update did not persist.' }, { status: 500 });
     }
 
+    const { data: confirmedDestination, error: confirmError } = await supabase
+      .from('destinations')
+      .select('id,image_url,updated_at')
+      .eq('id', destinationId)
+      .single();
+
+    if (confirmError) {
+      return NextResponse.json({ error: confirmError.message }, { status: 500 });
+    }
+
+    if (!confirmedDestination || confirmedDestination.image_url !== publicUrl) {
+      return NextResponse.json({ error: 'Destination image read-back verification failed.' }, { status: 500 });
+    }
+
     const oldStoragePath = getStoragePathFromPublicUrl(existingDestination?.image_url || '');
 
     if (oldStoragePath && oldStoragePath !== filePath) {
@@ -118,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       url: publicUrl,
-      destination: updatedDestination,
+      destination: confirmedDestination,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

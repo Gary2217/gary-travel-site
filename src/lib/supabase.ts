@@ -89,7 +89,9 @@ export async function getRegionsWithDestinations() {
 
 // 取得單一目的地資訊
 export async function getDestination(destinationId: string) {
-  const res = await fetch(`/api/destinations/${destinationId}`);
+  const res = await fetch(`/api/destinations/${destinationId}`, {
+    cache: 'no-store',
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch destination: ${res.status}`);
   }
@@ -98,7 +100,9 @@ export async function getDestination(destinationId: string) {
 
 // 取得目的地的所有行程
 export async function getDestinationTrips(destinationId: string) {
-  const res = await fetch(`/api/destinations/${destinationId}/trips`);
+  const res = await fetch(`/api/destinations/${destinationId}/trips`, {
+    cache: 'no-store',
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch trips: ${res.status}`);
   }
@@ -107,7 +111,9 @@ export async function getDestinationTrips(destinationId: string) {
 
 // 取得單一行程（含每日明細）
 export async function getTripWithDays(tripId: string) {
-  const res = await fetch(`/api/trips/${tripId}`);
+  const res = await fetch(`/api/trips/${tripId}`, {
+    cache: 'no-store',
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch trip: ${res.status}`);
   }

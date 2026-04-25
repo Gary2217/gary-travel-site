@@ -103,6 +103,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trip image update did not persist.' }, { status: 500 });
     }
 
+    const { data: confirmedTrip, error: confirmError } = await supabase
+      .from('trips')
+      .select('id,cover_image_url,updated_at')
+      .eq('id', tripId)
+      .single();
+
+    if (confirmError) {
+      return NextResponse.json({ error: confirmError.message }, { status: 500 });
+    }
+
+    if (!confirmedTrip || confirmedTrip.cover_image_url !== publicUrl) {
+      return NextResponse.json({ error: 'Trip image read-back verification failed.' }, { status: 500 });
+    }
+
     const oldStoragePath = getStoragePathFromPublicUrl(existingTrip?.cover_image_url || '');
 
     if (oldStoragePath && oldStoragePath !== filePath) {
@@ -117,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       url: publicUrl,
-      trip: updatedTrip,
+      trip: confirmedTrip,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
