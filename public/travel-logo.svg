@@ -1,0 +1,57 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clipCircle">
+      <circle cx="128" cy="128" r="104" />
+    </clipPath>
+    <linearGradient id="sky" x1="128" y1="30" x2="128" y2="145" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#21D4FD"/>
+      <stop offset="0.56" stop-color="#63D5FF"/>
+      <stop offset="0.72" stop-color="#FFAF9E"/>
+      <stop offset="1" stop-color="#FF8A3D"/>
+    </linearGradient>
+    <linearGradient id="water" x1="128" y1="147" x2="128" y2="224" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#28C7F7"/>
+      <stop offset="0.4" stop-color="#137AB8"/>
+      <stop offset="1" stop-color="#0A3B75"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="43" y1="43" x2="213" y2="213" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#39D6FF"/>
+      <stop offset="1" stop-color="#1D9BF0"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="128" cy="128" r="114" fill="#091126"/>
+  <circle cx="128" cy="128" r="104" fill="#0A1226" stroke="url(#ring)" stroke-width="3"/>
+
+  <g clip-path="url(#clipCircle)">
+    <rect x="20" y="24" width="216" height="124" fill="url(#sky)"/>
+    <rect x="20" y="148" width="216" height="88" fill="url(#water)"/>
+
+    <circle cx="128" cy="152" r="30" fill="#FFEAA0"/>
+
+    <path d="M23 149H233" stroke="#1CD3FF" stroke-width="4" opacity="0.95"/>
+    <path d="M26 164C44 158 57 158 75 164C93 170 107 170 128 164C149 158 163 158 181 164C199 170 212 170 230 164" stroke="#FFB48F" stroke-width="9" stroke-linecap="round" opacity="0.95"/>
+    <path d="M30 181C50 174 67 174 89 181C106 186 116 186 128 181C140 176 151 176 168 181C190 188 207 188 226 181" stroke="#B0F3FF" stroke-width="8" stroke-linecap="round" opacity="0.96"/>
+    <path d="M48 203C65 197 78 197 94 203C111 209 124 209 142 203C159 197 172 197 190 203" stroke="#EAFBFF" stroke-width="6" stroke-linecap="round" opacity="0.95"/>
+
+    <path d="M126 82C110 82 103 98 103 113V119L48 129L44 139L103 135V150L86 159V166L124 158L128 165L132 158L170 166V159L153 150V135L212 139L208 129L153 119V113C153 98 146 82 130 82H126Z" fill="#091126"/>
+    <circle cx="75" cy="143" r="10" fill="#091126"/>
+    <circle cx="181" cy="143" r="10" fill="#091126"/>
+
+    <path d="M180 78C186 72 197 72 203 78" stroke="#0A1731" stroke-width="4" stroke-linecap="round"/>
+    <path d="M187 96C193 90 204 90 210 96" stroke="#0A1731" stroke-width="4" stroke-linecap="round"/>
+    <path d="M72 102C76 98 84 98 88 102" stroke="#0A1731" stroke-width="3" stroke-linecap="round"/>
+    <path d="M88 98C94 92 104 92 110 98" stroke="#0A1731" stroke-width="4" stroke-linecap="round"/>
+
+    <path d="M28 144C32 132 38 120 47 109C59 114 67 122 72 133C67 148 62 163 56 176C47 167 39 157 28 144Z" fill="#091126"/>
+    <path d="M57 109C45 108 38 107 30 104C39 96 49 96 57 109Z" fill="#091126"/>
+    <path d="M59 118C49 116 42 116 34 117C43 108 52 108 59 118Z" fill="#091126"/>
+
+    <path d="M228 144C224 132 218 120 209 109C197 114 189 122 184 133C189 148 194 163 200 176C209 167 217 157 228 144Z" fill="#091126"/>
+    <path d="M199 109C211 108 218 107 226 104C217 96 207 96 199 109Z" fill="#091126"/>
+    <path d="M197 118C207 116 214 116 222 117C213 108 204 108 197 118Z" fill="#091126"/>
+
+    <path d="M64 174C67 165 73 158 81 153C87 159 91 166 93 174C89 184 85 193 80 201C73 194 68 185 64 174Z" fill="#091126"/>
+    <path d="M176 174C179 165 185 158 193 153C199 159 203 166 205 174C201 184 197 193 192 201C185 194 180 185 176 174Z" fill="#091126"/>
+  </g>
+</svg>

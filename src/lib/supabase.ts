@@ -212,3 +212,31 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<st
   const data = await res.json();
   return data.url;
 }
+
+export async function getSiteLogo(): Promise<string> {
+  const res = await fetch('/api/site-logo', { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error('Failed to fetch site logo');
+  }
+
+  const data = await res.json();
+  return data.url || '/travel-logo.svg';
+}
+
+export async function uploadSiteLogo(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch('/api/site-logo', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '上傳失敗');
+  }
+
+  const data = await res.json();
+  return data.url;
+}

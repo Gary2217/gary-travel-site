@@ -1,14 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { lineHref, fbHref, igHref } from "@/lib/supabase";
 
 interface StickyHeaderProps {
   showBackButton?: boolean;
   devModeSlot?: React.ReactNode;
+  logoUrl?: string;
+  logoEditorSlot?: React.ReactNode;
 }
 
-export default function StickyHeader({ showBackButton, devModeSlot }: StickyHeaderProps) {
+export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/travel-logo.svg', logoEditorSlot }: StickyHeaderProps) {
   const router = useRouter();
   const lineHelperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY";
 
@@ -16,7 +19,8 @@ export default function StickyHeader({ showBackButton, devModeSlot }: StickyHead
     <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(20,20,30,0.72)] backdrop-blur-[12px]">
       <div className="mx-auto grid max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 md:gap-4 md:px-6">
         {/* 左側：返回 + Logo + 品牌 */}
-        <div className="flex shrink-0 items-center gap-2 justify-self-start">
+        <div className="flex items-center gap-2 justify-self-start">
+        <Link href="/" className="flex shrink-0 items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
           {showBackButton && (
             <button
               onClick={() => router.back()}
@@ -28,12 +32,12 @@ export default function StickyHeader({ showBackButton, devModeSlot }: StickyHead
               </svg>
             </button>
           )}
-          <svg className="h-7 w-7 text-sky-400 md:h-8 md:w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-          </svg>
-          <p className="pl-1.5 text-xs font-semibold text-white sm:pl-3 sm:text-sm">
+          <img src={logoUrl} alt="旅行沒有終點 LOGO" className="h-10 w-10 shrink-0 object-contain md:h-11 md:w-11" />
+          <p className="-ml-1 text-xs font-semibold tracking-wide text-white sm:text-sm md:text-[15px]">
             旅行沒有終點
           </p>
+        </Link>
+        {logoEditorSlot}
         </div>
 
         <div className="hidden min-w-0 justify-self-center lg:flex">

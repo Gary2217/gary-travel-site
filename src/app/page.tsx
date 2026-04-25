@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { getRegionsWithDestinations, trackClick } from "@/lib/supabase";
+import { getRegionsWithDestinations, getSiteLogo, trackClick } from "@/lib/supabase";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
+import LogoUploader from "@/components/LogoUploader";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import { flightHref } from "@/lib/supabase";
@@ -254,6 +255,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
+  const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
 
   useEffect(() => {
     async function loadData() {
@@ -282,6 +284,19 @@ export default function HomePage() {
     }
 
     loadData();
+  }, []);
+
+  useEffect(() => {
+    async function loadSiteLogo() {
+      try {
+        const url = await getSiteLogo();
+        setSiteLogoUrl(url);
+      } catch {
+        setSiteLogoUrl('/travel-logo.svg');
+      }
+    }
+
+    loadSiteLogo();
   }, []);
 
   const scrollToSection = (sectionId: string) => {
@@ -334,7 +349,11 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <StickyHeader devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
+      <StickyHeader
+        logoUrl={siteLogoUrl}
+        logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} /> : null}
+        devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
+      />
 
       <section id="routes" className="w-full px-0 py-2 md:py-3">
         <div className="sticky top-[56px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[64px] md:px-3">
