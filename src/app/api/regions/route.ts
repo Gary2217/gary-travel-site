@@ -4,11 +4,15 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET() {
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const { data, error } = await supabase
       .from('regions')
