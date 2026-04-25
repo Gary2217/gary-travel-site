@@ -27,6 +27,17 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
   }
 }
 
+async function isStorageObjectReadable(supabase: ReturnType<typeof createClient>, publicUrl?: string | null) {
+  const storagePath = getStoragePathFromPublicUrl(publicUrl || '');
+
+  if (!storagePath) {
+    return false;
+  }
+
+  const { error } = await supabase.storage.from('images').download(storagePath);
+  return !error;
+}
+
 // POST: 建立 signed upload URL（檔案不經過 Vercel）
 export async function POST(request: NextRequest) {
   try {
@@ -122,7 +133,9 @@ export async function PUT(request: NextRequest) {
       await supabase.storage.from('images').remove([oldStoragePath]);
     }
 
-    return NextResponse.json({ url, trip: updatedTrip });
+    const documentIsReadable = await isStorageObjectReadable(supabase, url);
+
+    return NextResponse.json({ url, document_is_available: documentIsReadable, trip: updatedTrip });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

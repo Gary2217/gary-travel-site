@@ -66,6 +66,14 @@ export default function DestinationPage() {
     );
   };
 
+  const handleTripDocumentAvailabilityUpdate = (tripId: string, available: boolean) => {
+    setTrips(prev =>
+      prev.map(trip =>
+        trip.id === tripId ? { ...trip, document_is_available: available } : trip
+      )
+    );
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
@@ -141,9 +149,11 @@ export default function DestinationPage() {
               duration={trip.duration}
               cover_image_url={trip.cover_image_url}
               document_url={trip.document_url}
+              document_is_available={trip.document_is_available}
               isDevMode={isDevMode}
               onImageUpdate={handleTripImageUpdate}
               onDocumentUpdate={handleTripDocumentUpdate}
+              onDocumentAvailabilityUpdate={handleTripDocumentAvailabilityUpdate}
             />
           ))}
           {/* 空白行程框，補滿至少 10 個 */}

@@ -12,9 +12,11 @@ interface TripCardProps {
   duration: string;
   cover_image_url?: string;
   document_url?: string;
+  document_is_available?: boolean;
   isDevMode?: boolean;
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
+  onDocumentAvailabilityUpdate?: (tripId: string, available: boolean) => void;
 }
 
 export default function TripCard({
@@ -23,9 +25,11 @@ export default function TripCard({
   duration,
   cover_image_url,
   document_url,
+  document_is_available,
   isDevMode = false,
   onImageUpdate,
   onDocumentUpdate,
+  onDocumentAvailabilityUpdate,
 }: TripCardProps) {
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [showShareGate, setShowShareGate] = useState(false);
@@ -102,11 +106,17 @@ export default function TripCard({
           </div>
 
           {/* 有檔案時顯示小圖示 */}
-          {!isDevMode && document_url && (
+          {!isDevMode && document_url && document_is_available && (
             <div className="absolute left-2 top-2 rounded-full bg-emerald-500/90 p-1 backdrop-blur-sm" title="點擊查看行程表">
               <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
+            </div>
+          )}
+
+          {isDevMode && document_url && document_is_available && (
+            <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full border border-emerald-400/30 bg-emerald-500/90 px-3 py-1 text-[11px] font-bold text-white shadow-lg backdrop-blur-sm">
+              已有行程表
             </div>
           )}
 
@@ -120,6 +130,7 @@ export default function TripCard({
               uploadFn={uploadTripImage}
               documentUrl={document_url}
               onDocumentUpdate={onDocumentUpdate ? (url) => onDocumentUpdate(id, url) : undefined}
+              onDocumentAvailabilityUpdate={onDocumentAvailabilityUpdate ? (available) => onDocumentAvailabilityUpdate(id, available) : undefined}
               documentUploadFn={uploadTripDocument}
             />
           )}
@@ -130,18 +141,26 @@ export default function TripCard({
           <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
             {title}
           </h3>
-          <Link
-            href={`/trip/${id}`}
+          <button
+            type="button"
+            onClick={() => {
+              if (!isDevMode && document_url) {
+                window.open(document_url, '_blank', 'noreferrer');
+                return;
+              }
+
+              window.location.href = `/trip/${id}`;
+            }}
             className="mt-2 flex w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm"
           >
             點我看行程
             <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </Link>
+          </button>
 
           {/* 下載 PDF 行程檔 */}
-          {!isDevMode && document_url && (
+          {!isDevMode && document_url && document_is_available && (
             <button
               onClick={() => setShowDownloadGate(true)}
               className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-600/20 px-3 py-1.5 text-[11px] font-semibold text-emerald-300 shadow transition hover:bg-emerald-600/30 active:scale-95 sm:mt-2 sm:px-4 sm:py-2 sm:text-xs md:text-sm"

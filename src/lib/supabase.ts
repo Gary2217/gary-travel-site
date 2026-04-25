@@ -40,6 +40,7 @@ export type Trip = {
   price_range: string;
   cover_image_url: string;
   document_url?: string;
+  document_is_available?: boolean;
   highlights: string[];
   is_active: boolean;
   display_order: number;
@@ -194,7 +195,7 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
 }
 
 // 上傳行程檔案（PDF、DOC 等）— 直傳 Supabase，不經過 Vercel，無大小限制
-export async function uploadTripDocument(tripId: string, file: File): Promise<string> {
+export async function uploadTripDocument(tripId: string, file: File): Promise<{ url: string; document_is_available: boolean }> {
   // Step 1: 取得 signed upload URL
   const urlRes = await fetch('/api/upload-trip-document', {
     method: 'POST',
@@ -233,7 +234,10 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<st
   }
 
   const data = await confirmRes.json();
-  return data.url;
+  return {
+    url: data.url,
+    document_is_available: Boolean(data.document_is_available),
+  };
 }
 
 export async function getSiteLogo(): Promise<string> {

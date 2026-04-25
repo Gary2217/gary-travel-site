@@ -13,10 +13,11 @@ interface ImageEditorProps {
   uploadFn?: (entityId: string, file: File) => Promise<string>;
   documentUrl?: string;
   onDocumentUpdate?: (url: string) => void;
-  documentUploadFn?: (entityId: string, file: File) => Promise<string>;
+  documentUploadFn?: (entityId: string, file: File) => Promise<{ url: string; document_is_available: boolean }>;
+  onDocumentAvailabilityUpdate?: (available: boolean) => void;
 }
 
-export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -308,11 +309,12 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                         if (!selectedDocFile || !documentUploadFn) return;
                         setUploadingDoc(true);
                         try {
-                          const url = await documentUploadFn(entityId, selectedDocFile);
-                          onDocumentUpdate(url);
-                          setSelectedDocFile(null);
-                          setSelectedDocFileName("");
-                          alert("行程檔案已儲存！");
+                           const result = await documentUploadFn(entityId, selectedDocFile);
+                           onDocumentUpdate(result.url);
+                           onDocumentAvailabilityUpdate?.(result.document_is_available);
+                           setSelectedDocFile(null);
+                           setSelectedDocFileName("");
+                           alert("行程檔案已儲存！");
                         } catch (error) {
                           const msg = error instanceof Error ? error.message : "上傳失敗";
                           alert(`上傳失敗：${msg}`);

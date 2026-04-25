@@ -125,7 +125,7 @@ export default function TripPage() {
         )}
 
         {/* 每日行程 */}
-        {days.length > 0 && (
+        {days.length > 0 ? (
           <div className="mb-8">
             <h2 className="mb-4 text-xl font-bold text-white md:text-2xl">每日行程</h2>
             <div className="space-y-3">
@@ -141,6 +141,13 @@ export default function TripPage() {
                 />
               ))}
             </div>
+          </div>
+        ) : (
+          <div className="mb-8 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-5 text-center backdrop-blur-[12px] sm:p-6">
+            <h2 className="mb-2 text-xl font-bold text-white md:text-2xl">每日行程尚未建立</h2>
+            <p className="text-sm leading-6 text-white/70 md:text-base">
+              目前這個行程沒有每日拆分內容，但你仍可先下載 PDF 行程檔查看完整資料。
+            </p>
           </div>
         )}
 
