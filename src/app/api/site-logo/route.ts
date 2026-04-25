@@ -7,8 +7,38 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
 const MAX_SIZE = 5 * 1024 * 1024;
 const LOGO_DIR = 'site';
 
+function buildLogoPublicUrl(path: string, version: string) {
+  const { data } = createClient(supabaseUrl, supabaseServiceRoleKey).storage.from('images').getPublicUrl(path);
+  return `${data.publicUrl}?v=${version}`;
+}
+
 export async function GET() {
-  return NextResponse.json({ url: '/api/site-logo/image' });
+  try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ url: '/travel-logo.svg' });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const { data: files, error } = await supabase.storage
+      .from('images')
+      .list(LOGO_DIR, { limit: 100, sortBy: { column: 'name', order: 'desc' } });
+
+    if (error || !files || files.length === 0) {
+      return NextResponse.json({ url: '/travel-logo.svg' });
+    }
+
+    const latestFile = files.find((file) => file.name);
+
+    if (!latestFile) {
+      return NextResponse.json({ url: '/travel-logo.svg' });
+    }
+
+    return NextResponse.json({
+      url: buildLogoPublicUrl(`${LOGO_DIR}/${latestFile.name}`, latestFile.updated_at || Date.now().toString()),
+    });
+  } catch {
+    return NextResponse.json({ url: '/travel-logo.svg' });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -69,7 +99,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ url: `/api/site-logo/image?v=${Date.now()}` });
+    return NextResponse.json({ url: buildLogoPublicUrl(filePath, Date.now().toString()) });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
