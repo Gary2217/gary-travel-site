@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       .from('images')
       .upload(filePath, buffer, {
         contentType: file.type,
-        cacheControl: '3600',
+        cacheControl: 'no-cache',
         upsert: true,
       });
 
@@ -89,9 +89,12 @@ export async function POST(request: NextRequest) {
       .from('images')
       .getPublicUrl(filePath);
 
+    // 加版本號確保 CDN 每次都視為全新 cache key，避免舊圖快取
+    const versionedUrl = `${publicUrl}?v=${Date.now()}`;
+
     const { data: updatedDestination, error: updateError } = await supabase
       .from('destinations')
-      .update({ image_url: publicUrl })
+      .update({ image_url: versionedUrl })
       .eq('id', destinationId)
       .select('id,image_url,updated_at')
       .single();
@@ -100,7 +103,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    if (!updatedDestination || updatedDestination.image_url !== publicUrl) {
+    if (!updatedDestination || updatedDestination.image_url !== versionedUrl) {
       return NextResponse.json({ error: 'Destination image update did not persist.' }, { status: 500 });
     }
 
@@ -114,7 +117,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: confirmError.message }, { status: 500 });
     }
 
-    if (!confirmedDestination || confirmedDestination.image_url !== publicUrl) {
+    if (!confirmedDestination || confirmedDestination.image_url !== versionedUrl) {
       return NextResponse.json({ error: 'Destination image read-back verification failed.' }, { status: 500 });
     }
 
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      url: publicUrl,
+      url: versionedUrl,
       destination: confirmedDestination,
     });
   } catch {

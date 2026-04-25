@@ -14,24 +14,43 @@ export async function GET() {
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    const { data, error } = await supabase
+    const { data: regionsData, error: regionsError } = await supabase
       .from('regions')
-      .select(`
-        *,
-        destinations (*)
-      `)
+      .select('*')
       .eq('is_active', true)
       .order('display_order', { ascending: true });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (regionsError) {
+      return NextResponse.json({ error: regionsError.message }, { status: 500 });
     }
 
-    const regions = (data || []).map((region: any) => ({
+    const regionIds = (regionsData || []).map((region: any) => region.id);
+
+    let destinationsByRegion = new Map<string, any[]>();
+
+    if (regionIds.length > 0) {
+      const { data: destinationsData, error: destinationsError } = await supabase
+        .from('destinations')
+        .select('*')
+        .in('region_id', regionIds)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (destinationsError) {
+        return NextResponse.json({ error: destinationsError.message }, { status: 500 });
+      }
+
+      destinationsByRegion = (destinationsData || []).reduce((map: Map<string, any[]>, destination: any) => {
+        const existing = map.get(destination.region_id) || [];
+        existing.push(destination);
+        map.set(destination.region_id, existing);
+        return map;
+      }, new Map<string, any[]>());
+    }
+
+    const regions = (regionsData || []).map((region: any) => ({
       ...region,
-      destinations: (region.destinations || [])
-        .filter((d: any) => d.is_active)
-        .sort((a: any, b: any) => a.display_order - b.display_order),
+      destinations: destinationsByRegion.get(region.id) || [],
     }));
 
     return NextResponse.json(regions, {
