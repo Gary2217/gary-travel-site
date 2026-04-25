@@ -71,10 +71,10 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
       </button>
 
       {isOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
-          <div className="w-full max-w-xl rounded-xl bg-[rgba(20,20,30,0.98)] p-6 shadow-2xl backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setIsOpen(false)}>
+          <div className="w-full max-w-lg rounded-xl bg-[rgba(20,20,30,0.98)] p-4 shadow-2xl backdrop-blur-xl sm:p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">編輯網站 LOGO</h3>
+              <h3 className="text-base font-bold text-white sm:text-lg">編輯網站 LOGO</h3>
               <button onClick={() => setIsOpen(false)} className="text-white/70 transition hover:text-white">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -85,16 +85,16 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
             <div className="space-y-4">
               <div>
                 <p className="mb-2 text-sm text-white/70">目前 LOGO：</p>
-                <div className="flex h-36 items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                  <img src={currentLogoUrl} alt="目前 LOGO" className="h-28 w-28 object-contain" />
+                <div className="flex h-28 items-center justify-center rounded-lg border border-white/10 bg-white/5 sm:h-32">
+                  <img src={currentLogoUrl} alt="目前 LOGO" className="h-20 w-20 object-contain sm:h-24 sm:w-24" />
                 </div>
               </div>
 
               <div>
                 <p className="mb-2 text-sm text-white/70">預覽：</p>
-                <div className="flex h-36 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+                <div className="flex h-28 items-center justify-center rounded-lg border border-white/10 bg-white/5 sm:h-32">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="LOGO 預覽" className="h-28 w-28 object-contain" />
+                    <img src={previewUrl} alt="LOGO 預覽" className="h-20 w-20 object-contain sm:h-24 sm:w-24" />
                   ) : (
                     <span className="text-sm text-white/50">選擇新圖片後顯示</span>
                   )}
@@ -107,7 +107,7 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
                   onChange={handleFileSelect}
                   disabled={uploading}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white file:mr-4 file:rounded-full file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-sky-500 disabled:opacity-50"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-full file:border-0 file:bg-sky-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-sky-500 disabled:opacity-50"
                 />
                 {selectedFileName && <p className="mt-2 text-sm text-white/70">已選擇：{selectedFileName}</p>}
                 <p className="mt-2 text-xs text-white/50">支援 PNG、JPG、WebP、SVG，大小限制 5MB。</p>
@@ -118,7 +118,7 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
                   type="button"
                   onClick={handleSave}
                   disabled={!selectedFile || uploading}
-                  className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {uploading ? "儲存中..." : "儲存 LOGO"}
                 </button>
@@ -129,7 +129,7 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
                     setSelectedFileName("");
                   }}
                   disabled={!selectedFile || uploading}
-                  className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   清除選擇
                 </button>
