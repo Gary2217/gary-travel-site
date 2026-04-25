@@ -4,17 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const ALLOWED_TYPES = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp'];
 
 function getStoragePathFromPublicUrl(publicUrl: string) {
   try {
@@ -37,73 +27,86 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
   }
 }
 
+// POST: 建立 signed upload URL（檔案不經過 Vercel）
 export async function POST(request: NextRequest) {
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json(
-        { error: 'Missing server upload configuration.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const tripId = formData.get('trip_id') as string | null;
+    const body = await request.json();
+    const { trip_id, file_name } = body;
 
-    if (!file || !tripId) {
-      return NextResponse.json({ error: 'Missing file or trip_id' }, { status: 400 });
+    if (!trip_id || !file_name) {
+      return NextResponse.json({ error: 'Missing trip_id or file_name' }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const fileExt = file_name.split('.').pop()?.toLowerCase() || '';
+    const sanitizedExt = fileExt.replace(/[^a-z0-9]/g, '');
+
+    if (!ALLOWED_EXTENSIONS.includes(sanitizedExt)) {
       return NextResponse.json(
         { error: '不支援的檔案格式。支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP' },
         { status: 400 }
       );
     }
 
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: '檔案太大，上限 10MB' }, { status: 400 });
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    const { data: existingTrip, error: tripError } = await supabase
-      .from('trips')
-      .select('document_url')
-      .eq('id', tripId)
-      .single();
-
-    if (tripError) {
-      return NextResponse.json({ error: tripError.message }, { status: 500 });
-    }
-
-    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
-    const sanitizedExt = fileExt.replace(/[^a-z0-9]/g, '');
-    const fileName = `${tripId}-${Date.now()}.${sanitizedExt}`;
+    const fileName = `${trip_id}-${Date.now()}.${sanitizedExt}`;
     const filePath = `documents/${fileName}`;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    const { error: uploadError } = await supabase.storage
+    const { data: signedData, error: signedError } = await supabase.storage
       .from('images')
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        cacheControl: '3600',
-        upsert: true,
-      });
+      .createSignedUploadUrl(filePath);
 
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    if (signedError || !signedData) {
+      return NextResponse.json({ error: signedError?.message || '無法建立上傳連結' }, { status: 500 });
     }
 
     const { data: { publicUrl } } = supabase.storage
       .from('images')
       .getPublicUrl(filePath);
 
+    return NextResponse.json({
+      signedUrl: signedData.signedUrl,
+      token: signedData.token,
+      path: filePath,
+      publicUrl,
+    });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT: 確認上傳完成，更新資料庫，清除舊檔案
+export async function PUT(request: NextRequest) {
+  try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
+    const body = await request.json();
+    const { trip_id, url } = body;
+
+    if (!trip_id || !url) {
+      return NextResponse.json({ error: 'Missing trip_id or url' }, { status: 400 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // 取得舊檔案路徑
+    const { data: existingTrip } = await supabase
+      .from('trips')
+      .select('document_url')
+      .eq('id', trip_id)
+      .single();
+
+    // 更新資料庫
     const { data: updatedTrip, error: updateError } = await supabase
       .from('trips')
-      .update({ document_url: publicUrl })
-      .eq('id', tripId)
+      .update({ document_url: url })
+      .eq('id', trip_id)
       .select('id,document_url,updated_at')
       .single();
 
@@ -113,21 +116,13 @@ export async function POST(request: NextRequest) {
 
     // 刪除舊檔案
     const oldStoragePath = getStoragePathFromPublicUrl(existingTrip?.document_url || '');
+    const newStoragePath = getStoragePathFromPublicUrl(url);
 
-    if (oldStoragePath && oldStoragePath !== filePath) {
-      const { error: removeError } = await supabase.storage
-        .from('images')
-        .remove([oldStoragePath]);
-
-      if (removeError) {
-        console.error('Failed to remove old document:', removeError.message);
-      }
+    if (oldStoragePath && oldStoragePath !== newStoragePath) {
+      await supabase.storage.from('images').remove([oldStoragePath]);
     }
 
-    return NextResponse.json({
-      url: publicUrl,
-      trip: updatedTrip,
-    });
+    return NextResponse.json({ url, trip: updatedTrip });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

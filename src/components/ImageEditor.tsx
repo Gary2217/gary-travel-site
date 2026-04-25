@@ -281,8 +281,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                         setSelectedDocFileName("");
                         return;
                       }
-                      if (file.size > 10 * 1024 * 1024) {
-                        alert("檔案不能超過 10MB");
+                      if (file.size > 50 * 1024 * 1024) {
+                        alert("檔案不能超過 50MB");
                         e.target.value = "";
                         return;
                       }
@@ -299,7 +299,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                     <p className="mt-2 text-sm text-white/70">已選擇：{selectedDocFileName}</p>
                   )}
                   <p className="mt-2 text-xs text-white/50">
-                    支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP，大小限制 10MB。
+                    支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP，大小限制 50MB。建議使用 PDF 格式，所有手機都能直接開啟。
                   </p>
                   <div className="mt-3 flex flex-wrap gap-3">
                     <button

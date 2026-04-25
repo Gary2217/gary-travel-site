@@ -193,23 +193,46 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
   return data.url;
 }
 
-// 上傳行程檔案（PDF、DOC 等）
+// 上傳行程檔案（PDF、DOC 等）— 直傳 Supabase，不經過 Vercel，無大小限制
 export async function uploadTripDocument(tripId: string, file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('trip_id', tripId);
-
-  const res = await fetch('/api/upload-trip-document', {
+  // Step 1: 取得 signed upload URL
+  const urlRes = await fetch('/api/upload-trip-document', {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trip_id: tripId, file_name: file.name }),
   });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || '上傳失敗');
+  if (!urlRes.ok) {
+    const err = await urlRes.json();
+    throw new Error(err.error || '無法建立上傳連結');
   }
 
-  const data = await res.json();
+  const { signedUrl, publicUrl } = await urlRes.json();
+
+  // Step 2: 直接上傳到 Supabase Storage
+  const uploadRes = await fetch(signedUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error('檔案上傳失敗，請稍後再試');
+  }
+
+  // Step 3: 更新資料庫
+  const confirmRes = await fetch('/api/upload-trip-document', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trip_id: tripId, url: publicUrl }),
+  });
+
+  if (!confirmRes.ok) {
+    const err = await confirmRes.json();
+    throw new Error(err.error || '更新資料庫失敗');
+  }
+
+  const data = await confirmRes.json();
   return data.url;
 }
 
