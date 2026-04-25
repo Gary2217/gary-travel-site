@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       .from('images')
       .upload(filePath, buffer, {
         contentType: file.type,
-        cacheControl: '3600',
+        cacheControl: 'no-cache',
         upsert: true,
       });
 
@@ -88,9 +88,11 @@ export async function POST(request: NextRequest) {
       .from('images')
       .getPublicUrl(filePath);
 
+    const versionedUrl = `${publicUrl}?v=${Date.now()}`;
+
     const { data: updatedTrip, error: updateError } = await supabase
       .from('trips')
-      .update({ cover_image_url: publicUrl })
+      .update({ cover_image_url: versionedUrl })
       .eq('id', tripId)
       .select('id,cover_image_url,updated_at')
       .single();
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    if (!updatedTrip || updatedTrip.cover_image_url !== publicUrl) {
+    if (!updatedTrip || updatedTrip.cover_image_url !== versionedUrl) {
       return NextResponse.json({ error: 'Trip image update did not persist.' }, { status: 500 });
     }
 
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: confirmError.message }, { status: 500 });
     }
 
-    if (!confirmedTrip || confirmedTrip.cover_image_url !== publicUrl) {
+    if (!confirmedTrip || confirmedTrip.cover_image_url !== versionedUrl) {
       return NextResponse.json({ error: 'Trip image read-back verification failed.' }, { status: 500 });
     }
 
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      url: publicUrl,
+      url: versionedUrl,
       trip: confirmedTrip,
     });
   } catch {
