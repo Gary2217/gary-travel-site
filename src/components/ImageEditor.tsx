@@ -2,7 +2,7 @@
 
 import { ChangeEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { uploadImage } from "@/lib/supabase";
+import { uploadImage, deleteTripDocument } from "@/lib/supabase";
 
 interface ImageEditorProps {
   entityId: string;
@@ -26,6 +26,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
   const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
   const [selectedDocFileName, setSelectedDocFileName] = useState("");
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [deletingDoc, setDeletingDoc] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (!selectedFile) {
@@ -267,6 +268,32 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                       >
                         {documentUrl.split('/').pop() || '查看檔案'}
                       </a>
+                      <button
+                        type="button"
+                        disabled={deletingDoc}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!confirm("確定要刪除此行程檔案嗎？")) return;
+                          setDeletingDoc(true);
+                          try {
+                            await deleteTripDocument(entityId);
+                            onDocumentUpdate?.("");
+                            onDocumentAvailabilityUpdate?.(false);
+                            alert("行程檔案已刪除");
+                          } catch (err) {
+                            const msg = err instanceof Error ? err.message : "刪除失敗";
+                            alert(`刪除失敗：${msg}`);
+                          } finally {
+                            setDeletingDoc(false);
+                          }
+                        }}
+                        className="shrink-0 rounded-full p-1 text-red-400 transition hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50"
+                        title="刪除檔案"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   )}
 

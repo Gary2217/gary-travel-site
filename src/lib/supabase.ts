@@ -240,6 +240,20 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<{ 
   };
 }
 
+// 刪除行程檔案
+export async function deleteTripDocument(tripId: string): Promise<void> {
+  const res = await fetch('/api/upload-trip-document', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trip_id: tripId }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '刪除失敗');
+  }
+}
+
 export async function getSiteLogo(): Promise<string> {
   const res = await fetch('/api/site-logo', { cache: 'no-store' });
   if (!res.ok) {

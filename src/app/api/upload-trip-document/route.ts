@@ -90,6 +90,51 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// DELETE: 刪除行程檔案
+export async function DELETE(request: NextRequest) {
+  try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
+    const body = await request.json();
+    const { trip_id } = body;
+
+    if (!trip_id) {
+      return NextResponse.json({ error: 'Missing trip_id' }, { status: 400 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // 取得舊檔案路徑
+    const { data: existingTrip } = await supabase
+      .from('trips')
+      .select('document_url')
+      .eq('id', trip_id)
+      .single();
+
+    // 清除資料庫欄位
+    const { error: updateError } = await supabase
+      .from('trips')
+      .update({ document_url: null })
+      .eq('id', trip_id);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // 刪除 Storage 中的檔案
+    const oldStoragePath = getStoragePathFromPublicUrl(existingTrip?.document_url || '');
+    if (oldStoragePath) {
+      await supabase.storage.from('images').remove([oldStoragePath]);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // PUT: 確認上傳完成，更新資料庫，清除舊檔案
 export async function PUT(request: NextRequest) {
   try {
