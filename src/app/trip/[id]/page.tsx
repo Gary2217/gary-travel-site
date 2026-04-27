@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { getTripWithDays, type Trip, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import StickyHeader from "@/components/StickyHeader";
 import DayItinerary from "@/components/DayItinerary";
 import InquiryButtons from "@/components/InquiryButtons";
-import InquiryForm from "@/components/InquiryForm";
 
 export default function TripPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const tripId = params.id as string;
+  const from = searchParams.get("from");
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,10 +96,12 @@ export default function TripPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <StickyHeader showBackButton />
+      <StickyHeader showBackButton backHref={from || "/"} />
 
       {/* 浮動詢問按鈕 */}
       <InquiryButtons tripTitle={trip.title} variant="floating" />
+
+      <div id="trip-content" />
 
       {/* Hero 區塊 */}
       <div className="relative h-44 overflow-hidden sm:h-56 md:h-72">
@@ -149,12 +152,14 @@ export default function TripPage() {
             </div>
           </div>
         )}
+      </div>
 
-        {/* 每日行程（有 trip_days 資料時） */}
-        {days.length > 0 && (
-          <div className="mb-8">
+      {/* 每日行程（全寬顯示） */}
+      {days.length > 0 && (
+        <div className="w-full px-3 sm:px-4 md:px-8">
+          <div className="mx-auto mb-6 min-h-[calc(100vh-14rem)] w-full max-w-none pb-4">
             <h2 className="mb-4 text-xl font-bold text-white md:text-2xl">每日行程</h2>
-            <div className="space-y-3">
+            <div className="space-y-3 pb-2">
               {days.map((day) => (
                 <DayItinerary
                   key={day.id}
@@ -168,28 +173,27 @@ export default function TripPage() {
               ))}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 沒有 trip_days 也沒有 document_url */}
-        {days.length === 0 && !trip.document_url && (
+      {/* 沒有 trip_days 也沒有 document_url */}
+      {days.length === 0 && !trip.document_url && (
+        <div className="mx-auto max-w-[1000px] px-3 pb-8 sm:px-4 md:px-8">
           <div className="mb-8 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-5 text-center backdrop-blur-[12px] sm:p-6">
             <h2 className="mb-2 text-xl font-bold text-white md:text-2xl">每日行程尚未建立</h2>
             <p className="text-sm leading-6 text-white/70 md:text-base">
               目前這個行程尚未建立詳細內容，請透過 LINE 聯繫蓋瑞取得完整行程資料。
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* PDF 全版面嵌入（放在 max-w 容器外面） */}
       {days.length === 0 && trip.document_url && (
-        <div className="w-full">
-          <div className="mx-auto max-w-[1000px] px-3 sm:px-4 md:px-8">
-            <h2 className="mb-4 text-xl font-bold text-white md:text-2xl">完整行程表</h2>
-          </div>
+        <div id="trip-document" className="relative z-50 left-1/2 -mt-[28rem] w-screen -translate-x-1/2 scroll-mt-20">
           <iframe
-            src={trip.document_url}
-            className="h-[85vh] w-full min-h-[600px] bg-white"
+            src={`${trip.document_url}#zoom=100`}
+            className="h-[calc(100vh+28rem)] w-screen min-h-[calc(100vh+28rem)] bg-white"
             title={`${trip.title} 行程表`}
           />
         </div>
@@ -197,20 +201,6 @@ export default function TripPage() {
 
       {/* 按鈕區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-6 sm:px-4 md:px-8">
-        {/* LINE 私訊蓋瑞（帶行程名稱） */}
-        <a
-          href={lineMessageHref(`嗨！我想詢問「${trip.title}」這個行程`)}
-          target="_blank"
-          rel="noreferrer"
-          className="mb-3 flex w-full items-center justify-center gap-2.5 rounded-full bg-[#06C755] py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-[#05b54c] active:scale-[0.98]"
-        >
-          <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white">
-            <span className="text-[7px] font-black leading-none text-[#06C755]">LINE</span>
-            <span className="absolute -bottom-[2px] left-[5px] h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-white" />
-          </span>
-          LINE 私訊蓋瑞
-        </a>
-
         {/* 分享 & 下載 */}
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
           <button
@@ -241,8 +231,6 @@ export default function TripPage() {
           <InquiryButtons tripTitle={trip.title} variant="inline" />
         </div>
 
-        {/* 線上諮詢表單 */}
-        <InquiryForm tripId={trip.id} tripTitle={trip.title} />
       </div>
 
       {/* 下載門檻彈窗 */}

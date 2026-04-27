@@ -40,12 +40,13 @@ export default function TripCard({
 
   const handleCoverClick = () => {
     if (!isDevMode) {
-      window.location.href = `/trip/${id}`;
+      const from = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/trip/${id}?from=${from}`;
     }
   };
 
   const tripPageUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/trip/${id}`
+    ? `${window.location.origin}/trip/${id}?from=${encodeURIComponent(window.location.pathname + window.location.search)}`
     : `/trip/${id}`;
 
   const triggerNativeShare = () => {
@@ -150,7 +151,8 @@ export default function TripCard({
           <button
             type="button"
             onClick={() => {
-              window.location.href = `/trip/${id}`;
+              const from = encodeURIComponent(window.location.pathname + window.location.search);
+              window.location.href = `/trip/${id}?from=${from}`;
             }}
             className="mt-2 flex w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm"
           >

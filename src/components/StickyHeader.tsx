@@ -6,32 +6,48 @@ import { lineHref, fbHref, igHref } from "@/lib/supabase";
 
 interface StickyHeaderProps {
   showBackButton?: boolean;
+  backHref?: string;
   devModeSlot?: React.ReactNode;
   logoUrl?: string;
   logoEditorSlot?: React.ReactNode;
 }
 
-export default function StickyHeader({ showBackButton, devModeSlot, logoUrl = '/travel-logo.svg', logoEditorSlot }: StickyHeaderProps) {
+export default function StickyHeader({ showBackButton, backHref, devModeSlot, logoUrl = '/travel-logo.svg', logoEditorSlot }: StickyHeaderProps) {
   const router = useRouter();
   const lineHelperText = "詢問行程｜拿行程檔案｜客製｜機票｜機+酒｜員工旅遊｜旅遊規劃師 蓋瑞 GARY";
+  const handleBackClick = () => {
+    if (backHref?.startsWith("#")) {
+      const target = document.querySelector(backHref) as HTMLElement | null;
+      if (target) {
+        const top = target.getBoundingClientRect().top + window.scrollY - 72;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+      return;
+    }
+    if (backHref) {
+      router.push(backHref);
+      return;
+    }
+    router.back();
+  };
 
 return (
     <div className="fixed inset-x-0 top-0 z-[60] border-b border-white/10 bg-[rgba(20,20,30,0.82)] backdrop-blur-[6px]">
       <div className="mx-auto grid max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-1.5 md:gap-4 md:px-6 md:py-2">
         {/* 左側：返回 + Logo + 品牌 */}
         <div className="flex items-center gap-2 justify-self-start">
+        {showBackButton && (
+          <button
+            onClick={handleBackClick}
+            className="mr-1 rounded-full p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white"
+            title="返回"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
         <Link href="/" className="flex shrink-0 items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
-          {showBackButton && (
-            <button
-              onClick={() => router.back()}
-              className="mr-1 rounded-full p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white"
-              title="返回"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
           <img src={logoUrl} alt="旅行沒有終點 LOGO" className="h-12 w-12 shrink-0 object-contain md:h-14 md:w-14" />
           <p className="-ml-1 text-xs font-semibold tracking-wide text-white sm:text-sm md:text-sm">
             旅行沒有終點
