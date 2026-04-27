@@ -33,7 +33,7 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
     async function loadPdf() {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
 
         const loadingTask = pdfjsLib.getDocument(url);
         const pdf = await loadingTask.promise;
@@ -148,7 +148,6 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4 bg-[rgba(20,20,30,0.6)]">
-        <p className="text-sm text-white/70">{error}</p>
         <a
           href={url}
           target="_blank"

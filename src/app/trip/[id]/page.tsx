@@ -5,9 +5,9 @@ import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { getTripWithDays, type Trip, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import StickyHeader from "@/components/StickyHeader";
+import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
 import InquiryButtons from "@/components/InquiryButtons";
-import PdfViewer from "@/components/PdfViewer";
 
 export default function TripPage() {
   const params = useParams();
@@ -189,7 +189,7 @@ export default function TripPage() {
         </div>
       )}
 
-      {/* PDF 全版面嵌入（使用 pdf.js 渲染，不觸發下載） */}
+      {/* PDF 全版面嵌入（canvas 渲染，防止直接下載） */}
       {days.length === 0 && trip.document_url && (
         <div id="trip-document" className="w-full">
           <PdfViewer url={trip.document_url} title={`${trip.title} 行程表`} />
