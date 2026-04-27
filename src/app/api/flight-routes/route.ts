@@ -8,13 +8,15 @@ export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET() {
   noStore();
   try {
-    // 用 anon key 讀取公開資料（RLS 允許公開 SELECT is_active=true）
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
       global: {
         fetch: (url: RequestInfo | URL, options?: RequestInit) =>
           fetch(url, { ...options, cache: 'no-store' }),
@@ -41,6 +43,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
     const cookieStore = cookies();
     const devCookie = cookieStore.get(DEV_AUTH_COOKIE_NAME)?.value;
     if (!verifyDevAuthCookie(devCookie)) {

@@ -24,13 +24,10 @@ export async function GET(
       },
     });
 
+    // 先查 trip + destinations（不含 trip_days，因為該表可能不存在）
     const { data, error } = await supabase
       .from('trips')
-      .select(`
-        *,
-        destinations (*),
-        trip_days (*)
-      `)
+      .select('*, destinations (*)')
       .eq('id', params.id)
       .single();
 
@@ -38,11 +35,24 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    if (data?.trip_days) {
-      data.trip_days.sort((a: any, b: any) => a.day_number - b.day_number);
+    // 嘗試查 trip_days（表可能尚未建立）
+    let tripDays: any[] = [];
+    try {
+      const { data: daysData } = await supabase
+        .from('trip_days')
+        .select('*')
+        .eq('trip_id', params.id)
+        .order('day_number', { ascending: true });
+      if (daysData) tripDays = daysData;
+    } catch {
+      // trip_days 表不存在，跳過
     }
 
-    const responseData = { ...data, document_is_available: Boolean(data.document_url) };
+    const responseData = {
+      ...data,
+      trip_days: tripDays,
+      document_is_available: Boolean(data.document_url),
+    };
 
     return NextResponse.json(responseData, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },

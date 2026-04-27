@@ -4,9 +4,10 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
 import { verifyDevAuthCookie, DEV_AUTH_COOKIE_NAME } from '@/lib/dev-auth';
 
+export const dynamic = 'force-dynamic';
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(
   _request: NextRequest,
@@ -14,8 +15,15 @@ export async function GET(
 ) {
   noStore();
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { fetch: (url: RequestInfo | URL, opts?: RequestInit) => fetch(url, { ...opts, cache: 'no-store' }) },
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      global: {
+        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
+          fetch(url, { ...options, cache: 'no-store' }),
+      },
     });
     const { data, error } = await supabase
       .from('flight_routes')
@@ -47,6 +55,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
     if (!requireDev()) {
       return NextResponse.json({ error: '未授權' }, { status: 401 });
     }
@@ -91,6 +103,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
     if (!requireDev()) {
       return NextResponse.json({ error: '未授權' }, { status: 401 });
     }

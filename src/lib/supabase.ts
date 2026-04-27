@@ -5,6 +5,11 @@ export const fbHref = process.env.NEXT_PUBLIC_FB_URL || "#";
 export const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 export const flightHref = process.env.NEXT_PUBLIC_FLIGHT_URL || lineHref;
 
+// LINE 帶預填訊息的連結（開啟聊天框並自動填入文字）
+export function lineMessageHref(message: string) {
+  return `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(message)}`;
+}
+
 // 資料型別定義
 export type Destination = {
   id: string;

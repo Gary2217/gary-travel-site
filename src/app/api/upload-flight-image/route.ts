@@ -24,6 +24,10 @@ function extractStoragePath(publicUrl: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server upload configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' }, { status: 500 });
+    }
+
     const cookieStore = cookies();
     const devCookie = cookieStore.get(DEV_AUTH_COOKIE_NAME)?.value;
     if (!verifyDevAuthCookie(devCookie)) {

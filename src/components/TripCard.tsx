@@ -39,8 +39,8 @@ export default function TripCard({
   const [showShareGate, setShowShareGate] = useState(false);
 
   const handleCoverClick = () => {
-    if (!isDevMode && document_url) {
-      window.open(document_url, '_blank');
+    if (!isDevMode) {
+      window.location.href = `/trip/${id}`;
     }
   };
 
@@ -87,7 +87,7 @@ export default function TripCard({
       <div className="group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[1.5rem]">
         {/* 封面圖 */}
         <div
-          className={`relative h-28 overflow-hidden sm:h-36 md:h-44${!isDevMode && document_url ? ' cursor-pointer' : ''}`}
+          className={`relative h-28 overflow-hidden sm:h-36 md:h-44${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
           {cover_image_url ? (
@@ -150,11 +150,6 @@ export default function TripCard({
           <button
             type="button"
             onClick={() => {
-              if (!isDevMode && document_url) {
-                window.open(document_url, '_blank', 'noreferrer');
-                return;
-              }
-
               window.location.href = `/trip/${id}`;
             }}
             className="mt-2 flex w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm"

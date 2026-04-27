@@ -15,14 +15,6 @@ const REGION_COLOR: Record<string, string> = {
   澳紐: "bg-teal-600/80",
 };
 
-const BENEFITS = [
-  { icon: "💰", text: "免費比價，不收任何服務費" },
-  { icon: "✈️", text: "比較多家航空，找最划算票價" },
-  { icon: "🗓️", text: "建議最佳訂票時機與旺旺季差異" },
-  { icon: "🧳", text: "可搭配住宿、接送、行程一起規劃" },
-  { icon: "💬", text: "全程繁體中文服務，快速回覆" },
-];
-
 export default function FlightDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -162,19 +154,6 @@ export default function FlightDetailPage() {
                 </div>
               </section>
             )}
-
-            {/* 為什麼找蓋瑞 */}
-            <section className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
-              <h2 className="mb-4 text-base font-bold text-white">為什麼透過蓋瑞 GARY 訂機票？</h2>
-              <ul className="space-y-3">
-                {BENEFITS.map((b) => (
-                  <li key={b.text} className="flex items-start gap-3">
-                    <span className="text-xl leading-none">{b.icon}</span>
-                    <span className="text-sm leading-relaxed text-white/75">{b.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
 
             {/* Mobile CTA */}
             <div className="lg:hidden">
