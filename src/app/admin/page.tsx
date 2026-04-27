@@ -113,20 +113,20 @@ function PieChart({ data }: { data: { line: number; facebook: number; instagram:
     return { ...s, path: `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y} Z` };
   });
   return (
-    <div className="flex items-center gap-4">
-      <svg viewBox="0 0 160 160" className="w-32 shrink-0 sm:w-36">
+    <div className="flex flex-col items-center gap-3">
+      <svg viewBox="0 0 160 160" className="w-28 shrink-0">
         {arcs.map((a) => <path key={a.label} d={a.path} fill={a.color} opacity={0.85} />)}
         <circle cx={cx} cy={cy} r={32} fill="rgba(20,20,30,0.9)" />
         <text x={cx} y={cy - 6}  textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.6)">總分享</text>
         <text x={cx} y={cy + 10} textAnchor="middle" fontSize={15} fontWeight="bold" fill="white">{total}</text>
       </svg>
-      <div className="min-w-0 flex-1 space-y-2.5">
+      <div className="w-full space-y-2">
         {slices.map((s) => (
-          <div key={s.label} className="flex items-center gap-2 text-sm">
+          <div key={s.label} className="flex items-center gap-2 text-xs">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
-            <span className="w-16 shrink-0 text-white/70">{s.label}</span>
-            <span className="w-7 shrink-0 text-right font-semibold text-white">{s.value}</span>
-            <span className="w-8 shrink-0 text-right text-xs text-white/40">{Math.round((s.value / total) * 100)}%</span>
+            <span className="flex-1 text-white/70">{s.label}</span>
+            <span className="font-semibold text-white">{s.value}</span>
+            <span className="w-8 text-right text-white/40">{Math.round((s.value / total) * 100)}%</span>
           </div>
         ))}
         <p className="pt-1 text-[11px] text-white/30">分享 + 下載的平台選擇比例</p>
