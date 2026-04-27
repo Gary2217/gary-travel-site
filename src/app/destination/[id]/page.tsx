@@ -82,6 +82,14 @@ export default function DestinationPage() {
     );
   };
 
+  const handleTripTitleUpdate = (tripId: string, newTitle: string) => {
+    setTrips(prev =>
+      prev.map(trip =>
+        trip.id === tripId ? { ...trip, title: newTitle } : trip
+      )
+    );
+  };
+
   const handleAddTrip = async () => {
     try {
       const newTrip = await createTrip(destinationId);
@@ -183,6 +191,7 @@ export default function DestinationPage() {
               onDocumentUpdate={handleTripDocumentUpdate}
               onDocumentAvailabilityUpdate={handleTripDocumentAvailabilityUpdate}
               onDurationUpdate={handleTripDurationUpdate}
+              onTitleUpdate={handleTripTitleUpdate}
               onDelete={handleDeleteTrip}
             />
           ))}

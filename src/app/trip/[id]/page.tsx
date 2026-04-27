@@ -8,6 +8,7 @@ import StickyHeader from "@/components/StickyHeader";
 import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
 import InquiryButtons from "@/components/InquiryButtons";
+import DevModeToggle from "@/components/DevModeToggle";
 
 export default function TripPage() {
   const params = useParams();
@@ -21,6 +22,13 @@ export default function TripPage() {
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [showShareGate, setShowShareGate] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSubtitle, setEditSubtitle] = useState('');
+  const [editPriceRange, setEditPriceRange] = useState('');
+  const [editHighlights, setEditHighlights] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const triggerNativeShare = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -102,7 +110,7 @@ export default function TripPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
+      <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* 浮動詢問按鈕 */}
       <InquiryButtons tripTitle={trip.title} variant="floating" />
@@ -139,6 +147,116 @@ export default function TripPage() {
           </div>
         </div>
       </div>
+
+      {/* DevMode 編輯面板 */}
+      {isDevMode && (
+        <div className="mx-auto max-w-[1000px] px-3 py-3 sm:px-4 md:px-8">
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-400">開發者模式 — 行程設定</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEditTitle(trip.title);
+                    setEditSubtitle(trip.subtitle || '');
+                    setEditPriceRange(trip.price_range || '');
+                    setEditHighlights((trip.highlights || []).join('、'));
+                    setShowEditPanel(true);
+                  }}
+                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
+                >
+                  編輯資訊
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
+                    const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+                    if (res.ok) {
+                      window.location.href = from || '/';
+                    } else {
+                      alert('刪除失敗，請再試一次');
+                    }
+                  }}
+                  className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
+                >
+                  刪除行程
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 編輯彈窗 */}
+      {showEditPanel && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowEditPanel(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">編輯行程資訊</h3>
+              <button onClick={() => setShowEditPanel(false)} className="text-white/50 hover:text-white">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs text-white/60">標題</label>
+                <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-white/60">副標題</label>
+                <input value={editSubtitle} onChange={e => setEditSubtitle(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-white/60">價格區間</label>
+                <input value={editPriceRange} onChange={e => setEditPriceRange(e.target.value)}
+                  placeholder="例：NT$ 25,000 起"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-white/60">行程亮點（用「、」分隔）</label>
+                <input value={editHighlights} onChange={e => setEditHighlights(e.target.value)}
+                  placeholder="例：溫泉、美食、雪景"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+              </div>
+            </div>
+            <button
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                const highlights = editHighlights.split(/[、,，]/).map(s => s.trim()).filter(Boolean);
+                const res = await fetch(`/api/trips/${tripId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    title: editTitle.trim(),
+                    subtitle: editSubtitle.trim(),
+                    price_range: editPriceRange.trim(),
+                    highlights,
+                  }),
+                });
+                if (res.ok) {
+                  const updated = await res.json();
+                  setTrip(prev => prev ? { ...prev, ...updated } : prev);
+                  setShowEditPanel(false);
+                } else {
+                  alert('儲存失敗，請再試一次');
+                }
+                setSaving(false);
+              }}
+              className="mt-4 w-full rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+            >
+              {saving ? '儲存中...' : '儲存'}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">

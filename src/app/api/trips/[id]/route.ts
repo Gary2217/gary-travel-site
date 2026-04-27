@@ -73,7 +73,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const allowedFields = ['title', 'subtitle', 'duration', 'price_range', 'is_active'];
+    const allowedFields = ['title', 'subtitle', 'duration', 'price_range', 'highlights', 'is_active'];
     const updates: Record<string, any> = {};
 
     for (const field of allowedFields) {

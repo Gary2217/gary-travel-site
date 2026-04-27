@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import ImageEditor from "@/components/ImageEditor";
@@ -18,6 +18,7 @@ interface TripCardProps {
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
   onDocumentAvailabilityUpdate?: (tripId: string, available: boolean) => void;
   onDurationUpdate?: (tripId: string, newDuration: string) => void;
+  onTitleUpdate?: (tripId: string, newTitle: string) => void;
   onDelete?: (tripId: string) => void;
 }
 
@@ -33,10 +34,14 @@ export default function TripCard({
   onDocumentUpdate,
   onDocumentAvailabilityUpdate,
   onDurationUpdate,
+  onTitleUpdate,
   onDelete,
 }: TripCardProps) {
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [showShareGate, setShowShareGate] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState(title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const handleCoverClick = () => {
     if (!isDevMode) {
@@ -145,9 +150,41 @@ export default function TripCard({
 
         {/* 行程名稱 + 按鈕 */}
         <div className="p-2 sm:p-3 md:p-4">
-          <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
-            {title}
-          </h3>
+          {isDevMode ? (
+            editingTitle ? (
+              <input
+                ref={titleInputRef}
+                value={titleValue}
+                onChange={e => setTitleValue(e.target.value)}
+                onBlur={async () => {
+                  setEditingTitle(false);
+                  if (titleValue.trim() && titleValue !== title) {
+                    await fetch(`/api/trips/${id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ title: titleValue.trim() }),
+                    });
+                    onTitleUpdate?.(id, titleValue.trim());
+                  }
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') titleInputRef.current?.blur(); }}
+                className="mb-1 w-full border-b border-sky-400 bg-transparent text-xs font-bold text-white outline-none sm:text-sm md:text-base"
+                autoFocus
+              />
+            ) : (
+              <h3
+                className="line-clamp-2 min-h-[2rem] cursor-pointer border-b border-dashed border-white/30 text-xs font-bold leading-tight text-white hover:border-sky-400 hover:text-sky-300 sm:min-h-[2.5rem] sm:text-sm md:text-base"
+                onClick={() => setEditingTitle(true)}
+                title="點擊編輯名稱"
+              >
+                {titleValue}
+              </h3>
+            )
+          ) : (
+            <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
+              {title}
+            </h3>
+          )}
           <button
             type="button"
             onClick={() => {
