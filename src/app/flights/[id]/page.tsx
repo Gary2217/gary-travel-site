@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute } from "@/lib/supabase";
+import { track } from "@/lib/analytics";
 
 const REGION_COLOR: Record<string, string> = {
   日本: "bg-rose-600/80",
@@ -32,7 +33,9 @@ export default function FlightDetailPage() {
     try {
       const res = await fetch(`/api/flight-routes/${params.id}`, { cache: "no-store" });
       if (!res.ok) { setNotFound(true); return; }
-      setRoute(await res.json());
+      const data = await res.json() as FlightRoute;
+      setRoute(data);
+      track({ event_type: "flight_view", flight_id: data.id, flight_route: `${data.from_city} → ${data.to_city}` });
     } catch {
       setNotFound(true);
     } finally {
@@ -154,14 +157,14 @@ export default function FlightDetailPage() {
 
             {/* Mobile CTA */}
             <div className="lg:hidden">
-              <CtaCard route={route} lineHref={lineDmHref} fbHref={fbDmHref} igHref={igDmHref} />
+              <CtaCard route={route} lineHref={lineDmHref} fbHref={fbDmHref} igHref={igDmHref} flightId={route.id} />
             </div>
           </div>
 
           {/* Right column (sticky desktop) */}
           <div className="hidden lg:block">
             <div className="sticky top-[88px]">
-              <CtaCard route={route} lineHref={lineDmHref} fbHref={fbDmHref} igHref={igDmHref} />
+              <CtaCard route={route} lineHref={lineDmHref} fbHref={fbDmHref} igHref={igDmHref} flightId={route.id} />
             </div>
           </div>
         </div>
@@ -181,11 +184,12 @@ function InfoBlock({ label, value, highlight }: { label: string; value: string; 
   );
 }
 
-function CtaCard({ route, lineHref, fbHref, igHref }: {
+function CtaCard({ route, lineHref, fbHref, igHref, flightId }: {
   route: FlightRoute;
   lineHref: string;
   fbHref: string;
   igHref: string;
+  flightId?: string;
 }) {
   return (
     <div className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.75)] p-5 shadow-2xl backdrop-blur-[16px]">
@@ -201,6 +205,7 @@ function CtaCard({ route, lineHref, fbHref, igHref }: {
         href={lineHref}
         target="_blank"
         rel="noreferrer"
+        onClick={() => track({ event_type: "flight_inquiry", platform: "LINE", flight_id: flightId, flight_route: `${route.from_city} → ${route.to_city}` })}
         className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#06C755] py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-[#05b54c] active:scale-95"
       >
         <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white">
@@ -221,6 +226,7 @@ function CtaCard({ route, lineHref, fbHref, igHref }: {
           href={fbHref}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track({ event_type: "flight_inquiry", platform: "FB", flight_id: flightId, flight_route: `${route.from_city} → ${route.to_city}` })}
           className="flex items-center justify-center gap-1.5 rounded-xl bg-[#1877F2]/80 py-2.5 text-xs font-semibold text-white transition hover:bg-[#1877F2]"
         >
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -232,6 +238,7 @@ function CtaCard({ route, lineHref, fbHref, igHref }: {
           href={igHref}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track({ event_type: "flight_inquiry", platform: "IG", flight_id: flightId, flight_route: `${route.from_city} → ${route.to_city}` })}
           className="flex items-center justify-center gap-1.5 rounded-xl bg-[#E4405F]/80 py-2.5 text-xs font-semibold text-white transition hover:bg-[#E4405F]"
         >
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
