@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { getTripWithDays, type Trip, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getSiteLogo, type Trip, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import StickyHeader from "@/components/StickyHeader";
 import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
@@ -20,6 +20,7 @@ export default function TripPage() {
   const [error, setError] = useState<string | null>(null);
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [showShareGate, setShowShareGate] = useState(false);
+  const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
 
   const triggerNativeShare = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -60,10 +61,14 @@ export default function TripPage() {
     loadData();
   }, [tripId]);
 
+  useEffect(() => {
+    getSiteLogo().then(setSiteLogoUrl).catch(() => {});
+  }, []);
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton backHref={from || "/"} />
+        <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
@@ -77,7 +82,7 @@ export default function TripPage() {
   if (error || !trip) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton backHref={from || "/"} />
+        <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
             <p className="text-lg text-red-400">{error || "找不到此行程"}</p>
@@ -97,7 +102,7 @@ export default function TripPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <StickyHeader showBackButton backHref={from || "/"} />
+      <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
 
       {/* 浮動詢問按鈕 */}
       <InquiryButtons tripTitle={trip.title} variant="floating" />
