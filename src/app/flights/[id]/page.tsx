@@ -73,7 +73,7 @@ export default function FlightDetailPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <StickyHeader logoUrl={siteLogoUrl} showBackButton />
+      <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" />
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <div className="relative h-[52vh] min-h-[280px] max-h-[420px] w-full overflow-hidden">

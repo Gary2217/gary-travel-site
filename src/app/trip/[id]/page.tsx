@@ -7,6 +7,7 @@ import { getTripWithDays, type Trip, lineHref, lineMessageHref, fbHref, igHref }
 import StickyHeader from "@/components/StickyHeader";
 import DayItinerary from "@/components/DayItinerary";
 import InquiryButtons from "@/components/InquiryButtons";
+import PdfViewer from "@/components/PdfViewer";
 
 export default function TripPage() {
   const params = useParams();
@@ -62,7 +63,7 @@ export default function TripPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton />
+        <StickyHeader showBackButton backHref={from || "/"} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
@@ -76,7 +77,7 @@ export default function TripPage() {
   if (error || !trip) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton />
+        <StickyHeader showBackButton backHref={from || "/"} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
             <p className="text-lg text-red-400">{error || "找不到此行程"}</p>
@@ -188,14 +189,10 @@ export default function TripPage() {
         </div>
       )}
 
-      {/* PDF 全版面嵌入（放在 max-w 容器外面） */}
+      {/* PDF 全版面嵌入（使用 pdf.js 渲染，不觸發下載） */}
       {days.length === 0 && trip.document_url && (
-        <div id="trip-document" className="relative z-50 left-1/2 -mt-[28rem] w-screen -translate-x-1/2 scroll-mt-20">
-          <iframe
-            src={`${trip.document_url}#zoom=100`}
-            className="h-[calc(100vh+28rem)] w-screen min-h-[calc(100vh+28rem)] bg-white"
-            title={`${trip.title} 行程表`}
-          />
+        <div id="trip-document" className="w-full">
+          <PdfViewer url={trip.document_url} title={`${trip.title} 行程表`} />
         </div>
       )}
 

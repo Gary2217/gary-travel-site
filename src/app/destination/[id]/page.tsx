@@ -105,7 +105,7 @@ export default function DestinationPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton logoUrl={siteLogoUrl} />
+        <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
@@ -119,7 +119,7 @@ export default function DestinationPage() {
   if (error || !destination) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-        <StickyHeader showBackButton logoUrl={siteLogoUrl} />
+        <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
             <p className="text-lg text-red-400">{error || "找不到此目的地"}</p>
@@ -137,7 +137,7 @@ export default function DestinationPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] pt-[86px] text-white md:pt-[98px] lg:pt-[74px]">
-      <StickyHeader showBackButton logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
+      <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
       <div className="relative h-40 overflow-hidden sm:h-48 md:h-64">
