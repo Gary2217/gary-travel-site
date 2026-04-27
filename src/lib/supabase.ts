@@ -247,12 +247,14 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<{ 
   // Step 2: 直接上傳到 Supabase Storage
   const uploadRes = await fetch(signedUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': file.type },
+    headers: { 'Content-Type': file.type || 'application/pdf' },
     body: file,
   });
 
   if (!uploadRes.ok) {
-    throw new Error('檔案上傳失敗，請稍後再試');
+    const errText = await uploadRes.text().catch(() => '');
+    console.error('Supabase upload failed:', uploadRes.status, errText);
+    throw new Error(`檔案上傳失敗（${uploadRes.status}），請稍後再試`);
   }
 
   // Step 3: 更新資料庫
