@@ -148,7 +148,7 @@ export default function DestinationPage() {
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
-      <div className="relative h-40 overflow-hidden sm:h-48 md:h-64">
+      <div className="relative h-48 overflow-hidden sm:h-56 md:h-64">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${destination.image_url})` }}
@@ -215,25 +215,6 @@ export default function DestinationPage() {
               </div>
             </button>
           )}
-          {/* 空白行程框，補滿至少 10 個 */}
-          {!isDevMode && Array.from({ length: Math.max(0, 10 - trips.length) }).map((_, i) => (
-            <div
-              key={`placeholder-${i}`}
-              className="overflow-hidden rounded-[1.25rem] border border-dashed border-white/10 bg-[rgba(20,20,30,0.3)] sm:rounded-[1.5rem]"
-            >
-              <div className="flex h-28 items-center justify-center sm:h-36 md:h-44">
-                <svg className="h-8 w-8 text-white/10 sm:h-10 sm:w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div className="p-2 sm:p-3 md:p-4">
-                <p className="min-h-[2rem] text-xs text-white/30 sm:min-h-[2.5rem] sm:text-sm">敬請期待</p>
-                <div className="mt-2 flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/30 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
-                  即將上架
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
 
         <SocialCta

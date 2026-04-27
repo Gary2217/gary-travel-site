@@ -32,8 +32,8 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
     return (
       <>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-        <div className="fixed bottom-4 right-3 z-[9998] flex flex-col items-end gap-1.5 sm:bottom-20 sm:right-4 sm:gap-2">
-          <p className="mb-0.5 rounded-lg border border-white/10 bg-[rgba(20,20,30,0.95)] px-2.5 py-1 text-center text-[10px] font-medium text-white/90 shadow-lg backdrop-blur-xl sm:mb-1 sm:px-3 sm:py-1.5 sm:text-xs">
+        <div className="fixed bottom-20 right-3 z-[9998] flex flex-col items-end gap-1.5 sm:bottom-8 sm:right-4 sm:gap-2">
+          <p className="mb-0.5 rounded-lg border border-white/10 bg-[rgba(20,20,30,0.95)] px-2.5 py-1 text-center text-xs font-medium text-white/90 shadow-lg backdrop-blur-xl sm:mb-1 sm:px-3 sm:py-1.5">
             詢問此行程
           </p>
           <button
