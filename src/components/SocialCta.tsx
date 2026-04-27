@@ -1,6 +1,6 @@
 "use client";
 
-import { lineHref, fbHref, igHref } from "@/lib/supabase";
+import { lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
 
 interface SocialCtaProps {
   title: string;
@@ -48,7 +48,7 @@ export default function SocialCta({
 
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-start md:gap-3">
             <a
-              href={lineHref}
+              href={lineDmHref}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-9 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#05b64d] sm:w-auto md:h-11 md:min-w-[164px] md:px-6"
@@ -61,7 +61,7 @@ export default function SocialCta({
             </a>
 
             <a
-              href={fbHref}
+              href={fbDmHref}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-9 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#1877F2] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1565d8] sm:w-auto md:h-11 md:min-w-[164px] md:px-6"
@@ -73,7 +73,7 @@ export default function SocialCta({
             </a>
 
             <a
-              href={igHref}
+              href={igDmHref}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-9 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#E4405F] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d62d4a] sm:w-auto md:h-11 md:min-w-[164px] md:px-6"

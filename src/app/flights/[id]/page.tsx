@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
-import { getSiteLogo, lineHref, fbHref, igHref, type FlightRoute } from "@/lib/supabase";
+import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute } from "@/lib/supabase";
 
 const REGION_COLOR: Record<string, string> = {
   日本: "bg-rose-600/80",
@@ -40,9 +40,6 @@ export default function FlightDetailPage() {
     }
   }
 
-  const lineMsg = route
-    ? `https://line.me/ti/p/${(process.env.NEXT_PUBLIC_LINE_ID || "").replace("@", "")}`
-    : lineHref;
 
   if (loading) {
     return (
@@ -157,14 +154,14 @@ export default function FlightDetailPage() {
 
             {/* Mobile CTA */}
             <div className="lg:hidden">
-              <CtaCard route={route} lineHref={lineHref} fbHref={fbHref} igHref={igHref} />
+              <CtaCard route={route} lineHref={lineDmHref} fbHref={fbDmHref} igHref={igDmHref} />
             </div>
           </div>
 
           {/* Right column (sticky desktop) */}
           <div className="hidden lg:block">
             <div className="sticky top-[88px]">
-              <CtaCard route={route} lineHref={lineHref} fbHref={fbHref} igHref={igHref} />
+              <CtaCard route={route} lineHref={lineDmHref} fbHref={fbDmHref} igHref={igDmHref} />
             </div>
           </div>
         </div>
