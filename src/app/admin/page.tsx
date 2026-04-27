@@ -134,15 +134,16 @@ function PieChart({ data }: { data: { line: number; facebook: number; instagram:
         <text x={cx} y={cy - 6} textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.6)">總分享</text>
         <text x={cx} y={cy + 10} textAnchor="middle" fontSize={15} fontWeight="bold" fill="white">{total}</text>
       </svg>
-      <div className="space-y-2">
+      <div className="min-w-0 flex-1 space-y-2.5">
         {slices.map((s) => (
           <div key={s.label} className="flex items-center gap-2 text-sm">
-            <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: s.color }} />
-            <span className="text-white/70">{s.label}</span>
-            <span className="ml-auto font-semibold text-white">{s.value}</span>
-            <span className="w-9 text-right text-xs text-white/40">{Math.round((s.value / total) * 100)}%</span>
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
+            <span className="w-16 shrink-0 text-white/70">{s.label}</span>
+            <span className="w-7 shrink-0 text-right font-semibold text-white">{s.value}</span>
+            <span className="w-8 shrink-0 text-right text-xs text-white/40">{Math.round((s.value / total) * 100)}%</span>
           </div>
         ))}
+        <p className="pt-1 text-[11px] text-white/30">分享 + 下載的平台選擇比例</p>
       </div>
     </div>
   );
@@ -272,7 +273,6 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
                 <h2 className="mb-3 text-sm font-bold text-white">社群平台分佈</h2>
                 <PieChart data={MOCK_PLATFORM} />
-                <p className="mt-3 text-center text-[10px] text-white/30">分享＋下載的平台選擇比例</p>
               </div>
             </div>
 
