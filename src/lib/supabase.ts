@@ -6,10 +6,10 @@ export const igHref = process.env.NEXT_PUBLIC_IG_URL || "#";
 export const flightHref = process.env.NEXT_PUBLIC_FLIGHT_URL || lineHref;
 
 // 私訊直達連結
-export const lineDmHref = `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}`;
+export const lineDmHref = `https://line.me/ti/p/${lineId}`;
 const _fbUrl = process.env.NEXT_PUBLIC_FB_URL || "";
 const _fbPageId = _fbUrl.includes("id=") ? _fbUrl.split("id=").pop() || "" : "";
-export const fbDmHref = _fbPageId ? `https://m.me/${_fbPageId}` : fbHref;
+export const fbDmHref = _fbPageId ? `https://m.me/p/${_fbPageId}` : fbHref;
 const _igUrl = process.env.NEXT_PUBLIC_IG_URL || "";
 const _igUsername = _igUrl.replace(/https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "");
 export const igDmHref = _igUsername ? `https://ig.me/m/${_igUsername}` : igHref;
