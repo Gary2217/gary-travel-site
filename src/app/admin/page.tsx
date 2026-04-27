@@ -22,32 +22,32 @@ const MOCK_TREND = [
 ];
 
 const MOCK_TRIPS = [
-  { title: "北海道溫泉美食5日", views: 312, downloads: 87, shares: 45, line: 22, fb: 14, ig: 9 },
-  { title: "峇里島耍廢慢遊5天4夜", views: 278, downloads: 71, shares: 38, line: 19, fb: 11, ig: 8 },
-  { title: "沖繩親子歡樂4日", views: 201, downloads: 54, shares: 27, line: 14, fb: 8, ig: 5 },
-  { title: "首爾美妝購物5天", views: 187, downloads: 48, shares: 31, line: 16, fb: 9, ig: 6 },
-  { title: "東京迪士尼圓夢6日", views: 166, downloads: 42, shares: 22, line: 11, fb: 7, ig: 4 },
+  { title: "北海道溫泉美食5日",    views: 312, downloads: 87, shares: 45, dl_line: 22, dl_fb: 14, dl_ig: 9,  share_line: 28, share_fb: 11, share_ig: 6 },
+  { title: "峇里島耍廢慢遊5天4夜", views: 278, downloads: 71, shares: 38, dl_line: 19, dl_fb: 11, dl_ig: 8,  share_line: 22, share_fb:  9, share_ig: 7 },
+  { title: "沖繩親子歡樂4日",      views: 201, downloads: 54, shares: 27, dl_line: 14, dl_fb:  8, dl_ig: 5,  share_line: 16, share_fb:  6, share_ig: 5 },
+  { title: "首爾美妝購物5天",      views: 187, downloads: 48, shares: 31, dl_line: 16, dl_fb:  9, dl_ig: 6,  share_line: 19, share_fb:  7, share_ig: 5 },
+  { title: "東京迪士尼圓夢6日",    views: 166, downloads: 42, shares: 22, dl_line: 11, dl_fb:  7, dl_ig: 4,  share_line: 13, share_fb:  5, share_ig: 4 },
 ];
 
 const MOCK_PLATFORM = { line: 58, facebook: 24, instagram: 18 };
 
 const MOCK_FLIGHTS = [
-  { route: "台北 → 東京", views: 203, inquiries: 31 },
-  { route: "台北 → 首爾", views: 178, inquiries: 24 },
-  { route: "台北 → 峇里島", views: 145, inquiries: 19 },
-  { route: "台北 → 沖繩", views: 132, inquiries: 17 },
-  { route: "台北 → 新加坡", views: 98, inquiries: 12 },
+  { route: "台北 → 東京",   views: 203, inquiries: 31, line: 18, fb: 8, ig: 5 },
+  { route: "台北 → 首爾",   views: 178, inquiries: 24, line: 14, fb: 6, ig: 4 },
+  { route: "台北 → 峇里島", views: 145, inquiries: 19, line: 11, fb: 5, ig: 3 },
+  { route: "台北 → 沖繩",   views: 132, inquiries: 17, line: 10, fb: 4, ig: 3 },
+  { route: "台北 → 新加坡", views:  98, inquiries: 12, line:  7, fb: 3, ig: 2 },
 ];
 
 const MOCK_RECENT = [
-  { time: "2分鐘前", event: "瀏覽行程", detail: "北海道溫泉美食5日", platform: "" },
-  { time: "5分鐘前", event: "LINE 下載", detail: "峇里島耍廢慢遊5天4夜", platform: "LINE" },
-  { time: "12分鐘前", event: "IG 分享", detail: "沖繩親子歡樂4日", platform: "IG" },
-  { time: "18分鐘前", event: "瀏覽機票", detail: "台北 → 東京", platform: "" },
-  { time: "25分鐘前", event: "FB 下載", detail: "首爾美妝購物5天", platform: "FB" },
-  { time: "31分鐘前", event: "LINE 詢問", detail: "東京迪士尼圓夢6日", platform: "LINE" },
-  { time: "47分鐘前", event: "瀏覽行程", detail: "首爾美妝購物5天", platform: "" },
-  { time: "1小時前", event: "LINE 分享", detail: "北海道溫泉美食5日", platform: "LINE" },
+  { time: "2分鐘前",  event: "瀏覽行程",  detail: "北海道溫泉美食5日",    platform: "" },
+  { time: "5分鐘前",  event: "LINE 下載", detail: "峇里島耍廢慢遊5天4夜", platform: "LINE" },
+  { time: "12分鐘前", event: "IG 分享",   detail: "沖繩親子歡樂4日",      platform: "IG" },
+  { time: "18分鐘前", event: "瀏覽機票",  detail: "台北 → 東京",          platform: "" },
+  { time: "25分鐘前", event: "FB 下載",   detail: "首爾美妝購物5天",      platform: "FB" },
+  { time: "31分鐘前", event: "LINE 詢問", detail: "東京迪士尼圓夢6日",    platform: "LINE" },
+  { time: "47分鐘前", event: "瀏覽行程",  detail: "首爾美妝購物5天",      platform: "" },
+  { time: "1小時前",  event: "LINE 分享", detail: "北海道溫泉美食5日",    platform: "LINE" },
 ];
 
 // ── Chart Components ─────────────────────────────────────
@@ -57,40 +57,32 @@ function LineChart({ data }: { data: typeof MOCK_TREND }) {
   const W = 600, H = 160, pad = { t: 16, r: 16, b: 32, l: 40 };
   const innerW = W - pad.l - pad.r;
   const innerH = H - pad.t - pad.b;
-
   const xStep = innerW / (data.length - 1);
   const yScale = (v: number) => innerH - (v / maxVal) * innerH;
-
-  const viewsPath = data.map((d, i) => `${i === 0 ? "M" : "L"}${pad.l + i * xStep},${pad.t + yScale(d.views)}`).join(" ");
-  const dlPath = data.map((d, i) => `${i === 0 ? "M" : "L"}${pad.l + i * xStep},${pad.t + yScale(d.downloads)}`).join(" ");
-  const sharePath = data.map((d, i) => `${i === 0 ? "M" : "L"}${pad.l + i * xStep},${pad.t + yScale(d.shares)}`).join(" ");
-
+  const viewsPath  = data.map((d, i) => `${i === 0 ? "M" : "L"}${pad.l + i * xStep},${pad.t + yScale(d.views)}`).join(" ");
+  const dlPath     = data.map((d, i) => `${i === 0 ? "M" : "L"}${pad.l + i * xStep},${pad.t + yScale(d.downloads)}`).join(" ");
+  const sharePath  = data.map((d, i) => `${i === 0 ? "M" : "L"}${pad.l + i * xStep},${pad.t + yScale(d.shares)}`).join(" ");
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 160 }}>
-      {/* Grid */}
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
         <line key={f} x1={pad.l} x2={W - pad.r} y1={pad.t + f * innerH} y2={pad.t + f * innerH} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
       ))}
-      {/* Y labels */}
       {[0, 0.5, 1].map((f) => (
         <text key={f} x={pad.l - 6} y={pad.t + f * innerH + 4} textAnchor="end" fontSize={10} fill="rgba(255,255,255,0.35)">
           {Math.round(maxVal * (1 - f))}
         </text>
       ))}
-      {/* X labels */}
       {data.map((d, i) => (
         <text key={i} x={pad.l + i * xStep} y={H - 6} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.35)">{d.date}</text>
       ))}
-      {/* Lines */}
       <path d={viewsPath} fill="none" stroke="#38bdf8" strokeWidth={2} strokeLinejoin="round" />
-      <path d={dlPath} fill="none" stroke="#34d399" strokeWidth={2} strokeLinejoin="round" />
+      <path d={dlPath}    fill="none" stroke="#34d399" strokeWidth={2} strokeLinejoin="round" />
       <path d={sharePath} fill="none" stroke="#a78bfa" strokeWidth={2} strokeLinejoin="round" />
-      {/* Dots */}
       {data.map((d, i) => (
         <g key={i}>
-          <circle cx={pad.l + i * xStep} cy={pad.t + yScale(d.views)} r={3} fill="#38bdf8" />
+          <circle cx={pad.l + i * xStep} cy={pad.t + yScale(d.views)}     r={3} fill="#38bdf8" />
           <circle cx={pad.l + i * xStep} cy={pad.t + yScale(d.downloads)} r={3} fill="#34d399" />
-          <circle cx={pad.l + i * xStep} cy={pad.t + yScale(d.shares)} r={3} fill="#a78bfa" />
+          <circle cx={pad.l + i * xStep} cy={pad.t + yScale(d.shares)}    r={3} fill="#a78bfa" />
         </g>
       ))}
     </svg>
@@ -100,38 +92,32 @@ function LineChart({ data }: { data: typeof MOCK_TREND }) {
 function PieChart({ data }: { data: { line: number; facebook: number; instagram: number } }) {
   const total = data.line + data.facebook + data.instagram;
   const slices = [
-    { label: "LINE", value: data.line, color: "#06C755" },
-    { label: "Facebook", value: data.facebook, color: "#1877F2" },
+    { label: "LINE",      value: data.line,      color: "#06C755" },
+    { label: "Facebook",  value: data.facebook,  color: "#1877F2" },
     { label: "Instagram", value: data.instagram, color: "#E4405F" },
   ];
-
   const cx = 80, cy = 80, r = 64, gap = 2;
   let cumulative = 0;
-
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const polarToCartesian = (angle: number) => ({
     x: cx + r * Math.cos(toRad(angle - 90)),
     y: cy + r * Math.sin(toRad(angle - 90)),
   });
-
   const arcs = slices.map((s) => {
     const startAngle = (cumulative / total) * 360 + gap / 2;
     cumulative += s.value;
     const endAngle = (cumulative / total) * 360 - gap / 2;
     const large = endAngle - startAngle > 180 ? 1 : 0;
     const start = polarToCartesian(startAngle);
-    const end = polarToCartesian(endAngle);
+    const end   = polarToCartesian(endAngle);
     return { ...s, path: `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y} Z` };
   });
-
   return (
     <div className="flex items-center gap-4">
       <svg viewBox="0 0 160 160" className="w-32 shrink-0 sm:w-36">
-        {arcs.map((a) => (
-          <path key={a.label} d={a.path} fill={a.color} opacity={0.85} />
-        ))}
+        {arcs.map((a) => <path key={a.label} d={a.path} fill={a.color} opacity={0.85} />)}
         <circle cx={cx} cy={cy} r={32} fill="rgba(20,20,30,0.9)" />
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.6)">總分享</text>
+        <text x={cx} y={cy - 6}  textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.6)">總分享</text>
         <text x={cx} y={cy + 10} textAnchor="middle" fontSize={15} fontWeight="bold" fill="white">{total}</text>
       </svg>
       <div className="min-w-0 flex-1 space-y-2.5">
@@ -162,25 +148,50 @@ function BarRow({ label, value, max, color }: { label: string; value: number; ma
   );
 }
 
+// ── Platform breakdown bar (for expanded rows) ────────────
+function PlatformBars({ line, fb, ig, label }: { line: number; fb: number; ig: number; label: string }) {
+  const max = Math.max(line, fb, ig, 1);
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-semibold text-white/50">{label}</p>
+      <div className="space-y-1.5">
+        {[
+          { name: "LINE", value: line, color: "#06C755" },
+          { name: "FB",   value: fb,   color: "#1877F2" },
+          { name: "IG",   value: ig,   color: "#E4405F" },
+        ].map(({ name, value, color }) => (
+          <div key={name} className="flex items-center gap-2">
+            <span className="w-7 shrink-0 text-[10px] font-semibold" style={{ color }}>{name}</span>
+            <div className="flex-1 overflow-hidden rounded-full bg-white/5">
+              <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${(value / max) * 100}%`, background: color }} />
+            </div>
+            <span className="w-6 shrink-0 text-right text-xs font-semibold text-white">{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Platform badge ───────────────────────────────────────
 const PLATFORM_BADGE: Record<string, string> = {
   LINE: "bg-[#06C755]/20 text-[#06C755]",
-  FB: "bg-[#1877F2]/20 text-[#1877F2]",
-  IG: "bg-[#E4405F]/20 text-[#E4405F]",
+  FB:   "bg-[#1877F2]/20 text-[#1877F2]",
+  IG:   "bg-[#E4405F]/20 text-[#E4405F]",
 };
 
 // ── Main Page ────────────────────────────────────────────
 export default function AdminPage() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "trips" | "flights" | "events">("overview");
+  const [checking,      setChecking]      = useState(true);
+  const [activeTab,     setActiveTab]     = useState<"overview" | "trips" | "flights" | "events">("overview");
+  const [selectedTrip,  setSelectedTrip]  = useState<string | null>(null);
+  const [selectedFlight,setSelectedFlight]= useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dev-auth/status", { cache: "no-store" })
       .then(r => r.json())
-      .then((d: { authorized?: boolean }) => {
-        if (!d.authorized) router.replace("/");
-      })
+      .then((d: { authorized?: boolean }) => { if (!d.authorized) router.replace("/"); })
       .catch(() => router.replace("/"))
       .finally(() => setChecking(false));
   }, [router]);
@@ -240,7 +251,6 @@ export default function AdminPage() {
         {/* ── Overview Tab ── */}
         {activeTab === "overview" && (
           <div className="space-y-6">
-            {/* Overview cards */}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {MOCK_OVERVIEW.map((item) => (
                 <div key={item.label} className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
@@ -254,9 +264,7 @@ export default function AdminPage() {
               ))}
             </div>
 
-            {/* Charts row */}
             <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-              {/* Line chart */}
               <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-sm font-bold text-white">最近 7 天趨勢</h2>
@@ -269,14 +277,12 @@ export default function AdminPage() {
                 <LineChart data={MOCK_TREND} />
               </div>
 
-              {/* Pie chart */}
               <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
                 <h2 className="mb-3 text-sm font-bold text-white">社群平台分佈</h2>
                 <PieChart data={MOCK_PLATFORM} />
               </div>
             </div>
 
-            {/* Top trips quick view */}
             <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
               <h2 className="mb-4 text-sm font-bold text-white">熱門行程 Top 5（瀏覽次數）</h2>
               <div className="space-y-3">
@@ -300,57 +306,126 @@ export default function AdminPage() {
         {/* ── Trips Tab ── */}
         {activeTab === "trips" && (
           <div className="space-y-4">
+
+            {/* Main trip table */}
             <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-              <div className="border-b border-white/10 px-4 py-3">
+              <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-white">行程完整統計</h2>
+                <span className="text-[10px] text-white/30">點擊行程查看平台明細</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px]">
+                <table className="w-full min-w-[420px]">
                   <thead>
                     <tr className="border-b border-white/5 text-[11px] text-white/40">
                       <th className="px-4 py-2.5 text-left">行程名稱</th>
                       <th className="px-4 py-2.5 text-center">👁 瀏覽</th>
                       <th className="px-4 py-2.5 text-center">📥 下載</th>
                       <th className="px-4 py-2.5 text-center">🔗 分享</th>
-                      <th className="px-4 py-2.5 text-center text-[#06C755]">LINE</th>
-                      <th className="px-4 py-2.5 text-center text-[#1877F2]">FB</th>
-                      <th className="px-4 py-2.5 text-center text-[#E4405F]">IG</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {MOCK_TRIPS.map((t, i) => (
-                      <tr key={t.title} className={`border-b border-white/5 text-sm transition hover:bg-white/5 ${i === 0 ? "bg-sky-500/5" : ""}`}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {i === 0 && <span className="rounded-full bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">TOP</span>}
-                            <span className="text-white/90">{t.title}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center font-semibold text-sky-300">{t.views}</td>
-                        <td className="px-4 py-3 text-center font-semibold text-emerald-300">{t.downloads}</td>
-                        <td className="px-4 py-3 text-center font-semibold text-violet-300">{t.shares}</td>
-                        <td className="px-4 py-3 text-center text-white/70">{t.line}</td>
-                        <td className="px-4 py-3 text-center text-white/70">{t.fb}</td>
-                        <td className="px-4 py-3 text-center text-white/70">{t.ig}</td>
-                      </tr>
-                    ))}
+                    {MOCK_TRIPS.map((t, i) => {
+                      const isOpen = selectedTrip === t.title;
+                      return (
+                        <>
+                          <tr
+                            key={t.title}
+                            onClick={() => setSelectedTrip(isOpen ? null : t.title)}
+                            className={`cursor-pointer border-b border-white/5 text-sm transition hover:bg-white/5 ${i === 0 ? "bg-sky-500/5" : ""} ${isOpen ? "bg-white/5" : ""}`}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                {i === 0 && <span className="rounded-full bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">TOP</span>}
+                                <span className="text-white/90">{t.title}</span>
+                                <svg className={`ml-auto h-3.5 w-3.5 shrink-0 text-white/30 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold text-sky-300">{t.views}</td>
+                            <td className="px-4 py-3 text-center font-semibold text-emerald-300">{t.downloads}</td>
+                            <td className="px-4 py-3 text-center font-semibold text-violet-300">{t.shares}</td>
+                          </tr>
+
+                          {isOpen && (
+                            <tr key={`${t.title}-detail`} className="border-b border-white/5 bg-white/[0.03]">
+                              <td colSpan={4} className="px-4 py-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  <PlatformBars line={t.dl_line} fb={t.dl_fb} ig={t.dl_ig} label="📥 下載來源" />
+                                  <PlatformBars line={t.share_line} fb={t.share_fb} ig={t.share_ig} label="🔗 分享來源" />
+                                </div>
+                                <div className="mt-3 flex gap-4 text-[11px] text-white/30">
+                                  <span>下載合計：<span className="text-emerald-400">{t.dl_line + t.dl_fb + t.dl_ig}</span></span>
+                                  <span>分享合計：<span className="text-violet-400">{t.share_line + t.share_fb + t.share_ig}</span></span>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Download platform distribution */}
+            {/* Download platform totals */}
             <div className="grid gap-4 sm:grid-cols-3">
               {[
-                { label: "LINE 下載", value: MOCK_TRIPS.reduce((a, t) => a + t.line, 0), color: "#06C755", emoji: "" },
-                { label: "FB 下載", value: MOCK_TRIPS.reduce((a, t) => a + t.fb, 0), color: "#1877F2", emoji: "" },
-                { label: "IG 下載", value: MOCK_TRIPS.reduce((a, t) => a + t.ig, 0), color: "#E4405F", emoji: "" },
+                { label: "LINE 下載", value: MOCK_TRIPS.reduce((a, t) => a + t.dl_line, 0), color: "#06C755" },
+                { label: "FB 下載",   value: MOCK_TRIPS.reduce((a, t) => a + t.dl_fb,   0), color: "#1877F2" },
+                { label: "IG 下載",   value: MOCK_TRIPS.reduce((a, t) => a + t.dl_ig,   0), color: "#E4405F" },
               ].map((item) => (
                 <div key={item.label} className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 text-center backdrop-blur-[12px]">
                   <p className="text-3xl font-bold" style={{ color: item.color }}>{item.value}</p>
                   <p className="mt-1 text-xs text-white/50">{item.label}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Share platform totals */}
+            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
+              <h2 className="mb-4 text-sm font-bold text-white">🔗 分享統計（各行程平台明細）</h2>
+              <div className="space-y-5">
+                {MOCK_TRIPS.map((t) => {
+                  const total = t.share_line + t.share_fb + t.share_ig;
+                  return (
+                    <div key={t.title}>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-medium text-white/80">{t.title}</span>
+                        <span className="text-[11px] text-white/40">共 {total} 次</span>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {[
+                          { name: "LINE", value: t.share_line, color: "#06C755" },
+                          { name: "FB",   value: t.share_fb,   color: "#1877F2" },
+                          { name: "IG",   value: t.share_ig,   color: "#E4405F" },
+                        ].map(({ name, value, color }) => (
+                          <div key={name} className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
+                            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
+                            <span className="text-[11px] text-white/60">{name}</span>
+                            <span className="ml-auto text-xs font-semibold" style={{ color }}>{value}</span>
+                            <span className="text-[10px] text-white/30">{total > 0 ? Math.round((value / total) * 100) : 0}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Share platform total summary */}
+              <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-3">
+                {[
+                  { label: "LINE 分享", value: MOCK_TRIPS.reduce((a, t) => a + t.share_line, 0), color: "#06C755" },
+                  { label: "FB 分享",   value: MOCK_TRIPS.reduce((a, t) => a + t.share_fb,   0), color: "#1877F2" },
+                  { label: "IG 分享",   value: MOCK_TRIPS.reduce((a, t) => a + t.share_ig,   0), color: "#E4405F" },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-xl bg-white/5 p-3 text-center">
+                    <p className="text-2xl font-bold" style={{ color: item.color }}>{item.value}</p>
+                    <p className="mt-0.5 text-[11px] text-white/40">{item.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -359,8 +434,9 @@ export default function AdminPage() {
         {activeTab === "flights" && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-              <div className="border-b border-white/10 px-4 py-3">
+              <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-white">機票航線瀏覽統計</h2>
+                <span className="text-[10px] text-white/30">點擊航線查看詢問明細</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[420px]">
@@ -373,29 +449,49 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {MOCK_FLIGHTS.map((f, i) => (
-                      <tr key={f.route} className="border-b border-white/5 text-sm transition hover:bg-white/5">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {i === 0 && <span className="rounded-full bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">TOP</span>}
-                            <span className="text-white/90">{f.route}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center font-semibold text-sky-300">{f.views}</td>
-                        <td className="px-4 py-3 text-center font-semibold text-amber-300">{f.inquiries}</td>
-                        <td className="px-4 py-3 text-center text-white/60">{Math.round((f.inquiries / f.views) * 100)}%</td>
-                      </tr>
-                    ))}
+                    {MOCK_FLIGHTS.map((f, i) => {
+                      const isOpen = selectedFlight === f.route;
+                      return (
+                        <>
+                          <tr
+                            key={f.route}
+                            onClick={() => setSelectedFlight(isOpen ? null : f.route)}
+                            className={`cursor-pointer border-b border-white/5 text-sm transition hover:bg-white/5 ${isOpen ? "bg-white/5" : ""}`}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                {i === 0 && <span className="rounded-full bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">TOP</span>}
+                                <span className="text-white/90">{f.route}</span>
+                                <svg className={`ml-auto h-3.5 w-3.5 shrink-0 text-white/30 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold text-sky-300">{f.views}</td>
+                            <td className="px-4 py-3 text-center font-semibold text-amber-300">{f.inquiries}</td>
+                            <td className="px-4 py-3 text-center text-white/60">{Math.round((f.inquiries / f.views) * 100)}%</td>
+                          </tr>
+
+                          {isOpen && (
+                            <tr key={`${f.route}-detail`} className="border-b border-white/5 bg-white/[0.03]">
+                              <td colSpan={4} className="px-4 py-4">
+                                <PlatformBars line={f.line} fb={f.fb} ig={f.ig} label="💬 詢問來源（LINE / FB / IG）" />
+                                <p className="mt-2 text-[11px] text-white/30">詢問合計：<span className="text-amber-400">{f.line + f.fb + f.ig}</span></p>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Bar chart for flights */}
             <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
               <h2 className="mb-4 text-sm font-bold text-white">航線瀏覽排行</h2>
               <div className="space-y-3">
-                {MOCK_FLIGHTS.map((f, i) => (
+                {MOCK_FLIGHTS.map((f) => (
                   <div key={f.route} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-white/70">{f.route}</span>
