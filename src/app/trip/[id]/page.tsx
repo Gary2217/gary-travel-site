@@ -191,7 +191,7 @@ export default function TripPage() {
 
       {/* PDF 全版面嵌入（canvas 渲染，防止直接下載） */}
       {days.length === 0 && trip.document_url && (
-        <div id="trip-document" className="w-full">
+        <div id="trip-document" className="mx-auto w-full max-w-[800px] px-3 sm:px-4">
           <PdfViewer url={trip.document_url} title={`${trip.title} 行程表`} />
         </div>
       )}
