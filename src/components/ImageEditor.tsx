@@ -345,7 +345,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,image/*"
+                    accept=".pdf,application/pdf"
                     onChange={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -353,6 +353,12 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                       if (!file) {
                         setSelectedDocFile(null);
                         setSelectedDocFileName("");
+                        return;
+                      }
+                      const ext = file.name.split('.').pop()?.toLowerCase();
+                      if (ext !== 'pdf') {
+                        alert("僅支援 PDF 檔案格式，請先將檔案轉換為 PDF 後再上傳");
+                        e.target.value = "";
                         return;
                       }
                       if (file.size > 50 * 1024 * 1024) {
@@ -373,7 +379,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                     <p className="mt-2 text-sm text-white/70">已選擇：{selectedDocFileName}</p>
                   )}
                   <p className="mt-1.5 text-xs text-white/50">
-                    支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP，大小限制 50MB。
+                    僅支援 PDF 檔案，大小限制 50MB。
                   </p>
                   <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-[rgba(20,20,30,0.98)] pb-1 pt-1.5">
                     <button

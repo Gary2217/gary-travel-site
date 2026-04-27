@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp'];
+const ALLOWED_EXTENSIONS = ['pdf'];
 
 function getStoragePathFromPublicUrl(publicUrl: string) {
   try {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     if (!ALLOWED_EXTENSIONS.includes(sanitizedExt)) {
       return NextResponse.json(
-        { error: '不支援的檔案格式。支援 PDF、DOC、DOCX、XLS、XLSX、JPG、PNG、WebP' },
+        { error: '僅支援 PDF 檔案格式' },
         { status: 400 }
       );
     }

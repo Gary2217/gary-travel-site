@@ -222,8 +222,14 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
   return data.url;
 }
 
-// 上傳行程檔案（PDF、DOC 等）— 直傳 Supabase，不經過 Vercel，無大小限制
+// 上傳行程檔案（僅限 PDF）— 直傳 Supabase，不經過 Vercel，無大小限制
 export async function uploadTripDocument(tripId: string, file: File): Promise<{ url: string; document_is_available: boolean }> {
+  // 前端檢查：僅接受 PDF
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  if (ext !== 'pdf') {
+    throw new Error('僅支援 PDF 檔案格式，請先將檔案轉換為 PDF 後再上傳');
+  }
+
   // Step 1: 取得 signed upload URL
   const urlRes = await fetch('/api/upload-trip-document', {
     method: 'POST',
