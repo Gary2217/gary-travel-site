@@ -48,9 +48,23 @@ export async function GET(
       // trip_days 表不存在，跳過
     }
 
+    // 查詢出發日期
+    let departureDates: any[] = [];
+    try {
+      const { data: datesData } = await supabase
+        .from('trip_departure_dates')
+        .select('*')
+        .eq('trip_id', params.id)
+        .order('departure_date', { ascending: true });
+      if (datesData) departureDates = datesData;
+    } catch {
+      // trip_departure_dates 表不存在，跳過
+    }
+
     const responseData = {
       ...data,
       trip_days: tripDays,
+      departure_dates: departureDates,
       document_is_available: Boolean(data.document_url),
     };
 

@@ -61,7 +61,23 @@ export type Trip = {
   created_at: string;
   updated_at: string;
   trip_days?: TripDay[];
+  departure_dates?: DepartureDate[];
   destinations?: Destination;
+};
+
+export type DepartureDate = {
+  id: string;
+  trip_id: string;
+  departure_date: string;
+  departure_city: string;
+  airline: string | null;
+  price: number | null;
+  seats_total: number;
+  seats_available: number;
+  label: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 export type TripDay = {

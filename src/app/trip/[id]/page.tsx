@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getSiteLogo, type Trip, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getSiteLogo, type Trip, type DepartureDate, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import StickyHeader from "@/components/StickyHeader";
 import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
+import DepartureDates from "@/components/DepartureDates";
 import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
 import { track } from "@/lib/analytics";
@@ -30,6 +31,7 @@ export default function TripPage() {
   const [editPriceRange, setEditPriceRange] = useState('');
   const [editHighlights, setEditHighlights] = useState('');
   const [saving, setSaving] = useState(false);
+  const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
 
   const triggerNativeShare = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -61,6 +63,7 @@ export default function TripPage() {
       try {
         const data = await getTripWithDays(tripId);
         setTrip(data);
+        setDepartureDates(data.departure_dates || []);
         track({ event_type: "trip_view", trip_id: tripId, trip_title: data.title });
       } catch {
         setError("無法載入行程資料");
@@ -264,7 +267,7 @@ export default function TripPage() {
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
         {/* 亮點標籤 */}
         {trip.highlights && trip.highlights.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
             <div className="flex flex-wrap gap-2">
               {trip.highlights.map((highlight) => (
@@ -277,6 +280,17 @@ export default function TripPage() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* 出團日期 */}
+        {(departureDates.length > 0 || isDevMode) && (
+          <DepartureDates
+            tripId={tripId}
+            tripTitle={trip.title}
+            dates={departureDates}
+            isDevMode={isDevMode}
+            onDatesChange={setDepartureDates}
+          />
         )}
       </div>
 
