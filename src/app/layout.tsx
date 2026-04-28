@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import MaintenanceGuard from '@/components/MaintenanceGuard';
 import './globals.css';
 
 const BASE_URL = 'https://gary-travel-site.vercel.app';
@@ -75,7 +76,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <MaintenanceGuard>{children}</MaintenanceGuard>
+      </body>
     </html>
   );
 }
