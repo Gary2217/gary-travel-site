@@ -21,7 +21,10 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { departure_date, departure_city, airline, price, seats_total, seats_available, label } = body;
+    const { departure_date, departure_city, airline, price, label,
+      outbound_flight, outbound_time, outbound_from, outbound_arrival_time, outbound_to, outbound_next_day,
+      return_date, return_flight, return_time, return_from, return_arrival_time, return_to, return_next_day,
+    } = body;
 
     if (!departure_date) {
       return NextResponse.json({ error: '請選擇出發日期' }, { status: 400 });
@@ -37,9 +40,20 @@ export async function POST(
         departure_city: departure_city || '桃園',
         airline: airline || null,
         price: price || null,
-        seats_total: seats_total || 0,
-        seats_available: seats_available ?? seats_total ?? 0,
         label: label || null,
+        outbound_flight: outbound_flight || null,
+        outbound_time: outbound_time || null,
+        outbound_from: outbound_from || null,
+        outbound_arrival_time: outbound_arrival_time || null,
+        outbound_to: outbound_to || null,
+        outbound_next_day: outbound_next_day || false,
+        return_date: return_date || null,
+        return_flight: return_flight || null,
+        return_time: return_time || null,
+        return_from: return_from || null,
+        return_arrival_time: return_arrival_time || null,
+        return_to: return_to || null,
+        return_next_day: return_next_day || false,
       })
       .select()
       .single();
@@ -69,7 +83,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const allowedFields = ['departure_date', 'departure_city', 'airline', 'price', 'seats_total', 'seats_available', 'label', 'is_active'];
+    const allowedFields = [
+      'departure_date', 'departure_city', 'airline', 'price', 'label', 'is_active',
+      'outbound_flight', 'outbound_time', 'outbound_from', 'outbound_arrival_time', 'outbound_to', 'outbound_next_day',
+      'return_date', 'return_flight', 'return_time', 'return_from', 'return_arrival_time', 'return_to', 'return_next_day',
+    ];
     const updates: Record<string, any> = {};
 
     for (const field of allowedFields) {

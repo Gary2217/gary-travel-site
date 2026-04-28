@@ -51,11 +51,22 @@ interface DepartureDatesProps {
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
+  const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const weekday = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
-  return { full: `${mm}/${dd}（${weekday}）`, month: d.getMonth() + 1, year: d.getFullYear() };
+  return { full: `${yyyy}/${mm}/${dd}（${weekday}）`, short: `${mm}/${dd}（${weekday}）`, month: d.getMonth() + 1, year: d.getFullYear(), weekday };
 }
+
+function getWeekdayFromDate(dateStr: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  return ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+}
+
+const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400";
+const labelClass = "mb-1 block text-[10px] text-white/50";
 
 export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange }: DepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
@@ -64,11 +75,28 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [saving, setSaving] = useState(false);
 
   const today = new Date().toLocaleDateString("sv-SE");
+  // 基本欄位
   const [formDate, setFormDate] = useState(today);
   const [formCity, setFormCity] = useState("桃園");
   const [formAirline, setFormAirline] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formLabel, setFormLabel] = useState("");
+  // 去程航班
+  const [formOutboundFlight, setFormOutboundFlight] = useState("");
+  const [formOutboundTime, setFormOutboundTime] = useState("");
+  const [formOutboundFrom, setFormOutboundFrom] = useState("");
+  const [formOutboundArrivalTime, setFormOutboundArrivalTime] = useState("");
+  const [formOutboundTo, setFormOutboundTo] = useState("");
+  const [formOutboundNextDay, setFormOutboundNextDay] = useState(false);
+  // 回程航班
+  const [formReturnDate, setFormReturnDate] = useState("");
+  const [formReturnFlight, setFormReturnFlight] = useState("");
+  const [formReturnTime, setFormReturnTime] = useState("");
+  const [formReturnFrom, setFormReturnFrom] = useState("");
+  const [formReturnArrivalTime, setFormReturnArrivalTime] = useState("");
+  const [formReturnTo, setFormReturnTo] = useState("");
+  const [formReturnNextDay, setFormReturnNextDay] = useState(false);
+
   const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
   const airlineRef = useRef<HTMLDivElement>(null);
 
@@ -98,8 +126,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   ).sort();
 
   const monthLabels = months.map((m) => {
-    const [y, mo] = m.split("-");
-    return { key: m, label: `${mo}月`, year: y };
+    const [, mo] = m.split("-");
+    return { key: m, label: `${mo}月` };
   });
 
   const filtered = activeMonth === "all"
@@ -115,8 +143,42 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormAirline("");
     setFormPrice("");
     setFormLabel("");
+    setFormOutboundFlight("");
+    setFormOutboundTime("");
+    setFormOutboundFrom("");
+    setFormOutboundArrivalTime("");
+    setFormOutboundTo("");
+    setFormOutboundNextDay(false);
+    setFormReturnDate("");
+    setFormReturnFlight("");
+    setFormReturnTime("");
+    setFormReturnFrom("");
+    setFormReturnArrivalTime("");
+    setFormReturnTo("");
+    setFormReturnNextDay(false);
     setEditingId(null);
   };
+
+  const buildPayload = () => ({
+    departure_date: formDate,
+    departure_city: formCity,
+    airline: formAirline || null,
+    price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
+    label: formLabel || null,
+    outbound_flight: formOutboundFlight || null,
+    outbound_time: formOutboundTime || null,
+    outbound_from: formOutboundFrom || null,
+    outbound_arrival_time: formOutboundArrivalTime || null,
+    outbound_to: formOutboundTo || null,
+    outbound_next_day: formOutboundNextDay,
+    return_date: formReturnDate || null,
+    return_flight: formReturnFlight || null,
+    return_time: formReturnTime || null,
+    return_from: formReturnFrom || null,
+    return_arrival_time: formReturnArrivalTime || null,
+    return_to: formReturnTo || null,
+    return_next_day: formReturnNextDay,
+  });
 
   const handleAdd = async () => {
     if (!formDate) return;
@@ -125,13 +187,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       const res = await fetch(`/api/trips/${tripId}/departure-dates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          departure_date: formDate,
-          departure_city: formCity,
-          airline: formAirline || null,
-          price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-          label: formLabel || null,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
         const added = await res.json();
@@ -150,13 +206,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          departure_date: formDate,
-          departure_city: formCity,
-          airline: formAirline || null,
-          price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-          label: formLabel || null,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -185,8 +235,27 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormAirline(d.airline || "");
     setFormPrice(d.price ? String(d.price) : "");
     setFormLabel(d.label || "");
+    setFormOutboundFlight(d.outbound_flight || "");
+    setFormOutboundTime(d.outbound_time || "");
+    setFormOutboundFrom(d.outbound_from || "");
+    setFormOutboundArrivalTime(d.outbound_arrival_time || "");
+    setFormOutboundTo(d.outbound_to || "");
+    setFormOutboundNextDay(d.outbound_next_day || false);
+    setFormReturnDate(d.return_date || "");
+    setFormReturnFlight(d.return_flight || "");
+    setFormReturnTime(d.return_time || "");
+    setFormReturnFrom(d.return_from || "");
+    setFormReturnArrivalTime(d.return_arrival_time || "");
+    setFormReturnTo(d.return_to || "");
+    setFormReturnNextDay(d.return_next_day || false);
     setShowAddForm(true);
   };
+
+  const departureDayLabel = getWeekdayFromDate(formDate);
+  const returnDayLabel = getWeekdayFromDate(formReturnDate);
+
+  const hasFlightInfo = (d: DepartureDate) =>
+    d.outbound_flight || d.outbound_time || d.return_flight || d.return_time;
 
   return (
     <div className="mb-8">
@@ -206,28 +275,38 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {isDevMode && showAddForm && (
         <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
           <p className="mb-3 text-xs font-bold text-amber-400">{editingId ? "編輯梯次" : "新增梯次"}</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+
+          {/* 基本資訊 */}
+          <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-[10px] text-white/50">出發日期 *</label>
-              <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-sky-400 [color-scheme:dark]" />
+              <label className={labelClass}>出發日期 *</label>
+              <div className="flex gap-1">
+                <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
+                  className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                {departureDayLabel && (
+                  <span className="flex items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">
+                    {departureDayLabel}
+                  </span>
+                )}
+              </div>
             </div>
             <div>
-              <label className="mb-1 block text-[10px] text-white/50">出發地</label>
+              <label className={labelClass}>出發地</label>
               <select value={formCity} onChange={(e) => setFormCity(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-sky-400 [color-scheme:dark]">
+                className={`${inputClass} [color-scheme:dark]`}>
                 {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div ref={airlineRef} className="relative">
-              <label className="mb-1 block text-[10px] text-white/50">航空公司</label>
+              <label className={labelClass}>航空公司</label>
               <input
                 type="text"
                 value={formAirline}
                 onChange={(e) => { setFormAirline(e.target.value); setAirlineDropdownOpen(true); }}
                 onFocus={() => setAirlineDropdownOpen(true)}
-                placeholder="搜尋或選擇航空公司"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400"
+                placeholder="搜尋航空公司"
+                className={inputClass}
                 autoComplete="off"
               />
               {airlineDropdownOpen && filteredAirlines.length > 0 && (
@@ -250,25 +329,111 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
               )}
             </div>
             <div>
-              <label className="mb-1 block text-[10px] text-white/50">售價</label>
+              <label className={labelClass}>售價</label>
               <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：42000"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
+                className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] text-white/50">備註</label>
+              <label className={labelClass}>備註</label>
               <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：確認出團"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
-            </div>
-            <div className="flex items-end">
-              <button
-                disabled={!formDate || saving}
-                onClick={editingId ? handleEdit : handleAdd}
-                className="w-full rounded-lg bg-sky-600 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-              >
-                {saving ? "儲存中..." : editingId ? "更新" : "新增"}
-              </button>
+                className={inputClass} />
             </div>
           </div>
+
+          {/* 去程航班 */}
+          <p className="mb-2 text-[10px] font-semibold text-sky-400/70">✈ 去程航班（選填）</p>
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
+            <div>
+              <label className={labelClass}>航班編號</label>
+              <input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850"
+                className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>起飛時間</label>
+              <input type="time" value={formOutboundTime} onChange={(e) => setFormOutboundTime(e.target.value)}
+                className={`${inputClass} [color-scheme:dark]`} />
+            </div>
+            <div>
+              <label className={labelClass}>起飛城市</label>
+              <input type="text" value={formOutboundFrom} onChange={(e) => setFormOutboundFrom(e.target.value)} placeholder="如：台北(桃園)"
+                className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>抵達時間</label>
+              <input type="time" value={formOutboundArrivalTime} onChange={(e) => setFormOutboundArrivalTime(e.target.value)}
+                className={`${inputClass} [color-scheme:dark]`} />
+            </div>
+            <div>
+              <label className={labelClass}>抵達城市</label>
+              <input type="text" value={formOutboundTo} onChange={(e) => setFormOutboundTo(e.target.value)} placeholder="如：新千歲機場"
+                className={inputClass} />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
+                <input type="checkbox" checked={formOutboundNextDay} onChange={(e) => setFormOutboundNextDay(e.target.checked)}
+                  className="rounded border-white/20 bg-white/5" />
+                跨日+1
+              </label>
+            </div>
+          </div>
+
+          {/* 回程航班 */}
+          <p className="mb-2 text-[10px] font-semibold text-amber-400/70">✈ 回程航班（選填）</p>
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7">
+            <div>
+              <label className={labelClass}>回程日期</label>
+              <div className="flex gap-1">
+                <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)}
+                  className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                {returnDayLabel && (
+                  <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">
+                    {returnDayLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>航班編號</label>
+              <input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861"
+                className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>起飛時間</label>
+              <input type="time" value={formReturnTime} onChange={(e) => setFormReturnTime(e.target.value)}
+                className={`${inputClass} [color-scheme:dark]`} />
+            </div>
+            <div>
+              <label className={labelClass}>起飛城市</label>
+              <input type="text" value={formReturnFrom} onChange={(e) => setFormReturnFrom(e.target.value)} placeholder="如：函館市"
+                className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>抵達時間</label>
+              <input type="time" value={formReturnArrivalTime} onChange={(e) => setFormReturnArrivalTime(e.target.value)}
+                className={`${inputClass} [color-scheme:dark]`} />
+            </div>
+            <div>
+              <label className={labelClass}>抵達城市</label>
+              <input type="text" value={formReturnTo} onChange={(e) => setFormReturnTo(e.target.value)} placeholder="如：台北(桃園)"
+                className={inputClass} />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
+                <input type="checkbox" checked={formReturnNextDay} onChange={(e) => setFormReturnNextDay(e.target.checked)}
+                  className="rounded border-white/20 bg-white/5" />
+                跨日+1
+              </label>
+            </div>
+          </div>
+
+          {/* 送出按鈕 */}
+          <button
+            disabled={!formDate || saving}
+            onClick={editingId ? handleEdit : handleAdd}
+            className="rounded-lg bg-sky-600 px-6 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+          >
+            {saving ? "儲存中..." : editingId ? "更新梯次" : "新增梯次"}
+          </button>
         </div>
       )}
 
@@ -306,28 +471,28 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         <div className="space-y-3">
           {filtered.map((d) => {
             const info = formatDate(d.departure_date);
+            const returnInfo = d.return_date ? formatDate(d.return_date) : null;
+            const showFlightTable = hasFlightInfo(d);
 
             return (
               <div
                 key={d.id}
-                className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-sm transition hover:border-white/15"
+                className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-sm transition hover:border-white/15"
               >
+                {/* 標頭：日期 + 價格 + 按鈕 */}
                 <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3.5 sm:px-5">
-                  {/* 左側資訊 */}
-                  <div className="min-w-0 space-y-1.5">
-                    {/* 日期 */}
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span className="text-sm font-bold text-white sm:text-base">{info.full}</span>
+                      <span className="text-sm font-bold text-white sm:text-base">{info.short}</span>
                       {d.label && (
                         <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
                           {d.label}
                         </span>
                       )}
                     </div>
-                    {/* 出發地 + 航空 + 價格 */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="text-xs text-white/80">{d.departure_city}出發</span>
                       {d.airline && (
@@ -348,10 +513,9 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                     </div>
                   </div>
 
-                  {/* 右側按鈕 */}
                   {!isDevMode && (
                     <a
-                      href={lineMessageHref(`我想詢問【${tripTitle}】${info.full} ${d.departure_city}出發`)}
+                      href={lineMessageHref(`我想詢問【${tripTitle}】${info.short} ${d.departure_city}出發`)}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95"
@@ -378,6 +542,69 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                     </div>
                   )}
                 </div>
+
+                {/* 航班詳細資訊表格 */}
+                {showFlightTable && (
+                  <div className="border-t border-white/5">
+                    {/* 表頭 */}
+                    <div className="hidden grid-cols-4 gap-2 bg-white/3 px-4 py-2 text-[10px] font-semibold text-white/40 sm:grid">
+                      <span>班機日期</span>
+                      <span>航空公司及航班</span>
+                      <span>起飛時間及城市</span>
+                      <span>抵達時間及城市</span>
+                    </div>
+
+                    {/* 去程 */}
+                    {(d.outbound_flight || d.outbound_time) && (
+                      <div className="grid grid-cols-1 gap-1 px-4 py-2.5 sm:grid-cols-4 sm:gap-2 sm:py-2">
+                        <div className="flex items-center gap-1.5">
+                          <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                          </svg>
+                          <span className="text-xs text-white/90">{info.full}</span>
+                        </div>
+                        <div className="pl-[18px] text-xs text-white/90 sm:pl-0">
+                          {d.airline && <span>{d.airline} </span>}
+                          {d.outbound_flight && <span className="text-white/70">{d.outbound_flight}</span>}
+                        </div>
+                        <div className="pl-[18px] text-xs sm:pl-0">
+                          {d.outbound_time && <span className="font-semibold text-white/90">{d.outbound_time}</span>}
+                          {d.outbound_from && <span className="text-white/70"> {d.outbound_from}</span>}
+                        </div>
+                        <div className="pl-[18px] text-xs sm:pl-0">
+                          {d.outbound_arrival_time && <span className="font-semibold text-white/90">{d.outbound_arrival_time}</span>}
+                          {d.outbound_to && <span className="text-white/70"> {d.outbound_to}</span>}
+                          {d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-300">（跨日+1）</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 回程 */}
+                    {(d.return_flight || d.return_time) && (
+                      <div className="grid grid-cols-1 gap-1 border-t border-white/3 px-4 py-2.5 sm:grid-cols-4 sm:gap-2 sm:py-2">
+                        <div className="flex items-center gap-1.5">
+                          <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                          </svg>
+                          <span className="text-xs text-white/90">{returnInfo ? returnInfo.full : "—"}</span>
+                        </div>
+                        <div className="pl-[18px] text-xs text-white/90 sm:pl-0">
+                          {d.airline && <span>{d.airline} </span>}
+                          {d.return_flight && <span className="text-white/70">{d.return_flight}</span>}
+                        </div>
+                        <div className="pl-[18px] text-xs sm:pl-0">
+                          {d.return_time && <span className="font-semibold text-white/90">{d.return_time}</span>}
+                          {d.return_from && <span className="text-white/70"> {d.return_from}</span>}
+                        </div>
+                        <div className="pl-[18px] text-xs sm:pl-0">
+                          {d.return_arrival_time && <span className="font-semibold text-white/90">{d.return_arrival_time}</span>}
+                          {d.return_to && <span className="text-white/70"> {d.return_to}</span>}
+                          {d.return_next_day && <span className="ml-1 text-[10px] text-amber-300">（跨日+1）</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
