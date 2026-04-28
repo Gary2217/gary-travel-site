@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getDestination, getDestinationTrips, getSiteLogo, createTrip, deleteTrip, type Destination, type Trip } from "@/lib/supabase";
 import FloatingContact from "@/components/FloatingContact";
+import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
@@ -227,6 +228,7 @@ export default function DestinationPage() {
       </section>
 
       <FloatingContact />
+      <ScrollToTop />
     </main>
   );
 }

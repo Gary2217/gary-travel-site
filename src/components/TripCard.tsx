@@ -3,7 +3,9 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import FavoriteButton from "@/components/FavoriteButton";
 import ImageEditor from "@/components/ImageEditor";
+import ShareButton from "@/components/ShareButton";
 import { uploadTripImage, uploadTripDocument, lineHref, fbHref, igHref } from "@/lib/supabase";
 
 interface TripCardProps {
@@ -101,6 +103,9 @@ export default function TripCard({
             </div>
           )}
 
+          {/* 收藏按鈕 */}
+          {!isDevMode && <FavoriteButton tripId={id} />}
+
           {/* Dev mode 圖片編輯 */}
           {isDevMode && onImageUpdate && (
             <ImageEditor
@@ -152,9 +157,12 @@ export default function TripCard({
               </h3>
             )
           ) : (
-            <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
-              {title}
-            </h3>
+            <div className="flex items-start justify-between gap-1">
+              <h3 className="line-clamp-2 min-h-[2rem] flex-1 text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
+                {title}
+              </h3>
+              <ShareButton title={title} url={`/trip/${id}`} />
+            </div>
           )}
           <button
             type="button"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import StickyHeader from "@/components/StickyHeader";
 import SocialCta from "@/components/SocialCta";
 import FloatingContact from "@/components/FloatingContact";
+import ScrollToTop from "@/components/ScrollToTop";
 import DevModeToggle from "@/components/DevModeToggle";
 import { getSiteLogo, type FlightRoute } from "@/lib/supabase";
 
@@ -589,6 +590,7 @@ export default function FlightsPage() {
       )}
 
       <FloatingContact />
+      <ScrollToTop />
     </main>
   );
 }

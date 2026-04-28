@@ -7,6 +7,7 @@ import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import LogoUploader from "@/components/LogoUploader";
 import FloatingContact from "@/components/FloatingContact";
+import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import { flightHref } from "@/lib/supabase";
@@ -291,6 +292,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -391,7 +393,34 @@ export default function HomePage() {
       />
 
       <section id="routes" className="w-full px-0 pb-2 pt-0 md:pb-3 md:pt-0">
-        <div className="sticky top-[84px] z-40 relative overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[96px] md:px-3 lg:top-[72px]">
+        <div className="sticky top-[84px] z-40 relative rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] md:top-[96px] md:px-3 lg:top-[72px]">
+          {/* 搜尋欄 */}
+          <div className="mx-auto mb-1.5 max-w-md">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜尋目的地..."
+                className="w-full rounded-full border border-white/10 bg-[rgba(255,255,255,0.08)] py-2 pl-9 pr-9 text-sm text-white placeholder-white/40 outline-none transition focus:border-sky-500/50 focus:bg-[rgba(255,255,255,0.12)]"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="pointer-events-none absolute left-0 top-0 z-10 flex h-full items-center bg-gradient-to-r from-[rgba(20,20,30,0.8)] to-transparent px-2 md:hidden">
             <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -421,18 +450,51 @@ export default function HomePage() {
               機票
             </Link>
           </div>
+          </div>
         </div>
 
         <div className="space-y-3">
-          {sections.map((section, sectionIndex) => (
-            <RouteRow
-              key={section.id}
-              section={section}
-              isDevMode={isDevMode}
-              onImageUpdate={handleImageUpdate}
-              sectionIndex={sectionIndex}
-            />
-          ))}
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const filtered = q
+              ? sections
+                  .map((section) => ({
+                    ...section,
+                    destinations: section.destinations.filter(
+                      (d) =>
+                        d.title.toLowerCase().includes(q) ||
+                        d.subtitle.toLowerCase().includes(q) ||
+                        section.categoryLabel.toLowerCase().includes(q) ||
+                        section.title.toLowerCase().includes(q)
+                    ),
+                  }))
+                  .filter((section) => section.destinations.length > 0)
+              : sections;
+
+            if (q && filtered.length === 0) {
+              return (
+                <div className="py-16 text-center">
+                  <p className="text-lg text-white/50">找不到「{searchQuery}」的相關結果</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+                  >
+                    清除搜尋
+                  </button>
+                </div>
+              );
+            }
+
+            return filtered.map((section, sectionIndex) => (
+              <RouteRow
+                key={section.id}
+                section={section}
+                isDevMode={isDevMode}
+                onImageUpdate={handleImageUpdate}
+                sectionIndex={sectionIndex}
+              />
+            ));
+          })()}
         </div>
 
         <SocialCta
@@ -444,6 +506,7 @@ export default function HomePage() {
       </section>
 
       <FloatingContact />
+      <ScrollToTop />
     </main>
   );
 }
