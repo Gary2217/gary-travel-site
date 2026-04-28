@@ -5,8 +5,8 @@ export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') || '旅遊規劃師 蓋瑞 GARY';
-  const subtitle = searchParams.get('subtitle') || '熱門旅遊行程總覽';
+  const title = searchParams.get('title') || '旅行沒有終點';
+  const subtitle = searchParams.get('subtitle') || '旅遊網站';
 
   return new ImageResponse(
     (
