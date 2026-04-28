@@ -354,7 +354,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 className={`${inputClass} [color-scheme:dark]`} />
             </div>
             <div>
-              <label className={labelClass}>起飛城市</label>
+              <label className={labelClass}>起飛機場</label>
               <input type="text" value={formOutboundFrom} onChange={(e) => setFormOutboundFrom(e.target.value)} placeholder="如：台北(桃園)"
                 className={inputClass} />
             </div>
@@ -364,7 +364,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 className={`${inputClass} [color-scheme:dark]`} />
             </div>
             <div>
-              <label className={labelClass}>抵達城市</label>
+              <label className={labelClass}>抵達機場</label>
               <input type="text" value={formOutboundTo} onChange={(e) => setFormOutboundTo(e.target.value)} placeholder="如：新千歲機場"
                 className={inputClass} />
             </div>
@@ -403,7 +403,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 className={`${inputClass} [color-scheme:dark]`} />
             </div>
             <div>
-              <label className={labelClass}>起飛城市</label>
+              <label className={labelClass}>起飛機場</label>
               <input type="text" value={formReturnFrom} onChange={(e) => setFormReturnFrom(e.target.value)} placeholder="如：函館市"
                 className={inputClass} />
             </div>
@@ -413,7 +413,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 className={`${inputClass} [color-scheme:dark]`} />
             </div>
             <div>
-              <label className={labelClass}>抵達城市</label>
+              <label className={labelClass}>抵達機場</label>
               <input type="text" value={formReturnTo} onChange={(e) => setFormReturnTo(e.target.value)} placeholder="如：台北(桃園)"
                 className={inputClass} />
             </div>
@@ -547,17 +547,20 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 {showFlightTable && (
                   <div className="border-t border-white/5">
                     {/* 表頭 */}
-                    <div className="hidden grid-cols-4 gap-2 bg-white/3 px-4 py-2 text-[10px] font-semibold text-white/40 sm:grid">
+                    <div className="hidden grid-cols-[auto_1fr_1fr_1fr_1fr] gap-2 bg-white/3 px-4 py-2 text-[10px] font-semibold text-white/40 sm:grid">
+                      <span className="w-10"></span>
                       <span>班機日期</span>
                       <span>航空公司及航班</span>
-                      <span>起飛時間及城市</span>
-                      <span>抵達時間及城市</span>
+                      <span>起飛時間及機場</span>
+                      <span>抵達時間及機場</span>
                     </div>
 
                     {/* 去程 */}
                     {(d.outbound_flight || d.outbound_time) && (
-                      <div className="grid grid-cols-1 gap-1 px-4 py-2.5 sm:grid-cols-4 sm:gap-2 sm:py-2">
+                      <div className="grid grid-cols-1 gap-1 px-4 py-2.5 sm:grid-cols-[auto_1fr_1fr_1fr_1fr] sm:gap-2 sm:py-2">
+                        <span className="hidden w-10 text-[10px] font-bold text-sky-400 sm:flex sm:items-center">去程</span>
                         <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-sky-400 sm:hidden">去程</span>
                           <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                           </svg>
@@ -581,8 +584,10 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
                     {/* 回程 */}
                     {(d.return_flight || d.return_time) && (
-                      <div className="grid grid-cols-1 gap-1 border-t border-white/3 px-4 py-2.5 sm:grid-cols-4 sm:gap-2 sm:py-2">
+                      <div className="grid grid-cols-1 gap-1 border-t border-white/3 px-4 py-2.5 sm:grid-cols-[auto_1fr_1fr_1fr_1fr] sm:gap-2 sm:py-2">
+                        <span className="hidden w-10 text-[10px] font-bold text-amber-400 sm:flex sm:items-center">回程</span>
                         <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-amber-400 sm:hidden">回程</span>
                           <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                           </svg>
