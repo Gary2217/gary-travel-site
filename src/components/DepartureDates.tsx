@@ -1,9 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { type DepartureDate, lineMessageHref } from "@/lib/supabase";
 
 const CITIES = ["桃園", "台中", "高雄", "松山", "其他"];
+
+const AIRLINES = [
+  { name: "中華航空", code: "CI", en: "China Airlines" },
+  { name: "長榮航空", code: "BR", en: "EVA Air" },
+  { name: "星宇航空", code: "JX", en: "STARLUX Airlines" },
+  { name: "台灣虎航", code: "IT", en: "Tigerair Taiwan" },
+  { name: "華信航空", code: "AE", en: "Mandarin Airlines" },
+  { name: "立榮航空", code: "B7", en: "UNI Air" },
+  { name: "樂桃航空", code: "MM", en: "Peach Aviation" },
+  { name: "捷星日本", code: "GK", en: "Jetstar Japan" },
+  { name: "酷航", code: "TR", en: "Scoot" },
+  { name: "亞洲航空", code: "AK", en: "AirAsia" },
+  { name: "宿霧太平洋", code: "5J", en: "Cebu Pacific" },
+  { name: "越捷航空", code: "VJ", en: "VietJet Air" },
+  { name: "菲律賓航空", code: "PR", en: "Philippine Airlines" },
+  { name: "越南航空", code: "VN", en: "Vietnam Airlines" },
+  { name: "泰國獅航", code: "SL", en: "Thai Lion Air" },
+  { name: "泰國航空", code: "TG", en: "Thai Airways" },
+  { name: "新加坡航空", code: "SQ", en: "Singapore Airlines" },
+  { name: "國泰航空", code: "CX", en: "Cathay Pacific" },
+  { name: "日本航空", code: "JL", en: "Japan Airlines" },
+  { name: "全日空", code: "NH", en: "All Nippon Airways" },
+  { name: "大韓航空", code: "KE", en: "Korean Air" },
+  { name: "韓亞航空", code: "OZ", en: "Asiana Airlines" },
+  { name: "真航空", code: "LJ", en: "Jin Air" },
+  { name: "濟州航空", code: "7C", en: "Jeju Air" },
+  { name: "德威航空", code: "TW", en: "T'way Air" },
+  { name: "釜山航空", code: "BX", en: "Air Busan" },
+  { name: "易斯達航空", code: "ZE", en: "Eastar Jet" },
+  { name: "阿聯酋航空", code: "EK", en: "Emirates" },
+  { name: "土耳其航空", code: "TK", en: "Turkish Airlines" },
+  { name: "荷蘭皇家航空", code: "KL", en: "KLM Royal Dutch Airlines" },
+  { name: "法國航空", code: "AF", en: "Air France" },
+  { name: "馬來西亞航空", code: "MH", en: "Malaysia Airlines" },
+  { name: "印尼航空", code: "GA", en: "Garuda Indonesia" },
+];
 
 interface DepartureDatesProps {
   tripId: string;
@@ -48,6 +84,27 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [formSeatsTotal, setFormSeatsTotal] = useState("");
   const [formSeatsAvailable, setFormSeatsAvailable] = useState("");
   const [formLabel, setFormLabel] = useState("");
+  const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
+  const airlineRef = useRef<HTMLDivElement>(null);
+
+  // 點擊外部關閉下拉
+  useEffect(() => {
+    if (!airlineDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (airlineRef.current && !airlineRef.current.contains(e.target as Node)) {
+        setAirlineDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [airlineDropdownOpen]);
+
+  const filteredAirlines = formAirline.trim()
+    ? AIRLINES.filter((a) => {
+        const q = formAirline.trim().toLowerCase();
+        return a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q) || a.en.toLowerCase().includes(q);
+      })
+    : AIRLINES;
 
   // 收集所有月份
   const months = Array.from(
@@ -192,10 +249,35 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div>
+            <div ref={airlineRef} className="relative">
               <label className="mb-1 block text-[10px] text-white/50">航空公司</label>
-              <input type="text" value={formAirline} onChange={(e) => setFormAirline(e.target.value)} placeholder="如：長榮航空"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
+              <input
+                type="text"
+                value={formAirline}
+                onChange={(e) => { setFormAirline(e.target.value); setAirlineDropdownOpen(true); }}
+                onFocus={() => setAirlineDropdownOpen(true)}
+                placeholder="搜尋或選擇航空公司"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400"
+                autoComplete="off"
+              />
+              {airlineDropdownOpen && filteredAirlines.length > 0 && (
+                <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/10 bg-[rgba(20,20,30,0.98)] shadow-xl backdrop-blur-xl">
+                  {filteredAirlines.map((a) => (
+                    <button
+                      key={a.code}
+                      type="button"
+                      onClick={() => {
+                        setFormAirline(`${a.name}（${a.code}）`);
+                        setAirlineDropdownOpen(false);
+                      }}
+                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10"
+                    >
+                      <span>{a.name}（{a.code}）</span>
+                      <span className="text-[10px] text-white/40">{a.en}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-[10px] text-white/50">售價</label>
