@@ -213,6 +213,7 @@ function RouteRow({
         <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <button
             type="button"
+            aria-label="向左捲動"
             onClick={() => scroll(-1)}
             className="absolute left-0 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(20,20,30,0.7)] text-base font-bold text-white shadow-lg shadow-black/30 transition hover:bg-[rgba(35,35,50,0.85)] sm:h-12 sm:w-12 sm:-left-3 sm:text-xl lg:-left-4"
           >
@@ -253,9 +254,12 @@ function RouteRow({
                     onOpenChange={setIsEditorOpen}
                   />
                 )}
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${destination.image_url})` }}
+                <img
+                  src={destination.image_url}
+                  alt={destination.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-2.5 text-white sm:p-3 md:p-4">
@@ -268,6 +272,7 @@ function RouteRow({
 
           <button
             type="button"
+            aria-label="向右捲動"
             onClick={() => scroll(1)}
             className="absolute right-0 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(20,20,30,0.7)] text-base font-bold text-white shadow-lg shadow-black/30 transition hover:bg-[rgba(35,35,50,0.85)] sm:h-12 sm:w-12 sm:-right-3 sm:text-xl lg:-right-4"
           >

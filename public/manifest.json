@@ -1,0 +1,17 @@
+{
+  "name": "蓋瑞旅遊 GARY Travel",
+  "short_name": "蓋瑞旅遊",
+  "description": "旅遊規劃師蓋瑞 GARY，為您量身打造專屬行程",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f2a",
+  "theme_color": "#0b0f2a",
+  "icons": [
+    {
+      "src": "/travel-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
