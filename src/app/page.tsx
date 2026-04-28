@@ -6,6 +6,7 @@ import { getRegionsWithDestinations, getSiteLogo, trackClick } from "@/lib/supab
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import LogoUploader from "@/components/LogoUploader";
+import FloatingContact from "@/components/FloatingContact";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import { flightHref } from "@/lib/supabase";
@@ -441,6 +442,8 @@ export default function HomePage() {
           logoUrl={siteLogoUrl}
         />
       </section>
+
+      <FloatingContact />
     </main>
   );
 }
