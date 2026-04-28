@@ -107,28 +107,19 @@ export default function FlightDetailPage() {
           {/* Left column */}
           <div className="space-y-4">
 
-            {/* 航班資訊 */}
-            <section className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
-              <h2 className="mb-4 text-base font-bold text-white">航班資訊</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <InfoBlock label="出發地" value={route.from_city} />
-                <InfoBlock label="目的地" value={route.to_city} />
-                <InfoBlock label="飛行時間" value={route.duration} />
-                <InfoBlock label="飛行方式" value={route.direct ? "✈ 直飛" : "🔄 需轉機"} highlight={route.direct} />
-              </div>
-
-              {/* Airlines */}
-              <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                <p className="mb-1 text-xs text-white/45">可選航空公司</p>
-                <div className="flex flex-wrap gap-2">
-                  {route.airlines.split(/[/／、,，]/).map((a) => a.trim()).filter(Boolean).map((airline) => (
-                    <span key={airline} className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-sm font-medium text-white/85">
-                      {airline}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </section>
+            {/* 航班票價（含航線資訊標頭） */}
+            <FlightDepartureDates
+              flightRouteId={route.id}
+              routeLabel={`${route.from_city} → ${route.to_city}`}
+              fromCity={route.from_city}
+              toCity={route.to_city}
+              duration={route.duration}
+              direct={route.direct}
+              airlines={route.airlines}
+              dates={departureDates}
+              isDevMode={isDevMode}
+              onDatesChange={setDepartureDates}
+            />
 
             {/* 自定義欄位 (metadata) */}
             {metaEntries.length > 0 && (
@@ -140,17 +131,6 @@ export default function FlightDetailPage() {
                   ))}
                 </div>
               </section>
-            )}
-
-            {/* 航班票價 */}
-            {(departureDates.length > 0 || isDevMode) && (
-              <FlightDepartureDates
-                flightRouteId={route.id}
-                routeLabel={`${route.from_city} → ${route.to_city}`}
-                dates={departureDates}
-                isDevMode={isDevMode}
-                onDatesChange={setDepartureDates}
-              />
             )}
 
             {/* Mobile CTA */}

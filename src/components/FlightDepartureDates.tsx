@@ -42,6 +42,11 @@ const AIRLINES = [
 interface FlightDepartureDatesProps {
   flightRouteId: string;
   routeLabel: string; // e.g. "桃園 → 東京"
+  fromCity: string;
+  toCity: string;
+  duration: string;
+  direct: boolean;
+  airlines: string;
   dates: FlightDepartureDate[];
   isDevMode: boolean;
   onDatesChange: (dates: FlightDepartureDate[]) => void;
@@ -55,19 +60,7 @@ function formatDate(dateStr: string) {
   return { full: `${mm}/${dd}（${weekday}）`, month: d.getMonth() + 1, year: d.getFullYear() };
 }
 
-function getSeatsColor(available: number, total: number) {
-  if (available <= 0) return "text-red-400";
-  if (total > 0 && available <= Math.ceil(total * 0.3)) return "text-amber-400";
-  return "text-emerald-400";
-}
-
-function getSeatsLabel(available: number) {
-  if (available <= 0) return "已售完";
-  if (available <= 5) return `剩 ${available} 位`;
-  return `${available} 位`;
-}
-
-export default function FlightDepartureDates({ flightRouteId, routeLabel, dates, isDevMode, onDatesChange }: FlightDepartureDatesProps) {
+export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCity, toCity, duration, direct, airlines, dates, isDevMode, onDatesChange }: FlightDepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -77,8 +70,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
   const [formDate, setFormDate] = useState(today);
   const [formAirline, setFormAirline] = useState("");
   const [formPrice, setFormPrice] = useState("");
-  const [formSeatsTotal, setFormSeatsTotal] = useState("");
-  const [formSeatsAvailable, setFormSeatsAvailable] = useState("");
   const [formLabel, setFormLabel] = useState("");
   const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
   const airlineRef = useRef<HTMLDivElement>(null);
@@ -124,8 +115,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
     setFormDate(today);
     setFormAirline("");
     setFormPrice("");
-    setFormSeatsTotal("");
-    setFormSeatsAvailable("");
     setFormLabel("");
     setEditingId(null);
   };
@@ -134,8 +123,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
     if (!formDate) return;
     setSaving(true);
     try {
-      const total = parseInt(formSeatsTotal) || 0;
-      const available = formSeatsAvailable ? parseInt(formSeatsAvailable) : total;
       const res = await fetch(`/api/flight-routes/${flightRouteId}/departures`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -143,8 +130,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
           departure_date: formDate,
           airline: formAirline || null,
           price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-          seats_total: total,
-          seats_available: available,
           label: formLabel || null,
         }),
       });
@@ -162,8 +147,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
     if (!editingId || !formDate) return;
     setSaving(true);
     try {
-      const total = parseInt(formSeatsTotal) || 0;
-      const available = formSeatsAvailable ? parseInt(formSeatsAvailable) : total;
       const res = await fetch(`/api/flight-routes/${flightRouteId}/departures?dateId=${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -171,8 +154,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
           departure_date: formDate,
           airline: formAirline || null,
           price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-          seats_total: total,
-          seats_available: available,
           label: formLabel || null,
         }),
       });
@@ -201,31 +182,64 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
     setFormDate(d.departure_date);
     setFormAirline(d.airline || "");
     setFormPrice(d.price ? String(d.price) : "");
-    setFormSeatsTotal(String(d.seats_total || ""));
-    setFormSeatsAvailable(String(d.seats_available || ""));
     setFormLabel(d.label || "");
     setShowAddForm(true);
   };
 
+  const airlineList = airlines.split(/[/／、,，]/).map((a) => a.trim()).filter(Boolean);
+
   return (
     <section className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-bold text-white">航班票價</h2>
-        {isDevMode && (
-          <button
-            onClick={() => { resetForm(); setShowAddForm(!showAddForm); }}
-            className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
-          >
-            {showAddForm ? "取消" : "新增航班"}
-          </button>
-        )}
+      {/* 航線資訊標頭 */}
+      <div className="mb-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold text-white">航班票價</h2>
+          {isDevMode && (
+            <button
+              onClick={() => { resetForm(); setShowAddForm(!showAddForm); }}
+              className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
+            >
+              {showAddForm ? "取消" : "新增航班"}
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 sm:grid-cols-4">
+          <div>
+            <p className="mb-0.5 text-[10px] text-white/50">出發地</p>
+            <p className="text-sm font-semibold text-white">{fromCity}</p>
+          </div>
+          <div>
+            <p className="mb-0.5 text-[10px] text-white/50">目的地</p>
+            <p className="text-sm font-semibold text-white">{toCity}</p>
+          </div>
+          <div>
+            <p className="mb-0.5 text-[10px] text-white/50">飛行時間</p>
+            <p className="text-sm font-semibold text-white/90">{duration}</p>
+          </div>
+          <div>
+            <p className="mb-0.5 text-[10px] text-white/50">飛行方式</p>
+            <p className={`text-sm font-semibold ${direct ? "text-sky-300" : "text-white/90"}`}>
+              {direct ? "✈ 直飛" : "🔄 轉機"}
+            </p>
+          </div>
+          {airlineList.length > 0 && (
+            <div className="col-span-2 sm:col-span-4">
+              <p className="mb-1 text-[10px] text-white/50">可選航空</p>
+              <div className="flex flex-wrap gap-1.5">
+                {airlineList.map((a) => (
+                  <span key={a} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-0.5 text-xs text-white/85">{a}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Dev mode 新增/編輯表單 */}
       {isDevMode && showAddForm && (
         <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
           <p className="mb-3 text-xs font-bold text-amber-400">{editingId ? "編輯航班" : "新增航班"}</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-[10px] text-white/50">出發日期 *</label>
               <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
@@ -264,16 +278,6 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
             <div>
               <label className="mb-1 block text-[10px] text-white/50">票價</label>
               <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：8900"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[10px] text-white/50">總位數</label>
-              <input type="number" value={formSeatsTotal} onChange={(e) => setFormSeatsTotal(e.target.value)} placeholder="如：30"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
-            </div>
-            <div>
-              <label className="mb-1 block text-[10px] text-white/50">剩餘位數</label>
-              <input type="number" value={formSeatsAvailable} onChange={(e) => setFormSeatsAvailable(e.target.value)} placeholder="同總位數"
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
             </div>
             <div>
@@ -325,84 +329,65 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
 
       {/* 航班列表 */}
       {filtered.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filtered.map((d) => {
             const info = formatDate(d.departure_date);
-            const seatsColor = getSeatsColor(d.seats_available, d.seats_total);
-            const seatsLabel = getSeatsLabel(d.seats_available);
-            const isFull = d.seats_available <= 0 && d.seats_total > 0;
 
             return (
               <div
                 key={d.id}
-                className={`rounded-xl border bg-[rgba(20,20,30,0.5)] p-3 backdrop-blur-sm transition sm:p-4 ${
-                  isFull ? "border-white/5 opacity-60" : "border-white/10"
-                }`}
+                className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] backdrop-blur-sm transition hover:border-white/15"
               >
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  {/* 日期 */}
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-sm font-bold text-white sm:text-base">{info.full}</span>
+                <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3.5 sm:px-5">
+                  {/* 左側資訊 */}
+                  <div className="min-w-0 space-y-1.5">
+                    {/* 日期 */}
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-bold text-white sm:text-base">{info.full}</span>
+                      {d.label && (
+                        <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
+                          {d.label}
+                        </span>
+                      )}
+                    </div>
+                    {/* 航空 + 價格 */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {d.airline && (
+                        <span className="flex items-center gap-1 text-xs text-white/80">
+                          <svg className="h-3 w-3 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                          </svg>
+                          {d.airline}
+                        </span>
+                      )}
+                      {d.price ? (
+                        <span className="text-sm font-bold text-amber-300 sm:text-base">
+                          NT$ {d.price.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-white/50">洽詢報價</span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* 航空 */}
-                  {d.airline && (
-                    <div className="flex items-center gap-1.5">
-                      <svg className="h-3.5 w-3.5 shrink-0 text-white/40" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                      </svg>
-                      <span className="text-xs text-white/70">{d.airline}</span>
-                    </div>
-                  )}
-
-                  {/* 價格 */}
-                  {d.price && (
-                    <span className="text-sm font-bold text-amber-300 sm:text-base">
-                      NT$ {d.price.toLocaleString()}
-                    </span>
-                  )}
-
-                  {/* 座位 */}
-                  {d.seats_total > 0 && (
-                    <span className={`text-xs font-semibold ${seatsColor}`}>
-                      {seatsLabel}
-                    </span>
-                  )}
-
-                  {/* 備註標籤 */}
-                  {d.label && (
-                    <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-medium text-sky-300">
-                      {d.label}
-                    </span>
-                  )}
-
-                  <div className="flex-1" />
-
-                  {/* 詢價按鈕 */}
-                  {!isDevMode && !isFull && (
+                  {/* 右側按鈕 */}
+                  {!isDevMode && (
                     <a
                       href={lineMessageHref(`我想詢問【${routeLabel}】${info.full} 的機票${d.airline ? `（${d.airline}）` : ""}`)}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full bg-[#06C755] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#05b64d] active:scale-95"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95"
                     >
-                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
-                      我要詢價
+                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                      詢問機票
                     </a>
                   )}
 
-                  {isFull && !isDevMode && (
-                    <span className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-400">
-                      已售完
-                    </span>
-                  )}
-
-                  {/* Dev mode 編輯/刪除 */}
                   {isDevMode && (
-                    <div className="flex gap-1.5">
+                    <div className="flex shrink-0 gap-1.5">
                       <button
                         onClick={() => openEditForm(d)}
                         className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-semibold text-amber-300 transition hover:bg-amber-500/30"
@@ -423,7 +408,7 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, dates,
           })}
         </div>
       ) : (
-        <p className="text-sm text-white/40">
+        <p className="text-sm text-white/50">
           {dates.length > 0 ? "此月份無航班票價" : isDevMode ? "尚未新增航班票價，點擊上方「新增航班」開始" : "目前無可訂購航班"}
         </p>
       )}

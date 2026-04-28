@@ -260,7 +260,7 @@ export default function TripPage() {
               {trip.highlights.map((highlight) => (
                 <span
                   key={highlight}
-                  className="rounded-full border border-sky-500/20 bg-sky-500/10 px-4 py-1.5 text-sm font-medium text-sky-300"
+                  className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-sm font-medium text-sky-200"
                 >
                   {highlight}
                 </span>
