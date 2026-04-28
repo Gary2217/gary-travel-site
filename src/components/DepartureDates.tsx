@@ -40,7 +40,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [saving, setSaving] = useState(false);
 
   // 新增表單 state
-  const [formDate, setFormDate] = useState("");
+  const today = new Date().toLocaleDateString("sv-SE"); // yyyy-MM-dd 格式
+  const [formDate, setFormDate] = useState(today);
   const [formCity, setFormCity] = useState("桃園");
   const [formAirline, setFormAirline] = useState("");
   const [formPrice, setFormPrice] = useState("");
@@ -70,7 +71,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       });
 
   const resetForm = () => {
-    setFormDate("");
+    setFormDate(today);
     setFormCity("桃園");
     setFormAirline("");
     setFormPrice("");
