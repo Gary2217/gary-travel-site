@@ -107,6 +107,21 @@ export type FlightRoute = {
   metadata: Record<string, string>;
   created_at: string;
   updated_at: string;
+  flight_departure_dates?: FlightDepartureDate[];
+};
+
+export type FlightDepartureDate = {
+  id: string;
+  flight_route_id: string;
+  departure_date: string;
+  airline: string | null;
+  price: number | null;
+  seats_total: number;
+  seats_available: number;
+  label: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 export type Inquiry = {

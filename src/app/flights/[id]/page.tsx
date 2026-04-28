@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
-import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute } from "@/lib/supabase";
+import DevModeToggle from "@/components/DevModeToggle";
+import FlightDepartureDates from "@/components/FlightDepartureDates";
+import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 
 const REGION_COLOR: Record<string, string> = {
@@ -23,6 +25,8 @@ export default function FlightDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState("/travel-logo.svg");
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [departureDates, setDepartureDates] = useState<FlightDepartureDate[]>([]);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
@@ -35,6 +39,7 @@ export default function FlightDetailPage() {
       if (!res.ok) { setNotFound(true); return; }
       const data = await res.json() as FlightRoute;
       setRoute(data);
+      setDepartureDates(data.flight_departure_dates || []);
       track({ event_type: "flight_view", flight_id: data.id, flight_route: `${data.from_city} → ${data.to_city}` });
     } catch {
       setNotFound(true);
@@ -73,44 +78,26 @@ export default function FlightDetailPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
-      <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" />
+      <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <div className="relative h-[52vh] min-h-[280px] max-h-[420px] w-full overflow-hidden">
-        {route.image_url ? (
-          <img src={route.image_url} alt={route.to_city} className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-sky-900 to-slate-900" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent h-24" />
-
-        {/* Hero content */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 sm:px-6 md:px-10">
-          <div className="mx-auto max-w-5xl">
-            {/* Badges */}
-            <div className="mb-3 flex flex-wrap gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm ${REGION_COLOR[route.region] ?? "bg-slate-600/80"}`}>
-                {route.region}
-              </span>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm ${route.direct ? "bg-sky-600/80" : "bg-white/20"}`}>
-                {route.direct ? "直飛" : "轉機"}
-              </span>
-            </div>
-
-            {/* Route */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-white/70 sm:text-base">{route.from_city}</span>
-              <svg className="h-5 w-5 shrink-0 text-sky-400 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-              </svg>
-              <h1 className="text-4xl font-bold text-white drop-shadow sm:text-5xl md:text-6xl">{route.to_city}</h1>
-            </div>
-
-            {/* Price */}
-            <p className="mt-2 text-xl font-bold text-sky-300 sm:text-2xl">{route.price_range}</p>
-          </div>
+      {/* ── Title Block ────────────────────────────────── */}
+      <div className="mx-auto max-w-5xl px-4 pt-[92px] sm:px-6 sm:pt-[104px] md:px-10 lg:pt-[80px]">
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
+          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs ${REGION_COLOR[route.region] ?? "bg-slate-600/80"}`}>
+            {route.region}
+          </span>
+          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs ${route.direct ? "bg-sky-600/80" : "border border-white/20 bg-white/10"}`}>
+            {route.direct ? "直飛" : "轉機"}
+          </span>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-white/70 sm:text-base">{route.from_city}</span>
+          <svg className="h-4 w-4 shrink-0 text-sky-400 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+          </svg>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{route.to_city}</h1>
+        </div>
+        <p className="mt-0.5 text-lg font-bold text-sky-300 sm:mt-1 sm:text-xl">{route.price_range}</p>
       </div>
 
       {/* ── Content ──────────────────────────────────────── */}
@@ -153,6 +140,17 @@ export default function FlightDetailPage() {
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* 航班票價 */}
+            {(departureDates.length > 0 || isDevMode) && (
+              <FlightDepartureDates
+                flightRouteId={route.id}
+                routeLabel={`${route.from_city} → ${route.to_city}`}
+                dates={departureDates}
+                isDevMode={isDevMode}
+                onDatesChange={setDepartureDates}
+              />
             )}
 
             {/* Mobile CTA */}

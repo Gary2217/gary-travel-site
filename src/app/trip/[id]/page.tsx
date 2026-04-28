@@ -122,35 +122,22 @@ export default function TripPage() {
 
       <div id="trip-content" />
 
-      {/* Hero 區塊 */}
-      <div className="relative h-44 overflow-hidden sm:h-56 md:h-72">
-        {trip.cover_image_url ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${trip.cover_image_url})` }}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[rgba(20,20,30,0.6)]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
-          <div className="mx-auto max-w-[1000px]">
-            <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
-              <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
-                {trip.duration}
-              </span>
-              {trip.price_range && (
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
-                  {trip.price_range}
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
-            {trip.subtitle && (
-              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
-            )}
-          </div>
+      {/* 標題區塊 */}
+      <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:pt-[80px]">
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
+          <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
+            {trip.duration}
+          </span>
+          {trip.price_range && (
+            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 sm:px-3 sm:py-1 sm:text-xs">
+              {trip.price_range}
+            </span>
+          )}
         </div>
+        <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
+        {trip.subtitle && (
+          <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
+        )}
       </div>
 
       {/* DevMode 編輯面板 */}

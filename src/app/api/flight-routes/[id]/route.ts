@@ -36,6 +36,16 @@ export async function GET(
       return NextResponse.json({ error: '找不到此航線' }, { status: 404 });
     }
 
+    // 取得航班出發日期
+    const { data: departures } = await supabase
+      .from('flight_departure_dates')
+      .select('*')
+      .eq('flight_route_id', params.id)
+      .eq('is_active', true)
+      .order('departure_date', { ascending: true });
+
+    data.flight_departure_dates = departures || [];
+
     return NextResponse.json(data, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
