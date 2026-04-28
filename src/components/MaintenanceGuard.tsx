@@ -42,7 +42,19 @@ export default function MaintenanceGuard({ children }: MaintenanceGuardProps) {
 
   if (status === "maintenance") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] px-4 text-center text-white">
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] px-4 text-center text-white">
+        {/* 開發者入口 */}
+        <button
+          onClick={() => { window.location.href = "/api/dev-auth/start"; }}
+          className="absolute right-4 top-4 rounded-full p-2 text-white/10 transition hover:text-white/40"
+          title="開發者登入"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2.5" />
+            <circle cx="12" cy="12" r="2.5" />
+            <circle cx="12" cy="19" r="2.5" />
+          </svg>
+        </button>
         <div className="rounded-[1.75rem] border border-white/10 bg-[rgba(20,20,30,0.65)] px-8 py-12 shadow-lg backdrop-blur-[12px] sm:px-12 sm:py-16">
           <div className="text-5xl">🔄</div>
           <h1 className="mt-6 text-2xl font-bold sm:text-3xl">網站更新中</h1>
