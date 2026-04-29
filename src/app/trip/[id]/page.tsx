@@ -107,21 +107,6 @@ export default function TripPage() {
         setTrip(data);
         setDepartureDates(data.departure_dates || []);
         track({ event_type: "trip_view", trip_id: tripId, trip_title: data.title });
-
-        // 如果有 PDF 但沒有擷取文字，前端用 pdfjs-dist 擷取
-        if (data.document_url && !data.document_text) {
-          extractPdfText(data.document_url).then(text => {
-            if (text) {
-              setTrip(prev => prev ? { ...prev, document_text: text } : prev);
-              // 存入資料庫
-              fetch(`/api/trips/${tripId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ document_text: text }),
-              }).catch(() => {});
-            }
-          });
-        }
       } catch {
         setError("無法載入行程資料");
       } finally {
@@ -503,14 +488,8 @@ export default function TripPage() {
         {trip.document_url && (
           <div className="mb-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
             <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
-            {extractingText && !trip.document_text && (
-              <div className="flex items-center gap-2 py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
-                <span className="text-xs text-white/50">正在從 PDF 擷取行程內容...</span>
-              </div>
-            )}
-            {!extractingText && !trip.document_text && (
-              <p className="py-3 text-center text-xs text-white/40">尚未擷取到行程內容</p>
+            {!trip.document_text && (
+              <p className="py-3 text-center text-xs text-white/40">尚未填寫行程概要，請於開發者模式編輯</p>
             )}
             {trip.document_text && (() => {
               const fullText = trip.document_text!;
