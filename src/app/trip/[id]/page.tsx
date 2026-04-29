@@ -388,14 +388,72 @@ export default function TripPage() {
                 </button>
               </div>
             </div>
-            <p className="mb-2 text-xs text-white/50">每行一個項目，D1/D2 開頭會自動加粗顯示，★ 開頭為亮點</p>
-            <textarea
-              value={editDocumentText}
-              onChange={e => setEditDocumentText(e.target.value)}
-              rows={18}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm leading-relaxed text-white outline-none focus:border-sky-400"
-              placeholder={"D1 桃園 > 東京\nD2 東京迪士尼\n★ 精選景點：淺草寺、晴空塔"}
-            />
+            <p className="mb-3 text-xs text-white/50">每天的行程內容獨立編輯，顯示時會擷取【】內的景點標題</p>
+            {(() => {
+              // 把文字按「第X天」分段
+              const fullText = editDocumentText;
+              const dayPattern = /第\s*(\d+)\s*天/g;
+              const positions: { num: string; index: number }[] = [];
+              let m;
+              while ((m = dayPattern.exec(fullText)) !== null) {
+                if (!positions.find(p => p.num === m![1])) {
+                  positions.push({ num: m[1], index: m.index });
+                }
+              }
+              // 前綴（第1天之前的內容）
+              const prefix = positions.length > 0 ? fullText.slice(0, positions[0].index) : fullText;
+              const sections = positions.map((pos, i) => {
+                const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
+                return { num: pos.num, text: fullText.slice(pos.index, end) };
+              });
+
+              return (
+                <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                  {prefix.trim() && (
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                      <label className="mb-1.5 block text-xs font-bold text-white/50">行程總覽</label>
+                      <textarea
+                        value={prefix}
+                        onChange={e => {
+                          const newPrefix = e.target.value;
+                          const rest = positions.length > 0 ? fullText.slice(positions[0].index) : '';
+                          setEditDocumentText(newPrefix + rest);
+                        }}
+                        rows={3}
+                        className="w-full rounded border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-sky-400"
+                      />
+                    </div>
+                  )}
+                  {sections.map((sec, i) => (
+                    <div key={i} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                      <label className="mb-1.5 block text-xs font-bold text-sky-300">第{sec.num}天</label>
+                      <textarea
+                        value={sec.text}
+                        onChange={e => {
+                          const newSections = [...sections];
+                          newSections[i] = { ...sec, text: e.target.value };
+                          setEditDocumentText(
+                            (prefix.trim() ? prefix : '') +
+                            newSections.map(s => s.text).join('')
+                          );
+                        }}
+                        rows={4}
+                        className="w-full rounded border border-white/10 bg-white/5 px-2 py-1.5 text-sm leading-relaxed text-white outline-none focus:border-sky-400"
+                      />
+                    </div>
+                  ))}
+                  {sections.length === 0 && !prefix.trim() && (
+                    <textarea
+                      value={editDocumentText}
+                      onChange={e => setEditDocumentText(e.target.value)}
+                      rows={12}
+                      placeholder="尚無內容，請點「重新擷取 PDF」或手動輸入"
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                    />
+                  )}
+                </div>
+              );
+            })()}
             <button
               disabled={saving}
               onClick={async () => {
@@ -424,84 +482,79 @@ export default function TripPage() {
 
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
-        {/* 亮點標籤 + 行程概要 橫排 */}
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[auto_1fr]">
-          {/* 左側：行程亮點 */}
-          {trip.highlights && trip.highlights.length > 0 && (
-            <div>
-              <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                {trip.highlights.map((highlight) => (
-                  <span
-                    key={highlight}
-                    className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-sm font-medium text-sky-200"
-                  >
-                    {highlight}
-                  </span>
-                ))}
-              </div>
+        {/* 行程亮點 */}
+        {trip.highlights && trip.highlights.length > 0 && (
+          <div className="mb-5">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+              {trip.highlights.map((highlight) => (
+                <span
+                  key={highlight}
+                  className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-sm font-medium text-sky-200"
+                >
+                  {highlight}
+                </span>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* 右側：行程概要（只顯示每日行程） */}
-          {trip.document_url && (
-            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
-              <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
-              {extractingText && !trip.document_text && (
-                <div className="flex items-center gap-2 py-4">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
-                  <span className="text-xs text-white/50">正在從 PDF 擷取行程內容...</span>
+        {/* 行程概要（標籤下方） */}
+        {trip.document_url && (
+          <div className="mb-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
+            <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
+            {extractingText && !trip.document_text && (
+              <div className="flex items-center gap-2 py-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
+                <span className="text-xs text-white/50">正在從 PDF 擷取行程內容...</span>
+              </div>
+            )}
+            {!extractingText && !trip.document_text && (
+              <p className="py-3 text-center text-xs text-white/40">尚未擷取到行程內容</p>
+            )}
+            {trip.document_text && (() => {
+              const fullText = trip.document_text!;
+              const dayPattern = /第\s*(\d+)\s*天/g;
+              const dayPositions: { num: string; index: number }[] = [];
+              let match;
+              while ((match = dayPattern.exec(fullText)) !== null) {
+                const dayNum = match[1];
+                if (!dayPositions.find(d => d.num === dayNum)) {
+                  dayPositions.push({ num: dayNum, index: match.index });
+                }
+              }
+              const days: { num: string; title: string }[] = [];
+              for (let i = 0; i < dayPositions.length; i++) {
+                const start = dayPositions[i].index;
+                const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
+                const section = fullText.slice(start, end);
+                const brackets: string[] = [];
+                const bracketPattern = /【([^】]+)】/g;
+                let bMatch;
+                while ((bMatch = bracketPattern.exec(section)) !== null) {
+                  brackets.push(bMatch[1].trim());
+                }
+                if (brackets.length > 0) {
+                  days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
+                }
+              }
+              return days.length > 0 ? (
+                <div className="space-y-2 text-[13px] leading-relaxed text-white/80">
+                  {days.map((day, i) => (
+                    <div key={i} className="flex gap-2">
+                      <span className="shrink-0 rounded bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300">
+                        第{day.num}天
+                      </span>
+                      <span className="text-white/80">{day.title}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {!extractingText && !trip.document_text && (
-                <p className="py-3 text-center text-xs text-white/40">尚未擷取到行程內容</p>
-              )}
-              {trip.document_text && (() => {
-                // 從全文中擷取「第X天」之間所有【】標題
-                const fullText = trip.document_text!;
-                const dayPattern = /第\s*(\d+)\s*天/g;
-                const dayPositions: { num: string; index: number }[] = [];
-                let match;
-                while ((match = dayPattern.exec(fullText)) !== null) {
-                  const dayNum = match[1];
-                  if (!dayPositions.find(d => d.num === dayNum)) {
-                    dayPositions.push({ num: dayNum, index: match.index });
-                  }
-                }
-                const days: { num: string; title: string }[] = [];
-                for (let i = 0; i < dayPositions.length; i++) {
-                  const start = dayPositions[i].index;
-                  const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
-                  const section = fullText.slice(start, end);
-                  // 收集這段區間內所有【】的內容
-                  const brackets: string[] = [];
-                  const bracketPattern = /【([^】]+)】/g;
-                  let bMatch;
-                  while ((bMatch = bracketPattern.exec(section)) !== null) {
-                    brackets.push(bMatch[1].trim());
-                  }
-                  if (brackets.length > 0) {
-                    days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
-                  }
-                }
-                return days.length > 0 ? (
-                  <div className="space-y-2 text-[13px] leading-relaxed text-white/80">
-                    {days.map((day, i) => (
-                      <div key={i} className="flex gap-2">
-                        <span className="shrink-0 rounded bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300">
-                          第{day.num}天
-                        </span>
-                        <span className="text-white/80">{day.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="py-3 text-center text-xs text-white/40">PDF 中未找到每日行程內容</p>
-                );
-              })()}
-            </div>
-          )}
-        </div>
+              ) : (
+                <p className="py-3 text-center text-xs text-white/40">PDF 中未找到每日行程內容</p>
+              );
+            })()}
+          </div>
+        )}
 
         {/* 出團日期 */}
         {(departureDates.length > 0 || isDevMode) && (
