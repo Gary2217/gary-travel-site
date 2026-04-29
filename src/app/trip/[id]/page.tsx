@@ -277,10 +277,37 @@ export default function TripPage() {
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-white/60">行程亮點（用「、」分隔）</label>
-                <input value={editHighlights} onChange={e => setEditHighlights(e.target.value)}
-                  placeholder="例：溫泉、美食、雪景"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                <label className="mb-1 block text-xs text-white/60">行程亮點（輸入後按 Enter 新增）</label>
+                <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                  {editHighlights.split(/[、,，]/).filter(s => s.trim()).map((tag, i) => (
+                    <span key={i} className="flex items-center gap-1 rounded-full bg-sky-500/20 px-2.5 py-1 text-xs text-sky-200">
+                      {tag.trim()}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tags = editHighlights.split(/[、,，]/).filter(s => s.trim());
+                          tags.splice(i, 1);
+                          setEditHighlights(tags.join('、'));
+                        }}
+                        className="ml-0.5 text-white/40 hover:text-red-400"
+                      >×</button>
+                    </span>
+                  ))}
+                  <input
+                    placeholder="輸入亮點..."
+                    className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-white outline-none"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val) {
+                          setEditHighlights(prev => prev ? `${prev}、${val}` : val);
+                          (e.target as HTMLInputElement).value = '';
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </div>
             <button
@@ -403,11 +430,11 @@ export default function TripPage() {
           {trip.highlights && trip.highlights.length > 0 && (
             <div>
               <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
                 {trip.highlights.map((highlight) => (
                   <span
                     key={highlight}
-                    className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-sm font-medium text-sky-200"
+                    className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-sm font-medium text-sky-200"
                   >
                     {highlight}
                   </span>
