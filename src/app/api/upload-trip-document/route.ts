@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import * as pdfParse from 'pdf-parse';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -147,12 +148,26 @@ export async function PUT(request: NextRequest) {
       .eq('id', trip_id)
       .single();
 
+    // 擷取 PDF 文字內容
+    let documentText = '';
+    try {
+      const pdfRes = await fetch(url);
+      if (pdfRes.ok) {
+        const pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
+        const pdf = (pdfParse as any).default || pdfParse;
+        const pdfData = await pdf(pdfBuffer);
+        documentText = pdfData.text || '';
+      }
+    } catch {
+      // PDF 文字擷取失敗，靜默處理（不影響上傳流程）
+    }
+
     // 更新資料庫
     const { data: updatedTrip, error: updateError } = await supabase
       .from('trips')
-      .update({ document_url: url })
+      .update({ document_url: url, document_text: documentText || null })
       .eq('id', trip_id)
-      .select('id,document_url,updated_at')
+      .select('id,document_url,document_text,updated_at')
       .single();
 
     if (updateError) {

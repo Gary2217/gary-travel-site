@@ -55,6 +55,7 @@ export type Trip = {
   cover_image_url: string;
   document_url?: string;
   document_is_available?: boolean;
+  document_text?: string;
   highlights: string[];
   is_active: boolean;
   display_order: number;
