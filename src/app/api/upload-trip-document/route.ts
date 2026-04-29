@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import * as pdfParse from 'pdf-parse';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -154,7 +153,8 @@ export async function PUT(request: NextRequest) {
       const pdfRes = await fetch(url);
       if (pdfRes.ok) {
         const pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
-        const pdf = (pdfParse as any).default || pdfParse;
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdf = require('pdf-parse');
         const pdfData = await pdf(pdfBuffer);
         documentText = pdfData.text || '';
       }
