@@ -33,6 +33,8 @@ export default function TripPage() {
   const [editHighlights, setEditHighlights] = useState('');
   const [saving, setSaving] = useState(false);
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
+  const [showTextEditor, setShowTextEditor] = useState(false);
+  const [editDocumentText, setEditDocumentText] = useState('');
 
   // 偵測瀏覽器/裝置，產生對應的「返回」提示文字
   const getBackHint = () => {
@@ -223,6 +225,15 @@ export default function TripPage() {
                   編輯資訊
                 </button>
                 <button
+                  onClick={() => {
+                    setEditDocumentText(trip.document_text || '');
+                    setShowTextEditor(true);
+                  }}
+                  className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                >
+                  編輯行程概要
+                </button>
+                <button
                   onClick={async () => {
                     if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
                     const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
@@ -307,6 +318,77 @@ export default function TripPage() {
               className="mt-4 w-full rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
             >
               {saving ? '儲存中...' : '儲存'}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 行程概要編輯彈窗 */}
+      {showTextEditor && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setShowTextEditor(false)}>
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">編輯行程概要</h3>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    if (!confirm('重新從 PDF 擷取文字？目前的編輯內容將被覆蓋。')) return;
+                    setSaving(true);
+                    try {
+                      const res = await fetch(`/api/trips/${tripId}/extract-text`, { method: 'POST' });
+                      const result = await res.json();
+                      if (result.text) {
+                        setEditDocumentText(result.text);
+                        setTrip(prev => prev ? { ...prev, document_text: result.text } : prev);
+                      }
+                    } catch {
+                      alert('擷取失敗');
+                    }
+                    setSaving(false);
+                  }}
+                  disabled={saving || !trip.document_url}
+                  className="text-xs text-sky-400 transition hover:text-sky-300 disabled:opacity-40"
+                >
+                  重新擷取 PDF
+                </button>
+                <button onClick={() => setShowTextEditor(false)} className="text-white/50 hover:text-white">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p className="mb-2 text-xs text-white/50">每行一個項目，D1/D2 開頭會自動加粗顯示，★ 開頭為亮點</p>
+            <textarea
+              value={editDocumentText}
+              onChange={e => setEditDocumentText(e.target.value)}
+              rows={18}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm leading-relaxed text-white outline-none focus:border-sky-400"
+              placeholder={"D1 桃園 > 東京\nD2 東京迪士尼\n★ 精選景點：淺草寺、晴空塔"}
+            />
+            <button
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                const res = await fetch(`/api/trips/${tripId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ document_text: editDocumentText }),
+                });
+                if (res.ok) {
+                  setTrip(prev => prev ? { ...prev, document_text: editDocumentText } : prev);
+                  setShowTextEditor(false);
+                } else {
+                  alert('儲存失敗，請再試一次');
+                }
+                setSaving(false);
+              }}
+              className="mt-4 w-full rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+            >
+              {saving ? '儲存中...' : '儲存行程概要'}
             </button>
           </div>
         </div>,
