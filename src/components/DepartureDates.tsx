@@ -99,6 +99,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [formReturnArrivalTime, setFormReturnArrivalTime] = useState("");
   const [formReturnTo, setFormReturnTo] = useState("");
   const [formReturnNextDay, setFormReturnNextDay] = useState(false);
+  const [formSeatsAvailable, setFormSeatsAvailable] = useState("");
+  const [formSeatsTotal, setFormSeatsTotal] = useState("");
 
   const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
   const airlineRef = useRef<HTMLDivElement>(null);
@@ -157,6 +159,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormOutboundArrivalTime(""); setFormOutboundTo(""); setFormOutboundNextDay(false);
     setFormReturnDate(""); setFormReturnFlight(""); setFormReturnTime("");
     setFormReturnFrom(""); setFormReturnArrivalTime(""); setFormReturnTo(""); setFormReturnNextDay(false);
+    setFormSeatsAvailable(""); setFormSeatsTotal("");
     setEditingId(null);
   };
 
@@ -179,6 +182,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     return_arrival_time: formReturnArrivalTime || null,
     return_to: formReturnTo || null,
     return_next_day: formReturnNextDay,
+    seats_available: formSeatsAvailable ? parseInt(formSeatsAvailable) : 0,
+    seats_total: formSeatsTotal ? parseInt(formSeatsTotal) : 0,
   });
 
   const handleAdd = async () => {
@@ -250,6 +255,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormReturnArrivalTime(d.return_arrival_time || "");
     setFormReturnTo(d.return_to || "");
     setFormReturnNextDay(d.return_next_day || false);
+    setFormSeatsAvailable(d.seats_available ? String(d.seats_available) : "");
+    setFormSeatsTotal(d.seats_total ? String(d.seats_total) : "");
     setShowAddForm(true);
   };
 
@@ -325,6 +332,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             <div>
               <label className={labelClass}>備註</label>
               <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：確認出團" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>可售座位</label>
+              <input type="number" value={formSeatsAvailable} onChange={(e) => setFormSeatsAvailable(e.target.value)} placeholder="如：20" className={inputClass} min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>總座位數</label>
+              <input type="number" value={formSeatsTotal} onChange={(e) => setFormSeatsTotal(e.target.value)} placeholder="如：30" className={inputClass} min="0" />
             </div>
           </div>
 
