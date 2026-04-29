@@ -34,6 +34,22 @@ export default function TripPage() {
   const [saving, setSaving] = useState(false);
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
 
+  // 偵測瀏覽器/裝置，產生對應的「返回」提示文字
+  const getBackHint = () => {
+    if (typeof navigator === 'undefined') return '點左上「返回」按鈕';
+    const ua = navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    if (isIOS) {
+      if (/CriOS/.test(ua)) return '點左上角「◀ Chrome」';
+      if (/FxiOS/.test(ua)) return '點左上角「◀ Firefox」';
+      if (/EdgiOS/.test(ua)) return '點左上角「◀ Edge」';
+      return '點左上角「◀ Safari」';
+    }
+    if (isAndroid) return '按手機「返回鍵」或點左上「←」';
+    return '點瀏覽器的「上一頁」按鈕';
+  };
+
   const triggerNativeShare = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
     if (navigator.share) {
@@ -439,7 +455,7 @@ export default function TripPage() {
 
                 <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-center">
                   <p className="text-sm font-bold text-amber-300">
-                    追蹤後請按追蹤頁左上或左下「上一頁」按鈕
+                    追蹤完成後，請{getBackHint()}
                   </p>
                   <p className="mt-1 text-xs text-amber-200/70">
                     回到網站即可下載行程檔
