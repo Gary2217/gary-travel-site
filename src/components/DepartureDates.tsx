@@ -51,11 +51,16 @@ interface DepartureDatesProps {
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
-  const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const weekday = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
-  return { full: `${yyyy}/${mm}/${dd}（${weekday}）`, short: `${mm}/${dd}（${weekday}）`, month: d.getMonth() + 1, year: d.getFullYear(), weekday };
+  return {
+    full: `${d.getFullYear()}/${mm}/${dd}（${weekday}）`,
+    short: `${mm}/${dd}`,
+    weekday,
+    month: d.getMonth() + 1,
+    year: d.getFullYear(),
+  };
 }
 
 function getWeekdayFromDate(dateStr: string) {
@@ -70,25 +75,23 @@ const labelClass = "mb-1 block text-[10px] text-white/50";
 
 export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange }: DepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const today = new Date().toLocaleDateString("sv-SE");
-  // 基本欄位
   const [formDate, setFormDate] = useState(today);
   const [formCity, setFormCity] = useState("桃園");
   const [formAirline, setFormAirline] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formLabel, setFormLabel] = useState("");
-  // 去程航班
   const [formOutboundFlight, setFormOutboundFlight] = useState("");
   const [formOutboundTime, setFormOutboundTime] = useState("");
   const [formOutboundFrom, setFormOutboundFrom] = useState("");
   const [formOutboundArrivalTime, setFormOutboundArrivalTime] = useState("");
   const [formOutboundTo, setFormOutboundTo] = useState("");
   const [formOutboundNextDay, setFormOutboundNextDay] = useState(false);
-  // 回程航班
   const [formReturnDate, setFormReturnDate] = useState("");
   const [formReturnFlight, setFormReturnFlight] = useState("");
   const [formReturnTime, setFormReturnTime] = useState("");
@@ -118,17 +121,15 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       })
     : AIRLINES;
 
-  const months = Array.from(
-    new Set(dates.map((d) => {
-      const info = formatDate(d.departure_date);
-      return `${info.year}-${info.month}`;
-    }))
-  ).sort();
-
-  const monthLabels = months.map((m) => {
-    const [, mo] = m.split("-");
-    return { key: m, label: `${mo}月` };
+  // 月份分組
+  const grouped = new Map<string, DepartureDate[]>();
+  dates.forEach((d) => {
+    const info = formatDate(d.departure_date);
+    const key = `${info.year}-${info.month}`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(d);
   });
+  const monthKeys = Array.from(grouped.keys()).sort();
 
   const filtered = activeMonth === "all"
     ? dates
@@ -137,25 +138,25 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         return `${info.year}-${info.month}` === activeMonth;
       });
 
+  // 按月分組 filtered
+  const filteredGrouped = new Map<string, DepartureDate[]>();
+  filtered.forEach((d) => {
+    const info = formatDate(d.departure_date);
+    const key = `${info.month}月`;
+    if (!filteredGrouped.has(key)) filteredGrouped.set(key, []);
+    filteredGrouped.get(key)!.push(d);
+  });
+
   const resetForm = () => {
     setFormDate(today);
     setFormCity("桃園");
     setFormAirline("");
     setFormPrice("");
     setFormLabel("");
-    setFormOutboundFlight("");
-    setFormOutboundTime("");
-    setFormOutboundFrom("");
-    setFormOutboundArrivalTime("");
-    setFormOutboundTo("");
-    setFormOutboundNextDay(false);
-    setFormReturnDate("");
-    setFormReturnFlight("");
-    setFormReturnTime("");
-    setFormReturnFrom("");
-    setFormReturnArrivalTime("");
-    setFormReturnTo("");
-    setFormReturnNextDay(false);
+    setFormOutboundFlight(""); setFormOutboundTime(""); setFormOutboundFrom("");
+    setFormOutboundArrivalTime(""); setFormOutboundTo(""); setFormOutboundNextDay(false);
+    setFormReturnDate(""); setFormReturnFlight(""); setFormReturnTime("");
+    setFormReturnFrom(""); setFormReturnArrivalTime(""); setFormReturnTo(""); setFormReturnNextDay(false);
     setEditingId(null);
   };
 
@@ -225,6 +226,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${id}`, { method: "DELETE" });
     if (res.ok) {
       onDatesChange(dates.filter((d) => d.id !== id));
+      if (expandedId === id) setExpandedId(null);
     }
   };
 
@@ -276,7 +278,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
           <p className="mb-3 text-xs font-bold text-amber-400">{editingId ? "編輯梯次" : "新增梯次"}</p>
 
-          {/* 基本資訊 */}
           <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             <div>
@@ -300,27 +301,16 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             </div>
             <div ref={airlineRef} className="relative">
               <label className={labelClass}>航空公司</label>
-              <input
-                type="text"
-                value={formAirline}
+              <input type="text" value={formAirline}
                 onChange={(e) => { setFormAirline(e.target.value); setAirlineDropdownOpen(true); }}
                 onFocus={() => setAirlineDropdownOpen(true)}
-                placeholder="搜尋航空公司"
-                className={inputClass}
-                autoComplete="off"
-              />
+                placeholder="搜尋航空公司" className={inputClass} autoComplete="off" />
               {airlineDropdownOpen && filteredAirlines.length > 0 && (
                 <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/10 bg-[rgba(20,20,30,0.98)] shadow-xl backdrop-blur-xl">
                   {filteredAirlines.map((a) => (
-                    <button
-                      key={a.code}
-                      type="button"
-                      onClick={() => {
-                        setFormAirline(`${a.name}（${a.code}）`);
-                        setAirlineDropdownOpen(false);
-                      }}
-                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10"
-                    >
+                    <button key={a.code} type="button"
+                      onClick={() => { setFormAirline(`${a.name}（${a.code}）`); setAirlineDropdownOpen(false); }}
+                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
                       <span>{a.name}（{a.code}）</span>
                       <span className="text-[10px] text-white/40">{a.en}</span>
                     </button>
@@ -330,289 +320,199 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             </div>
             <div>
               <label className={labelClass}>售價</label>
-              <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：42000"
-                className={inputClass} />
+              <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：42000" className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>備註</label>
-              <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：確認出團"
-                className={inputClass} />
+              <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：確認出團" className={inputClass} />
             </div>
           </div>
 
-          {/* 去程航班 */}
           <p className="mb-2 text-[10px] font-semibold text-sky-400/70">✈ 去程航班（選填）</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
-            <div>
-              <label className={labelClass}>航班編號</label>
-              <input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850"
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>起飛時間</label>
-              <input type="time" value={formOutboundTime} onChange={(e) => setFormOutboundTime(e.target.value)}
-                className={`${inputClass} [color-scheme:dark]`} />
-            </div>
-            <div>
-              <label className={labelClass}>起飛機場</label>
-              <input type="text" value={formOutboundFrom} onChange={(e) => setFormOutboundFrom(e.target.value)} placeholder="如：台北(桃園)"
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>抵達時間</label>
-              <input type="time" value={formOutboundArrivalTime} onChange={(e) => setFormOutboundArrivalTime(e.target.value)}
-                className={`${inputClass} [color-scheme:dark]`} />
-            </div>
-            <div>
-              <label className={labelClass}>抵達機場</label>
-              <input type="text" value={formOutboundTo} onChange={(e) => setFormOutboundTo(e.target.value)} placeholder="如：新千歲機場"
-                className={inputClass} />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
-                <input type="checkbox" checked={formOutboundNextDay} onChange={(e) => setFormOutboundNextDay(e.target.checked)}
-                  className="rounded border-white/20 bg-white/5" />
-                跨日+1
-              </label>
-            </div>
+            <div><label className={labelClass}>航班編號</label><input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850" className={inputClass} /></div>
+            <div><label className={labelClass}>起飛時間</label><input type="time" value={formOutboundTime} onChange={(e) => setFormOutboundTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
+            <div><label className={labelClass}>起飛機場</label><input type="text" value={formOutboundFrom} onChange={(e) => setFormOutboundFrom(e.target.value)} placeholder="如：台北(桃園)" className={inputClass} /></div>
+            <div><label className={labelClass}>抵達時間</label><input type="time" value={formOutboundArrivalTime} onChange={(e) => setFormOutboundArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
+            <div><label className={labelClass}>抵達機場</label><input type="text" value={formOutboundTo} onChange={(e) => setFormOutboundTo(e.target.value)} placeholder="如：新千歲機場" className={inputClass} /></div>
+            <div className="flex items-end"><label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70"><input type="checkbox" checked={formOutboundNextDay} onChange={(e) => setFormOutboundNextDay(e.target.checked)} className="rounded border-white/20 bg-white/5" />跨日+1</label></div>
           </div>
 
-          {/* 回程航班 */}
           <p className="mb-2 text-[10px] font-semibold text-amber-400/70">✈ 回程航班（選填）</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7">
             <div>
               <label className={labelClass}>回程日期</label>
               <div className="flex gap-1">
-                <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)}
-                  className={`${inputClass} flex-1 [color-scheme:dark]`} />
-                {returnDayLabel && (
-                  <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">
-                    {returnDayLabel}
-                  </span>
-                )}
+                <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                {returnDayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{returnDayLabel}</span>}
               </div>
             </div>
-            <div>
-              <label className={labelClass}>航班編號</label>
-              <input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861"
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>起飛時間</label>
-              <input type="time" value={formReturnTime} onChange={(e) => setFormReturnTime(e.target.value)}
-                className={`${inputClass} [color-scheme:dark]`} />
-            </div>
-            <div>
-              <label className={labelClass}>起飛機場</label>
-              <input type="text" value={formReturnFrom} onChange={(e) => setFormReturnFrom(e.target.value)} placeholder="如：函館市"
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>抵達時間</label>
-              <input type="time" value={formReturnArrivalTime} onChange={(e) => setFormReturnArrivalTime(e.target.value)}
-                className={`${inputClass} [color-scheme:dark]`} />
-            </div>
-            <div>
-              <label className={labelClass}>抵達機場</label>
-              <input type="text" value={formReturnTo} onChange={(e) => setFormReturnTo(e.target.value)} placeholder="如：台北(桃園)"
-                className={inputClass} />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
-                <input type="checkbox" checked={formReturnNextDay} onChange={(e) => setFormReturnNextDay(e.target.checked)}
-                  className="rounded border-white/20 bg-white/5" />
-                跨日+1
-              </label>
-            </div>
+            <div><label className={labelClass}>航班編號</label><input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861" className={inputClass} /></div>
+            <div><label className={labelClass}>起飛時間</label><input type="time" value={formReturnTime} onChange={(e) => setFormReturnTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
+            <div><label className={labelClass}>起飛機場</label><input type="text" value={formReturnFrom} onChange={(e) => setFormReturnFrom(e.target.value)} placeholder="如：函館市" className={inputClass} /></div>
+            <div><label className={labelClass}>抵達時間</label><input type="time" value={formReturnArrivalTime} onChange={(e) => setFormReturnArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
+            <div><label className={labelClass}>抵達機場</label><input type="text" value={formReturnTo} onChange={(e) => setFormReturnTo(e.target.value)} placeholder="如：台北(桃園)" className={inputClass} /></div>
+            <div className="flex items-end"><label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70"><input type="checkbox" checked={formReturnNextDay} onChange={(e) => setFormReturnNextDay(e.target.checked)} className="rounded border-white/20 bg-white/5" />跨日+1</label></div>
           </div>
 
-          {/* 送出按鈕 */}
-          <button
-            disabled={!formDate || saving}
-            onClick={editingId ? handleEdit : handleAdd}
-            className="rounded-lg bg-sky-600 px-6 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-          >
+          <button disabled={!formDate || saving} onClick={editingId ? handleEdit : handleAdd}
+            className="rounded-lg bg-sky-600 px-6 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50">
             {saving ? "儲存中..." : editingId ? "更新梯次" : "新增梯次"}
           </button>
         </div>
       )}
 
       {/* 月份篩選 */}
-      {monthLabels.length > 1 && (
+      {monthKeys.length > 1 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setActiveMonth("all")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              activeMonth === "all"
-                ? "bg-sky-500 text-white"
-                : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-            }`}
-          >
+          <button onClick={() => setActiveMonth("all")}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
             全部
           </button>
-          {monthLabels.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setActiveMonth(m.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                activeMonth === m.key
-                  ? "bg-sky-500 text-white"
-                  : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
+          {monthKeys.map((m) => {
+            const [, mo] = m.split("-");
+            return (
+              <button key={m} onClick={() => setActiveMonth(m)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === m ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                {mo}月
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* 出團列表 */}
+      {/* 出團卡片 — 按月分組橫排 */}
       {filtered.length > 0 ? (
-        <div className="space-y-3">
-          {filtered.map((d) => {
-            const info = formatDate(d.departure_date);
-            const returnInfo = d.return_date ? formatDate(d.return_date) : null;
-            const showFlightTable = hasFlightInfo(d);
+        <div className="space-y-4">
+          {Array.from(filteredGrouped.entries()).map(([monthLabel, monthDates]) => (
+            <div key={monthLabel}>
+              <div className="mb-2 text-xs font-bold text-white/40">{monthLabel}</div>
+              <div className="flex flex-wrap gap-2">
+                {monthDates.map((d) => {
+                  const info = formatDate(d.departure_date);
+                  const returnInfo = d.return_date ? formatDate(d.return_date) : null;
+                  const isExpanded = expandedId === d.id;
+                  const showFlight = hasFlightInfo(d);
 
-            return (
-              <div
-                key={d.id}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-sm transition hover:border-white/15"
-              >
-                {/* 標頭：日期 + 價格 + 按鈕 */}
-                <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3.5 sm:px-5">
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm font-bold text-white sm:text-base">{info.short}</span>
-                      {d.label && (
-                        <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
-                          {d.label}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-xs text-white/80">{d.departure_city}出發</span>
-                      {d.airline && (
-                        <span className="flex items-center gap-1 text-xs text-white/80">
-                          <svg className="h-3 w-3 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                          </svg>
-                          {d.airline}
-                        </span>
-                      )}
-                      {d.price ? (
-                        <span className="text-sm font-bold text-amber-300 sm:text-base">
-                          NT$ {d.price.toLocaleString()}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-white/50">洽詢報價</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {!isDevMode && (
-                    <a
-                      href={lineMessageHref(`我想詢問【${tripTitle}】${info.short} ${d.departure_city}出發`)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
-                      立即詢問
-                    </a>
-                  )}
-
-                  {isDevMode && (
-                    <div className="flex shrink-0 gap-1.5">
+                  return (
+                    <div key={d.id} className={`overflow-hidden rounded-xl border transition ${isExpanded ? "w-full border-sky-400/30 bg-[rgba(20,20,30,0.7)]" : "border-white/10 bg-[rgba(20,20,30,0.55)] hover:border-white/20"}`}>
+                      {/* 卡片主體 */}
                       <button
-                        onClick={() => openEditForm(d)}
-                        className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-semibold text-amber-300 transition hover:bg-amber-500/30"
+                        type="button"
+                        onClick={() => setExpandedId(isExpanded ? null : d.id)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left"
                       >
-                        編輯
-                      </button>
-                      <button
-                        onClick={() => handleDelete(d.id)}
-                        className="rounded-full bg-red-500/20 px-2.5 py-1 text-[10px] font-semibold text-red-300 transition hover:bg-red-500/30"
-                      >
-                        刪除
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 航班詳細資訊表格 */}
-                {showFlightTable && (
-                  <div className="border-t border-white/5">
-                    {/* 表頭 */}
-                    <div className="hidden grid-cols-[auto_1fr_1fr_1fr_1fr] gap-2 bg-white/3 px-4 py-2 text-[10px] font-semibold text-white/40 sm:grid">
-                      <span className="w-10"></span>
-                      <span>班機日期</span>
-                      <span>航空公司及航班</span>
-                      <span>起飛時間及機場</span>
-                      <span>抵達時間及機場</span>
-                    </div>
-
-                    {/* 去程 */}
-                    {(d.outbound_flight || d.outbound_time) && (
-                      <div className="grid grid-cols-1 gap-1 px-4 py-2.5 sm:grid-cols-[auto_1fr_1fr_1fr_1fr] sm:gap-2 sm:py-2">
-                        <span className="hidden w-10 text-[10px] font-bold text-sky-400 sm:flex sm:items-center">去程</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-sky-400 sm:hidden">去程</span>
-                          <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                        {/* 日曆圖示 */}
+                        <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-white">{info.short}（{info.weekday}）</span>
+                            {d.label && (
+                              <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">{d.label}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-white/60">
+                            <span>{d.departure_city}出發</span>
+                            {d.airline && (
+                              <span className="flex items-center gap-0.5">
+                                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                {d.airline}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* 價格 */}
+                        <div className="ml-auto shrink-0 text-right">
+                          {d.price ? (
+                            <span className="text-sm font-bold text-amber-300">NT$ {d.price.toLocaleString()}</span>
+                          ) : (
+                            <span className="text-xs text-white/40">洽詢報價</span>
+                          )}
+                        </div>
+                        {/* 展開箭頭 */}
+                        {showFlight && (
+                          <svg className={`h-4 w-4 shrink-0 text-white/30 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
-                          <span className="text-xs text-white/90">{info.full}</span>
-                        </div>
-                        <div className="pl-[18px] text-xs text-white/90 sm:pl-0">
-                          {d.airline && <span>{d.airline} </span>}
-                          {d.outbound_flight && <span className="text-white/70">{d.outbound_flight}</span>}
-                        </div>
-                        <div className="pl-[18px] text-xs sm:pl-0">
-                          {d.outbound_time && <span className="font-semibold text-white/90">{d.outbound_time}</span>}
-                          {d.outbound_from && <span className="text-white/70"> {d.outbound_from}</span>}
-                        </div>
-                        <div className="pl-[18px] text-xs sm:pl-0">
-                          {d.outbound_arrival_time && <span className="font-semibold text-white/90">{d.outbound_arrival_time}</span>}
-                          {d.outbound_to && <span className="text-white/70"> {d.outbound_to}</span>}
-                          {d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-300">（跨日+1）</span>}
-                        </div>
-                      </div>
-                    )}
+                        )}
+                      </button>
 
-                    {/* 回程 */}
-                    {(d.return_flight || d.return_time) && (
-                      <div className="grid grid-cols-1 gap-1 border-t border-white/3 px-4 py-2.5 sm:grid-cols-[auto_1fr_1fr_1fr_1fr] sm:gap-2 sm:py-2">
-                        <span className="hidden w-10 text-[10px] font-bold text-amber-400 sm:flex sm:items-center">回程</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-amber-400 sm:hidden">回程</span>
-                          <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                          </svg>
-                          <span className="text-xs text-white/90">{returnInfo ? returnInfo.full : "—"}</span>
+                      {/* 展開的航班詳情 + 詢問按鈕 */}
+                      {isExpanded && (
+                        <div className="border-t border-white/5 px-4 pb-3 pt-2">
+                          {showFlight && (
+                            <>
+                              {/* 表頭 */}
+                              <div className="mb-1 hidden grid-cols-[60px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
+                                <span></span>
+                                <span>班機日期</span>
+                                <span>航空公司及航班</span>
+                                <span>起飛時間及機場</span>
+                                <span>抵達時間及機場</span>
+                              </div>
+                              {/* 去程 */}
+                              {(d.outbound_flight || d.outbound_time) && (
+                                <div className="grid grid-cols-1 gap-1 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
+                                  <span className="text-xs font-bold text-sky-400">去程</span>
+                                  <div className="flex items-center gap-1">
+                                    <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                    <span className="text-xs text-white/90">{info.full}</span>
+                                  </div>
+                                  <div className="text-xs text-white/90">{d.airline} {d.outbound_flight && <span className="text-white/60">{d.outbound_flight}</span>}</div>
+                                  <div className="text-xs">{d.outbound_time && <span className="font-semibold text-white/90">{d.outbound_time}</span>}{d.outbound_from && <span className="text-white/60"> {d.outbound_from}</span>}</div>
+                                  <div className="text-xs">{d.outbound_arrival_time && <span className="font-semibold text-white/90">{d.outbound_arrival_time}</span>}{d.outbound_to && <span className="text-white/60"> {d.outbound_to}</span>}{d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
+                                </div>
+                              )}
+                              {/* 回程 */}
+                              {(d.return_flight || d.return_time) && (
+                                <div className="grid grid-cols-1 gap-1 border-t border-white/5 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
+                                  <span className="text-xs font-bold text-amber-400">回程</span>
+                                  <div className="flex items-center gap-1">
+                                    <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                    <span className="text-xs text-white/90">{returnInfo ? returnInfo.full : "—"}</span>
+                                  </div>
+                                  <div className="text-xs text-white/90">{d.airline} {d.return_flight && <span className="text-white/60">{d.return_flight}</span>}</div>
+                                  <div className="text-xs">{d.return_time && <span className="font-semibold text-white/90">{d.return_time}</span>}{d.return_from && <span className="text-white/60"> {d.return_from}</span>}</div>
+                                  <div className="text-xs">{d.return_arrival_time && <span className="font-semibold text-white/90">{d.return_arrival_time}</span>}{d.return_to && <span className="text-white/60"> {d.return_to}</span>}{d.return_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {/* 底部按鈕 */}
+                          <div className="mt-2 flex items-center gap-2">
+                            {!isDevMode && (
+                              <a
+                                href={lineMessageHref(`我想詢問【${tripTitle}】${info.short}（${info.weekday}）${d.departure_city}出發`)}
+                                target="_blank" rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95">
+                                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                                立即詢問
+                              </a>
+                            )}
+                            {isDevMode && (
+                              <>
+                                <button onClick={() => openEditForm(d)}
+                                  className="rounded-full bg-amber-500/20 px-3 py-1.5 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">
+                                  編輯
+                                </button>
+                                <button onClick={() => handleDelete(d.id)}
+                                  className="rounded-full bg-red-500/20 px-3 py-1.5 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">
+                                  刪除
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="pl-[18px] text-xs text-white/90 sm:pl-0">
-                          {d.airline && <span>{d.airline} </span>}
-                          {d.return_flight && <span className="text-white/70">{d.return_flight}</span>}
-                        </div>
-                        <div className="pl-[18px] text-xs sm:pl-0">
-                          {d.return_time && <span className="font-semibold text-white/90">{d.return_time}</span>}
-                          {d.return_from && <span className="text-white/70"> {d.return_from}</span>}
-                        </div>
-                        <div className="pl-[18px] text-xs sm:pl-0">
-                          {d.return_arrival_time && <span className="font-semibold text-white/90">{d.return_arrival_time}</span>}
-                          {d.return_to && <span className="text-white/70"> {d.return_to}</span>}
-                          {d.return_next_day && <span className="ml-1 text-[10px] text-amber-300">（跨日+1）</span>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       ) : (
         <p className="text-sm text-white/50">
