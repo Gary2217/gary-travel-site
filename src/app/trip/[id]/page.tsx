@@ -430,26 +430,33 @@ export default function TripPage() {
                 <p className="py-3 text-center text-xs text-white/40">尚未擷取到行程內容</p>
               )}
               {trip.document_text && (() => {
-                // 只擷取「第X天」的行程內容
-                const dayLines = trip.document_text!.split('\n')
-                  .filter((line: string) => /第\s*\d+\s*天/.test(line))
-                  .map((line: string) => line.trim());
-                return dayLines.length > 0 ? (
+                // 從全文中擷取「第X天」+ 【標題】
+                const fullText = trip.document_text!;
+                const dayPattern = /第\s*(\d+)\s*天/g;
+                const days: { num: string; title: string }[] = [];
+                let match;
+                while ((match = dayPattern.exec(fullText)) !== null) {
+                  const dayNum = match[1];
+                  const afterDay = fullText.slice(match.index + match[0].length);
+                  // 嘗試抓【】內的標題
+                  const bracketMatch = afterDay.match(/【([^】]+)】/);
+                  if (bracketMatch) {
+                    // 避免重複（同一天可能出現多次）
+                    if (!days.find(d => d.num === dayNum)) {
+                      days.push({ num: dayNum, title: bracketMatch[1].trim() });
+                    }
+                  }
+                }
+                return days.length > 0 ? (
                   <div className="space-y-2 text-[13px] leading-relaxed text-white/80">
-                    {dayLines.map((line: string, i: number) => {
-                      const match = line.match(/第\s*(\d+)\s*天/);
-                      const dayNum = match ? match[1] : '';
-                      // 去掉日期部分（如 6/22(日)），保留第X天後面的內容
-                      const content = line.replace(/^\S*\s*第\s*\d+\s*天\s*/, '').trim();
-                      return (
-                        <div key={i} className="flex gap-2">
-                          <span className="shrink-0 rounded bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300">
-                            第{dayNum}天
-                          </span>
-                          <span className="text-white/80">{content || line}</span>
-                        </div>
-                      );
-                    })}
+                    {days.map((day, i) => (
+                      <div key={i} className="flex gap-2">
+                        <span className="shrink-0 rounded bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300">
+                          第{day.num}天
+                        </span>
+                        <span className="text-white/80">{day.title}</span>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="py-3 text-center text-xs text-white/40">PDF 中未找到每日行程內容</p>
