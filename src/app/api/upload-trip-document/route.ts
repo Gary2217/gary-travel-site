@@ -153,8 +153,8 @@ export async function PUT(request: NextRequest) {
       const pdfRes = await fetch(url);
       if (pdfRes.ok) {
         const pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const pdf = require('pdf-parse');
+        const pdfModule = await (Function('return import("pdf-parse")')() as Promise<any>);
+        const pdf = pdfModule.default || pdfModule;
         const pdfData = await pdf(pdfBuffer);
         documentText = pdfData.text || '';
       }
