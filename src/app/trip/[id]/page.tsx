@@ -35,6 +35,29 @@ export default function TripPage() {
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDocumentText, setEditDocumentText] = useState('');
+  const [extractingText, setExtractingText] = useState(false);
+
+  // 前端用 pdfjs-dist 擷取 PDF 文字
+  async function extractPdfText(pdfUrl: string): Promise<string> {
+    setExtractingText(true);
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+      const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+      const lines: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item: any) => item.str).join(' ');
+        if (pageText.trim()) lines.push(pageText.trim());
+      }
+      return lines.join('\n');
+    } catch {
+      return '';
+    } finally {
+      setExtractingText(false);
+    }
+  }
 
   // 偵測瀏覽器/裝置，產生對應的「返回」提示文字
   const getBackHint = () => {
@@ -85,16 +108,19 @@ export default function TripPage() {
         setDepartureDates(data.departure_dates || []);
         track({ event_type: "trip_view", trip_id: tripId, trip_title: data.title });
 
-        // 如果有 PDF 但沒有擷取文字，自動補擷取
+        // 如果有 PDF 但沒有擷取文字，前端用 pdfjs-dist 擷取
         if (data.document_url && !data.document_text) {
-          fetch(`/api/trips/${tripId}/extract-text`, { method: 'POST' })
-            .then(res => res.json())
-            .then(result => {
-              if (result.text) {
-                setTrip(prev => prev ? { ...prev, document_text: result.text } : prev);
-              }
-            })
-            .catch(() => {});
+          extractPdfText(data.document_url).then(text => {
+            if (text) {
+              setTrip(prev => prev ? { ...prev, document_text: text } : prev);
+              // 存入資料庫
+              fetch(`/api/trips/${tripId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ document_text: text }),
+              }).catch(() => {});
+            }
+          });
         }
       } catch {
         setError("無法載入行程資料");
@@ -175,31 +201,42 @@ export default function TripPage() {
           </div>
 
           {/* 右側：PDF 行程概要 */}
-          {trip.document_text && (
+          {trip.document_url && (
             <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0">
               <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
-              <div className="max-h-[300px] space-y-1 overflow-y-auto pr-1 text-[13px] leading-relaxed text-white/80 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
-                {trip.document_text.split('\n').filter((line: string) => line.trim()).map((line: string, i: number) => {
-                  const trimmed = line.trim();
-                  // D1 / D2 / DAY 等天數標題（加粗區分）
-                  if (/^(D|DAY|第)\s*\d/i.test(trimmed)) {
-                    return (
-                      <p key={i} className="mt-2 font-bold text-white">
-                        {trimmed}
-                      </p>
-                    );
-                  }
-                  // ★ 標記的亮點（加粗區分）
-                  if (/^[★☆●◆▶►]/.test(trimmed)) {
-                    return (
-                      <p key={i} className="mt-1.5 font-semibold text-white/90">
-                        {trimmed}
-                      </p>
-                    );
-                  }
-                  return <p key={i}>{trimmed}</p>;
-                })}
-              </div>
+              {extractingText && !trip.document_text && (
+                <div className="flex items-center gap-2 py-6">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
+                  <span className="text-xs text-white/50">正在從 PDF 擷取行程內容...</span>
+                </div>
+              )}
+              {!extractingText && !trip.document_text && (
+                <p className="py-4 text-center text-xs text-white/40">尚未擷取到行程內容</p>
+              )}
+              {trip.document_text && (
+                <div className="max-h-[300px] space-y-1 overflow-y-auto pr-1 text-[13px] leading-relaxed text-white/80 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
+                  {trip.document_text.split('\n').filter((line: string) => line.trim()).map((line: string, i: number) => {
+                    const trimmed = line.trim();
+                    // D1 / D2 / DAY 等天數標題（加粗區分）
+                    if (/^(D|DAY|第)\s*\d/i.test(trimmed)) {
+                      return (
+                        <p key={i} className="mt-2 font-bold text-white">
+                          {trimmed}
+                        </p>
+                      );
+                    }
+                    // ★ 標記的亮點（加粗區分）
+                    if (/^[★☆●◆▶►]/.test(trimmed)) {
+                      return (
+                        <p key={i} className="mt-1.5 font-semibold text-white/90">
+                          {trimmed}
+                        </p>
+                      );
+                    }
+                    return <p key={i}>{trimmed}</p>;
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -336,13 +373,21 @@ export default function TripPage() {
                 <button
                   onClick={async () => {
                     if (!confirm('重新從 PDF 擷取文字？目前的編輯內容將被覆蓋。')) return;
+                    if (!trip.document_url) return;
                     setSaving(true);
                     try {
-                      const res = await fetch(`/api/trips/${tripId}/extract-text`, { method: 'POST' });
-                      const result = await res.json();
-                      if (result.text) {
-                        setEditDocumentText(result.text);
-                        setTrip(prev => prev ? { ...prev, document_text: result.text } : prev);
+                      const text = await extractPdfText(trip.document_url);
+                      if (text) {
+                        setEditDocumentText(text);
+                        setTrip(prev => prev ? { ...prev, document_text: text } : prev);
+                        // 存入資料庫
+                        await fetch(`/api/trips/${tripId}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ document_text: text }),
+                        });
+                      } else {
+                        alert('擷取失敗，PDF 可能沒有文字內容');
                       }
                     } catch {
                       alert('擷取失敗');
