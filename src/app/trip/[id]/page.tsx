@@ -36,29 +36,6 @@ export default function TripPage() {
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDocumentText, setEditDocumentText] = useState('');
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
-  const [extractingText, setExtractingText] = useState(false);
-
-  // 前端用 pdfjs-dist 擷取 PDF 文字
-  async function extractPdfText(pdfUrl: string): Promise<string> {
-    setExtractingText(true);
-    try {
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
-      const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-      const lines: string[] = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items.map((item: any) => item.str).join(' ');
-        if (pageText.trim()) lines.push(pageText.trim());
-      }
-      return lines.join('\n');
-    } catch {
-      return '';
-    } finally {
-      setExtractingText(false);
-    }
-  }
 
   // 偵測瀏覽器/裝置，產生對應的「返回」提示文字
   const getBackHint = () => {
@@ -364,55 +341,11 @@ export default function TripPage() {
             onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-bold text-white">編輯行程概要</h3>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={async () => {
-                    if (!confirm('重新從 PDF 擷取文字？目前的編輯內容將被覆蓋。')) return;
-                    if (!trip.document_url) return;
-                    setSaving(true);
-                    try {
-                      const text = await extractPdfText(trip.document_url);
-                      if (text) {
-                        setEditDocumentText(text);
-                        // 重新解析為 day sections
-                        const dayPattern = /第\s*(\d+)\s*天/g;
-                        const positions: { num: number; index: number }[] = [];
-                        let m2;
-                        while ((m2 = dayPattern.exec(text)) !== null) {
-                          const dn = parseInt(m2[1]);
-                          if (!positions.find(p => p.num === dn)) positions.push({ num: dn, index: m2.index });
-                        }
-                        if (positions.length > 0) {
-                          setEditDaySections(positions.map((pos, i) => {
-                            const end = i + 1 < positions.length ? positions[i + 1].index : text.length;
-                            return { num: pos.num, text: text.slice(pos.index, end).trim() };
-                          }));
-                        }
-                        setTrip(prev => prev ? { ...prev, document_text: text } : prev);
-                        await fetch(`/api/trips/${tripId}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ document_text: text }),
-                        });
-                      } else {
-                        alert('擷取失敗，PDF 可能沒有文字內容');
-                      }
-                    } catch {
-                      alert('擷取失敗');
-                    }
-                    setSaving(false);
-                  }}
-                  disabled={saving || !trip.document_url}
-                  className="text-xs text-sky-400 transition hover:text-sky-300 disabled:opacity-40"
-                >
-                  重新擷取 PDF
-                </button>
-                <button onClick={() => setShowTextEditor(false)} className="text-white/50 hover:text-white">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+              <button onClick={() => setShowTextEditor(false)} className="text-white/50 hover:text-white">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             <p className="mb-3 text-xs text-white/50">每天的行程獨立編輯，格式範例：第1天【桃園機場】—【目的地】</p>
             <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
