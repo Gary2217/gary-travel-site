@@ -82,6 +82,18 @@ export default function TripPage() {
         setTrip(data);
         setDepartureDates(data.departure_dates || []);
         track({ event_type: "trip_view", trip_id: tripId, trip_title: data.title });
+
+        // 如果有 PDF 但沒有擷取文字，自動補擷取
+        if (data.document_url && !data.document_text) {
+          fetch(`/api/trips/${tripId}/extract-text`, { method: 'POST' })
+            .then(res => res.json())
+            .then(result => {
+              if (result.text) {
+                setTrip(prev => prev ? { ...prev, document_text: result.text } : prev);
+              }
+            })
+            .catch(() => {});
+        }
       } catch {
         setError("無法載入行程資料");
       } finally {
