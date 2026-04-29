@@ -35,6 +35,7 @@ export default function TripPage() {
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDocumentText, setEditDocumentText] = useState('');
+  const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
   const [extractingText, setExtractingText] = useState(false);
 
   // 前端用 pdfjs-dist 擷取 PDF 文字
@@ -203,7 +204,34 @@ export default function TripPage() {
                 </button>
                 <button
                   onClick={() => {
-                    setEditDocumentText(trip.document_text || '');
+                    const fullText = trip.document_text || '';
+                    setEditDocumentText(fullText);
+                    // 解析現有文字為每天段落
+                    const dayPattern = /第\s*(\d+)\s*天/g;
+                    const positions: { num: number; index: number }[] = [];
+                    let m;
+                    while ((m = dayPattern.exec(fullText)) !== null) {
+                      const dayNum = parseInt(m[1]);
+                      if (!positions.find(p => p.num === dayNum)) {
+                        positions.push({ num: dayNum, index: m.index });
+                      }
+                    }
+                    if (positions.length > 0) {
+                      const sections = positions.map((pos, i) => {
+                        const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
+                        return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
+                      });
+                      setEditDaySections(sections);
+                    } else {
+                      // 沒有內容，根據天數自動建立空格子
+                      const durationMatch = trip.duration?.match(/(\d+)/);
+                      const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
+                      const sections = Array.from({ length: dayCount }, (_, i) => ({
+                        num: i + 1,
+                        text: '',
+                      }));
+                      setEditDaySections(sections);
+                    }
                     setShowTextEditor(true);
                   }}
                   className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
@@ -346,8 +374,21 @@ export default function TripPage() {
                       const text = await extractPdfText(trip.document_url);
                       if (text) {
                         setEditDocumentText(text);
+                        // 重新解析為 day sections
+                        const dayPattern = /第\s*(\d+)\s*天/g;
+                        const positions: { num: number; index: number }[] = [];
+                        let m2;
+                        while ((m2 = dayPattern.exec(text)) !== null) {
+                          const dn = parseInt(m2[1]);
+                          if (!positions.find(p => p.num === dn)) positions.push({ num: dn, index: m2.index });
+                        }
+                        if (positions.length > 0) {
+                          setEditDaySections(positions.map((pos, i) => {
+                            const end = i + 1 < positions.length ? positions[i + 1].index : text.length;
+                            return { num: pos.num, text: text.slice(pos.index, end).trim() };
+                          }));
+                        }
                         setTrip(prev => prev ? { ...prev, document_text: text } : prev);
-                        // 存入資料庫
                         await fetch(`/api/trips/${tripId}`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
@@ -373,83 +414,78 @@ export default function TripPage() {
                 </button>
               </div>
             </div>
-            <p className="mb-3 text-xs text-white/50">每天的行程內容獨立編輯，顯示時會擷取【】內的景點標題</p>
-            {(() => {
-              // 把文字按「第X天」分段
-              const fullText = editDocumentText;
-              const dayPattern = /第\s*(\d+)\s*天/g;
-              const positions: { num: string; index: number }[] = [];
-              let m;
-              while ((m = dayPattern.exec(fullText)) !== null) {
-                if (!positions.find(p => p.num === m![1])) {
-                  positions.push({ num: m[1], index: m.index });
-                }
-              }
-              // 前綴（第1天之前的內容）
-              const prefix = positions.length > 0 ? fullText.slice(0, positions[0].index) : fullText;
-              const sections = positions.map((pos, i) => {
-                const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
-                return { num: pos.num, text: fullText.slice(pos.index, end) };
-              });
-
-              return (
-                <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
-                  {prefix.trim() && (
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                      <label className="mb-1.5 block text-xs font-bold text-white/50">行程總覽</label>
-                      <textarea
-                        value={prefix}
-                        onChange={e => {
-                          const newPrefix = e.target.value;
-                          const rest = positions.length > 0 ? fullText.slice(positions[0].index) : '';
-                          setEditDocumentText(newPrefix + rest);
+            <p className="mb-3 text-xs text-white/50">每天的行程獨立編輯，格式範例：第1天【桃園機場】—【目的地】</p>
+            <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+              {editDaySections.map((sec, i) => (
+                <div key={sec.num} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="text-xs font-bold text-sky-300">第{sec.num}天</label>
+                    {editDaySections.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditDaySections(prev => prev.filter((_, idx) => idx !== i));
                         }}
-                        rows={3}
-                        className="w-full rounded border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-sky-400"
-                      />
-                    </div>
-                  )}
-                  {sections.map((sec, i) => (
-                    <div key={i} className="rounded-lg border border-white/10 bg-white/5 p-3">
-                      <label className="mb-1.5 block text-xs font-bold text-sky-300">第{sec.num}天</label>
-                      <textarea
-                        value={sec.text}
-                        onChange={e => {
-                          const newSections = [...sections];
-                          newSections[i] = { ...sec, text: e.target.value };
-                          setEditDocumentText(
-                            (prefix.trim() ? prefix : '') +
-                            newSections.map(s => s.text).join('')
-                          );
-                        }}
-                        rows={4}
-                        className="w-full rounded border border-white/10 bg-white/5 px-2 py-1.5 text-sm leading-relaxed text-white outline-none focus:border-sky-400"
-                      />
-                    </div>
-                  ))}
-                  {sections.length === 0 && !prefix.trim() && (
-                    <textarea
-                      value={editDocumentText}
-                      onChange={e => setEditDocumentText(e.target.value)}
-                      rows={12}
-                      placeholder="尚無內容，請點「重新擷取 PDF」或手動輸入"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
-                    />
-                  )}
+                        className="text-[10px] text-red-400/70 transition hover:text-red-400"
+                      >
+                        刪除此天
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    value={sec.text}
+                    onChange={e => {
+                      setEditDaySections(prev => {
+                        const updated = [...prev];
+                        updated[i] = { ...sec, text: e.target.value };
+                        return updated;
+                      });
+                    }}
+                    rows={3}
+                    placeholder={`第${sec.num}天【景點A】—【景點B】—【景點C】`}
+                    className="w-full rounded border border-white/10 bg-white/5 px-2 py-1.5 text-sm leading-relaxed text-white outline-none focus:border-sky-400"
+                  />
                 </div>
-              );
-            })()}
+              ))}
+              {/* 新增天數按鈕 */}
+              <button
+                type="button"
+                onClick={() => {
+                  const maxNum = editDaySections.length > 0
+                    ? Math.max(...editDaySections.map(s => s.num))
+                    : 0;
+                  setEditDaySections(prev => [...prev, { num: maxNum + 1, text: '' }]);
+                }}
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/20 bg-white/5 py-2.5 text-xs text-white/50 transition hover:border-sky-400/40 hover:text-sky-300"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                新增天數
+              </button>
+            </div>
             <button
               disabled={saving}
               onClick={async () => {
                 setSaving(true);
+                // 組合所有天數為一段文字
+                const combinedText = editDaySections
+                  .filter(s => s.text.trim())
+                  .map(s => {
+                    // 如果使用者沒有自己寫「第X天」開頭，自動補上
+                    const trimmed = s.text.trim();
+                    if (/^第\s*\d+\s*天/.test(trimmed)) return trimmed;
+                    return `第${s.num}天 ${trimmed}`;
+                  })
+                  .join('\n');
                 const res = await fetch(`/api/trips/${tripId}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ document_text: editDocumentText }),
+                  body: JSON.stringify({ document_text: combinedText }),
                 });
                 if (res.ok) {
-                  setTrip(prev => prev ? { ...prev, document_text: editDocumentText } : prev);
+                  setTrip(prev => prev ? { ...prev, document_text: combinedText } : prev);
+                  setEditDocumentText(combinedText);
                   setShowTextEditor(false);
                 } else {
                   alert('儲存失敗，請再試一次');
