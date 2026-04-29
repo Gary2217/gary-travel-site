@@ -387,7 +387,7 @@ export default function TripPage() {
                   想下載「{trip.title}」的行程檔嗎？
                 </p>
                 <p className="mb-4 text-xs leading-5 text-white/60">
-                  請先加入我們的 LINE、Facebook 或 Instagram 任一帳號，回到此頁面後即可下載！
+                  請先加入我們任一社群帳號，追蹤後切回瀏覽器即可下載！
                 </p>
 
                 <div className="space-y-2">
@@ -437,26 +437,29 @@ export default function TripPage() {
                   </a>
                 </div>
 
-                <p className="mt-3 text-center text-[10px] text-white/40 sm:text-[11px]">
-                  追蹤完成後回到此頁面，即可下載行程檔
-                </p>
+                <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-center">
+                  <p className="text-sm font-bold text-amber-300">
+                    追蹤後請按追蹤頁左上或左下「上一頁」按鈕
+                  </p>
+                  <p className="mt-1 text-xs text-amber-200/70">
+                    回到網站即可下載行程檔
+                  </p>
+                </div>
               </>
             ) : (
               <>
-                <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-center">
-                  <svg className="mx-auto mb-2 h-8 w-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+                  <svg className="mx-auto mb-2 h-10 w-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-sm font-semibold text-emerald-300">感謝追蹤！</p>
-                  <p className="mt-1 text-xs text-white/60">點擊下方按鈕下載行程檔</p>
+                  <p className="text-base font-bold text-emerald-300">感謝追蹤！</p>
+                  <p className="mt-1 text-sm text-white/70">點擊下方按鈕下載行程檔</p>
                 </div>
 
                 <a
-                  href={trip.document_url || "#"}
-                  target="_blank"
-                  rel="noreferrer"
+                  href={`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || "")}&name=${encodeURIComponent(trip.title)}`}
                   onClick={() => { setShowDownloadGate(false); setDownloadReady(false); }}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-sky-500 active:scale-[0.98]"
+                  className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-sky-600 px-4 py-4 text-base font-bold text-white shadow-lg transition hover:bg-sky-500 active:scale-[0.98]"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
