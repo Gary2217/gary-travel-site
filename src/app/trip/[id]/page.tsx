@@ -430,21 +430,31 @@ export default function TripPage() {
                 <p className="py-3 text-center text-xs text-white/40">尚未擷取到行程內容</p>
               )}
               {trip.document_text && (() => {
-                // 從全文中擷取「第X天」+ 【標題】
+                // 從全文中擷取「第X天」之間所有【】標題
                 const fullText = trip.document_text!;
                 const dayPattern = /第\s*(\d+)\s*天/g;
-                const days: { num: string; title: string }[] = [];
+                const dayPositions: { num: string; index: number }[] = [];
                 let match;
                 while ((match = dayPattern.exec(fullText)) !== null) {
                   const dayNum = match[1];
-                  const afterDay = fullText.slice(match.index + match[0].length);
-                  // 嘗試抓【】內的標題
-                  const bracketMatch = afterDay.match(/【([^】]+)】/);
-                  if (bracketMatch) {
-                    // 避免重複（同一天可能出現多次）
-                    if (!days.find(d => d.num === dayNum)) {
-                      days.push({ num: dayNum, title: bracketMatch[1].trim() });
-                    }
+                  if (!dayPositions.find(d => d.num === dayNum)) {
+                    dayPositions.push({ num: dayNum, index: match.index });
+                  }
+                }
+                const days: { num: string; title: string }[] = [];
+                for (let i = 0; i < dayPositions.length; i++) {
+                  const start = dayPositions[i].index;
+                  const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
+                  const section = fullText.slice(start, end);
+                  // 收集這段區間內所有【】的內容
+                  const brackets: string[] = [];
+                  const bracketPattern = /【([^】]+)】/g;
+                  let bMatch;
+                  while ((bMatch = bracketPattern.exec(section)) !== null) {
+                    brackets.push(bMatch[1].trim());
+                  }
+                  if (brackets.length > 0) {
+                    days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
                   }
                 }
                 return days.length > 0 ? (
