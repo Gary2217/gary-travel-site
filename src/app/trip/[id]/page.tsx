@@ -181,65 +181,20 @@ export default function TripPage() {
 
       {/* 標題區塊 */}
       <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:pt-[80px]">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
-          {/* 左側：標題資訊 */}
-          <div>
-            <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
-              <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
-                {trip.duration}
-              </span>
-              {trip.price_range && (
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 sm:px-3 sm:py-1 sm:text-xs">
-                  {trip.price_range}
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
-            {trip.subtitle && (
-              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
-            )}
-          </div>
-
-          {/* 右側：PDF 行程概要 */}
-          {trip.document_url && (
-            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0">
-              <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
-              {extractingText && !trip.document_text && (
-                <div className="flex items-center gap-2 py-6">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
-                  <span className="text-xs text-white/50">正在從 PDF 擷取行程內容...</span>
-                </div>
-              )}
-              {!extractingText && !trip.document_text && (
-                <p className="py-4 text-center text-xs text-white/40">尚未擷取到行程內容</p>
-              )}
-              {trip.document_text && (
-                <div className="max-h-[300px] space-y-1 overflow-y-auto pr-1 text-[13px] leading-relaxed text-white/80 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
-                  {trip.document_text.split('\n').filter((line: string) => line.trim()).map((line: string, i: number) => {
-                    const trimmed = line.trim();
-                    // D1 / D2 / DAY 等天數標題（加粗區分）
-                    if (/^(D|DAY|第)\s*\d/i.test(trimmed)) {
-                      return (
-                        <p key={i} className="mt-2 font-bold text-white">
-                          {trimmed}
-                        </p>
-                      );
-                    }
-                    // ★ 標記的亮點（加粗區分）
-                    if (/^[★☆●◆▶►]/.test(trimmed)) {
-                      return (
-                        <p key={i} className="mt-1.5 font-semibold text-white/90">
-                          {trimmed}
-                        </p>
-                      );
-                    }
-                    return <p key={i}>{trimmed}</p>;
-                  })}
-                </div>
-              )}
-            </div>
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
+          <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
+            {trip.duration}
+          </span>
+          {trip.price_range && (
+            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 sm:px-3 sm:py-1 sm:text-xs">
+              {trip.price_range}
+            </span>
           )}
         </div>
+        <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
+        {trip.subtitle && (
+          <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
+        )}
       </div>
 
       {/* DevMode 編輯面板 */}
@@ -442,22 +397,67 @@ export default function TripPage() {
 
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
-        {/* 亮點標籤 */}
-        {trip.highlights && trip.highlights.length > 0 && (
-          <div className="mb-6">
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
-            <div className="flex flex-wrap gap-2">
-              {trip.highlights.map((highlight) => (
-                <span
-                  key={highlight}
-                  className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-sm font-medium text-sky-200"
-                >
-                  {highlight}
-                </span>
-              ))}
+        {/* 亮點標籤 + 行程概要 橫排 */}
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[auto_1fr]">
+          {/* 左側：行程亮點 */}
+          {trip.highlights && trip.highlights.length > 0 && (
+            <div>
+              <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
+              <div className="flex flex-wrap gap-2">
+                {trip.highlights.map((highlight) => (
+                  <span
+                    key={highlight}
+                    className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-sm font-medium text-sky-200"
+                  >
+                    {highlight}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* 右側：行程概要（只顯示每日行程） */}
+          {trip.document_url && (
+            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
+              <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
+              {extractingText && !trip.document_text && (
+                <div className="flex items-center gap-2 py-4">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
+                  <span className="text-xs text-white/50">正在從 PDF 擷取行程內容...</span>
+                </div>
+              )}
+              {!extractingText && !trip.document_text && (
+                <p className="py-3 text-center text-xs text-white/40">尚未擷取到行程內容</p>
+              )}
+              {trip.document_text && (() => {
+                // 只擷取「第X天」的行程內容
+                const dayLines = trip.document_text!.split('\n')
+                  .filter((line: string) => /第\s*\d+\s*天/.test(line))
+                  .map((line: string) => line.trim());
+                return dayLines.length > 0 ? (
+                  <div className="space-y-2 text-[13px] leading-relaxed text-white/80">
+                    {dayLines.map((line: string, i: number) => {
+                      const match = line.match(/第\s*(\d+)\s*天/);
+                      const dayNum = match ? match[1] : '';
+                      // 去掉日期部分（如 6/22(日)），保留第X天後面的內容
+                      const content = line.replace(/^\S*\s*第\s*\d+\s*天\s*/, '').trim();
+                      return (
+                        <div key={i} className="flex gap-2">
+                          <span className="shrink-0 rounded bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300">
+                            第{dayNum}天
+                          </span>
+                          <span className="text-white/80">{content || line}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="py-3 text-center text-xs text-white/40">PDF 中未找到每日行程內容</p>
+                );
+              })()}
+            </div>
+          )}
+        </div>
 
         {/* 出團日期 */}
         {(departureDates.length > 0 || isDevMode) && (
