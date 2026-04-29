@@ -448,6 +448,25 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                   )}
                   {d.price && <span className="text-sm font-bold text-amber-300">NT$ {d.price.toLocaleString()}</span>}
                   {d.label && <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">{d.label}</span>}
+                  {/* 立即詢問 / DevMode 按鈕 */}
+                  <div className="ml-auto flex items-center gap-2">
+                    {!isDevMode && (
+                      <a href={lineMessageHref(`我想詢問【${tripTitle}】${info.short}（${info.weekday}）${d.departure_city}出發`)}
+                        target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95">
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                        立即詢問
+                      </a>
+                    )}
+                    {isDevMode && (
+                      <>
+                        <button onClick={() => openEditForm(d)}
+                          className="rounded-full bg-amber-500/20 px-3 py-1.5 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
+                        <button onClick={() => handleDelete(d.id)}
+                          className="rounded-full bg-red-500/20 px-3 py-1.5 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* 航班表格 */}
@@ -483,25 +502,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                   </div>
                 )}
 
-                {/* 按鈕 */}
-                <div className="flex items-center gap-2">
-                  {!isDevMode && (
-                    <a href={lineMessageHref(`我想詢問【${tripTitle}】${info.short}（${info.weekday}）${d.departure_city}出發`)}
-                      target="_blank" rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95">
-                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
-                      立即詢問
-                    </a>
-                  )}
-                  {isDevMode && (
-                    <>
-                      <button onClick={() => openEditForm(d)}
-                        className="rounded-full bg-amber-500/20 px-3 py-1.5 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
-                      <button onClick={() => handleDelete(d.id)}
-                        className="rounded-full bg-red-500/20 px-3 py-1.5 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
-                    </>
-                  )}
-                </div>
               </div>
             );
           })()}
