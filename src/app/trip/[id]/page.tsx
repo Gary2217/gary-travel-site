@@ -115,6 +115,7 @@ export default function TripPage() {
   };
 
   const openTripInfoEditor = () => {
+    if (!trip) return;
     setEditTitle(trip.title);
     setEditSubtitle(trip.subtitle || '');
     setEditPriceRange(trip.price_range || '');
