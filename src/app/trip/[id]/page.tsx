@@ -188,7 +188,7 @@ export default function TripPage() {
       <div id="trip-content" />
 
       {/* 標題區塊 */}
-      <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:px-8 lg:pt-[80px] lg:pb-[14rem]">
+      <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:px-8 lg:pt-[80px] lg:pb-[8rem]">
         <div className="relative">
           <div className="min-w-0 lg:pr-[380px]">
             <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
