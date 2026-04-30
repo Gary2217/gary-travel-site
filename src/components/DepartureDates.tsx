@@ -47,6 +47,8 @@ interface DepartureDatesProps {
   dates: DepartureDate[];
   isDevMode: boolean;
   onDatesChange: (dates: DepartureDate[]) => void;
+  selectedDateId: string | null;
+  onSelectedDateChange: (dateId: string | null) => void;
 }
 
 function formatDate(dateStr: string) {
@@ -73,9 +75,8 @@ function getWeekdayFromDate(dateStr: string) {
 const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400";
 const labelClass = "mb-1 block text-[10px] text-white/50";
 
-export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange }: DepartureDatesProps) {
+export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange, selectedDateId, onSelectedDateChange }: DepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -231,7 +232,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${id}`, { method: "DELETE" });
     if (res.ok) {
       onDatesChange(dates.filter((d) => d.id !== id));
-      if (expandedId === id) setExpandedId(null);
+      if (selectedDateId === id) onSelectedDateChange(null);
     }
   };
 
@@ -409,12 +410,12 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 </div>
                 {monthDates.map((d) => {
                   const info = formatDate(d.departure_date);
-                  const isSelected = expandedId === d.id;
-                  return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => setExpandedId(isSelected ? null : d.id)}
+                   const isSelected = selectedDateId === d.id;
+                   return (
+                     <button
+                       key={d.id}
+                       type="button"
+                       onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
                       className={`rounded-xl border px-3 py-2 text-center transition ${
                         isSelected
                           ? "border-sky-400/40 bg-sky-500/15"
@@ -442,8 +443,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
           </div>
 
           {/* 選中卡片的展開詳情（在卡片列下方） */}
-          {expandedId && (() => {
-            const d = filtered.find((x) => x.id === expandedId);
+          {selectedDateId && (() => {
+            const d = filtered.find((x) => x.id === selectedDateId);
             if (!d) return null;
             const info = formatDate(d.departure_date);
             const returnInfo = d.return_date ? formatDate(d.return_date) : null;

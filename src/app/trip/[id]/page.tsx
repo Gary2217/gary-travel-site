@@ -3,14 +3,33 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getSiteLogo, type Trip, type TripBanner, type DepartureDate, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getSiteLogo, uploadTripBannerImage, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import StickyHeader from "@/components/StickyHeader";
 import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
 import DepartureDates from "@/components/DepartureDates";
 import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
+import ImageEditor from "@/components/ImageEditor";
 import { track } from "@/lib/analytics";
+
+const EMPTY_TRIP_BANNER: TripBanner = {
+  code_label: "",
+  price_label: "",
+  tags: [],
+  departure_label: "",
+  duration_label: "",
+  seats_total: null,
+  seats_available: null,
+  deposit_label: "",
+  side_image_url: "",
+  departure_info_map: {},
+};
+
+const EMPTY_DEPARTURE_INFO: DepartureBannerInfo = {
+  group_code: "",
+  price_detail: "",
+};
 
 export default function TripPage() {
   const params = useParams();
@@ -31,26 +50,27 @@ export default function TripPage() {
   const [editSubtitle, setEditSubtitle] = useState('');
   const [editPriceRange, setEditPriceRange] = useState('');
   const [editHighlights, setEditHighlights] = useState('');
-  const [editTripBanner, setEditTripBanner] = useState<TripBanner>({
-    code_label: '',
-    price_label: '',
-    tags: [],
-    departure_label: '',
-    duration_label: '',
-    seats_total: null,
-    seats_available: null,
-    deposit_label: '',
-  });
+  const [editTripBanner, setEditTripBanner] = useState<TripBanner>(EMPTY_TRIP_BANNER);
   const [editDayCount, setEditDayCount] = useState('');
   const [editNightCount, setEditNightCount] = useState('');
   const [editBannerTagInput, setEditBannerTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
+  const [selectedDepartureId, setSelectedDepartureId] = useState<string | null>(null);
+  const [departureEditorDate, setDepartureEditorDate] = useState('');
+  const [departureEditorPrice, setDepartureEditorPrice] = useState('');
+  const [departureEditorGroupCode, setDepartureEditorGroupCode] = useState('');
+  const [departureEditorPriceDetail, setDepartureEditorPriceDetail] = useState('');
+  const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDocumentText, setEditDocumentText] = useState('');
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
 
-  const banner = trip?.trip_banner ?? null;
+  const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
+  const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
+  const selectedDepartureInfo = selectedDepartureId
+    ? banner.departure_info_map?.[selectedDepartureId] ?? EMPTY_DEPARTURE_INFO
+    : EMPTY_DEPARTURE_INFO;
 
   // 偵測瀏覽器/裝置，產生對應的「返回」提示文字
   const getBackHint = () => {
@@ -94,8 +114,10 @@ export default function TripPage() {
   };
 
   const openBannerEditor = () => {
-    setEditTripBanner(trip?.trip_banner || {
-      code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '',
+    setEditTripBanner({
+      ...EMPTY_TRIP_BANNER,
+      ...(trip?.trip_banner || {}),
+      departure_info_map: trip?.trip_banner?.departure_info_map || {},
     });
     const rawDays = (trip?.trip_banner?.code_label || '').replace(/\D/g, '');
     const rawNights = (trip?.trip_banner?.duration_label || '').replace(/\D/g, '');
@@ -108,6 +130,7 @@ export default function TripPage() {
     setSaving(true);
     const { dayText, nightText } = toBannerDaysNights(editDayCount, editNightCount);
     const formattedBanner = formatTripBanner({
+      ...EMPTY_TRIP_BANNER,
       ...editTripBanner,
       code_label: dayText,
       duration_label: nightText,
@@ -138,9 +161,48 @@ export default function TripPage() {
   };
 
   const formatDateInput = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 8);
-    if (digits.length < 8) return value;
-    return `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6, 8)}`;
+    const cleaned = value.replace(/[^\d/]/g, "");
+
+    if (cleaned.includes("/")) {
+      const trailingSlash = cleaned.endsWith("/");
+      const parts = cleaned.split("/").slice(0, 3);
+      const [year = "", month = "", day = ""] = parts;
+      const normalizedParts = [year.slice(0, 4)];
+
+      if (parts.length > 1) normalizedParts.push(month.slice(0, 2));
+      if (parts.length > 2) normalizedParts.push(day.slice(0, 2));
+
+      const result = normalizedParts.filter((part, index) => index === 0 || part !== "").join("/");
+      return trailingSlash && normalizedParts.length < 3 ? `${result}/` : result;
+    }
+
+    const digits = cleaned.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 4) return digits;
+
+    const year = digits.slice(0, 4);
+    const monthDay = digits.slice(4);
+
+    if (monthDay.length <= 2) {
+      return `${year}/${monthDay}`;
+    }
+
+    const candidates = [1, 2]
+      .map((monthLength) => {
+        const monthPart = monthDay.slice(0, monthLength);
+        const dayPart = monthDay.slice(monthLength);
+
+        if (!monthPart || !dayPart || dayPart.length > 2) return null;
+
+        const month = Number(monthPart);
+        const day = Number(dayPart);
+
+        if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+        return `${year}/${month}/${day}`;
+      })
+      .filter((candidate): candidate is string => Boolean(candidate));
+
+    return candidates[0] ?? `${year}/${monthDay}`;
   };
 
   const formatMoney = (value: string) => {
@@ -173,7 +235,16 @@ export default function TripPage() {
     return `${day ? `${day}天` : ''}${night ? `${night}夜` : ''}`;
   };
 
+  const renderBannerItems = (items: string[], baseClassName: string) =>
+    items.map((item, index) => (
+      <div key={`${item}-${index}`} className="flex items-center gap-2">
+        {index > 0 && <span className="text-white/35">|</span>}
+        <span className={baseClassName}>{item}</span>
+      </div>
+    ));
+
   const formatTripBanner = (banner: TripBanner) => ({
+    ...EMPTY_TRIP_BANNER,
     ...banner,
     code_label: formatDaysNights(banner.code_label),
     price_label: banner.price_label ? `NT$${formatMoney(banner.price_label)}` : '',
@@ -183,7 +254,25 @@ export default function TripPage() {
     seats_available: banner.seats_available,
     deposit_label: banner.deposit_label ? `訂金 ${formatMoney(banner.deposit_label)}/人` : '',
     tags: banner.tags,
+    departure_info_map: banner.departure_info_map || {},
   });
+
+  const getDepartureBannerInfoMap = (source?: TripBanner | null) => source?.departure_info_map || {};
+
+  const formatDisplayPrice = (price: number | null) => (price ? `NT$ ${price.toLocaleString('zh-TW')}` : '尚未設定');
+
+  const formatFullDate = (dateStr: string) => {
+    const d = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return formatDateInput(dateStr);
+
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const renderPriceDetailLines = (detail: string) =>
+    detail
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
 
   useEffect(() => {
     async function loadData() {
@@ -202,8 +291,116 @@ export default function TripPage() {
   }, [tripId]);
 
   useEffect(() => {
+    if (!trip) return;
+
+    const nextBanner = {
+      ...EMPTY_TRIP_BANNER,
+      ...(trip.trip_banner || {}),
+      departure_info_map: getDepartureBannerInfoMap(trip.trip_banner),
+    };
+
+    setEditTripBanner(nextBanner);
+    setEditDayCount((trip.trip_banner?.code_label || '').replace(/\D/g, '').slice(0, 2));
+    setEditNightCount((trip.trip_banner?.duration_label || '').replace(/\D/g, '').slice(0, 2));
+  }, [trip]);
+
+  useEffect(() => {
+    if (departureDates.length === 0) {
+      setSelectedDepartureId(null);
+      return;
+    }
+
+    setSelectedDepartureId((current) => {
+      if (current && departureDates.some((date) => date.id === current)) {
+        return current;
+      }
+
+      return departureDates[0].id;
+    });
+  }, [departureDates]);
+
+  useEffect(() => {
+    if (!selectedDeparture) {
+      setDepartureEditorDate('');
+      setDepartureEditorPrice('');
+      setDepartureEditorGroupCode('');
+      setDepartureEditorPriceDetail('');
+      return;
+    }
+
+    setDepartureEditorDate(selectedDeparture.departure_date);
+    setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
+    setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
+    setDepartureEditorPriceDetail(selectedDepartureInfo.price_detail || '');
+  }, [selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail]);
+
+  useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
   }, []);
+
+  const saveSelectedDepartureInfo = async () => {
+    if (!selectedDepartureId || !selectedDeparture) {
+      alert('請先選擇一個出團日期');
+      return;
+    }
+
+    setSaving(true);
+
+    const bannerPayload: TripBanner = {
+      ...EMPTY_TRIP_BANNER,
+      ...editTripBanner,
+      code_label: previewDayText,
+      duration_label: previewNightText,
+      departure_info_map: {
+        ...getDepartureBannerInfoMap(editTripBanner),
+        [selectedDepartureId]: {
+          group_code: departureEditorGroupCode.trim(),
+          price_detail: departureEditorPriceDetail.trim(),
+        },
+      },
+    };
+
+    const departurePayload = {
+      departure_date: departureEditorDate,
+      price: departureEditorPrice ? Number(departureEditorPrice.replace(/\D/g, '')) : null,
+      seats_total: editTripBanner.seats_total,
+      seats_available: editTripBanner.seats_available,
+    };
+
+    try {
+      const [tripRes, departureRes] = await Promise.all([
+        fetch(`/api/trips/${tripId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trip_banner: bannerPayload }),
+        }),
+        fetch(`/api/trips/${tripId}/departure-dates?dateId=${selectedDepartureId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(departurePayload),
+        }),
+      ]);
+
+      if (!tripRes.ok || !departureRes.ok) {
+        alert('儲存失敗，請再試一次');
+        return;
+      }
+
+      const [updatedTrip, updatedDeparture] = await Promise.all([tripRes.json(), departureRes.json()]);
+
+      setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
+      setDepartureDates((prev) =>
+        prev
+          .map((date) => (date.id === selectedDepartureId ? { ...date, ...updatedDeparture } : date))
+          .sort((a, b) => a.departure_date.localeCompare(b.departure_date))
+      );
+      alert('出團資訊已更新');
+    } catch {
+      alert('儲存失敗，請再試一次');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -239,6 +436,7 @@ export default function TripPage() {
   }
 
   const days = trip.trip_days || [];
+  const { dayText: previewDayText, nightText: previewNightText } = toBannerDaysNights(editDayCount, editNightCount);
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
@@ -251,18 +449,8 @@ export default function TripPage() {
 
       {/* 標題區塊 */}
       <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:px-8 lg:pt-[80px]">
-        <div className="lg:flex lg:items-start lg:gap-4">
+        <div className="lg:flex lg:items-start lg:gap-6">
           <div className="min-w-0 lg:flex-1">
-            <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
-              <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
-                {trip.duration}
-              </span>
-              {trip.price_range && (
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 sm:px-3 sm:py-1 sm:text-xs">
-                  {trip.price_range}
-                </span>
-              )}
-            </div>
             <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
             {trip.subtitle && (
               <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
@@ -289,148 +477,323 @@ export default function TripPage() {
               </div>
             )}
 
-            {/* 行程亮點 */}
-            {trip.highlights && trip.highlights.length > 0 && (
-              <div className="mt-10">
-                <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                  {trip.highlights.map((highlight) => (
-                    <span
-                      key={highlight}
-                      className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-sm font-medium text-sky-200"
-                    >
-                      {highlight}
-                    </span>
-                  ))}
+            <div className="mt-6 hidden lg:block">
+              <div className="relative max-w-[480px] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
+                <div className="aspect-[8/5] w-full">
+                  {editTripBanner.side_image_url ? (
+                    <img
+                      src={editTripBanner.side_image_url}
+                      alt={`${trip.title} 出團資訊圖片`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(255,255,255,0.04),rgba(251,191,36,0.08))] px-8 text-center">
+                      <div>
+                        <p className="text-sm font-semibold tracking-[0.22em] text-white/55">行程形象圖</p>
+                        <p className="mt-3 text-base text-white/45">開發者模式可在這裡上傳圖片</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {isDevMode && (
+                  <ImageEditor
+                    entityId={tripId}
+                    currentImageUrl={editTripBanner.side_image_url || ""}
+                    title={`${trip.title} 出團資訊圖片`}
+                    uploadFn={uploadTripBannerImage}
+                    onUpdate={(newUrl) => {
+                      setEditTripBanner((prev) => ({ ...prev, side_image_url: newUrl }));
+                      setTrip((prev) => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          trip_banner: {
+                            ...EMPTY_TRIP_BANNER,
+                            ...(prev.trip_banner || {}),
+                            side_image_url: newUrl,
+                          },
+                        };
+                      });
+                    }}
+                  />
+                )}
               </div>
-            )}
+            </div>
           </div>
-          <div className="mt-4 lg:mt-0 lg:w-[430px] lg:flex-none">
+          <div className="mt-6 lg:mt-14 lg:w-[430px] lg:flex-none">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
-                <p className="mt-1 text-xs text-white/40">顯示在標題右側，可由開發者模式編輯</p>
+                <p className="mt-1 text-xs text-white/40">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || '未設定'}</p>
               </div>
-              {isDevMode && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={openBannerEditor}
-                    className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
-                  >
-                    {banner ? '修改' : '新增'}
-                  </button>
-                  {banner && (
-                    <button
-                      onClick={() => setEditTripBanner({ code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '' })}
-                      className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
-                    >
-                      刪除
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
-            {isDevMode ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    value={editDayCount}
-                    onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const el = document.getElementById('night-count-input') as HTMLInputElement | null; el?.focus(); } }}
-                    placeholder="天數（例：5）"
-                    className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none"
-                  />
-                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="價格（例：68000）" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
-                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
-                    placeholder="出發日期（例：20260714）" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
-                  <input
-                    id="night-count-input"
-                    value={editNightCount}
-                    onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                    placeholder="夜數（例：4）"
-                    className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none"
-                  />
-                  <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="團位總數" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
-                  <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="可售團位" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
-                </div>
-                <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))}
-                  placeholder="訂金金額（例：5000）" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
-                <div>
-                  <div className="mb-1 text-xs text-white/50">標籤（Enter 新增）</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {editTripBanner.tags.map((tag, i) => (
-                      <span key={`${tag}-${i}`} className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs text-emerald-200">
-                        {tag}
-                        <button type="button" onClick={() => setEditTripBanner(prev => ({ ...prev, tags: prev.tags.filter((_, idx) => idx !== i) }))} className="ml-0.5 text-white/40 hover:text-red-400">×</button>
-                      </span>
-                    ))}
-                    <input
-                      value={editBannerTagInput}
-                      onChange={e => setEditBannerTagInput(e.target.value)}
-                      placeholder="輸入標籤..."
-                      className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-white outline-none"
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const val = editBannerTagInput.trim();
-                          if (!val) return;
-                          setEditTripBanner(prev => ({ ...prev, tags: [...prev.tags, val] }));
-                          setEditBannerTagInput('');
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={saveBanner} disabled={saving} className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60">
-                    {saving ? '儲存中...' : '儲存'}
-                  </button>
-                  <button onClick={() => setEditTripBanner({ code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '' })}
-                    className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600">
-                    刪除
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {banner ? (
-                  <>
-                    {banner.tags.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2">
-                        {banner.tags.map((tag) => (
+
+            <div className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-4 backdrop-blur-[12px]">
+              {selectedDeparture ? (
+                <div className="space-y-4">
+                  {editTripBanner.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {editTripBanner.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-center text-sm font-medium text-emerald-300"
+                          className="inline-flex w-fit rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-center text-sm font-medium text-emerald-300"
                         >
                           {tag}
                         </span>
                       ))}
-                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-white/95 sm:text-lg">
+                    {renderBannerItems(
+                        [
+                          formatFullDate(selectedDeparture.departure_date),
+                          renderDaysNights(previewDayText, previewNightText),
+                        ].filter(Boolean),
+                      'font-medium'
                     )}
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
-                      {banner.departure_label && <span>{formatDateInput(banner.departure_label)}</span>}
-                      {(banner.code_label || banner.duration_label) && <span className="text-white/40">|</span>}
-                      {(banner.code_label || banner.duration_label) && <span>{renderDaysNights(banner.code_label, banner.duration_label)}</span>}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-white/95 sm:text-lg">
+                    {renderBannerItems(
+                      [
+                        selectedDeparture.seats_total > 0 ? `團位 ${selectedDeparture.seats_total}` : '',
+                        selectedDeparture.seats_available > 0 ? `可售 ${selectedDeparture.seats_available}` : '',
+                        '候補 0',
+                        editTripBanner.deposit_label
+                          ? `訂金 ${Number(String(editTripBanner.deposit_label).replace(/\D/g, '')).toLocaleString('zh-TW')}/人`
+                          : '',
+                      ].filter(Boolean),
+                      'font-medium'
+                    )}
+                  </div>
+
+                  <div className="rounded-[1.25rem] border border-amber-400/15 bg-amber-400/5 px-4 py-3">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-amber-200/70">團費價格</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowPriceDetailModal(true)}
+                        className="text-left text-xl font-bold text-amber-300 transition hover:text-amber-200"
+                      >
+                        {formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPriceDetailModal(true)}
+                        className="text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
+                      >
+                        點我看明細
+                      </button>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
-                      {banner.seats_total !== null && <span>團位 {banner.seats_total}</span>}
-                      {banner.seats_available !== null && <span>可售 {banner.seats_available}</span>}
-                      <span>候補 0</span>
-                      {banner.deposit_label && <span>{`訂金 ${Number(String(banner.deposit_label).replace(/\D/g, '')).toLocaleString('zh-TW')}/人`}</span>}
+                  </div>
+
+                  {isDevMode && (
+                    <div className="space-y-3 rounded-[1.25rem] border border-sky-400/15 bg-sky-400/5 p-4">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.2em] text-sky-200/70">目前編輯梯次</p>
+                        <p className="mt-1 text-sm text-white/75">點下方出團日期卡片可切換這裡的內容</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <input
+                          value={departureEditorGroupCode}
+                          onChange={(e) => setDepartureEditorGroupCode(e.target.value)}
+                          placeholder="團號（例：GARY-HKD-0530）"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                        />
+                        <input
+                          type="date"
+                          value={departureEditorDate}
+                          onChange={(e) => setDepartureEditorDate(e.target.value)}
+                          placeholder="出發日期"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400 [color-scheme:dark]"
+                        />
+                        <input
+                          value={departureEditorPrice}
+                          onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
+                          placeholder="團費價格（例：81900）"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPriceDetailModal(true)}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-white/80 transition hover:border-sky-400/40 hover:text-white"
+                        >
+                          編輯售價明細
+                        </button>
+                        <input
+                          value={editDayCount}
+                          onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                          placeholder="天數（例：5）"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                        />
+                        <input
+                          id="night-count-input"
+                          value={editNightCount}
+                          onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                          placeholder="夜數（例：4）"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                        />
+                        <input
+                          type="number"
+                          value={editTripBanner.seats_total ?? ''}
+                          onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
+                          placeholder="團位總數"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                        />
+                        <input
+                          type="number"
+                          value={editTripBanner.seats_available ?? ''}
+                          onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
+                          placeholder="可售團位"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                        />
+                      </div>
+
+                      <input
+                        value={editTripBanner.deposit_label}
+                        onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))}
+                        placeholder="訂金金額（例：15000）"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                      />
+
+                      <div>
+                        <div className="mb-1 text-xs text-white/50">標籤（Enter 新增）</div>
+                        <div className="flex flex-wrap gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2">
+                          {editTripBanner.tags.map((tag, i) => (
+                            <span key={`${tag}-${i}`} className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs text-emerald-200">
+                              {tag}
+                              <button type="button" onClick={() => setEditTripBanner(prev => ({ ...prev, tags: prev.tags.filter((_, idx) => idx !== i) }))} className="ml-0.5 text-white/40 hover:text-red-400">×</button>
+                            </span>
+                          ))}
+                          <input
+                            value={editBannerTagInput}
+                            onChange={e => setEditBannerTagInput(e.target.value)}
+                            placeholder="輸入標籤..."
+                            className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-white outline-none"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const val = editBannerTagInput.trim();
+                                if (!val) return;
+                                setEditTripBanner(prev => ({ ...prev, tags: [...prev.tags, val] }));
+                                setEditBannerTagInput('');
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={saveSelectedDepartureInfo}
+                          disabled={saving}
+                          className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+                        >
+                          {saving ? '儲存中...' : '儲存目前梯次'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditTripBanner(EMPTY_TRIP_BANNER);
+                            setEditDayCount('');
+                            setEditNightCount('');
+                            setDepartureEditorGroupCode('');
+                            setDepartureEditorPrice('');
+                            setDepartureEditorPriceDetail('');
+                          }}
+                          className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                        >
+                          清空目前內容
+                        </button>
+                      </div>
                     </div>
-                  </>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-white/50">請先從下方選一個出團日期，或新增新的梯次。</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showPriceDetailModal && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setShowPriceDetailModal(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-[1.75rem] border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.22em] text-sky-300/70">售價明細</p>
+                <h3 className="mt-1 text-xl font-bold text-white">{formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture?.price ?? null)}</h3>
+                <p className="mt-1 text-sm text-white/45">
+                  {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
+                </p>
+              </div>
+              <button onClick={() => setShowPriceDetailModal(false)} className="text-white/45 transition hover:text-white">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {isDevMode ? (
+              <div className="space-y-4">
+                <textarea
+                  value={departureEditorPriceDetail}
+                  onChange={(e) => setDepartureEditorPriceDetail(e.target.value)}
+                  rows={10}
+                  placeholder="每行輸入一項售價明細，例如：\n含國際段機票\n含飯店住宿\n不含小費與簽證"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400"
+                />
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPriceDetailModal(false)}
+                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition hover:bg-white/10 hover:text-white"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await saveSelectedDepartureInfo();
+                      setShowPriceDetailModal(false);
+                    }}
+                    disabled={saving}
+                    className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+                  >
+                    {saving ? '儲存中...' : '儲存明細'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                {renderPriceDetailLines(selectedDepartureInfo.price_detail).length > 0 ? (
+                  <div className="space-y-3">
+                    {renderPriceDetailLines(selectedDepartureInfo.price_detail).map((line, index) => (
+                      <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85">
+                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-300" />
+                        <p>{line}</p>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-sm text-white/50">尚未設定出團資訊</p>
+                  <p className="text-sm text-white/45">目前尚未提供售價明細。</p>
                 )}
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
 
       {/* DevMode 編輯面板 */}
       {/* 編輯彈窗 */}
@@ -566,7 +929,7 @@ export default function TripPage() {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => setEditTripBanner({ code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '' })}
+                      onClick={() => setEditTripBanner(EMPTY_TRIP_BANNER)}
                       className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
                     >
                       清空右側資訊
@@ -803,6 +1166,8 @@ export default function TripPage() {
             dates={departureDates}
             isDevMode={isDevMode}
             onDatesChange={setDepartureDates}
+            selectedDateId={selectedDepartureId}
+            onSelectedDateChange={setSelectedDepartureId}
           />
         )}
       </div>
