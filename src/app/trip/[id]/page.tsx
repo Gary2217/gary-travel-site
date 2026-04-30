@@ -34,17 +34,37 @@ const EMPTY_DEPARTURE_INFO: DepartureBannerInfo = {
 type PriceDetailContent = {
   title: string;
   subtitle: string;
-  included: string;
-  excluded: string;
-  notes: string;
+  adultPrice: string;
+  childWithBedPrice: string;
+  childNoBedPrice: string;
+  childExtraBedPrice: string;
+  infantPrice: string;
+  pricingNote: string;
+  deposit: string;
+  singleRoom: string;
+  visaFee: string;
+  surcharge: string;
+  groupNote: string;
+  quoteNote: string;
+  visaNote: string;
 };
 
 const EMPTY_PRICE_DETAIL: PriceDetailContent = {
   title: "",
   subtitle: "",
-  included: "",
-  excluded: "",
-  notes: "",
+  adultPrice: "",
+  childWithBedPrice: "",
+  childNoBedPrice: "",
+  childExtraBedPrice: "",
+  infantPrice: "",
+  pricingNote: "",
+  deposit: "",
+  singleRoom: "",
+  visaFee: "",
+  surcharge: "",
+  groupNote: "",
+  quoteNote: "",
+  visaNote: "",
 };
 
 export default function TripPage() {
@@ -79,9 +99,19 @@ export default function TripPage() {
   const [departureEditorPriceDetail, setDepartureEditorPriceDetail] = useState('');
   const [detailTitle, setDetailTitle] = useState('');
   const [detailSubtitle, setDetailSubtitle] = useState('');
-  const [detailIncluded, setDetailIncluded] = useState('');
-  const [detailExcluded, setDetailExcluded] = useState('');
-  const [detailNotes, setDetailNotes] = useState('');
+  const [detailAdultPrice, setDetailAdultPrice] = useState('');
+  const [detailChildWithBedPrice, setDetailChildWithBedPrice] = useState('');
+  const [detailChildNoBedPrice, setDetailChildNoBedPrice] = useState('');
+  const [detailChildExtraBedPrice, setDetailChildExtraBedPrice] = useState('');
+  const [detailInfantPrice, setDetailInfantPrice] = useState('');
+  const [detailPricingNote, setDetailPricingNote] = useState('');
+  const [detailDeposit, setDetailDeposit] = useState('');
+  const [detailSingleRoom, setDetailSingleRoom] = useState('');
+  const [detailVisaFee, setDetailVisaFee] = useState('');
+  const [detailSurcharge, setDetailSurcharge] = useState('');
+  const [detailGroupNote, setDetailGroupNote] = useState('');
+  const [detailQuoteNote, setDetailQuoteNote] = useState('');
+  const [detailVisaNote, setDetailVisaNote] = useState('');
   const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDocumentText, setEditDocumentText] = useState('');
@@ -293,14 +323,28 @@ export default function TripPage() {
     if (!detail.trim()) return EMPTY_PRICE_DETAIL;
 
     try {
-      const parsed = JSON.parse(detail) as Partial<PriceDetailContent>;
+      const parsed = JSON.parse(detail) as Partial<PriceDetailContent> & {
+        included?: string;
+        excluded?: string;
+        notes?: string;
+      };
       if (typeof parsed === 'object' && parsed !== null) {
         return {
           title: parsed.title || '',
           subtitle: parsed.subtitle || '',
-          included: parsed.included || '',
-          excluded: parsed.excluded || '',
-          notes: parsed.notes || '',
+          adultPrice: parsed.adultPrice || '',
+          childWithBedPrice: parsed.childWithBedPrice || '',
+          childNoBedPrice: parsed.childNoBedPrice || '',
+          childExtraBedPrice: parsed.childExtraBedPrice || '',
+          infantPrice: parsed.infantPrice || '',
+          pricingNote: parsed.pricingNote || '',
+          deposit: parsed.deposit || '',
+          singleRoom: parsed.singleRoom || '',
+          visaFee: parsed.visaFee || '',
+          surcharge: parsed.surcharge || '',
+          groupNote: parsed.groupNote || parsed.included || '',
+          quoteNote: parsed.quoteNote || parsed.excluded || '',
+          visaNote: parsed.visaNote || parsed.notes || '',
         };
       }
     } catch {
@@ -309,36 +353,11 @@ export default function TripPage() {
 
     return {
       ...EMPTY_PRICE_DETAIL,
-      included: detail,
+      groupNote: detail,
     };
   };
 
   const stringifyPriceDetail = (detail: PriceDetailContent) => JSON.stringify(detail);
-
-  const splitDetailLines = (value: string) =>
-    value
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-  const updateDetailLine = (value: string, index: number, nextLine: string) => {
-    const lines = splitDetailLines(value);
-    if (lines.length === 0) lines.push("");
-    lines[index] = nextLine;
-    return lines.join("\n");
-  };
-
-  const removeDetailLine = (value: string, index: number) => {
-    const lines = splitDetailLines(value);
-    lines.splice(index, 1);
-    return lines.join("\n");
-  };
-
-  const appendDetailLine = (value: string) => {
-    const lines = splitDetailLines(value);
-    lines.push("");
-    return lines.join("\n");
-  };
 
   useEffect(() => {
     async function loadData() {
@@ -393,9 +412,19 @@ export default function TripPage() {
       setDepartureEditorPriceDetail('');
       setDetailTitle('');
       setDetailSubtitle('');
-      setDetailIncluded('');
-      setDetailExcluded('');
-      setDetailNotes('');
+      setDetailAdultPrice('');
+      setDetailChildWithBedPrice('');
+      setDetailChildNoBedPrice('');
+      setDetailChildExtraBedPrice('');
+      setDetailInfantPrice('');
+      setDetailPricingNote('');
+      setDetailDeposit('');
+      setDetailSingleRoom('');
+      setDetailVisaFee('');
+      setDetailSurcharge('');
+      setDetailGroupNote('');
+      setDetailQuoteNote('');
+      setDetailVisaNote('');
       return;
     }
 
@@ -406,9 +435,19 @@ export default function TripPage() {
     const parsedDetail = parsePriceDetail(selectedDepartureInfo.price_detail || '');
     setDetailTitle(parsedDetail.title);
     setDetailSubtitle(parsedDetail.subtitle);
-    setDetailIncluded(parsedDetail.included);
-    setDetailExcluded(parsedDetail.excluded);
-    setDetailNotes(parsedDetail.notes);
+    setDetailAdultPrice(parsedDetail.adultPrice);
+    setDetailChildWithBedPrice(parsedDetail.childWithBedPrice);
+    setDetailChildNoBedPrice(parsedDetail.childNoBedPrice);
+    setDetailChildExtraBedPrice(parsedDetail.childExtraBedPrice);
+    setDetailInfantPrice(parsedDetail.infantPrice);
+    setDetailPricingNote(parsedDetail.pricingNote);
+    setDetailDeposit(parsedDetail.deposit);
+    setDetailSingleRoom(parsedDetail.singleRoom);
+    setDetailVisaFee(parsedDetail.visaFee);
+    setDetailSurcharge(parsedDetail.surcharge);
+    setDetailGroupNote(parsedDetail.groupNote);
+    setDetailQuoteNote(parsedDetail.quoteNote);
+    setDetailVisaNote(parsedDetail.visaNote);
   }, [selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail]);
 
   useEffect(() => {
@@ -435,9 +474,19 @@ export default function TripPage() {
           price_detail: stringifyPriceDetail({
             title: detailTitle.trim(),
             subtitle: detailSubtitle.trim(),
-            included: detailIncluded.trim(),
-            excluded: detailExcluded.trim(),
-            notes: detailNotes.trim(),
+            adultPrice: detailAdultPrice.trim(),
+            childWithBedPrice: detailChildWithBedPrice.trim(),
+            childNoBedPrice: detailChildNoBedPrice.trim(),
+            childExtraBedPrice: detailChildExtraBedPrice.trim(),
+            infantPrice: detailInfantPrice.trim(),
+            pricingNote: detailPricingNote.trim(),
+            deposit: detailDeposit.trim(),
+            singleRoom: detailSingleRoom.trim(),
+            visaFee: detailVisaFee.trim(),
+            surcharge: detailSurcharge.trim(),
+            groupNote: detailGroupNote.trim(),
+            quoteNote: detailQuoteNote.trim(),
+            visaNote: detailVisaNote.trim(),
           }),
         },
       },
@@ -789,9 +838,19 @@ export default function TripPage() {
                             setDepartureEditorPriceDetail('');
                             setDetailTitle('');
                             setDetailSubtitle('');
-                            setDetailIncluded('');
-                            setDetailExcluded('');
-                            setDetailNotes('');
+                            setDetailAdultPrice('');
+                            setDetailChildWithBedPrice('');
+                            setDetailChildNoBedPrice('');
+                            setDetailChildExtraBedPrice('');
+                            setDetailInfantPrice('');
+                            setDetailPricingNote('');
+                            setDetailDeposit('');
+                            setDetailSingleRoom('');
+                            setDetailVisaFee('');
+                            setDetailSurcharge('');
+                            setDetailGroupNote('');
+                            setDetailQuoteNote('');
+                            setDetailVisaNote('');
                           }}
                           className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
                         >
@@ -841,11 +900,11 @@ export default function TripPage() {
 
             <div className="space-y-5 p-6 sm:p-8">
               {isDevMode ? (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold tracking-[0.18em] text-white/50">主標題</label>
-                      <input value={detailTitle} onChange={(e) => setDetailTitle(e.target.value)} placeholder="例如：團費包含項目" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-sky-400" />
+                      <input value={detailTitle} onChange={(e) => setDetailTitle(e.target.value)} placeholder="例如：團費與售價說明" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-sky-400" />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold tracking-[0.18em] text-white/50">副標</label>
@@ -853,58 +912,62 @@ export default function TripPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-400/5 p-4">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <label className="block text-xs font-semibold tracking-[0.18em] text-emerald-200/70">費用包含</label>
-                        <button type="button" onClick={() => setDetailIncluded(appendDetailLine(detailIncluded))} className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[11px] font-semibold text-emerald-200 transition hover:bg-emerald-300/20">新增一格</button>
-                      </div>
-                      <div className="space-y-3">
-                        {(splitDetailLines(detailIncluded).length > 0 ? splitDetailLines(detailIncluded) : [""]).map((line, index) => (
-                          <div key={`included-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-3">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="text-[11px] font-semibold tracking-[0.12em] text-white/45">細項 {index + 1}</span>
-                              <button type="button" onClick={() => setDetailIncluded(removeDetailLine(detailIncluded, index))} className="text-[11px] text-red-300/80 transition hover:text-red-200">刪除</button>
-                            </div>
-                            <input value={line} onChange={(e) => setDetailIncluded(updateDetailLine(detailIncluded, index, e.target.value))} placeholder="例如：國際段來回機票" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                          </div>
-                        ))}
-                      </div>
+                  <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                    <div className="mb-4 flex items-center gap-3 border-b border-dashed border-white/10 pb-4">
+                      <span className="rounded-sm bg-white/85 px-3 py-1 text-sm font-semibold text-slate-900">團費</span>
+                      <p className="text-sm text-white/55">設定大人、小孩、嬰兒的價格與補充說明</p>
                     </div>
-                    <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-4">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <label className="block text-xs font-semibold tracking-[0.18em] text-rose-200/70">費用不含</label>
-                        <button type="button" onClick={() => setDetailExcluded(appendDetailLine(detailExcluded))} className="rounded-full border border-rose-300/20 bg-rose-300/10 px-3 py-1 text-[11px] font-semibold text-rose-200 transition hover:bg-rose-300/20">新增一格</button>
+                    <div className="space-y-4">
+                      <div className="grid gap-3 md:grid-cols-[90px_1fr_1fr] md:items-center">
+                        <div className="text-sm font-semibold text-white/80">大人</div>
+                        <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        <input value={detailPricingNote} onChange={(e) => setDetailPricingNote(e.target.value)} placeholder="例如：12歲以上適用" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
                       </div>
-                      <div className="space-y-3">
-                        {(splitDetailLines(detailExcluded).length > 0 ? splitDetailLines(detailExcluded) : [""]).map((line, index) => (
-                          <div key={`excluded-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-3">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="text-[11px] font-semibold tracking-[0.12em] text-white/45">細項 {index + 1}</span>
-                              <button type="button" onClick={() => setDetailExcluded(removeDetailLine(detailExcluded, index))} className="text-[11px] text-red-300/80 transition hover:text-red-200">刪除</button>
-                            </div>
-                            <input value={line} onChange={(e) => setDetailExcluded(updateDetailLine(detailExcluded, index, e.target.value))} placeholder="例如：護照辦理費" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                          </div>
-                        ))}
+                      <div className="grid gap-3 md:grid-cols-[90px_1fr_1fr_1fr] md:items-center">
+                        <div className="text-sm font-semibold text-white/80">小孩</div>
+                        <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} placeholder="佔床" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} placeholder="不佔床" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} placeholder="加床" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-[90px_1fr_1fr] md:items-center">
+                        <div className="text-sm font-semibold text-white/80">嬰兒</div>
+                        <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        <div className="text-xs text-white/40">未滿兩歲適用</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-amber-400/15 bg-amber-400/5 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <label className="block text-xs font-semibold tracking-[0.18em] text-amber-200/70">備註提醒</label>
-                      <button type="button" onClick={() => setDetailNotes(appendDetailLine(detailNotes))} className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-300/20">新增一格</button>
+                  <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                    <div className="mb-4 flex items-center gap-3 border-b border-dashed border-white/10 pb-4">
+                      <span className="rounded-sm bg-white/85 px-3 py-1 text-sm font-semibold text-slate-900">每席</span>
+                      <p className="text-sm text-white/55">設定每席相關附加費用與說明</p>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {(splitDetailLines(detailNotes).length > 0 ? splitDetailLines(detailNotes) : [""]).map((line, index) => (
-                        <div key={`notes-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-3">
-                          <div className="mb-2 flex items-center justify-between gap-2">
-                            <span className="text-[11px] font-semibold tracking-[0.12em] text-white/45">提醒 {index + 1}</span>
-                            <button type="button" onClick={() => setDetailNotes(removeDetailLine(detailNotes, index))} className="text-[11px] text-red-300/80 transition hover:text-red-200">刪除</button>
-                          </div>
-                          <input value={line} onChange={(e) => setDetailNotes(updateDetailLine(detailNotes, index, e.target.value))} placeholder="例如：旺季價格可能浮動" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                        </div>
-                      ))}
+                      <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="訂金，例如：20,000元/人" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                      <input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} placeholder="單人房，例如：18,000元/人" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                      <input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="簽證費，例如：免費簽" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                      <input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="附加費，例如：售價已內含" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                    <div className="mb-4 flex items-center gap-3 border-b border-dashed border-white/10 pb-4">
+                      <span className="rounded-sm bg-white/85 px-3 py-1 text-sm font-semibold text-slate-900">說明</span>
+                      <p className="text-sm text-white/55">設定團體、報價與簽證說明</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="grid gap-3 md:grid-cols-[110px_1fr] md:items-start">
+                        <div className="pt-2 text-sm font-semibold text-white/80">團體說明</div>
+                        <textarea value={detailGroupNote} onChange={(e) => setDetailGroupNote(e.target.value)} rows={3} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm leading-7 text-white outline-none focus:border-sky-400" placeholder="例如：10人成團，16人滿團" />
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-[110px_1fr] md:items-start">
+                        <div className="pt-2 text-sm font-semibold text-white/80">報價說明</div>
+                        <textarea value={detailQuoteNote} onChange={(e) => setDetailQuoteNote(e.target.value)} rows={3} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm leading-7 text-white outline-none focus:border-sky-400" placeholder="例如：不含導遊領隊服務費，每人每日300元" />
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-[110px_1fr] md:items-start">
+                        <div className="pt-2 text-sm font-semibold text-white/80">簽證說明</div>
+                        <textarea value={detailVisaNote} onChange={(e) => setDetailVisaNote(e.target.value)} rows={3} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm leading-7 text-white outline-none focus:border-sky-400" placeholder="例如：持台灣護照可免簽入境" />
+                      </div>
                     </div>
                   </div>
 
@@ -913,7 +976,23 @@ export default function TripPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        setDepartureEditorPriceDetail(stringifyPriceDetail({ title: detailTitle, subtitle: detailSubtitle, included: detailIncluded, excluded: detailExcluded, notes: detailNotes }));
+                        setDepartureEditorPriceDetail(stringifyPriceDetail({
+                          title: detailTitle,
+                          subtitle: detailSubtitle,
+                          adultPrice: detailAdultPrice,
+                          childWithBedPrice: detailChildWithBedPrice,
+                          childNoBedPrice: detailChildNoBedPrice,
+                          childExtraBedPrice: detailChildExtraBedPrice,
+                          infantPrice: detailInfantPrice,
+                          pricingNote: detailPricingNote,
+                          deposit: detailDeposit,
+                          singleRoom: detailSingleRoom,
+                          visaFee: detailVisaFee,
+                          surcharge: detailSurcharge,
+                          groupNote: detailGroupNote,
+                          quoteNote: detailQuoteNote,
+                          visaNote: detailVisaNote,
+                        }));
                         await saveSelectedDepartureInfo();
                         setShowPriceDetailModal(false);
                       }}
@@ -925,46 +1004,50 @@ export default function TripPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-5">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-400/5 p-5">
-                      <p className="text-sm font-semibold text-emerald-200">費用包含</p>
-                      <div className="mt-4 grid gap-3">
-                        {splitDetailLines(priceDetailPreview.included).length > 0 ? splitDetailLines(priceDetailPreview.included).map((line, index) => (
-                          <div key={`${line}-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
-                            <p className="text-[11px] font-semibold tracking-[0.12em] text-emerald-200/70">INCLUDED {String(index + 1).padStart(2, '0')}</p>
-                            <p className="mt-2 text-sm leading-7 text-white/90">{line}</p>
-                          </div>
-                        )) : <p className="text-sm text-white/45">尚未提供內容</p>}
+                <div className="space-y-6 bg-white px-6 py-6 text-slate-800 sm:px-8">
+                  <div className="grid gap-4 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr]">
+                    <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">團費</span></div>
+                    <div className="space-y-4 text-sm">
+                      <div className="grid gap-2 md:grid-cols-[80px_1fr_140px] md:items-center">
+                        <div className="font-semibold text-slate-700">大人</div>
+                        <div className="text-slate-500">12歲以上</div>
+                        <div className="text-base font-bold text-orange-500">{priceDetailPreview.adultPrice || '—'}</div>
                       </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-5">
-                      <p className="text-sm font-semibold text-rose-200">費用不含</p>
-                      <div className="mt-4 grid gap-3">
-                        {splitDetailLines(priceDetailPreview.excluded).length > 0 ? splitDetailLines(priceDetailPreview.excluded).map((line, index) => (
-                          <div key={`${line}-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
-                            <p className="text-[11px] font-semibold tracking-[0.12em] text-rose-200/70">EXCLUDED {String(index + 1).padStart(2, '0')}</p>
-                            <p className="mt-2 text-sm leading-7 text-white/90">{line}</p>
-                          </div>
-                        )) : <p className="text-sm text-white/45">尚未提供內容</p>}
+                      <div className="grid gap-2 md:grid-cols-[80px_1fr] md:items-start">
+                        <div className="font-semibold text-slate-700">小孩</div>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">佔床</p><p className="mt-1 font-semibold text-sky-600">{priceDetailPreview.childWithBedPrice || '—'}</p></div>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">不佔床</p><p className="mt-1 font-semibold text-sky-600">{priceDetailPreview.childNoBedPrice || '—'}</p></div>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">加床</p><p className="mt-1 font-semibold text-sky-600">{priceDetailPreview.childExtraBedPrice || '—'}</p></div>
+                        </div>
                       </div>
+                      <div className="grid gap-2 md:grid-cols-[80px_1fr_140px] md:items-center">
+                        <div className="font-semibold text-slate-700">嬰兒</div>
+                        <div className="text-slate-500">2歲以下</div>
+                        <div className="font-semibold text-sky-600">{priceDetailPreview.infantPrice || '—'}</div>
+                      </div>
+                      {priceDetailPreview.pricingNote && <p className="text-xs text-slate-500">{priceDetailPreview.pricingNote}</p>}
                     </div>
                   </div>
 
-                  {(splitDetailLines(priceDetailPreview.notes).length > 0 || priceDetailPreview.subtitle) && (
-                    <div className="rounded-[1.5rem] border border-amber-400/15 bg-amber-400/5 p-5">
-                      <p className="text-sm font-semibold text-amber-200">備註提醒</p>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        {splitDetailLines(priceDetailPreview.notes).length > 0 ? splitDetailLines(priceDetailPreview.notes).map((line, index) => (
-                          <div key={`${line}-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
-                            <p className="text-[11px] font-semibold tracking-[0.12em] text-amber-200/70">NOTE {String(index + 1).padStart(2, '0')}</p>
-                            <p className="mt-2 text-sm leading-7 text-white/90">{line}</p>
-                          </div>
-                        )) : <p className="text-sm text-white/45">尚未提供內容</p>}
-                      </div>
+                  <div className="grid gap-4 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr]">
+                    <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">每席</span></div>
+                    <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                      <div className="flex items-center justify-between gap-3"><span className="text-slate-600">訂金</span><span className="font-semibold text-sky-600">{priceDetailPreview.deposit || '—'}</span></div>
+                      <div className="flex items-center justify-between gap-3"><span className="text-slate-600">單人房</span><span className="font-semibold text-sky-600">{priceDetailPreview.singleRoom || '—'}</span></div>
+                      <div className="flex items-center justify-between gap-3"><span className="text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{priceDetailPreview.visaFee || '—'}</span></div>
+                      <div className="flex items-center justify-between gap-3"><span className="text-slate-600">附加費</span><span className="font-semibold text-sky-600">{priceDetailPreview.surcharge || '—'}</span></div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-[90px_1fr]">
+                    <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">說明</span></div>
+                    <div className="space-y-4 text-sm leading-7">
+                      <div className="grid gap-1 md:grid-cols-[96px_1fr]"><div className="font-semibold text-slate-700">團體說明</div><div className="text-slate-600">{priceDetailPreview.groupNote || '—'}</div></div>
+                      <div className="grid gap-1 md:grid-cols-[96px_1fr]"><div className="font-semibold text-slate-700">報價說明</div><div className="text-slate-600">{priceDetailPreview.quoteNote || '—'}</div></div>
+                      <div className="grid gap-1 md:grid-cols-[96px_1fr]"><div className="font-semibold text-slate-700">簽證說明</div><div className="text-slate-600">{priceDetailPreview.visaNote || '—'}</div></div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
