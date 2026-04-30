@@ -21,7 +21,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { departure_date, departure_city, airline, price, label,
+    const { departure_date, departure_city, airline, price, label, seats_total, seats_available,
       outbound_flight, outbound_time, outbound_from, outbound_arrival_time, outbound_to, outbound_next_day,
       return_date, return_flight, return_time, return_from, return_arrival_time, return_to, return_next_day,
     } = body;
@@ -41,6 +41,8 @@ export async function POST(
         airline: airline || null,
         price: price || null,
         label: label || null,
+        seats_total: typeof seats_total === 'number' ? seats_total : 0,
+        seats_available: typeof seats_available === 'number' ? seats_available : 0,
         outbound_flight: outbound_flight || null,
         outbound_time: outbound_time || null,
         outbound_from: outbound_from || null,
@@ -84,7 +86,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     const allowedFields = [
-      'departure_date', 'departure_city', 'airline', 'price', 'label', 'is_active',
+      'departure_date', 'departure_city', 'airline', 'price', 'label', 'is_active', 'seats_total', 'seats_available',
       'outbound_flight', 'outbound_time', 'outbound_from', 'outbound_arrival_time', 'outbound_to', 'outbound_next_day',
       'return_date', 'return_flight', 'return_time', 'return_from', 'return_arrival_time', 'return_to', 'return_next_day',
     ];

@@ -118,6 +118,13 @@ export type TripBanner = {
   seats_total: number | null;
   seats_available: number | null;
   deposit_label: string;
+  side_image_url?: string;
+  departure_info_map?: Record<string, DepartureBannerInfo>;
+};
+
+export type DepartureBannerInfo = {
+  group_code: string;
+  price_detail: string;
 };
 
 export type FlightRoute = {
@@ -277,6 +284,25 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
   formData.append('trip_id', tripId);
 
   const res = await fetch('/api/upload-trip-image', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '上傳失敗');
+  }
+
+  const data = await res.json();
+  return data.url;
+}
+
+export async function uploadTripBannerImage(tripId: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('trip_id', tripId);
+
+  const res = await fetch('/api/upload-trip-banner-image', {
     method: 'POST',
     body: formData,
   });
