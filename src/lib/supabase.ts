@@ -57,6 +57,7 @@ export type Trip = {
   document_is_available?: boolean;
   document_text?: string;
   highlights: string[];
+  trip_banner?: TripBanner | null;
   is_active: boolean;
   display_order: number;
   created_at: string;
@@ -106,6 +107,17 @@ export type TripDay = {
   accommodation: string;
   activities: string[];
   created_at: string;
+};
+
+export type TripBanner = {
+  code_label: string;
+  price_label: string;
+  tags: string[];
+  departure_label: string;
+  duration_label: string;
+  seats_total: number | null;
+  seats_available: number | null;
+  deposit_label: string;
 };
 
 export type FlightRoute = {
