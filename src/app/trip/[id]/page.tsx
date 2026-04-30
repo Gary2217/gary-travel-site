@@ -226,8 +226,25 @@ export default function TripPage() {
                 </button>
               </div>
             )}
+
+            {/* 行程亮點 */}
+            {trip.highlights && trip.highlights.length > 0 && (
+              <div className="mt-10">
+                <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                  {trip.highlights.map((highlight) => (
+                    <span
+                      key={highlight}
+                      className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-sm font-medium text-sky-200"
+                    >
+                      {highlight}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[360px] lg:flex-none">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[360px] lg:max-h-[320px] lg:flex-none lg:overflow-y-auto">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
@@ -618,23 +635,6 @@ export default function TripPage() {
 
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
-        {/* 行程亮點 */}
-        {trip.highlights && trip.highlights.length > 0 && (
-          <div className="mb-5">
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-white/50">行程亮點</h2>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-              {trip.highlights.map((highlight) => (
-                <span
-                  key={highlight}
-                  className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-1.5 text-center text-sm font-medium text-sky-200"
-                >
-                  {highlight}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* 行程概要（標籤下方） */}
         {trip.document_url && (
           <div className="mb-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
