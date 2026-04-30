@@ -321,6 +321,25 @@ export default function TripPage() {
       .map((line) => line.trim())
       .filter(Boolean);
 
+  const updateDetailLine = (value: string, index: number, nextLine: string) => {
+    const lines = splitDetailLines(value);
+    if (lines.length === 0) lines.push("");
+    lines[index] = nextLine;
+    return lines.join("\n");
+  };
+
+  const removeDetailLine = (value: string, index: number) => {
+    const lines = splitDetailLines(value);
+    lines.splice(index, 1);
+    return lines.join("\n");
+  };
+
+  const appendDetailLine = (value: string) => {
+    const lines = splitDetailLines(value);
+    lines.push("");
+    return lines.join("\n");
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -836,18 +855,57 @@ export default function TripPage() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-400/5 p-4">
-                      <label className="mb-2 block text-xs font-semibold tracking-[0.18em] text-emerald-200/70">費用包含</label>
-                      <textarea value={detailIncluded} onChange={(e) => setDetailIncluded(e.target.value)} rows={8} placeholder="每行一項，例如：&#10;國際段來回機票&#10;飯店住宿&#10;早餐" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400" />
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <label className="block text-xs font-semibold tracking-[0.18em] text-emerald-200/70">費用包含</label>
+                        <button type="button" onClick={() => setDetailIncluded(appendDetailLine(detailIncluded))} className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[11px] font-semibold text-emerald-200 transition hover:bg-emerald-300/20">新增一格</button>
+                      </div>
+                      <div className="space-y-3">
+                        {(splitDetailLines(detailIncluded).length > 0 ? splitDetailLines(detailIncluded) : [""]).map((line, index) => (
+                          <div key={`included-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-3">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-semibold tracking-[0.12em] text-white/45">細項 {index + 1}</span>
+                              <button type="button" onClick={() => setDetailIncluded(removeDetailLine(detailIncluded, index))} className="text-[11px] text-red-300/80 transition hover:text-red-200">刪除</button>
+                            </div>
+                            <input value={line} onChange={(e) => setDetailIncluded(updateDetailLine(detailIncluded, index, e.target.value))} placeholder="例如：國際段來回機票" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-4">
-                      <label className="mb-2 block text-xs font-semibold tracking-[0.18em] text-rose-200/70">費用不含</label>
-                      <textarea value={detailExcluded} onChange={(e) => setDetailExcluded(e.target.value)} rows={8} placeholder="每行一項，例如：&#10;護照辦理費&#10;司機導遊小費" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400" />
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <label className="block text-xs font-semibold tracking-[0.18em] text-rose-200/70">費用不含</label>
+                        <button type="button" onClick={() => setDetailExcluded(appendDetailLine(detailExcluded))} className="rounded-full border border-rose-300/20 bg-rose-300/10 px-3 py-1 text-[11px] font-semibold text-rose-200 transition hover:bg-rose-300/20">新增一格</button>
+                      </div>
+                      <div className="space-y-3">
+                        {(splitDetailLines(detailExcluded).length > 0 ? splitDetailLines(detailExcluded) : [""]).map((line, index) => (
+                          <div key={`excluded-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-3">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-semibold tracking-[0.12em] text-white/45">細項 {index + 1}</span>
+                              <button type="button" onClick={() => setDetailExcluded(removeDetailLine(detailExcluded, index))} className="text-[11px] text-red-300/80 transition hover:text-red-200">刪除</button>
+                            </div>
+                            <input value={line} onChange={(e) => setDetailExcluded(updateDetailLine(detailExcluded, index, e.target.value))} placeholder="例如：護照辦理費" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
                   <div className="rounded-[1.5rem] border border-amber-400/15 bg-amber-400/5 p-4">
-                    <label className="mb-2 block text-xs font-semibold tracking-[0.18em] text-amber-200/70">備註提醒</label>
-                    <textarea value={detailNotes} onChange={(e) => setDetailNotes(e.target.value)} rows={5} placeholder="每行一項，例如：&#10;實際報價以客服回覆為準&#10;旺季價格可能浮動" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400" />
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <label className="block text-xs font-semibold tracking-[0.18em] text-amber-200/70">備註提醒</label>
+                      <button type="button" onClick={() => setDetailNotes(appendDetailLine(detailNotes))} className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-300/20">新增一格</button>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {(splitDetailLines(detailNotes).length > 0 ? splitDetailLines(detailNotes) : [""]).map((line, index) => (
+                        <div key={`notes-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-3">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-semibold tracking-[0.12em] text-white/45">提醒 {index + 1}</span>
+                            <button type="button" onClick={() => setDetailNotes(removeDetailLine(detailNotes, index))} className="text-[11px] text-red-300/80 transition hover:text-red-200">刪除</button>
+                          </div>
+                          <input value={line} onChange={(e) => setDetailNotes(updateDetailLine(detailNotes, index, e.target.value))} placeholder="例如：旺季價格可能浮動" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap justify-end gap-2">
@@ -871,18 +929,24 @@ export default function TripPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-400/5 p-5">
                       <p className="text-sm font-semibold text-emerald-200">費用包含</p>
-                      <div className="mt-3 space-y-2.5">
+                      <div className="mt-4 grid gap-3">
                         {splitDetailLines(priceDetailPreview.included).length > 0 ? splitDetailLines(priceDetailPreview.included).map((line, index) => (
-                          <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-300" /><p>{line}</p></div>
+                          <div key={`${line}-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
+                            <p className="text-[11px] font-semibold tracking-[0.12em] text-emerald-200/70">INCLUDED {String(index + 1).padStart(2, '0')}</p>
+                            <p className="mt-2 text-sm leading-7 text-white/90">{line}</p>
+                          </div>
                         )) : <p className="text-sm text-white/45">尚未提供內容</p>}
                       </div>
                     </div>
 
                     <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-5">
                       <p className="text-sm font-semibold text-rose-200">費用不含</p>
-                      <div className="mt-3 space-y-2.5">
+                      <div className="mt-4 grid gap-3">
                         {splitDetailLines(priceDetailPreview.excluded).length > 0 ? splitDetailLines(priceDetailPreview.excluded).map((line, index) => (
-                          <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-300" /><p>{line}</p></div>
+                          <div key={`${line}-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
+                            <p className="text-[11px] font-semibold tracking-[0.12em] text-rose-200/70">EXCLUDED {String(index + 1).padStart(2, '0')}</p>
+                            <p className="mt-2 text-sm leading-7 text-white/90">{line}</p>
+                          </div>
                         )) : <p className="text-sm text-white/45">尚未提供內容</p>}
                       </div>
                     </div>
@@ -891,9 +955,12 @@ export default function TripPage() {
                   {(splitDetailLines(priceDetailPreview.notes).length > 0 || priceDetailPreview.subtitle) && (
                     <div className="rounded-[1.5rem] border border-amber-400/15 bg-amber-400/5 p-5">
                       <p className="text-sm font-semibold text-amber-200">備註提醒</p>
-                      <div className="mt-3 space-y-2.5">
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         {splitDetailLines(priceDetailPreview.notes).length > 0 ? splitDetailLines(priceDetailPreview.notes).map((line, index) => (
-                          <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300" /><p>{line}</p></div>
+                          <div key={`${line}-${index}`} className="rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
+                            <p className="text-[11px] font-semibold tracking-[0.12em] text-amber-200/70">NOTE {String(index + 1).padStart(2, '0')}</p>
+                            <p className="mt-2 text-sm leading-7 text-white/90">{line}</p>
+                          </div>
                         )) : <p className="text-sm text-white/45">尚未提供內容</p>}
                       </div>
                     </div>
