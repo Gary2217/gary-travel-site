@@ -103,11 +103,13 @@ export default function TripPage() {
     const res = await fetch(`/api/trips/${tripId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trip_banner: editTripBanner }),
+      body: JSON.stringify({ trip_banner: formatTripBanner(editTripBanner) }),
     });
     if (res.ok) {
       const updated = await res.json();
       setTrip(prev => prev ? { ...prev, ...updated } : prev);
+      setEditTripBanner(formatTripBanner(editTripBanner));
+      alert('儲存成功');
     } else {
       alert('儲存失敗，請再試一次');
     }
@@ -122,6 +124,30 @@ export default function TripPage() {
     setEditHighlights((trip.highlights || []).join('、'));
     openBannerEditor();
   };
+
+  const formatDateInput = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length < 8) return value;
+    return `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6, 8)}`;
+  };
+
+  const formatMoney = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    return Number(digits).toLocaleString('zh-TW');
+  };
+
+  const formatTripBanner = (banner: TripBanner) => ({
+    ...banner,
+    code_label: banner.code_label.trim(),
+    price_label: banner.price_label ? `NT$${formatMoney(banner.price_label)}` : '',
+    departure_label: formatDateInput(banner.departure_label.replace(/[^\d]/g, '')) + (banner.departure_label.includes('台北出發') ? ' 台北出發' : banner.departure_label.includes('出發') ? ' 出發' : ''),
+    duration_label: banner.duration_label ? `${banner.duration_label.replace(/\D/g, '')}天${Math.max(Number(banner.duration_label.replace(/\D/g, '')) - 1, 0)}夜` : '',
+    seats_total: banner.seats_total,
+    seats_available: banner.seats_available,
+    deposit_label: banner.deposit_label ? `訂金 ${formatMoney(banner.deposit_label)}/人` : '',
+    tags: banner.tags,
+  });
 
   useEffect(() => {
     async function loadData() {
@@ -273,20 +299,20 @@ export default function TripPage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <input value={editTripBanner.code_label} onChange={e => setEditTripBanner(prev => ({ ...prev, code_label: e.target.value }))}
-                    placeholder="左上標籤（例：5天4夜）" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value }))}
-                    placeholder="價格標籤（例：NT$45,000~55,000）" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: e.target.value }))}
-                    placeholder="出發資訊（例：2026/07/14 台北出發）" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                  <input value={editTripBanner.duration_label} onChange={e => setEditTripBanner(prev => ({ ...prev, duration_label: e.target.value }))}
-                    placeholder="天數（例：4天）" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                    placeholder="左上標籤（例：5天4夜）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
+                    placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={editTripBanner.duration_label} onChange={e => setEditTripBanner(prev => ({ ...prev, duration_label: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="天數（例：5）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="團位總數" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                    placeholder="團位總數" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="可售團位" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                    placeholder="可售團位" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                 </div>
-                <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value }))}
-                  placeholder="訂金說明（例：訂金 15,000/人）" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="訂金金額（例：5000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                 <div>
                   <div className="mb-1 text-xs text-white/50">標籤（Enter 新增）</div>
                   <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-2">
@@ -328,16 +354,8 @@ export default function TripPage() {
                 {banner ? (
                   <>
                     <div className="grid grid-cols-2 gap-2">
-                      {banner.code_label && (
-                        <span className="rounded-full bg-sky-500 px-4 py-1.5 text-center text-sm font-bold text-white">
-                          {banner.code_label}
-                        </span>
-                      )}
-                      {banner.price_label && (
-                        <span className="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-center text-sm font-medium text-white/90">
-                          {banner.price_label}
-                        </span>
-                      )}
+                      {banner.code_label && <span className="rounded-full bg-sky-500 px-4 py-1.5 text-center text-sm font-bold text-white">{banner.code_label}</span>}
+                      {banner.price_label && <span className="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-center text-sm font-medium text-white/90">NT${Number(String(banner.price_label).replace(/\D/g, '')).toLocaleString('zh-TW')}</span>}
                     </div>
                     {banner.tags.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
@@ -352,14 +370,14 @@ export default function TripPage() {
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
-                      {banner.departure_label && <span>{banner.departure_label}</span>}
+                      {banner.departure_label && <span>{formatDateInput(banner.departure_label)}</span>}
                       {banner.duration_label && <span className="text-white/40">|</span>}
-                      {banner.duration_label && <span>{banner.duration_label}</span>}
+                      {banner.duration_label && <span>{`${String(banner.duration_label).replace(/\D/g, '')}天${Math.max(Number(String(banner.duration_label).replace(/\D/g, '')) - 1, 0)}夜`}</span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
                       {banner.seats_total !== null && <span>團位 {banner.seats_total}</span>}
                       {banner.seats_available !== null && <span>可售 {banner.seats_available}</span>}
-                      {banner.deposit_label && <span>{banner.deposit_label}</span>}
+                      {banner.deposit_label && <span>{`訂金 ${Number(String(banner.deposit_label).replace(/\D/g, '')).toLocaleString('zh-TW')}/人`}</span>}
                     </div>
                   </>
                 ) : (
