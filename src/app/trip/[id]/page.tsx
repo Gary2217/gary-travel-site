@@ -188,9 +188,9 @@ export default function TripPage() {
       <div id="trip-content" />
 
       {/* 標題區塊 */}
-      <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:px-8 lg:pt-[80px]">
+      <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:px-8 lg:pt-[80px] lg:pb-[14rem]">
         <div className="relative">
-          <div className="min-w-0 lg:pr-[400px]">
+          <div className="min-w-0 lg:pr-[380px]">
             <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
               <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
                 {trip.duration}
@@ -227,7 +227,7 @@ export default function TripPage() {
               </div>
             )}
           </div>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:absolute lg:right-0 lg:top-0 lg:mt-0 lg:w-[360px]">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:absolute lg:right-0 lg:top-4 lg:mt-0 lg:w-[360px]">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
