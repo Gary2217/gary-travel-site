@@ -306,7 +306,7 @@ export default function TripPage() {
               </div>
             )}
           </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[430px] lg:max-h-[320px] lg:flex-none lg:overflow-y-auto">
+          <div className="mt-4 rounded-2xl bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[430px] lg:max-h-[320px] lg:flex-none lg:overflow-y-auto">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
@@ -333,7 +333,7 @@ export default function TripPage() {
             </div>
             {isDevMode ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <input
                     value={editDayCount}
                     onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
@@ -341,6 +341,10 @@ export default function TripPage() {
                     placeholder="天數（例：5）"
                     className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
                   />
+                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
+                    placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input
                     id="night-count-input"
                     value={editNightCount}
@@ -348,10 +352,6 @@ export default function TripPage() {
                     placeholder="夜數（例：4）"
                     className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
                   />
-                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
-                    placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="團位總數" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
@@ -399,19 +399,16 @@ export default function TripPage() {
               <div className="space-y-3">
                 {banner ? (
                   <>
-                    <div className="text-sm font-medium text-white/90">
-                      {banner.price_label && <span>NT${Number(String(banner.price_label).replace(/\D/g, '')).toLocaleString('zh-TW')}</span>}
-                    </div>
                     {banner.tags.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {banner.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-1.5 text-center text-sm font-medium text-emerald-300"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                        <span
+                          key={tag}
+                          className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-center text-sm font-medium text-emerald-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
@@ -422,6 +419,7 @@ export default function TripPage() {
                     <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
                       {banner.seats_total !== null && <span>團位 {banner.seats_total}</span>}
                       {banner.seats_available !== null && <span>可售 {banner.seats_available}</span>}
+                      <span>候補 0</span>
                       {banner.deposit_label && <span>{`訂金 ${Number(String(banner.deposit_label).replace(/\D/g, '')).toLocaleString('zh-TW')}/人`}</span>}
                     </div>
                   </>
