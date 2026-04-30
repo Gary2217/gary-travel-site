@@ -144,20 +144,54 @@ export default function TripPage() {
 
       {/* 標題區塊 */}
       <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:pt-[80px]">
-        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
-          <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
-            {trip.duration}
-          </span>
-          {trip.price_range && (
-            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 sm:px-3 sm:py-1 sm:text-xs">
-              {trip.price_range}
-            </span>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
+              <span className="rounded-full bg-sky-500/90 px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs">
+                {trip.duration}
+              </span>
+              {trip.price_range && (
+                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 sm:px-3 sm:py-1 sm:text-xs">
+                  {trip.price_range}
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
+            {trip.subtitle && (
+              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
+            )}
+          </div>
+          {isDevMode && (
+            <div className="flex shrink-0 flex-wrap justify-end gap-2 pt-1">
+              <button
+                onClick={() => {
+                  setEditTitle(trip.title);
+                  setEditSubtitle(trip.subtitle || '');
+                  setEditPriceRange(trip.price_range || '');
+                  setEditHighlights((trip.highlights || []).join('、'));
+                  setShowEditPanel(true);
+                }}
+                className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
+              >
+                編輯資訊
+              </button>
+              <button
+                onClick={async () => {
+                  if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
+                  const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+                  if (res.ok) {
+                    window.location.href = from || '/';
+                  } else {
+                    alert('刪除失敗，請再試一次');
+                  }
+                }}
+                className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
+              >
+                刪除行程
+              </button>
+            </div>
           )}
         </div>
-        <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
-        {trip.subtitle && (
-          <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
-        )}
       </div>
 
       {/* DevMode 編輯面板 */}
@@ -166,70 +200,44 @@ export default function TripPage() {
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-xs font-bold text-amber-400">開發者模式 — 行程設定</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditTitle(trip.title);
-                    setEditSubtitle(trip.subtitle || '');
-                    setEditPriceRange(trip.price_range || '');
-                    setEditHighlights((trip.highlights || []).join('、'));
-                    setShowEditPanel(true);
-                  }}
-                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
-                >
-                  編輯資訊
-                </button>
-                <button
-                  onClick={() => {
-                    const fullText = trip.document_text || '';
-                    setEditDocumentText(fullText);
-                    // 解析現有文字為每天段落
-                    const dayPattern = /第\s*(\d+)\s*天/g;
-                    const positions: { num: number; index: number }[] = [];
-                    let m;
-                    while ((m = dayPattern.exec(fullText)) !== null) {
-                      const dayNum = parseInt(m[1]);
-                      if (!positions.find(p => p.num === dayNum)) {
-                        positions.push({ num: dayNum, index: m.index });
-                      }
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  const fullText = trip.document_text || '';
+                  setEditDocumentText(fullText);
+                  // 解析現有文字為每天段落
+                  const dayPattern = /第\s*(\d+)\s*天/g;
+                  const positions: { num: number; index: number }[] = [];
+                  let m;
+                  while ((m = dayPattern.exec(fullText)) !== null) {
+                    const dayNum = parseInt(m[1]);
+                    if (!positions.find(p => p.num === dayNum)) {
+                      positions.push({ num: dayNum, index: m.index });
                     }
-                    if (positions.length > 0) {
-                      const sections = positions.map((pos, i) => {
-                        const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
-                        return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
-                      });
-                      setEditDaySections(sections);
-                    } else {
-                      // 沒有內容，根據天數自動建立空格子
-                      const durationMatch = trip.duration?.match(/(\d+)/);
-                      const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
-                      const sections = Array.from({ length: dayCount }, (_, i) => ({
-                        num: i + 1,
-                        text: '',
-                      }));
-                      setEditDaySections(sections);
-                    }
-                    setShowTextEditor(true);
-                  }}
-                  className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                >
-                  編輯行程概要
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
-                    const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-                    if (res.ok) {
-                      window.location.href = from || '/';
-                    } else {
-                      alert('刪除失敗，請再試一次');
-                    }
-                  }}
-                  className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
-                >
-                  刪除行程
-                </button>
-              </div>
+                  }
+                  if (positions.length > 0) {
+                    const sections = positions.map((pos, i) => {
+                      const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
+                      return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
+                    });
+                    setEditDaySections(sections);
+                  } else {
+                    // 沒有內容，根據天數自動建立空格子
+                    const durationMatch = trip.duration?.match(/(\d+)/);
+                    const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
+                    const sections = Array.from({ length: dayCount }, (_, i) => ({
+                      num: i + 1,
+                      text: '',
+                    }));
+                    setEditDaySections(sections);
+                  }
+                  setShowTextEditor(true);
+                }}
+                className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
+              >
+                編輯行程概要
+              </button>
             </div>
           </div>
         </div>
@@ -456,7 +464,39 @@ export default function TripPage() {
         {/* 行程概要（標籤下方） */}
         {trip.document_url && (
           <div className="mb-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
-            <h3 className="mb-3 text-sm font-bold text-sky-300">行程概要</h3>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <h3 className="text-sm font-bold text-sky-300">行程概要</h3>
+              {isDevMode && (
+                <button
+                  onClick={() => {
+                    const fullText = trip.document_text || '';
+                    setEditDocumentText(fullText);
+                    const dayPattern = /第\s*(\d+)\s*天/g;
+                    const positions: { num: number; index: number }[] = [];
+                    let m;
+                    while ((m = dayPattern.exec(fullText)) !== null) {
+                      const dayNum = parseInt(m[1]);
+                      if (!positions.find(p => p.num === dayNum)) positions.push({ num: dayNum, index: m.index });
+                    }
+                    if (positions.length > 0) {
+                      const sections = positions.map((pos, i) => {
+                        const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
+                        return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
+                      });
+                      setEditDaySections(sections);
+                    } else {
+                      const durationMatch = trip.duration?.match(/(\d+)/);
+                      const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
+                      setEditDaySections(Array.from({ length: dayCount }, (_, i) => ({ num: i + 1, text: '' })));
+                    }
+                    setShowTextEditor(true);
+                  }}
+                  className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                >
+                  編輯行程概要
+                </button>
+              )}
+            </div>
             {!trip.document_text && (
               <p className="py-3 text-center text-xs text-white/40">尚未填寫行程概要，請於開發者模式編輯</p>
             )}
