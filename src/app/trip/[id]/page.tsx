@@ -92,7 +92,7 @@ export default function TripPage() {
   };
 
   const openBannerEditor = () => {
-    setEditTripBanner(trip.trip_banner || {
+    setEditTripBanner(trip?.trip_banner || {
       code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '',
     });
     setEditBannerTagInput('');
