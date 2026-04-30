@@ -48,7 +48,7 @@ export default function TripPage() {
   const [editDocumentText, setEditDocumentText] = useState('');
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
 
-  const banner = trip.trip_banner || null;
+  const banner = trip?.trip_banner ?? null;
 
   // 偵測瀏覽器/裝置，產生對應的「返回」提示文字
   const getBackHint = () => {
@@ -305,34 +305,28 @@ export default function TripPage() {
                   </button>
                 </div>
               </div>
-            ) : banner ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {banner.code_label && <span className="rounded-full bg-sky-500 px-3 py-1 text-sm font-bold text-white">{banner.code_label}</span>}
-                  {banner.price_label && <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-medium text-white/90">{banner.price_label}</span>}
-                </div>
-                {banner.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {banner.tags.map((tag) => (
-                      <span key={tag} className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-300">{tag}</span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
-                  {banner.departure_label && <span>{banner.departure_label}</span>}
-                  {banner.duration_label && <span className="text-white/40">|</span>}
-                  {banner.duration_label && <span>{banner.duration_label}</span>}
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
-                  {banner.seats_total !== null && <span>團位 {banner.seats_total}</span>}
-                  {banner.seats_available !== null && <span>可售 {banner.seats_available}</span>}
-                  {banner.deposit_label && <span>{banner.deposit_label}</span>}
-                </div>
-              </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-white/50">尚未設定出團資訊</p>
-                {isDevMode && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-sky-500 px-3 py-1 text-sm font-bold text-white">{banner?.code_label || '新增欄位'}</span>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-medium text-white/90">{banner?.price_label || '尚未設定價格'}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(banner?.tags?.length ? banner.tags : ['標籤1', '標籤2', '標籤3']).map((tag) => (
+                    <span key={tag} className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-300">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
+                  <span>{banner?.departure_label || '2026/07/14 台北出發'}</span>
+                  <span className="text-white/40">|</span>
+                  <span>{banner?.duration_label || '4天'}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
+                  <span>團位 {banner?.seats_total ?? 28}</span>
+                  <span>可售 {banner?.seats_available ?? 27}</span>
+                  <span>{banner?.deposit_label || '訂金 15,000/人'}</span>
+                </div>
+                {isDevMode && !banner && (
                   <button onClick={openBannerEditor} className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
                     新增
                   </button>
