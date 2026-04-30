@@ -31,6 +31,22 @@ const EMPTY_DEPARTURE_INFO: DepartureBannerInfo = {
   price_detail: "",
 };
 
+type PriceDetailContent = {
+  title: string;
+  subtitle: string;
+  included: string;
+  excluded: string;
+  notes: string;
+};
+
+const EMPTY_PRICE_DETAIL: PriceDetailContent = {
+  title: "",
+  subtitle: "",
+  included: "",
+  excluded: "",
+  notes: "",
+};
+
 export default function TripPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -61,6 +77,11 @@ export default function TripPage() {
   const [departureEditorPrice, setDepartureEditorPrice] = useState('');
   const [departureEditorGroupCode, setDepartureEditorGroupCode] = useState('');
   const [departureEditorPriceDetail, setDepartureEditorPriceDetail] = useState('');
+  const [detailTitle, setDetailTitle] = useState('');
+  const [detailSubtitle, setDetailSubtitle] = useState('');
+  const [detailIncluded, setDetailIncluded] = useState('');
+  const [detailExcluded, setDetailExcluded] = useState('');
+  const [detailNotes, setDetailNotes] = useState('');
   const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDocumentText, setEditDocumentText] = useState('');
@@ -268,8 +289,34 @@ export default function TripPage() {
     return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
   };
 
-  const renderPriceDetailLines = (detail: string) =>
-    detail
+  const parsePriceDetail = (detail: string): PriceDetailContent => {
+    if (!detail.trim()) return EMPTY_PRICE_DETAIL;
+
+    try {
+      const parsed = JSON.parse(detail) as Partial<PriceDetailContent>;
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          title: parsed.title || '',
+          subtitle: parsed.subtitle || '',
+          included: parsed.included || '',
+          excluded: parsed.excluded || '',
+          notes: parsed.notes || '',
+        };
+      }
+    } catch {
+      // fallback to legacy text mode
+    }
+
+    return {
+      ...EMPTY_PRICE_DETAIL,
+      included: detail,
+    };
+  };
+
+  const stringifyPriceDetail = (detail: PriceDetailContent) => JSON.stringify(detail);
+
+  const splitDetailLines = (value: string) =>
+    value
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
@@ -325,6 +372,11 @@ export default function TripPage() {
       setDepartureEditorPrice('');
       setDepartureEditorGroupCode('');
       setDepartureEditorPriceDetail('');
+      setDetailTitle('');
+      setDetailSubtitle('');
+      setDetailIncluded('');
+      setDetailExcluded('');
+      setDetailNotes('');
       return;
     }
 
@@ -332,6 +384,12 @@ export default function TripPage() {
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
     setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
     setDepartureEditorPriceDetail(selectedDepartureInfo.price_detail || '');
+    const parsedDetail = parsePriceDetail(selectedDepartureInfo.price_detail || '');
+    setDetailTitle(parsedDetail.title);
+    setDetailSubtitle(parsedDetail.subtitle);
+    setDetailIncluded(parsedDetail.included);
+    setDetailExcluded(parsedDetail.excluded);
+    setDetailNotes(parsedDetail.notes);
   }, [selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail]);
 
   useEffect(() => {
@@ -355,7 +413,13 @@ export default function TripPage() {
         ...getDepartureBannerInfoMap(editTripBanner),
         [selectedDepartureId]: {
           group_code: departureEditorGroupCode.trim(),
-          price_detail: departureEditorPriceDetail.trim(),
+          price_detail: stringifyPriceDetail({
+            title: detailTitle.trim(),
+            subtitle: detailSubtitle.trim(),
+            included: detailIncluded.trim(),
+            excluded: detailExcluded.trim(),
+            notes: detailNotes.trim(),
+          }),
         },
       },
     };
@@ -437,6 +501,7 @@ export default function TripPage() {
 
   const days = trip.trip_days || [];
   const { dayText: previewDayText, nightText: previewNightText } = toBannerDaysNights(editDayCount, editNightCount);
+  const priceDetailPreview = parsePriceDetail(selectedDepartureInfo.price_detail || '');
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
@@ -703,6 +768,11 @@ export default function TripPage() {
                             setDepartureEditorGroupCode('');
                             setDepartureEditorPrice('');
                             setDepartureEditorPriceDetail('');
+                            setDetailTitle('');
+                            setDetailSubtitle('');
+                            setDetailIncluded('');
+                            setDetailExcluded('');
+                            setDetailNotes('');
                           }}
                           className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
                         >
@@ -726,70 +796,111 @@ export default function TripPage() {
           onClick={() => setShowPriceDetailModal(false)}
         >
           <div
-            className="w-full max-w-2xl rounded-[1.75rem] border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl"
+            className="w-full max-w-3xl overflow-hidden rounded-[1.9rem] border border-white/10 bg-[rgba(12,16,28,0.98)] shadow-2xl backdrop-blur-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.22em] text-sky-300/70">售價明細</p>
-                <h3 className="mt-1 text-xl font-bold text-white">{formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture?.price ?? null)}</h3>
-                <p className="mt-1 text-sm text-white/45">
-                  {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
-                </p>
+            <div className="bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(15,23,42,0.18),rgba(251,191,36,0.12))] px-6 py-6 sm:px-8">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold tracking-[0.24em] text-sky-200/75">TOUR PRICE DETAIL</p>
+                  <h3 className="mt-2 text-2xl font-bold text-white sm:text-3xl">{detailTitle || '團費與售價說明'}</h3>
+                  <p className="mt-2 text-base font-semibold text-amber-300">{formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture?.price ?? null)}</p>
+                  <p className="mt-2 text-sm text-white/60">
+                    {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
+                  </p>
+                  {(isDevMode ? detailSubtitle : priceDetailPreview.subtitle) && (
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">{isDevMode ? detailSubtitle : priceDetailPreview.subtitle}</p>
+                  )}
+                </div>
+                <button onClick={() => setShowPriceDetailModal(false)} className="text-white/45 transition hover:text-white">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button onClick={() => setShowPriceDetailModal(false)} className="text-white/45 transition hover:text-white">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
 
-            {isDevMode ? (
-              <div className="space-y-4">
-                <textarea
-                  value={departureEditorPriceDetail}
-                  onChange={(e) => setDepartureEditorPriceDetail(e.target.value)}
-                  rows={10}
-                  placeholder="每行輸入一項售價明細，例如：\n含國際段機票\n含飯店住宿\n不含小費與簽證"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400"
-                />
-                <div className="flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowPriceDetailModal(false)}
-                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition hover:bg-white/10 hover:text-white"
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await saveSelectedDepartureInfo();
-                      setShowPriceDetailModal(false);
-                    }}
-                    disabled={saving}
-                    className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
-                  >
-                    {saving ? '儲存中...' : '儲存明細'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                {renderPriceDetailLines(selectedDepartureInfo.price_detail).length > 0 ? (
-                  <div className="space-y-3">
-                    {renderPriceDetailLines(selectedDepartureInfo.price_detail).map((line, index) => (
-                      <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-300" />
-                        <p>{line}</p>
-                      </div>
-                    ))}
+            <div className="space-y-5 p-6 sm:p-8">
+              {isDevMode ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold tracking-[0.18em] text-white/50">主標題</label>
+                      <input value={detailTitle} onChange={(e) => setDetailTitle(e.target.value)} placeholder="例如：團費包含項目" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-sky-400" />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold tracking-[0.18em] text-white/50">副標</label>
+                      <input value={detailSubtitle} onChange={(e) => setDetailSubtitle(e.target.value)} placeholder="例如：依航空與房型不同，價格略有調整" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-sky-400" />
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-white/45">目前尚未提供售價明細。</p>
-                )}
-              </div>
-            )}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-400/5 p-4">
+                      <label className="mb-2 block text-xs font-semibold tracking-[0.18em] text-emerald-200/70">費用包含</label>
+                      <textarea value={detailIncluded} onChange={(e) => setDetailIncluded(e.target.value)} rows={8} placeholder="每行一項，例如：&#10;國際段來回機票&#10;飯店住宿&#10;早餐" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400" />
+                    </div>
+                    <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-4">
+                      <label className="mb-2 block text-xs font-semibold tracking-[0.18em] text-rose-200/70">費用不含</label>
+                      <textarea value={detailExcluded} onChange={(e) => setDetailExcluded(e.target.value)} rows={8} placeholder="每行一項，例如：&#10;護照辦理費&#10;司機導遊小費" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400" />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-amber-400/15 bg-amber-400/5 p-4">
+                    <label className="mb-2 block text-xs font-semibold tracking-[0.18em] text-amber-200/70">備註提醒</label>
+                    <textarea value={detailNotes} onChange={(e) => setDetailNotes(e.target.value)} rows={5} placeholder="每行一項，例如：&#10;實際報價以客服回覆為準&#10;旺季價格可能浮動" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-7 text-white outline-none focus:border-sky-400" />
+                  </div>
+
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button type="button" onClick={() => setShowPriceDetailModal(false)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition hover:bg-white/10 hover:text-white">取消</button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setDepartureEditorPriceDetail(stringifyPriceDetail({ title: detailTitle, subtitle: detailSubtitle, included: detailIncluded, excluded: detailExcluded, notes: detailNotes }));
+                        await saveSelectedDepartureInfo();
+                        setShowPriceDetailModal(false);
+                      }}
+                      disabled={saving}
+                      className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+                    >
+                      {saving ? '儲存中...' : '儲存明細'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-400/5 p-5">
+                      <p className="text-sm font-semibold text-emerald-200">費用包含</p>
+                      <div className="mt-3 space-y-2.5">
+                        {splitDetailLines(priceDetailPreview.included).length > 0 ? splitDetailLines(priceDetailPreview.included).map((line, index) => (
+                          <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-300" /><p>{line}</p></div>
+                        )) : <p className="text-sm text-white/45">尚未提供內容</p>}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-5">
+                      <p className="text-sm font-semibold text-rose-200">費用不含</p>
+                      <div className="mt-3 space-y-2.5">
+                        {splitDetailLines(priceDetailPreview.excluded).length > 0 ? splitDetailLines(priceDetailPreview.excluded).map((line, index) => (
+                          <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-300" /><p>{line}</p></div>
+                        )) : <p className="text-sm text-white/45">尚未提供內容</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(splitDetailLines(priceDetailPreview.notes).length > 0 || priceDetailPreview.subtitle) && (
+                    <div className="rounded-[1.5rem] border border-amber-400/15 bg-amber-400/5 p-5">
+                      <p className="text-sm font-semibold text-amber-200">備註提醒</p>
+                      <div className="mt-3 space-y-2.5">
+                        {splitDetailLines(priceDetailPreview.notes).length > 0 ? splitDetailLines(priceDetailPreview.notes).map((line, index) => (
+                          <div key={`${line}-${index}`} className="flex gap-3 text-sm text-white/85"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300" /><p>{line}</p></div>
+                        )) : <p className="text-sm text-white/45">尚未提供內容</p>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>,
         document.body
