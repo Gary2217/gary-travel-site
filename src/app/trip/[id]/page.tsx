@@ -195,54 +195,6 @@ export default function TripPage() {
       </div>
 
       {/* DevMode 編輯面板 */}
-      {isDevMode && (
-        <div className="mx-auto max-w-[1000px] px-3 py-3 sm:px-4 md:px-8">
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400">開發者模式 — 行程設定</span>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <button
-                onClick={() => {
-                  const fullText = trip.document_text || '';
-                  setEditDocumentText(fullText);
-                  // 解析現有文字為每天段落
-                  const dayPattern = /第\s*(\d+)\s*天/g;
-                  const positions: { num: number; index: number }[] = [];
-                  let m;
-                  while ((m = dayPattern.exec(fullText)) !== null) {
-                    const dayNum = parseInt(m[1]);
-                    if (!positions.find(p => p.num === dayNum)) {
-                      positions.push({ num: dayNum, index: m.index });
-                    }
-                  }
-                  if (positions.length > 0) {
-                    const sections = positions.map((pos, i) => {
-                      const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
-                      return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
-                    });
-                    setEditDaySections(sections);
-                  } else {
-                    // 沒有內容，根據天數自動建立空格子
-                    const durationMatch = trip.duration?.match(/(\d+)/);
-                    const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
-                    const sections = Array.from({ length: dayCount }, (_, i) => ({
-                      num: i + 1,
-                      text: '',
-                    }));
-                    setEditDaySections(sections);
-                  }
-                  setShowTextEditor(true);
-                }}
-                className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
-              >
-                編輯行程概要
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 編輯彈窗 */}
       {showEditPanel && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
