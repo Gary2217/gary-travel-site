@@ -41,6 +41,8 @@ export default function TripPage() {
     seats_available: null,
     deposit_label: '',
   });
+  const [editDayCount, setEditDayCount] = useState('');
+  const [editNightCount, setEditNightCount] = useState('');
   const [editBannerTagInput, setEditBannerTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
@@ -95,20 +97,30 @@ export default function TripPage() {
     setEditTripBanner(trip?.trip_banner || {
       code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '',
     });
+    const rawDays = (trip?.trip_banner?.code_label || '').replace(/\D/g, '');
+    const rawNights = (trip?.trip_banner?.duration_label || '').replace(/\D/g, '');
+    setEditDayCount(rawDays.slice(0, 2));
+    setEditNightCount(rawNights.slice(0, 2));
     setEditBannerTagInput('');
   };
 
   const saveBanner = async () => {
     setSaving(true);
+    const { dayText, nightText } = toBannerDaysNights(editDayCount, editNightCount);
+    const formattedBanner = formatTripBanner({
+      ...editTripBanner,
+      code_label: dayText,
+      duration_label: nightText,
+    });
     const res = await fetch(`/api/trips/${tripId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trip_banner: formatTripBanner(editTripBanner) }),
+      body: JSON.stringify({ trip_banner: formattedBanner }),
     });
     if (res.ok) {
       const updated = await res.json();
       setTrip(prev => prev ? { ...prev, ...updated } : prev);
-      setEditTripBanner(formatTripBanner(editTripBanner));
+      setEditTripBanner(formattedBanner);
       alert('儲存成功');
     } else {
       alert('儲存失敗，請再試一次');
@@ -137,12 +149,29 @@ export default function TripPage() {
     return Number(digits).toLocaleString('zh-TW');
   };
 
+  const formatDaysNights = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length >= 2) {
+      const day = digits[0];
+      const night = digits[1];
+      return `${day}天${night}夜`;
+    }
+    return `${digits}天`;
+  };
+
+  const toBannerDaysNights = (days: string, nights: string) => {
+    const d = days.replace(/\D/g, '');
+    const n = nights.replace(/\D/g, '');
+    return { dayText: d ? `${d}天` : '', nightText: n ? `${n}夜` : '' };
+  };
+
   const formatTripBanner = (banner: TripBanner) => ({
     ...banner,
-    code_label: banner.code_label.trim(),
+    code_label: formatDaysNights(banner.code_label),
     price_label: banner.price_label ? `NT$${formatMoney(banner.price_label)}` : '',
     departure_label: formatDateInput(banner.departure_label.replace(/[^\d]/g, '')) + (banner.departure_label.includes('台北出發') ? ' 台北出發' : banner.departure_label.includes('出發') ? ' 出發' : ''),
-    duration_label: banner.duration_label ? `${banner.duration_label.replace(/\D/g, '')}天${Math.max(Number(banner.duration_label.replace(/\D/g, '')) - 1, 0)}夜` : '',
+    duration_label: formatDaysNights(banner.duration_label),
     seats_total: banner.seats_total,
     seats_available: banner.seats_available,
     deposit_label: banner.deposit_label ? `訂金 ${formatMoney(banner.deposit_label)}/人` : '',
@@ -298,14 +327,24 @@ export default function TripPage() {
             {isDevMode ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <input value={editTripBanner.code_label} onChange={e => setEditTripBanner(prev => ({ ...prev, code_label: e.target.value }))}
-                    placeholder="左上標籤（例：5天4夜）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input
+                    value={editDayCount}
+                    onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const el = document.getElementById('night-count-input') as HTMLInputElement | null; el?.focus(); } }}
+                    placeholder="天數（例：5）"
+                    className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
+                  />
                   <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
                     placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
                     placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={editTripBanner.duration_label} onChange={e => setEditTripBanner(prev => ({ ...prev, duration_label: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="天數（例：5）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input
+                    id="night-count-input"
+                    value={editNightCount}
+                    onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    placeholder="夜數（例：4）"
+                    className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
+                  />
                   <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="團位總數" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
@@ -372,7 +411,7 @@ export default function TripPage() {
                     <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
                       {banner.departure_label && <span>{formatDateInput(banner.departure_label)}</span>}
                       {banner.duration_label && <span className="text-white/40">|</span>}
-                      {banner.duration_label && <span>{`${String(banner.duration_label).replace(/\D/g, '')}天${Math.max(Number(String(banner.duration_label).replace(/\D/g, '')) - 1, 0)}夜`}</span>}
+                      {banner.duration_label && <span>{banner.duration_label}</span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
                       {banner.seats_total !== null && <span>團位 {banner.seats_total}</span>}
