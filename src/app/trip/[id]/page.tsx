@@ -166,6 +166,13 @@ export default function TripPage() {
     return { dayText: d ? `${d}天` : '', nightText: n ? `${n}夜` : '' };
   };
 
+  const renderDaysNights = (dayText: string, nightText: string) => {
+    const day = dayText.replace(/\D/g, '');
+    const night = nightText.replace(/\D/g, '');
+    if (!day && !night) return '';
+    return `${day ? `${day}天` : ''}${night ? `${night}夜` : ''}`;
+  };
+
   const formatTripBanner = (banner: TripBanner) => ({
     ...banner,
     code_label: formatDaysNights(banner.code_label),
@@ -326,7 +333,7 @@ export default function TripPage() {
             </div>
             {isDevMode ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     value={editDayCount}
                     onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
@@ -334,10 +341,6 @@ export default function TripPage() {
                     placeholder="天數（例：5）"
                     className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
                   />
-                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
-                    placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input
                     id="night-count-input"
                     value={editNightCount}
@@ -345,6 +348,10 @@ export default function TripPage() {
                     placeholder="夜數（例：4）"
                     className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
                   />
+                  <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
+                    placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="團位總數" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
@@ -410,8 +417,8 @@ export default function TripPage() {
                     )}
                     <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
                       {banner.departure_label && <span>{formatDateInput(banner.departure_label)}</span>}
-                      {banner.duration_label && <span className="text-white/40">|</span>}
-                      {banner.duration_label && <span>{banner.duration_label}</span>}
+                      {(banner.code_label || banner.duration_label) && <span className="text-white/40">|</span>}
+                      {(banner.code_label || banner.duration_label) && <span>{renderDaysNights(banner.code_label, banner.duration_label)}</span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-white/90">
                       {banner.seats_total !== null && <span>團位 {banner.seats_total}</span>}
