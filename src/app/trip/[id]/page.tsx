@@ -399,9 +399,8 @@ export default function TripPage() {
               <div className="space-y-3">
                 {banner ? (
                   <>
-                    <div className="grid grid-cols-2 gap-2">
-                      {banner.code_label && <span className="rounded-full bg-sky-500 px-4 py-1.5 text-center text-sm font-bold text-white">{banner.code_label}</span>}
-                      {banner.price_label && <span className="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-center text-sm font-medium text-white/90">NT${Number(String(banner.price_label).replace(/\D/g, '')).toLocaleString('zh-TW')}</span>}
+                    <div className="text-sm font-medium text-white/90">
+                      {banner.price_label && <span>NT${Number(String(banner.price_label).replace(/\D/g, '')).toLocaleString('zh-TW')}</span>}
                     </div>
                     {banner.tags.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
