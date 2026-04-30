@@ -306,7 +306,7 @@ export default function TripPage() {
               </div>
             )}
           </div>
-          <div className="mt-4 rounded-2xl bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[430px] lg:max-h-[320px] lg:flex-none lg:overflow-y-auto">
+          <div className="mt-4 lg:mt-0 lg:w-[430px] lg:flex-none">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
@@ -333,35 +333,35 @@ export default function TripPage() {
             </div>
             {isDevMode ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2">
                   <input
                     value={editDayCount}
                     onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const el = document.getElementById('night-count-input') as HTMLInputElement | null; el?.focus(); } }}
                     placeholder="天數（例：5）"
-                    className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
+                    className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none"
                   />
                   <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="價格（例：68000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                    placeholder="價格（例：68000）" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
                   <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: formatDateInput(e.target.value) }))}
-                    placeholder="出發日期（例：20260714）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                    placeholder="出發日期（例：20260714）" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
                   <input
                     id="night-count-input"
                     value={editNightCount}
                     onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
                     placeholder="夜數（例：4）"
-                    className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none"
+                    className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none"
                   />
                   <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="團位總數" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                    placeholder="團位總數" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
                   <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="可售團位" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                    placeholder="可售團位" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
                 </div>
                 <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))}
-                  placeholder="訂金金額（例：5000）" className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm text-white outline-none" />
+                  placeholder="訂金金額（例：5000）" className="w-full bg-transparent px-0 py-0 text-base font-semibold text-white outline-none" />
                 <div>
                   <div className="mb-1 text-xs text-white/50">標籤（Enter 新增）</div>
-                  <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {editTripBanner.tags.map((tag, i) => (
                       <span key={`${tag}-${i}`} className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs text-emerald-200">
                         {tag}
