@@ -244,7 +244,7 @@ export default function TripPage() {
               </div>
             )}
           </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[360px] lg:max-h-[320px] lg:flex-none lg:overflow-y-auto">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px] lg:mt-0 lg:w-[430px] lg:max-h-[320px] lg:flex-none lg:overflow-y-auto">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
