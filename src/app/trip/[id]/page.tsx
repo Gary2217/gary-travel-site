@@ -948,17 +948,17 @@ export default function TripPage() {
             className="w-full max-w-5xl overflow-hidden rounded-[1.9rem] border border-white/10 bg-[rgba(12,16,28,0.98)] shadow-2xl backdrop-blur-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(15,23,42,0.18),rgba(251,191,36,0.12))] px-6 py-6 sm:px-8">
-              <div className="flex items-start justify-between gap-3">
+            <div className="bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(15,23,42,0.18),rgba(251,191,36,0.12))] px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-xs font-semibold tracking-[0.24em] text-sky-200/75">TOUR PRICE DETAIL</p>
-                  <h3 className="mt-2 text-2xl font-bold text-white sm:text-3xl">{detailTitle || '團費與售價說明'}</h3>
-                  <p className="mt-2 text-base font-semibold text-amber-300">{formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture?.price ?? null)}</p>
-                  <p className="mt-2 text-sm text-white/60">
+                  <p className="text-[10px] font-semibold tracking-[0.22em] text-sky-200/75">TOUR PRICE DETAIL</p>
+                  <h3 className="mt-1.5 text-xl font-bold text-white sm:text-2xl">{detailTitle || '團費與售價說明'}</h3>
+                  <p className="mt-1.5 text-sm font-semibold text-amber-300 sm:text-base">{formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture?.price ?? null)}</p>
+                  <p className="mt-1.5 text-xs text-white/60 sm:text-sm">
                     {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
                   </p>
                   {(isDevMode ? detailSubtitle : priceDetailPreview.subtitle) && (
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">{isDevMode ? detailSubtitle : priceDetailPreview.subtitle}</p>
+                    <p className="mt-2 max-w-2xl text-xs leading-6 text-white/75 sm:text-sm">{isDevMode ? detailSubtitle : priceDetailPreview.subtitle}</p>
                   )}
                 </div>
                 <button onClick={() => setShowPriceDetailModal(false)} className="text-white/45 transition hover:text-white">
@@ -969,87 +969,87 @@ export default function TripPage() {
               </div>
             </div>
 
-            <div className="space-y-5 p-6 sm:p-8">
+            <div className="space-y-4 p-4 sm:p-6">
               {isDevMode ? (
-                <div className="space-y-5">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-xs font-semibold tracking-[0.18em] text-white/50">主標題</label>
-                      <input value={detailTitle} onChange={(e) => setDetailTitle(e.target.value)} placeholder="例如：團費與售價說明" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-sky-400" />
+                      <label className="mb-1 block text-[10px] font-semibold tracking-[0.18em] text-white/50">主標題</label>
+                      <input value={detailTitle} onChange={(e) => setDetailTitle(e.target.value)} placeholder="例如：團費與售價說明" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-semibold tracking-[0.18em] text-white/50">副標</label>
-                      <input value={detailSubtitle} onChange={(e) => setDetailSubtitle(e.target.value)} placeholder="例如：依航空與房型不同，價格略有調整" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-sky-400" />
+                      <label className="mb-1 block text-[10px] font-semibold tracking-[0.18em] text-white/50">副標</label>
+                      <input value={detailSubtitle} onChange={(e) => setDetailSubtitle(e.target.value)} placeholder="例如：依航空與房型不同，價格略有調整" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                     </div>
                   </div>
 
-                  <div className="grid gap-5 xl:grid-cols-[1.3fr_0.9fr]">
-                    <div className="space-y-5">
-                      <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                        <div className="mb-4 flex items-center gap-3 border-b border-dashed border-white/10 pb-4">
-                          <span className="rounded-sm bg-white/85 px-3 py-1 text-sm font-semibold text-slate-900">團費</span>
-                          <p className="text-sm text-white/55">設定大人、小孩、嬰兒的價格與補充說明</p>
+                  <div className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr]">
+                    <div className="space-y-4">
+                      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+                        <div className="mb-3 flex items-center gap-2 border-b border-dashed border-white/10 pb-3">
+                          <span className="rounded-sm bg-white/85 px-2.5 py-0.5 text-xs font-semibold text-slate-900">團費</span>
+                          <p className="text-xs text-white/55">設定大人、小孩、嬰兒的價格與補充說明</p>
                         </div>
-                        <div className="space-y-4">
-                          <div className="grid gap-3 lg:grid-cols-[88px_minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
-                            <div className="text-sm font-semibold text-white/80">大人</div>
-                            <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                            <input value={detailPricingNote} onChange={(e) => setDetailPricingNote(e.target.value)} placeholder="例如：12歲以上適用" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        <div className="space-y-3">
+                          <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
+                            <div className="text-xs font-semibold text-white/80">大人</div>
+                            <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            <input value={detailPricingNote} onChange={(e) => setDetailPricingNote(e.target.value)} placeholder="例如：12歲以上適用" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                           </div>
-                          <div className="grid gap-3 lg:grid-cols-[88px_minmax(0,1fr)] lg:items-start">
-                            <div className="pt-2 text-sm font-semibold text-white/80">小孩</div>
-                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                              <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} placeholder="佔床" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                              <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} placeholder="不佔床" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                              <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} placeholder="加床" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400 sm:col-span-2 xl:col-span-1" />
+                          <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
+                            <div className="pt-2 text-xs font-semibold text-white/80">小孩</div>
+                            <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                              <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} placeholder="佔床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} placeholder="不佔床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} placeholder="加床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400 sm:col-span-2 xl:col-span-1" />
                             </div>
                           </div>
-                          <div className="grid gap-3 lg:grid-cols-[88px_minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
-                            <div className="text-sm font-semibold text-white/80">嬰兒</div>
-                            <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                            <div className="rounded-xl border border-dashed border-white/10 px-3 py-2 text-xs text-white/40">未滿兩歲適用</div>
+                          <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
+                            <div className="text-xs font-semibold text-white/80">嬰兒</div>
+                            <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            <div className="rounded-lg border border-dashed border-white/10 px-3 py-2 text-[11px] text-white/40">未滿兩歲適用</div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                        <div className="mb-4 flex items-center gap-3 border-b border-dashed border-white/10 pb-4">
-                          <span className="rounded-sm bg-white/85 px-3 py-1 text-sm font-semibold text-slate-900">每席</span>
-                          <p className="text-sm text-white/55">設定每席相關附加費用與說明</p>
+                      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+                        <div className="mb-3 flex items-center gap-2 border-b border-dashed border-white/10 pb-3">
+                          <span className="rounded-sm bg-white/85 px-2.5 py-0.5 text-xs font-semibold text-slate-900">每席</span>
+                          <p className="text-xs text-white/55">設定每席相關附加費用與說明</p>
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="訂金，例如：20,000元/人" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                          <input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} placeholder="單人房，例如：18,000元/人" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                          <input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="簽證費，例如：免費簽" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
-                          <input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="附加費，例如：售價已內含" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400" />
+                        <div className="grid gap-2.5 sm:grid-cols-2">
+                          <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="訂金，例如：20,000元/人" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                          <input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} placeholder="單人房，例如：18,000元/人" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                          <input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="簽證費，例如：免費簽" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                          <input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="附加費，例如：售價已內含" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                    <div className="mb-4 flex items-center gap-3 border-b border-dashed border-white/10 pb-4">
-                      <span className="rounded-sm bg-white/85 px-3 py-1 text-sm font-semibold text-slate-900">說明</span>
-                      <p className="text-sm text-white/55">設定團體、報價與簽證說明</p>
+                    <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+                    <div className="mb-3 flex items-center gap-2 border-b border-dashed border-white/10 pb-3">
+                      <span className="rounded-sm bg-white/85 px-2.5 py-0.5 text-xs font-semibold text-slate-900">說明</span>
+                      <p className="text-xs text-white/55">設定團體、報價與簽證說明</p>
                     </div>
-                    <div className="space-y-3">
-                      <div className="grid gap-3 md:grid-cols-[110px_1fr] md:items-start">
-                        <div className="pt-2 text-sm font-semibold text-white/80">團體說明</div>
-                        <textarea value={detailGroupNote} onChange={(e) => setDetailGroupNote(e.target.value)} rows={3} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm leading-7 text-white outline-none focus:border-sky-400" placeholder="例如：10人成團，16人滿團" />
+                    <div className="space-y-2.5">
+                      <div className="grid gap-2.5 md:grid-cols-[92px_1fr] md:items-start">
+                        <div className="pt-2 text-xs font-semibold text-white/80">團體說明</div>
+                        <textarea value={detailGroupNote} onChange={(e) => setDetailGroupNote(e.target.value)} rows={3} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs leading-6 text-white outline-none focus:border-sky-400" placeholder="例如：10人成團，16人滿團" />
                       </div>
-                      <div className="grid gap-3 md:grid-cols-[110px_1fr] md:items-start">
-                        <div className="pt-2 text-sm font-semibold text-white/80">報價說明</div>
-                        <textarea value={detailQuoteNote} onChange={(e) => setDetailQuoteNote(e.target.value)} rows={3} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm leading-7 text-white outline-none focus:border-sky-400" placeholder="例如：不含導遊領隊服務費，每人每日300元" />
+                      <div className="grid gap-2.5 md:grid-cols-[92px_1fr] md:items-start">
+                        <div className="pt-2 text-xs font-semibold text-white/80">報價說明</div>
+                        <textarea value={detailQuoteNote} onChange={(e) => setDetailQuoteNote(e.target.value)} rows={3} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs leading-6 text-white outline-none focus:border-sky-400" placeholder="例如：不含導遊領隊服務費，每人每日300元" />
                       </div>
-                      <div className="grid gap-3 md:grid-cols-[110px_1fr] md:items-start">
-                        <div className="pt-2 text-sm font-semibold text-white/80">簽證說明</div>
-                        <textarea value={detailVisaNote} onChange={(e) => setDetailVisaNote(e.target.value)} rows={3} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm leading-7 text-white outline-none focus:border-sky-400" placeholder="例如：持台灣護照可免簽入境" />
+                      <div className="grid gap-2.5 md:grid-cols-[92px_1fr] md:items-start">
+                        <div className="pt-2 text-xs font-semibold text-white/80">簽證說明</div>
+                        <textarea value={detailVisaNote} onChange={(e) => setDetailVisaNote(e.target.value)} rows={3} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs leading-6 text-white outline-none focus:border-sky-400" placeholder="例如：持台灣護照可免簽入境" />
                       </div>
                     </div>
                   </div>
                   </div>
 
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <button type="button" onClick={() => setShowPriceDetailModal(false)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition hover:bg-white/10 hover:text-white">取消</button>
+                  <div className="flex flex-wrap justify-end gap-2 pt-1">
+                    <button type="button" onClick={() => setShowPriceDetailModal(false)} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/75 transition hover:bg-white/10 hover:text-white">取消</button>
                     <button
                       type="button"
                       onClick={async () => {
@@ -1074,7 +1074,7 @@ export default function TripPage() {
                         setShowPriceDetailModal(false);
                       }}
                       disabled={saving}
-                      className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+                      className="rounded-full bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
                     >
                       {saving ? '儲存中...' : '儲存明細'}
                     </button>
