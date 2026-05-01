@@ -581,15 +581,15 @@ export default function TripPage() {
       <div id="trip-content" />
 
       {/* 標題區塊 */}
-      <div className="mx-auto max-w-[1000px] px-3 pt-[92px] sm:px-4 sm:pt-[104px] md:px-8 lg:px-8 lg:pt-[80px]">
-        <div className="lg:flex lg:items-start lg:gap-6">
-          <div className="min-w-0 lg:flex-1">
-            <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">{trip.title}</h1>
+      <div className="mx-auto max-w-[1100px] px-3 pt-[104px] sm:px-4 sm:pt-[112px] md:px-6 lg:px-6 lg:pt-[92px]">
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+          <div className="min-w-0 lg:col-span-1">
+            <h1 className="text-2xl font-bold text-white sm:text-[1.75rem] md:text-[2rem]">{trip.title}</h1>
             {trip.subtitle && (
-              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{trip.subtitle}</p>
+              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-[15px] md:text-base">{trip.subtitle}</p>
             )}
             {isDevMode && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   onClick={openTripInfoEditor}
                   className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
@@ -610,24 +610,22 @@ export default function TripPage() {
               </div>
             )}
 
-            <div className="mt-6 hidden lg:block">
-              <div className="relative max-w-[480px] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
-                <div className="aspect-[8/5] w-full">
-                  {editTripBanner.side_image_url ? (
-                    <img
-                      src={editTripBanner.side_image_url}
-                      alt={`${trip.title} 出團資訊圖片`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(255,255,255,0.04),rgba(251,191,36,0.08))] px-8 text-center">
-                      <div>
-                        <p className="text-sm font-semibold tracking-[0.22em] text-white/55">行程形象圖</p>
-                        <p className="mt-3 text-base text-white/45">開發者模式可在這裡上傳圖片</p>
-                      </div>
+            <div className="mt-4 hidden lg:block">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
+                {editTripBanner.side_image_url ? (
+                  <img
+                    src={editTripBanner.side_image_url}
+                    alt={`${trip.title} 出團資訊圖片`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(255,255,255,0.04),rgba(251,191,36,0.08))] px-8 text-center">
+                    <div>
+                      <p className="text-sm font-semibold tracking-[0.22em] text-white/55">行程形象圖</p>
+                      <p className="mt-3 text-base text-white/45">開發者模式可在這裡上傳圖片</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {isDevMode && (
                   <ImageEditor
@@ -654,23 +652,21 @@ export default function TripPage() {
               </div>
             </div>
           </div>
-          <div className="mt-6 lg:mt-14 lg:w-[430px] lg:flex-none">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
-                <p className="mt-1 text-xs text-white/40">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || '未設定'}</p>
+          <div className="mt-4 lg:mt-0 lg:col-span-1">
+            <div className="relative rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-3.5 backdrop-blur-[12px]">
+              <div className="mb-2">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
+                <p className="mt-0.5 text-[11px] text-white">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || '未設定'}</p>
               </div>
-            </div>
 
-            <div className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-4 backdrop-blur-[12px]">
               {selectedDeparture ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {editTripBanner.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {editTripBanner.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="inline-flex w-fit rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-center text-sm font-medium text-emerald-300"
+                          className="inline-flex w-fit rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-center text-[11px] font-medium text-emerald-300"
                         >
                           {tag}
                         </span>
@@ -678,7 +674,7 @@ export default function TripPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-white/95 sm:text-lg">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-white/95 sm:text-sm">
                     {renderBannerItems(
                         [
                           formatFullDate(selectedDeparture.departure_date),
@@ -688,7 +684,7 @@ export default function TripPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-white/95 sm:text-lg">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-white/95 sm:text-sm">
                     {renderBannerItems(
                       [
                         selectedDeparture.seats_total > 0 ? `團位 ${selectedDeparture.seats_total}` : '',
@@ -702,22 +698,18 @@ export default function TripPage() {
                     )}
                   </div>
 
-                  <div className="rounded-[1.25rem] border border-amber-400/15 bg-amber-400/5 px-4 py-3">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-amber-200/70">團費價格</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowPriceDetailModal(true)}
-                        className="text-left text-xl font-bold text-amber-300 transition hover:text-amber-200"
-                      >
+                  <div className="absolute bottom-0 right-4 w-fit px-1 py-1 text-left">
+                    <p className="text-[11px] font-semibold tracking-[0.2em] text-amber-200/70">團費價格</p>
+                    <div className="mt-1 flex items-center gap-3">
+                      <span className="text-base font-bold text-amber-300">
                         {formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)}
-                      </button>
+                      </span>
                       <button
                         type="button"
                         onClick={() => setShowPriceDetailModal(true)}
-                        className="text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
+                        className="text-xs font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
                       >
-                        點我看明細
+                        看詳細內容
                       </button>
                     </div>
                   </div>
@@ -725,8 +717,8 @@ export default function TripPage() {
                   {isDevMode && (
                     <div className="space-y-3 rounded-[1.25rem] border border-sky-400/15 bg-sky-400/5 p-4">
                       <div>
-                        <p className="text-xs font-semibold tracking-[0.2em] text-sky-200/70">目前編輯梯次</p>
-                        <p className="mt-1 text-sm text-white/75">點下方出團日期卡片可切換這裡的內容</p>
+                        <p className="text-[10px] font-semibold tracking-[0.2em] text-sky-200/70">目前編輯梯次</p>
+                        <p className="mt-1 text-xs text-white/75">點下方出團日期卡片可切換這裡的內容</p>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -734,25 +726,25 @@ export default function TripPage() {
                           value={departureEditorGroupCode}
                           onChange={(e) => setDepartureEditorGroupCode(e.target.value)}
                           placeholder="團號（例：GARY-HKD-0530）"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                         />
                         <input
                           type="date"
                           value={departureEditorDate}
                           onChange={(e) => setDepartureEditorDate(e.target.value)}
                           placeholder="出發日期"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400 [color-scheme:dark]"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400 [color-scheme:dark]"
                         />
                         <input
                           value={departureEditorPrice}
                           onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
                           placeholder="團費價格（例：81900）"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPriceDetailModal(true)}
-                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-white/80 transition hover:border-sky-400/40 hover:text-white"
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/80 transition hover:border-sky-400/40 hover:text-white"
                         >
                           編輯售價明細
                         </button>
@@ -760,21 +752,21 @@ export default function TripPage() {
                           value={editDayCount}
                           onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
                           placeholder="天數（例：5）"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                         />
                         <input
                           id="night-count-input"
                           value={editNightCount}
                           onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
                           placeholder="夜數（例：4）"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                         />
                         <input
                           type="number"
                           value={editTripBanner.seats_total ?? ''}
                           onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
                           placeholder="團位總數"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                         />
                         <input
                           type="number"
@@ -864,6 +856,85 @@ export default function TripPage() {
                 <p className="text-sm text-white/50">請先從下方選一個出團日期，或新增新的梯次。</p>
               )}
             </div>
+
+            {trip.document_url && (
+              <div className="mt-2 min-h-[240px] rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.5)] p-2.5 backdrop-blur-[12px]">
+                <div className="mb-1.5 flex items-start justify-between gap-3">
+                  <h3 className="text-sm font-bold text-sky-300">行程概要</h3>
+                  {isDevMode && (
+                    <button
+                      onClick={() => {
+                        const fullText = trip.document_text || '';
+                        setEditDocumentText(fullText);
+                        const dayPattern = /第\s*(\d+)\s*天/g;
+                        const positions: { num: number; index: number }[] = [];
+                        let m;
+                        while ((m = dayPattern.exec(fullText)) !== null) {
+                          const dayNum = parseInt(m[1]);
+                          if (!positions.find(p => p.num === dayNum)) positions.push({ num: dayNum, index: m.index });
+                        }
+                        if (positions.length > 0) {
+                          const sections = positions.map((pos, i) => {
+                            const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
+                            return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
+                          });
+                          setEditDaySections(sections);
+                        } else {
+                          const durationMatch = trip.duration?.match(/(\d+)/);
+                          const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
+                          setEditDaySections(Array.from({ length: dayCount }, (_, i) => ({ num: i + 1, text: '' })));
+                        }
+                        setShowTextEditor(true);
+                      }}
+                      className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[11px] font-semibold text-white transition hover:bg-emerald-500"
+                    >
+                      編輯行程概要
+                    </button>
+                  )}
+                </div>
+                {!trip.document_text && (
+                  <p className="py-1.5 text-center text-[11px] text-white/40">尚未填寫行程概要，請於開發者模式編輯</p>
+                )}
+                {trip.document_text && (() => {
+                  const fullText = trip.document_text!;
+                  const dayPattern = /第\s*(\d+)\s*天/g;
+                  const dayPositions: { num: string; index: number }[] = [];
+                  let match;
+                  while ((match = dayPattern.exec(fullText)) !== null) {
+                    const dayNum = match[1];
+                    if (!dayPositions.find(d => d.num === dayNum)) {
+                      dayPositions.push({ num: dayNum, index: match.index });
+                    }
+                  }
+                  const days: { num: string; title: string }[] = [];
+                  for (let i = 0; i < dayPositions.length; i++) {
+                    const start = dayPositions[i].index;
+                    const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
+                    const section = fullText.slice(start, end);
+                    const brackets: string[] = [];
+                    const bracketPattern = /【([^】]+)】/g;
+                    let bMatch;
+                    while ((bMatch = bracketPattern.exec(section)) !== null) {
+                      brackets.push(bMatch[1].trim());
+                    }
+                    if (brackets.length > 0) {
+                      days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
+                    }
+                  }
+
+                  return (
+                    <div className="space-y-1">
+                      {days.map((d) => (
+                        <div key={d.num} className="flex items-start gap-2 rounded-xl bg-white/5 px-2.5 py-1">
+                          <span className="shrink-0 rounded-full bg-sky-400/20 px-2 py-0.5 text-[10px] font-semibold text-sky-200">第{d.num}天</span>
+                          <span className="text-[13.5px] leading-[1.35] text-white/80">{d.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1342,89 +1413,6 @@ export default function TripPage() {
 
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
-        {/* 行程概要（標籤下方） */}
-        {trip.document_url && (
-          <div className="mb-6 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] p-4 backdrop-blur-[12px]">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <h3 className="text-sm font-bold text-sky-300">行程概要</h3>
-              {isDevMode && (
-                <button
-                  onClick={() => {
-                    const fullText = trip.document_text || '';
-                    setEditDocumentText(fullText);
-                    const dayPattern = /第\s*(\d+)\s*天/g;
-                    const positions: { num: number; index: number }[] = [];
-                    let m;
-                    while ((m = dayPattern.exec(fullText)) !== null) {
-                      const dayNum = parseInt(m[1]);
-                      if (!positions.find(p => p.num === dayNum)) positions.push({ num: dayNum, index: m.index });
-                    }
-                    if (positions.length > 0) {
-                      const sections = positions.map((pos, i) => {
-                        const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
-                        return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
-                      });
-                      setEditDaySections(sections);
-                    } else {
-                      const durationMatch = trip.duration?.match(/(\d+)/);
-                      const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
-                      setEditDaySections(Array.from({ length: dayCount }, (_, i) => ({ num: i + 1, text: '' })));
-                    }
-                    setShowTextEditor(true);
-                  }}
-                  className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                >
-                  編輯行程概要
-                </button>
-              )}
-            </div>
-            {!trip.document_text && (
-              <p className="py-3 text-center text-xs text-white/40">尚未填寫行程概要，請於開發者模式編輯</p>
-            )}
-            {trip.document_text && (() => {
-              const fullText = trip.document_text!;
-              const dayPattern = /第\s*(\d+)\s*天/g;
-              const dayPositions: { num: string; index: number }[] = [];
-              let match;
-              while ((match = dayPattern.exec(fullText)) !== null) {
-                const dayNum = match[1];
-                if (!dayPositions.find(d => d.num === dayNum)) {
-                  dayPositions.push({ num: dayNum, index: match.index });
-                }
-              }
-              const days: { num: string; title: string }[] = [];
-              for (let i = 0; i < dayPositions.length; i++) {
-                const start = dayPositions[i].index;
-                const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
-                const section = fullText.slice(start, end);
-                const brackets: string[] = [];
-                const bracketPattern = /【([^】]+)】/g;
-                let bMatch;
-                while ((bMatch = bracketPattern.exec(section)) !== null) {
-                  brackets.push(bMatch[1].trim());
-                }
-                if (brackets.length > 0) {
-                  days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
-                }
-              }
-              return days.length > 0 ? (
-                <div className="space-y-2 text-[13px] leading-relaxed text-white/80">
-                  {days.map((day, i) => (
-                    <div key={i} className="flex gap-2">
-                      <span className="shrink-0 rounded bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300">
-                        第{day.num}天
-                      </span>
-                      <span className="text-white/80">{day.title}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="py-3 text-center text-xs text-white/40">PDF 中未找到每日行程內容</p>
-              );
-            })()}
-          </div>
-        )}
-
         {/* 出團日期 */}
         {(departureDates.length > 0 || isDevMode) && (
           <DepartureDates
