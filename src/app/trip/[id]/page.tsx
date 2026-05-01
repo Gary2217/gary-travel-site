@@ -336,6 +336,18 @@ export default function TripPage() {
     return trimmed.replace(/^([0-9,]+)/, '$$$1');
   };
 
+  const formatDepositText = (text: string) => {
+    const normalized = formatPriceText(text).replace(/^\+/, '').replace(/^訂金\s*/,'').trim();
+    return normalized ? `${normalized}元/人` : '—';
+  };
+
+  const formatSingleRoomText = (text: string) => {
+    const normalized = text.trim();
+    if (!normalized) return '—';
+    const stripped = normalized.replace(/^\+/, '').replace(/^\$\s*/, '');
+    return `+${stripped}元/人`;
+  };
+
   const formatFullDate = (dateStr: string) => {
     const d = new Date(`${dateStr}T00:00:00`);
     if (Number.isNaN(d.getTime())) return formatDateInput(dateStr);
@@ -1011,9 +1023,9 @@ export default function TripPage() {
                           <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
                             <div className="pt-2 text-xs font-semibold text-white/80">小孩</div>
                             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                              <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} placeholder="佔床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
-                              <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} placeholder="不佔床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
-                              <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} placeholder="加床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400 sm:col-span-2 xl:col-span-1" />
+                              <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400 sm:col-span-2 xl:col-span-1" />
                             </div>
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[120px_minmax(0,1.1fr)] lg:items-center">
@@ -1109,11 +1121,11 @@ export default function TripPage() {
                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">加床</p><p className="mt-1 font-semibold text-sky-600">{formatPriceText(priceDetailPreview.childExtraBedPrice) || '—'}</p></div>
                          </div>
                        </div>
-                       <div className="grid gap-2 md:grid-cols-[80px_1fr_140px] md:items-center">
-                         <div className="font-semibold text-slate-700">嬰兒</div>
-                         <div className="text-slate-500">2歲以下</div>
-                         <div className="font-semibold text-sky-600">{formatPriceText(priceDetailPreview.infantPrice) || '—'}</div>
-                       </div>
+                        <div className="grid gap-2 md:grid-cols-[80px_1fr_120px] md:items-center">
+                          <div className="font-semibold text-slate-700">嬰兒</div>
+                          <div className="text-slate-500">2歲以下</div>
+                          <div className="text-right font-semibold text-sky-600">{formatPriceText(priceDetailPreview.infantPrice) || '—'}</div>
+                        </div>
                       {priceDetailPreview.pricingNote && <p className="text-xs text-slate-500">{priceDetailPreview.pricingNote}</p>}
                     </div>
                   </div>
@@ -1121,10 +1133,10 @@ export default function TripPage() {
                   <div className="grid gap-4 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr]">
                     <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">每席</span></div>
                     <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                       <div className="flex items-center justify-between gap-3"><span className="text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatPriceText(priceDetailPreview.deposit) || '—'}元/人</span></div>
-                       <div className="flex items-center justify-between gap-3"><span className="text-slate-600">單人房</span><span className="font-semibold text-sky-600">{formatPriceText(priceDetailPreview.singleRoom) ? `+${formatPriceText(priceDetailPreview.singleRoom).replace(/^\+/, '')}元/人` : '—'}</span></div>
-                       <div className="flex items-center justify-between gap-3"><span className="text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{priceDetailPreview.visaFee || '—'}</span></div>
-                       <div className="flex items-center justify-between gap-3"><span className="text-slate-600">附加費</span><span className="font-semibold text-sky-600">{priceDetailPreview.surcharge || '—'}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span className="text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatDepositText(priceDetailPreview.deposit)}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span className="text-slate-600">單人房</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span className="text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{priceDetailPreview.visaFee || '—'}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span className="text-slate-600">附加費</span><span className="font-semibold text-sky-600">{priceDetailPreview.surcharge || '—'}</span></div>
                     </div>
                   </div>
 
