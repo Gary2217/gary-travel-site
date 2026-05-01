@@ -85,24 +85,6 @@ const DEFAULT_PRICE_DETAIL: PriceDetailContent = {
   visaNote: '免簽證(持台灣簽發之中華民國護照且護照內須有身分證統一編號及護照效期從預訂回國日算起尚有6個月以上效期)',
 };
 
-const mergePriceDetailDefaults = (detail: PriceDetailContent): PriceDetailContent => ({
-  title: detail.title || DEFAULT_PRICE_DETAIL.title,
-  subtitle: detail.subtitle || DEFAULT_PRICE_DETAIL.subtitle,
-  adultPrice: detail.adultPrice || DEFAULT_PRICE_DETAIL.adultPrice,
-  childWithBedPrice: detail.childWithBedPrice || DEFAULT_PRICE_DETAIL.childWithBedPrice,
-  childNoBedPrice: detail.childNoBedPrice || DEFAULT_PRICE_DETAIL.childNoBedPrice,
-  childExtraBedPrice: detail.childExtraBedPrice || DEFAULT_PRICE_DETAIL.childExtraBedPrice,
-  infantPrice: detail.infantPrice || DEFAULT_PRICE_DETAIL.infantPrice,
-  pricingNote: detail.pricingNote || DEFAULT_PRICE_DETAIL.pricingNote,
-  deposit: detail.deposit || DEFAULT_PRICE_DETAIL.deposit,
-  singleRoom: detail.singleRoom || DEFAULT_PRICE_DETAIL.singleRoom,
-  visaFee: detail.visaFee || DEFAULT_PRICE_DETAIL.visaFee,
-  surcharge: detail.surcharge || DEFAULT_PRICE_DETAIL.surcharge,
-  groupNote: detail.groupNote || DEFAULT_PRICE_DETAIL.groupNote,
-  quoteNote: detail.quoteNote || DEFAULT_PRICE_DETAIL.quoteNote,
-  visaNote: detail.visaNote || DEFAULT_PRICE_DETAIL.visaNote,
-});
-
 export default function TripPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -474,7 +456,7 @@ export default function TripPage() {
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
     setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
     setDepartureEditorPriceDetail(selectedDepartureInfo.price_detail || '');
-    const parsedDetail = mergePriceDetailDefaults(parsePriceDetail(selectedDepartureInfo.price_detail || ''));
+    const parsedDetail = parsePriceDetail(selectedDepartureInfo.price_detail || '');
     setDetailTitle(parsedDetail.title);
     setDetailSubtitle(parsedDetail.subtitle);
     setDetailAdultPrice(parsedDetail.adultPrice);
@@ -1023,11 +1005,11 @@ export default function TripPage() {
                         </div>
                         <div className="space-y-3">
                           <div className="grid gap-2.5 lg:grid-cols-[120px_minmax(0,1.1fr)] lg:items-center">
-                            <div className="text-xs font-semibold text-white/80">大人 <span className="text-white/55">[12歲以上]</span></div>
+                            <div className="text-xs font-semibold text-white/80">大人</div>
                             <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
-                            <div className="pt-2 text-xs font-semibold text-white/80">小孩 <span className="text-white/55">[2-未滿12歲]</span></div>
+                            <div className="pt-2 text-xs font-semibold text-white/80">小孩</div>
                             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
                               <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} placeholder="佔床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                               <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} placeholder="不佔床" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
@@ -1035,7 +1017,7 @@ export default function TripPage() {
                             </div>
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[120px_minmax(0,1.1fr)] lg:items-center">
-                            <div className="text-xs font-semibold text-white/80">嬰兒 <span className="text-white/55">[未滿2歲]</span></div>
+                            <div className="text-xs font-semibold text-white/80">嬰兒</div>
                             <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                           </div>
                         </div>
