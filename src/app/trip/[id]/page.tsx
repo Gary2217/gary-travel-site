@@ -1014,7 +1014,7 @@ export default function TripPage() {
             <div className="space-y-4 p-4 sm:p-6">
               {isDevMode ? (
                 <div className="space-y-4">
-                  <div className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr]">
+                  <div className="grid gap-4 xl:grid-cols-[1.05fr_1.15fr]">
                     <div className="space-y-4">
                       <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
                         <div className="mb-3 flex items-center gap-2 border-b border-dashed border-white/10 pb-3">
@@ -1022,24 +1022,24 @@ export default function TripPage() {
                           <p className="text-xs text-white/55">設定大人、小孩、嬰兒的價格與補充說明</p>
                         </div>
                         <div className="space-y-3">
-                       <div className="grid gap-2.5 lg:grid-cols-[120px_minmax(0,1.1fr)] lg:items-center">
+                       <div className="grid gap-2.5 lg:grid-cols-[120px_minmax(0,1fr)] lg:items-center">
                             <div className="text-xs font-semibold text-white/80">大人</div>
-                            <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="w-full max-w-[360px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
                             <div className="pt-2 text-xs font-semibold text-white/80">小孩</div>
                             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
                               <div className="space-y-1">
                                 <div className="text-xs font-semibold text-white/75">佔床</div>
-                                <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                                <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} className="w-full max-w-[160px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                               </div>
                               <div className="space-y-1">
                                 <div className="text-xs font-semibold text-white/75">不佔床</div>
-                                <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                                <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} className="w-full max-w-[160px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                               </div>
                               <div className="space-y-1 sm:col-span-2 xl:col-span-1">
                                 <div className="text-xs font-semibold text-white/75">加床</div>
-                                <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                                <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="w-full max-w-[160px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                               </div>
                             </div>
                           </div>
@@ -1047,7 +1047,7 @@ export default function TripPage() {
                             <div className="text-xs font-semibold text-white/80">嬰兒</div>
                             <div className="space-y-1">
                               <div className="text-xs font-semibold text-white/75">每位</div>
-                              <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full max-w-[360px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                             </div>
                           </div>
                         </div>
@@ -1059,7 +1059,7 @@ export default function TripPage() {
                           <p className="text-xs text-white/55">設定每席相關附加費用與說明</p>
                         </div>
                       <div className="space-y-2.5">
-                          <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <div className="grid grid-cols-[52px_minmax(0,240px)] items-center gap-2">
                               <div className="text-xs font-semibold text-white/75">訂金</div>
                               <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="20,000元/人" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
