@@ -12,6 +12,7 @@ interface TripCardProps {
   id: string;
   title: string;
   duration: string;
+  price_range?: string;
   cover_image_url?: string;
   document_url?: string;
   document_is_available?: boolean;
@@ -28,6 +29,7 @@ export default function TripCard({
   id,
   title,
   duration,
+  price_range,
   cover_image_url,
   document_url,
   document_is_available,
@@ -60,6 +62,10 @@ export default function TripCard({
       setShowDownloadGate(false);
     }, 1500);
   };
+
+  const displayPriceRange = price_range
+    ?.replace(/NT\$\s*/g, 'NT $ ')
+    .replace(/\s*[~～]\s*/g, ' ~ ');
 
   return (
     <>
@@ -158,10 +164,26 @@ export default function TripCard({
             )
           ) : (
             <div className="flex items-start justify-between gap-1">
-              <h3 className="line-clamp-2 min-h-[2rem] flex-1 text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
-                {title}
-              </h3>
-              <ShareButton title={title} url={`/trip/${id}`} />
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
+                  {title}
+                </h3>
+                {price_range && (
+                  <div className="mt-1 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-medium tracking-[0.12em] text-amber-300 sm:text-[11px]">
+                        團費價格
+                      </p>
+                      <ShareButton title={title} url={`/trip/${id}`} small />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-300 sm:text-base">
+                        {displayPriceRange}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <button

@@ -5,9 +5,10 @@ import { useState, useRef, useEffect } from "react";
 interface ShareButtonProps {
   title: string;
   url: string;
+  small?: boolean;
 }
 
-export default function ShareButton({ title, url }: ShareButtonProps) {
+export default function ShareButton({ title, url, small = false }: ShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,12 @@ export default function ShareButton({ title, url }: ShareButtonProps) {
     }
   };
 
+  const buttonClassName = small
+    ? "flex h-7 w-7 items-center justify-center rounded-xl border border-sky-400/30 bg-gradient-to-br from-sky-500/30 via-cyan-400/20 to-indigo-500/25 text-sky-200 shadow-[0_6px_18px_rgba(56,189,248,0.16)] transition hover:scale-[1.03] hover:border-sky-300/60 hover:from-sky-400/40 hover:to-indigo-400/35 hover:text-white active:scale-95"
+    : "flex h-9 w-9 items-center justify-center rounded-2xl border border-sky-400/30 bg-gradient-to-br from-sky-500/30 via-cyan-400/20 to-indigo-500/25 text-sky-200 shadow-[0_8px_24px_rgba(56,189,248,0.18)] transition hover:scale-[1.03] hover:border-sky-300/60 hover:from-sky-400/40 hover:to-indigo-400/35 hover:text-white active:scale-95";
+
+  const iconClassName = small ? "h-[14px] w-[14px]" : "h-[18px] w-[18px]";
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -66,11 +73,13 @@ export default function ShareButton({ title, url }: ShareButtonProps) {
           e.preventDefault();
           setOpen(!open);
         }}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/60 transition hover:bg-white/20 hover:text-white active:scale-95"
+        className={buttonClassName}
         title="分享"
+        aria-label="分享"
       >
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        <svg className={iconClassName} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V4m0 0l-4 4m4-4l4 4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10H7a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2h-1" />
         </svg>
       </button>
 
