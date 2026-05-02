@@ -125,6 +125,7 @@ export type TripBanner = {
 export type DepartureBannerInfo = {
   group_code: string;
   price_detail: string;
+  waitlist_count?: number | null;
 };
 
 export type FlightRoute = {
