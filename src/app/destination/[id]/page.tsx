@@ -112,6 +112,16 @@ export default function DestinationPage() {
     }
   };
 
+  const getTripCardPrice = (trip: Trip) => {
+    const firstDeparturePrice = trip.departure_dates?.[0]?.price;
+
+    if (typeof firstDeparturePrice === 'number' && firstDeparturePrice > 0) {
+      return `NT$ ${firstDeparturePrice.toLocaleString('zh-TW')}`;
+    }
+
+    return trip.price_range;
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
@@ -185,6 +195,7 @@ export default function DestinationPage() {
               id={trip.id}
               title={trip.title}
               duration={trip.duration}
+              price_range={getTripCardPrice(trip)}
               cover_image_url={trip.cover_image_url}
               document_url={trip.document_url}
               document_is_available={trip.document_is_available}
