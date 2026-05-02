@@ -359,7 +359,7 @@ export default function TripPage() {
   };
 
   const displayAdultUnit = (text: string) => formatPerPersonPrice(text);
-  const displayChildLabel = (text: string, fallback: string) => text.trim() ? `${fallback} ${formatPerPersonPrice(text)}` : fallback;
+  const displayChildPrice = (text: string) => formatPerPersonPrice(text, '—');
   const displayInfantUnit = (text: string) => formatPerPersonPrice(text);
   const displaySurchargeText = (text: string) => text.trim() || '售價已內含';
   const displayVisaFeeText = (text: string) => text.trim() || '簽證費';
@@ -1197,22 +1197,28 @@ export default function TripPage() {
                     <div className="space-y-5 text-sm md:pl-2">
                         <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-center">
                           <div className="font-semibold text-slate-700">大人</div>
-                          <div className="flex items-center gap-5 text-slate-500"><span>12歲以上</span><span className="font-bold text-orange-500">{displayAdultUnit(priceDetailPreview.adultPrice)}</span></div>
+                          <div className="grid gap-1.5 text-slate-500 md:grid-cols-[92px_1fr] md:items-center">
+                            <span>12歲以上</span>
+                            <span className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-bold text-orange-500"><span></span><span>{displayAdultUnit(priceDetailPreview.adultPrice)}</span></span>
+                          </div>
                         </div>
                       <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-start">
                         <div className="font-semibold text-slate-700">小孩</div>
-                          <div className="grid gap-3 md:grid-cols-[120px_1fr] md:items-start">
+                          <div className="grid gap-1.5 md:grid-cols-[92px_1fr] md:items-start">
                             <div className="text-slate-500">2~未滿12歲</div>
-                            <div className="grid gap-x-8 gap-y-2 sm:grid-cols-3">
-                               <div><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childWithBedPrice, '佔床')}</p></div>
-                               <div><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childNoBedPrice, '不佔床')}</p></div>
-                               <div><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childExtraBedPrice, '加床')}</p></div>
+                            <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
+                               <div><p className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-semibold"><span className="text-slate-500">佔床</span><span className="text-sky-600">{displayChildPrice(priceDetailPreview.childWithBedPrice)}</span></p></div>
+                               <div><p className="inline-grid grid-cols-[52px_1fr] items-center gap-1 font-semibold"><span className="text-slate-500">不佔床</span><span className="text-sky-600">{displayChildPrice(priceDetailPreview.childNoBedPrice)}</span></p></div>
+                               <div><p className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-semibold"><span className="text-slate-500">加床</span><span className="text-sky-600">{displayChildPrice(priceDetailPreview.childExtraBedPrice)}</span></p></div>
                             </div>
                            </div>
                         </div>
                          <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-center">
                            <div className="font-semibold text-slate-700">嬰兒</div>
-                           <div className="flex items-center gap-5 text-slate-500"><span>2歲以下</span><span className="font-semibold text-sky-600">{displayInfantUnit(priceDetailPreview.infantPrice)}</span></div>
+                           <div className="grid gap-1.5 text-slate-500 md:grid-cols-[92px_1fr] md:items-center">
+                             <span>2歲以下</span>
+                             <span className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-semibold text-sky-600"><span></span><span>{displayInfantUnit(priceDetailPreview.infantPrice)}</span></span>
+                           </div>
                          </div>
                       {priceDetailPreview.pricingNote && <p className="text-xs text-slate-500">{priceDetailPreview.pricingNote}</p>}
                     </div>
