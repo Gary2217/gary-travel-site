@@ -165,11 +165,11 @@ export default function TripCard({
           ) : (
             <div className="flex items-start justify-between gap-1">
               <div className="min-w-0 flex-1">
-                <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-tight text-white sm:min-h-[2.5rem] sm:text-sm md:text-base">
+                <h3 className="line-clamp-2 min-h-[2.1rem] text-sm font-bold leading-snug tracking-[0.08em] text-white sm:min-h-[2.45rem] sm:text-base md:text-[1.1rem]">
                   {title}
                 </h3>
                 {price_range && (
-                  <div className="mt-1 space-y-1.5">
+                  <div className="mt-0.5 space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[10px] font-medium tracking-[0.12em] text-amber-300 sm:text-[11px]">
                         團費價格
