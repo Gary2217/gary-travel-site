@@ -348,9 +348,15 @@ export default function TripPage() {
     return `+${stripped}元/人`;
   };
 
-  const displayAdultUnit = (text: string) => text.trim() || '每位';
-  const displayChildLabel = (text: string, fallback: string) => text.trim() || fallback;
-  const displayInfantUnit = (text: string) => text.trim() || '每位';
+  const formatPerPersonPrice = (text: string, fallback = '—') => {
+    const normalized = text.trim().replace(/^NT\$\s*/i, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
+    if (!normalized) return fallback;
+    return `NT$${normalized}元/人`;
+  };
+
+  const displayAdultUnit = (text: string) => formatPerPersonPrice(text);
+  const displayChildLabel = (text: string, fallback: string) => text.trim() ? `${fallback} ${formatPerPersonPrice(text)}` : fallback;
+  const displayInfantUnit = (text: string) => formatPerPersonPrice(text);
   const displaySurchargeText = (text: string) => text.trim() || '售價已內含';
   const displayVisaFeeText = (text: string) => text.trim() || '簽證費';
 
@@ -1035,6 +1041,12 @@ export default function TripPage() {
                             <div className="text-xs font-semibold text-white/80">大人</div>
                                 <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                           </div>
+                          <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
+                            <div className="text-xs font-semibold text-white/80">嬰兒</div>
+                            <div>
+                                <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            </div>
+                          </div>
                           <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
                             <div className="pt-2 text-xs font-semibold text-white/80">小孩</div>
                             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
@@ -1050,12 +1062,6 @@ export default function TripPage() {
                                 <div className="text-xs font-semibold text-white/75">加床</div>
                                 <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                               </div>
-                            </div>
-                          </div>
-                          <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
-                            <div className="text-xs font-semibold text-white/80">嬰兒</div>
-                            <div>
-                                <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                             </div>
                           </div>
                         </div>
@@ -1147,38 +1153,36 @@ export default function TripPage() {
                 </div>
               ) : (
                 <div className="space-y-6 bg-white px-6 py-6 text-slate-800 sm:px-8">
-                  <div className="grid gap-4 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr]">
+                  <div className="grid gap-6 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr] md:gap-8">
                     <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">團費</span></div>
-                    <div className="space-y-4 text-sm">
-                        <div className="grid gap-2 md:grid-cols-[80px_1fr_140px] md:items-center">
+                    <div className="space-y-5 text-sm md:pl-2">
+                        <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-center">
                           <div className="font-semibold text-slate-700">大人</div>
-                          <div className="flex items-center gap-3 text-slate-500"><span>12歲以上</span><span className="font-bold text-orange-500">{displayAdultUnit(priceDetailPreview.adultPrice)}</span></div>
-                         <div></div>
+                          <div className="flex items-center gap-5 text-slate-500"><span>12歲以上</span><span className="font-bold text-orange-500">{displayAdultUnit(priceDetailPreview.adultPrice)}</span></div>
                         </div>
-                      <div className="grid gap-2 md:grid-cols-[80px_1fr] md:items-start">
+                      <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-start">
                         <div className="font-semibold text-slate-700">小孩</div>
-                          <div className="grid gap-2 sm:grid-cols-3">
-                             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childWithBedPrice, '佔床')}</p></div>
-                             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childNoBedPrice, '不佔床')}</p></div>
-                             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childExtraBedPrice, '加床')}</p></div>
-                          </div>
-                       </div>
-                        <div className="grid gap-2 md:grid-cols-[80px_1fr_120px] md:items-center">
-                          <div className="font-semibold text-slate-700">嬰兒</div>
-                          <div className="flex items-center gap-3 text-slate-500"><span>2歲以下</span><span className="font-semibold text-sky-600">{displayInfantUnit(priceDetailPreview.infantPrice)}</span></div>
-                          <div></div>
+                          <div className="grid gap-x-8 gap-y-2 sm:grid-cols-3">
+                             <div><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childWithBedPrice, '佔床')}</p></div>
+                             <div><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childNoBedPrice, '不佔床')}</p></div>
+                             <div><p className="font-semibold text-sky-600">{displayChildLabel(priceDetailPreview.childExtraBedPrice, '加床')}</p></div>
+                           </div>
                         </div>
+                         <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-center">
+                           <div className="font-semibold text-slate-700">嬰兒</div>
+                           <div className="flex items-center gap-5 text-slate-500"><span>2歲以下</span><span className="font-semibold text-sky-600">{displayInfantUnit(priceDetailPreview.infantPrice)}</span></div>
+                         </div>
                       {priceDetailPreview.pricingNote && <p className="text-xs text-slate-500">{priceDetailPreview.pricingNote}</p>}
                     </div>
                   </div>
 
-                  <div className="grid gap-4 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr]">
+                  <div className="grid gap-6 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr] md:gap-8">
                     <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">每席</span></div>
-                    <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                       <div className="flex items-center gap-3"><span className="text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatDepositText(priceDetailPreview.deposit)}</span></div>
-                        <div className="flex items-center gap-3"><span className="text-slate-600">單人房</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
-                        <div className="flex items-center gap-3"><span className="text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{displayVisaFeeText(priceDetailPreview.visaFee)}</span></div>
-                        <div className="flex items-center gap-3"><span className="text-slate-600">附加費</span><span className="font-semibold text-sky-600">{displaySurchargeText(priceDetailPreview.surcharge)}</span></div>
+                    <div className="grid gap-x-10 gap-y-4 sm:grid-cols-2 text-sm md:pl-2">
+                       <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatDepositText(priceDetailPreview.deposit)}</span></div>
+                         <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">單人房</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
+                         <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{displayVisaFeeText(priceDetailPreview.visaFee)}</span></div>
+                         <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">附加費</span><span className="font-semibold text-sky-600">{displaySurchargeText(priceDetailPreview.surcharge)}</span></div>
                     </div>
                   </div>
 
