@@ -1024,7 +1024,7 @@ export default function TripPage() {
                         <div className="space-y-3">
                         <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
                             <div className="text-xs font-semibold text-white/80">大人</div>
-                            <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="w-full max-w-[220px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                                <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
                             <div className="pt-2 text-xs font-semibold text-white/80">小孩</div>
@@ -1045,9 +1045,8 @@ export default function TripPage() {
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
                             <div className="text-xs font-semibold text-white/80">嬰兒</div>
-                            <div className="space-y-1">
-                              <div className="text-xs font-semibold text-white/75">每位</div>
-                              <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full max-w-[220px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            <div>
+                                <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                             </div>
                           </div>
                         </div>
@@ -1058,8 +1057,17 @@ export default function TripPage() {
                           <span className="rounded-sm bg-white/85 px-2.5 py-0.5 text-xs font-semibold text-slate-900">每席</span>
                           <p className="text-xs text-white/55">設定每席相關附加費用與說明</p>
                         </div>
-                      <div className="space-y-2.5">
-                        <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-2.5">
+                          <div className="grid gap-2 sm:grid-cols-3">
+                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                              <div className="text-xs font-semibold text-white/75">團費</div>
+                              <input
+                                value={departureEditorPrice}
+                                onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
+                                placeholder="100000"
+                                className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
+                              />
+                            </div>
                             <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                               <div className="text-xs font-semibold text-white/75">訂金</div>
                               <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="20,000元/人" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
@@ -1070,10 +1078,16 @@ export default function TripPage() {
                             </div>
                           </div>
                           <div className="grid gap-2 sm:grid-cols-2">
-                            <input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="免簽證" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
-                            <input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="售價已內含" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                              <div className="text-xs font-semibold text-white/75">簽證費</div>
+                              <input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="免簽證" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            </div>
+                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                              <div className="text-xs font-semibold text-white/75">附加費</div>
+                              <input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="售價已內含" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                            </div>
                           </div>
-                      </div>
+                        </div>
                       </div>
                     </div>
 
