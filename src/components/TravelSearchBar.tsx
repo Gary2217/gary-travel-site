@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type Destination = { id: string; title: string };
 type RegionOption = { id: string; categoryLabel: string; destinations: Destination[] };
@@ -34,6 +35,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   const [date, setDate] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -78,7 +80,19 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   };
 
   const handleSearch = () => {
-    onSearch({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: selectedDestId, date });
+    if (selectedDestId) {
+      // 導到目的地頁，帶日期與出發地
+      const qs = new URLSearchParams();
+      if (date) qs.set("date", date);
+      if (departureCityId) qs.set("city", departureCityId);
+      const query = qs.toString();
+      router.push(`/destination/${selectedDestId}${query ? `?${query}` : ""}`);
+      setDestOpen(false);
+      setDepartureOpen(false);
+      return;
+    }
+    // 只有地區或日期 → 交由首頁篩選
+    onSearch({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: null, date });
   };
 
   const handleClear = () => {
