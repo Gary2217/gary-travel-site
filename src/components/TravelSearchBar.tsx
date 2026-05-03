@@ -258,79 +258,90 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
         {/* Dropdown 目的地 — 對齊整個搜尋列寬度 */}
         {destOpen && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
-            {/* Region tabs */}
-            <div className="flex flex-wrap border-b border-gray-100 px-2 pt-1">
-              <button
-                onClick={() => setActiveTab("all")}
-                className={`mb-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  activeTab === "all" ? "bg-sky-500 text-white" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                }`}
-              >
-                全部
-              </button>
-              {regions.map((r) => (
+
+            {/* Region tabs — 底線樣式，單行可橫向滾動 */}
+            <div className="relative border-b border-gray-100">
+              {/* 左側 fade */}
+              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white to-transparent" />
+              {/* 右側 fade */}
+              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white to-transparent" />
+              <div className="flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
-                  key={r.id}
-                  onClick={() => setActiveTab(r.id)}
-                  className={`mb-1 ml-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    activeTab === r.id ? "bg-sky-500 text-white" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  onClick={() => setActiveTab("all")}
+                  className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${
+                    activeTab === "all"
+                      ? "border-sky-500 text-sky-600"
+                      : "border-transparent text-gray-400 hover:text-gray-700"
                   }`}
                 >
-                  {r.categoryLabel}
+                  全部地區
                 </button>
-              ))}
+                {regions.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => setActiveTab(r.id)}
+                    className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${
+                      activeTab === r.id
+                        ? "border-sky-500 text-sky-600"
+                        : "border-transparent text-gray-400 hover:text-gray-700"
+                    }`}
+                  >
+                    {r.categoryLabel}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Options — 多欄 grid */}
-            <div className="max-h-56 overflow-y-auto py-2">
+            {/* Options — 2 欄佈局 */}
+            <div className="max-h-72 overflow-y-auto p-4">
               {activeTab === "all" ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
                   <button
                     onClick={handleSelectAll}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 transition hover:bg-sky-50 hover:text-sky-700"
+                    className="flex items-start gap-2 py-1.5 text-left text-sm text-gray-400 transition hover:text-sky-600"
                   >
-                    <span className="text-xs text-gray-300">—</span>
+                    <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
                     不限目的地
                   </button>
                   {regions.map((r) => (
                     <button
                       key={r.id}
                       onClick={() => handleSelectRegion(r.id, r.categoryLabel)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-sky-50 hover:text-sky-700"
+                      className="flex items-start gap-2 py-1.5 text-left text-sm font-medium text-gray-700 transition hover:text-sky-600"
                     >
-                      <span className="text-xs text-gray-300">—</span>
+                      <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
                       {r.categoryLabel}
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                <>
                   {(() => {
                     const region = regions.find((r) => r.id === activeTab);
                     if (!region) return null;
                     return (
-                      <>
+                      <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
                         <button
                           onClick={() => handleSelectRegion(region.id, region.categoryLabel)}
-                          className="col-span-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-600 transition hover:bg-sky-50"
+                          className="col-span-full mb-2 flex items-center gap-2 text-left text-sm font-bold text-sky-600 transition hover:text-sky-500"
                         >
                           <span className="text-xs text-sky-300">—</span>
-                          {region.categoryLabel}（全部）
+                          {region.categoryLabel}全部
                         </button>
                         {region.destinations.map((d) => (
                           <button
                             key={d.id}
                             onClick={() => handleSelectDest(region.id, d.id, d.title)}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 transition hover:bg-sky-50 hover:text-sky-700"
+                            className="flex items-start gap-2 py-1.5 text-left text-sm text-gray-600 transition hover:text-sky-600"
                           >
-                            <span className="text-xs text-gray-300">—</span>
+                            <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
                             {d.title}
                           </button>
                         ))}
-                      </>
+                      </div>
                     );
                   })()}
-                </div>
+                </>
               )}
             </div>
           </div>
