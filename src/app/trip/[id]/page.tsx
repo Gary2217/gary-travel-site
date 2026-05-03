@@ -132,6 +132,7 @@ export default function TripPage() {
   const [detailQuoteNote, setDetailQuoteNote] = useState('');
   const [detailVisaNote, setDetailVisaNote] = useState('');
   const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
+  const [showBannerEditor, setShowBannerEditor] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
 
@@ -656,9 +657,24 @@ export default function TripPage() {
           </div>
           <div className="mt-4 lg:mt-0 lg:col-span-1">
             <div className="relative rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-3.5 backdrop-blur-[12px]">
-              <div className="mb-2">
-                <h3 className="text-xs font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
-                <p className="mt-0.5 text-[11px] text-white">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || '未設定'}</p>
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
+                  <p className="mt-0.5 text-[11px] text-white">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || '未設定'}</p>
+                </div>
+                {isDevMode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBannerEditor((v) => !v)}
+                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                      showBannerEditor
+                        ? "bg-sky-500/20 text-sky-300 hover:bg-sky-500/30"
+                        : "bg-white/8 text-white/50 hover:bg-white/12 hover:text-white"
+                    }`}
+                  >
+                    {showBannerEditor ? "關閉編輯" : "編輯"}
+                  </button>
+                )}
               </div>
 
               {selectedDeparture ? (
@@ -716,7 +732,7 @@ export default function TripPage() {
                     </div>
                   </div>
 
-                  {isDevMode && (
+                  {isDevMode && showBannerEditor && (
                     <div className="space-y-3 rounded-[1.25rem] border border-sky-400/15 bg-sky-400/5 p-4">
                       <div>
                         <p className="text-[10px] font-semibold tracking-[0.2em] text-sky-200/70">目前編輯梯次</p>
