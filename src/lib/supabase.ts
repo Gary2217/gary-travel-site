@@ -168,6 +168,7 @@ export type FlightDepartureDate = {
   seats_total: number;
   seats_available: number;
   label: string | null;
+  flight_segments: FlightSegment[] | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

@@ -1,7 +1,64 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { type FlightDepartureDate, lineMessageHref } from "@/lib/supabase";
+import { type FlightDepartureDate, type FlightSegment, lineMessageHref } from "@/lib/supabase";
+
+const AIRPORTS = [
+  { code: "TPE", name: "桃園國際機場第一航廈", tw: true },
+  { code: "TPE", name: "桃園國際機場第二航廈", tw: true },
+  { code: "TSA", name: "台北松山機場", tw: true },
+  { code: "RMQ", name: "台中國際機場", tw: true },
+  { code: "KHH", name: "高雄國際機場", tw: true },
+  { code: "HUN", name: "花蓮機場", tw: true },
+  { code: "TNN", name: "台南機場", tw: true },
+  { code: "CTS", name: "新千歲機場（北海道）", tw: false },
+  { code: "HKD", name: "函館機場", tw: false },
+  { code: "AOJ", name: "青森機場", tw: false },
+  { code: "SDJ", name: "仙台機場", tw: false },
+  { code: "HND", name: "東京羽田機場", tw: false },
+  { code: "NRT", name: "東京成田國際機場", tw: false },
+  { code: "KIX", name: "大阪關西國際機場", tw: false },
+  { code: "ITM", name: "大阪伊丹機場", tw: false },
+  { code: "NGO", name: "名古屋中部國際機場", tw: false },
+  { code: "FUK", name: "福岡機場", tw: false },
+  { code: "KMJ", name: "熊本機場", tw: false },
+  { code: "KOJ", name: "鹿兒島機場", tw: false },
+  { code: "OKA", name: "那霸機場（沖繩）", tw: false },
+  { code: "ISG", name: "石垣機場", tw: false },
+  { code: "MMY", name: "宮古島機場", tw: false },
+  { code: "ICN", name: "首爾仁川國際機場", tw: false },
+  { code: "GMP", name: "首爾金浦國際機場", tw: false },
+  { code: "PUS", name: "釜山金海國際機場", tw: false },
+  { code: "CJU", name: "濟州國際機場", tw: false },
+  { code: "BKK", name: "曼谷素萬那普國際機場", tw: false },
+  { code: "DMK", name: "曼谷廊曼國際機場", tw: false },
+  { code: "HKT", name: "普吉國際機場", tw: false },
+  { code: "CNX", name: "清邁國際機場", tw: false },
+  { code: "KUL", name: "吉隆坡國際機場", tw: false },
+  { code: "SIN", name: "新加坡樟宜機場", tw: false },
+  { code: "DPS", name: "峇里島烏布旺國際機場", tw: false },
+  { code: "SGN", name: "胡志明市新山一國際機場", tw: false },
+  { code: "HAN", name: "河內內排國際機場", tw: false },
+  { code: "DAD", name: "峴港國際機場", tw: false },
+  { code: "MNL", name: "馬尼拉尼諾伊阿基諾國際機場", tw: false },
+  { code: "CEB", name: "宿霧麥克坦國際機場", tw: false },
+  { code: "CGK", name: "雅加達蘇加諾哈達國際機場", tw: false },
+  { code: "SUB", name: "泗水朱安達國際機場", tw: false },
+  { code: "LHR", name: "倫敦希斯洛機場", tw: false },
+  { code: "CDG", name: "巴黎戴高樂機場", tw: false },
+  { code: "FRA", name: "法蘭克福機場", tw: false },
+  { code: "VIE", name: "維也納國際機場", tw: false },
+  { code: "AMS", name: "阿姆斯特丹史基浦機場", tw: false },
+  { code: "FCO", name: "羅馬達文西國際機場", tw: false },
+  { code: "ZRH", name: "蘇黎世機場", tw: false },
+  { code: "DXB", name: "杜拜國際機場", tw: false },
+  { code: "SYD", name: "雪梨機場", tw: false },
+  { code: "AKL", name: "奧克蘭機場", tw: false },
+  { code: "LAX", name: "洛杉磯國際機場", tw: false },
+  { code: "JFK", name: "紐約甘迺迪國際機場", tw: false },
+  { code: "YVR", name: "溫哥華國際機場", tw: false },
+  { code: "YYZ", name: "多倫多皮爾遜國際機場", tw: false },
+];
 
 const AIRLINES = [
   { name: "中華航空", code: "CI", en: "China Airlines" },
@@ -37,11 +94,209 @@ const AIRLINES = [
   { name: "法國航空", code: "AF", en: "Air France" },
   { name: "馬來西亞航空", code: "MH", en: "Malaysia Airlines" },
   { name: "印尼航空", code: "GA", en: "Garuda Indonesia" },
+  { name: "冰島航空", code: "FI", en: "Icelandair" },
+  { name: "北歐航空", code: "SK", en: "Scandinavian Airlines" },
+  { name: "漢莎航空", code: "LH", en: "Lufthansa" },
+  { name: "英國航空", code: "BA", en: "British Airways" },
+  { name: "瑞士航空", code: "LX", en: "Swiss International Air Lines" },
 ];
+
+const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400";
+const labelClass = "mb-1 block text-[10px] text-white/50";
+
+function getWeekdayFromDate(dateStr: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  return ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const weekday = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+  return {
+    full: `${d.getFullYear()}/${mm}/${dd}（${weekday}）`,
+    short: `${mm}/${dd}（${weekday}）`,
+    month: d.getMonth() + 1,
+    year: d.getFullYear(),
+  };
+}
+
+function AirportInput({ value, onChange, placeholder, preferTw = false }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  preferTw?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const q = value.trim().toLowerCase();
+  const filtered = q
+    ? AIRPORTS.filter((a) => a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q))
+    : preferTw ? AIRPORTS.filter((a) => a.tw) : AIRPORTS.slice(0, 20);
+
+  return (
+    <div ref={ref} className="relative">
+      <input type="text" value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className={inputClass}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-52 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+          {!q && (
+            <div className="border-b border-white/8 px-2.5 py-1.5 text-[10px] text-white/30">
+              {preferTw ? "台灣出發機場" : "常用機場"}
+            </div>
+          )}
+          {filtered.map((a, i) => (
+            <button key={i} type="button"
+              onClick={() => { onChange(a.name); setOpen(false); }}
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
+              <span>{a.name}</span>
+              <span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AirlineInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const q = value.trim().toLowerCase();
+  const filtered = q
+    ? AIRLINES.filter((a) => a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q) || a.en.toLowerCase().includes(q))
+    : AIRLINES.slice(0, 20);
+
+  return (
+    <div ref={ref} className="relative">
+      <input type="text" value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="如：長榮航空"
+        className={inputClass}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+          {filtered.map((a, i) => (
+            <button key={i} type="button"
+              onClick={() => { onChange(`${a.name}（${a.code}）`); setOpen(false); }}
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
+              <span>{a.name}</span>
+              <span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SegmentRow({ index, total, segment, onChange, onDelete }: {
+  index: number;
+  total: number;
+  segment: FlightSegment;
+  onChange: (field: keyof FlightSegment, value: string | boolean) => void;
+  onDelete: () => void;
+}) {
+  const label = index === 0 ? "去程" : total > 1 && index === total - 1 ? "回程" : "轉機";
+  const labelColor =
+    index === 0 ? "bg-sky-500/20 text-sky-300" :
+    total > 1 && index === total - 1 ? "bg-amber-500/20 text-amber-300" :
+    "bg-violet-500/20 text-violet-300";
+  const dayLabel = segment.date ? getWeekdayFromDate(segment.date) : "";
+
+  return (
+    <div className="mb-2 rounded-lg border border-white/8 bg-white/[0.03] p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-white/30">第 {index + 1} 段</span>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${labelColor}`}>{label}</span>
+        </div>
+        <button type="button" onClick={onDelete} className="text-[10px] text-red-400/50 transition hover:text-red-400">✕ 刪除</button>
+      </div>
+
+      <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="overflow-hidden">
+          <label className={labelClass}>日期</label>
+          <div className="flex gap-1 overflow-hidden">
+            <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)}
+              className={`${inputClass} flex-1 [color-scheme:dark]`} />
+            {dayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{dayLabel}</span>}
+          </div>
+        </div>
+        <div>
+          <label className={labelClass}>航空公司</label>
+          <AirlineInput value={segment.airline} onChange={(v) => onChange("airline", v)} />
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <label className={labelClass}>航班編號</label>
+          <input type="text" value={segment.flight_number} onChange={(e) => onChange("flight_number", e.target.value)}
+            placeholder="如：BR087" autoComplete="off" className={inputClass} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_2fr_1fr_2fr_auto]">
+        <div>
+          <label className={labelClass}>起飛時間</label>
+          <input type="time" value={segment.dep_time} onChange={(e) => onChange("dep_time", e.target.value)}
+            className={`${inputClass} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <label className={labelClass}>起飛機場</label>
+          <AirportInput value={segment.dep_airport} onChange={(v) => onChange("dep_airport", v)} placeholder="出發地" preferTw={index === 0} />
+        </div>
+        <div>
+          <label className={labelClass}>抵達時間</label>
+          <input type="time" value={segment.arr_time} onChange={(e) => onChange("arr_time", e.target.value)}
+            className={`${inputClass} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <label className={labelClass}>抵達機場</label>
+          <AirportInput value={segment.arr_airport} onChange={(v) => onChange("arr_airport", v)} placeholder="目的地" preferTw={total > 1 && index === total - 1} />
+        </div>
+        <div className="col-span-2 flex items-end sm:col-span-1">
+          <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
+            <input type="checkbox" checked={segment.next_day} onChange={(e) => onChange("next_day", e.target.checked)} className="rounded border-white/20 bg-white/5" />
+            跨日+1
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface FlightDepartureDatesProps {
   flightRouteId: string;
-  routeLabel: string; // e.g. "桃園 → 東京"
+  routeLabel: string;
   fromCity: string;
   toCity: string;
   duration: string;
@@ -52,56 +307,40 @@ interface FlightDepartureDatesProps {
   onDatesChange: (dates: FlightDepartureDate[]) => void;
 }
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const weekday = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
-  return { full: `${mm}/${dd}（${weekday}）`, month: d.getMonth() + 1, year: d.getFullYear() };
-}
-
-export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCity, toCity, duration, direct, airlines, dates, isDevMode, onDatesChange }: FlightDepartureDatesProps) {
+export default function FlightDepartureDates({
+  flightRouteId, routeLabel, fromCity, toCity, duration, direct, airlines,
+  dates, isDevMode, onDatesChange,
+}: FlightDepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const today = new Date().toLocaleDateString("sv-SE");
   const [formDate, setFormDate] = useState(today);
-  const [formAirline, setFormAirline] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formLabel, setFormLabel] = useState("");
-  const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
-  const airlineRef = useRef<HTMLDivElement>(null);
+  const [formSegments, setFormSegments] = useState<FlightSegment[]>([]);
 
-  useEffect(() => {
-    if (!airlineDropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (airlineRef.current && !airlineRef.current.contains(e.target as Node)) {
-        setAirlineDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [airlineDropdownOpen]);
+  const departureDayLabel = getWeekdayFromDate(formDate);
 
-  const filteredAirlines = formAirline.trim()
-    ? AIRLINES.filter((a) => {
-        const q = formAirline.trim().toLowerCase();
-        return a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q) || a.en.toLowerCase().includes(q);
-      })
-    : AIRLINES;
+  const emptySegment = (): FlightSegment => ({
+    date: "", airline: "", flight_number: "", dep_time: "", dep_airport: "", arr_time: "", arr_airport: "", next_day: false,
+  });
+  const addSegment = () => setFormSegments((prev) => [...prev, emptySegment()]);
+  const removeSegment = (i: number) => setFormSegments((prev) => prev.filter((_, idx) => idx !== i));
+  const updateSegment = (i: number, field: keyof FlightSegment, value: string | boolean) =>
+    setFormSegments((prev) => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
 
-  const months = Array.from(
-    new Set(dates.map((d) => {
-      const info = formatDate(d.departure_date);
-      return `${info.year}-${info.month}`;
-    }))
-  ).sort();
+  const months = Array.from(new Set(dates.map((d) => {
+    const info = formatDate(d.departure_date);
+    return `${info.year}-${info.month}`;
+  }))).sort();
 
   const monthLabels = months.map((m) => {
-    const [y, mo] = m.split("-");
-    return { key: m, label: `${mo}月`, year: y };
+    const [, mo] = m.split("-");
+    return { key: m, label: `${mo}月` };
   });
 
   const filtered = activeMonth === "all"
@@ -113,11 +352,19 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
 
   const resetForm = () => {
     setFormDate(today);
-    setFormAirline("");
     setFormPrice("");
     setFormLabel("");
+    setFormSegments([]);
     setEditingId(null);
   };
+
+  const buildPayload = () => ({
+    departure_date: formDate,
+    airline: formSegments[0]?.airline || null,
+    price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
+    label: formLabel || null,
+    flight_segments: formSegments.length > 0 ? formSegments : null,
+  });
 
   const handleAdd = async () => {
     if (!formDate) return;
@@ -126,12 +373,7 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
       const res = await fetch(`/api/flight-routes/${flightRouteId}/departures`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          departure_date: formDate,
-          airline: formAirline || null,
-          price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-          label: formLabel || null,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
         const added = await res.json();
@@ -150,18 +392,11 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
       const res = await fetch(`/api/flight-routes/${flightRouteId}/departures?dateId=${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          departure_date: formDate,
-          airline: formAirline || null,
-          price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-          label: formLabel || null,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
         const updated = await res.json();
-        onDatesChange(
-          dates.map((d) => (d.id === editingId ? updated : d)).sort((a, b) => a.departure_date.localeCompare(b.departure_date))
-        );
+        onDatesChange(dates.map((d) => d.id === editingId ? updated : d).sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
         resetForm();
         setShowAddForm(false);
       }
@@ -174,15 +409,20 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
     const res = await fetch(`/api/flight-routes/${flightRouteId}/departures?dateId=${id}`, { method: "DELETE" });
     if (res.ok) {
       onDatesChange(dates.filter((d) => d.id !== id));
+      if (selectedId === id) setSelectedId(null);
     }
   };
 
   const openEditForm = (d: FlightDepartureDate) => {
     setEditingId(d.id);
     setFormDate(d.departure_date);
-    setFormAirline(d.airline || "");
     setFormPrice(d.price ? String(d.price) : "");
     setFormLabel(d.label || "");
+    if (d.flight_segments && d.flight_segments.length > 0) {
+      setFormSegments(d.flight_segments);
+    } else {
+      setFormSegments([]);
+    }
     setShowAddForm(true);
   };
 
@@ -190,6 +430,7 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
 
   return (
     <section className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
+
       {/* 航線資訊標頭 */}
       <div className="mb-4">
         <div className="mb-3 flex items-center justify-between">
@@ -235,92 +476,91 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
         </div>
       </div>
 
-      {/* Dev mode 新增/編輯表單 */}
+      {/* Dev 編輯表單 */}
       {isDevMode && showAddForm && (
         <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
           <p className="mb-3 text-xs font-bold text-amber-400">{editingId ? "編輯航班" : "新增航班"}</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-[10px] text-white/50">出發日期 *</label>
-              <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-sky-400 [color-scheme:dark]" />
-            </div>
-            <div ref={airlineRef} className="relative">
-              <label className="mb-1 block text-[10px] text-white/50">航空公司</label>
-              <input
-                type="text"
-                value={formAirline}
-                onChange={(e) => { setFormAirline(e.target.value); setAirlineDropdownOpen(true); }}
-                onFocus={() => setAirlineDropdownOpen(true)}
-                placeholder="搜尋或選擇航空公司"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400"
-                autoComplete="off"
-              />
-              {airlineDropdownOpen && filteredAirlines.length > 0 && (
-                <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/10 bg-[rgba(20,20,30,0.98)] shadow-xl backdrop-blur-xl">
-                  {filteredAirlines.map((a) => (
-                    <button
-                      key={a.code}
-                      type="button"
-                      onClick={() => {
-                        setFormAirline(`${a.name}（${a.code}）`);
-                        setAirlineDropdownOpen(false);
-                      }}
-                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10"
-                    >
-                      <span>{a.name}（{a.code}）</span>
-                      <span className="text-[10px] text-white/40">{a.en}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+
+          {/* 基本資訊 */}
+          <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="overflow-hidden">
+              <label className={labelClass}>出發日期 *</label>
+              <div className="flex gap-1 overflow-hidden">
+                <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
+                  className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                {departureDayLabel && (
+                  <span className="flex items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">
+                    {departureDayLabel}
+                  </span>
+                )}
+              </div>
             </div>
             <div>
-              <label className="mb-1 block text-[10px] text-white/50">票價</label>
-              <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：8900"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
+              <label className={labelClass}>票價（NT$）</label>
+              <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)}
+                placeholder="如：8900" autoComplete="off" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] text-white/50">備註</label>
-              <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：早鳥優惠"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400" />
-            </div>
-            <div className="flex items-end">
-              <button
-                disabled={!formDate || saving}
-                onClick={editingId ? handleEdit : handleAdd}
-                className="w-full rounded-lg bg-sky-600 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-              >
-                {saving ? "儲存中..." : editingId ? "更新" : "新增"}
-              </button>
+              <label className={labelClass}>備註標籤</label>
+              <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)}
+                placeholder="如：早鳥優惠" className={inputClass} />
             </div>
           </div>
+
+          {/* 航班明細 */}
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-sky-400/70">✈ 航班明細（選填）</p>
+            <button type="button" onClick={addSegment}
+              className="text-[10px] font-semibold text-sky-400/70 transition hover:text-sky-400">
+              + 新增航段
+            </button>
+          </div>
+
+          {formSegments.length === 0 ? (
+            <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-5">
+              <p className="text-[11px] text-white/30">尚未新增航班，可直接儲存或點擊新增航段</p>
+              <button type="button" onClick={addSegment}
+                className="mt-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] text-sky-400/80 transition hover:bg-sky-500/20">
+                + 新增去程
+              </button>
+            </div>
+          ) : (
+            <div className="mb-2">
+              {formSegments.map((seg, i) => (
+                <SegmentRow
+                  key={i}
+                  index={i}
+                  total={formSegments.length}
+                  segment={seg}
+                  onChange={(field, val) => updateSegment(i, field, val)}
+                  onDelete={() => removeSegment(i)}
+                />
+              ))}
+              <button type="button" onClick={addSegment}
+                className="mb-4 mt-1 text-[11px] text-sky-400/60 transition hover:text-sky-400">
+                + 新增航段（轉機或回程）
+              </button>
+            </div>
+          )}
+
+          <button disabled={!formDate || saving} onClick={editingId ? handleEdit : handleAdd}
+            className="rounded-lg bg-sky-600 px-6 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50">
+            {saving ? "儲存中..." : editingId ? "更新航班" : "新增航班"}
+          </button>
         </div>
       )}
 
       {/* 月份篩選 */}
       {monthLabels.length > 1 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setActiveMonth("all")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              activeMonth === "all"
-                ? "bg-sky-500 text-white"
-                : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-            }`}
-          >
+          <button onClick={() => setActiveMonth("all")}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
             全部
           </button>
           {monthLabels.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setActiveMonth(m.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                activeMonth === m.key
-                  ? "bg-sky-500 text-white"
-                  : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-              }`}
-            >
+            <button key={m.key} onClick={() => setActiveMonth(m.key)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === m.key ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
               {m.label}
             </button>
           ))}
@@ -329,87 +569,133 @@ export default function FlightDepartureDates({ flightRouteId, routeLabel, fromCi
 
       {/* 航班列表 */}
       {filtered.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filtered.map((d) => {
             const info = formatDate(d.departure_date);
+            const isSelected = selectedId === d.id;
+            const displayAirline = d.flight_segments?.[0]?.airline || d.airline;
 
             return (
-              <div
-                key={d.id}
-                className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.5)] backdrop-blur-sm transition hover:border-white/15"
-              >
-                <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3.5 sm:px-5">
-                  {/* 左側資訊 */}
+              <div key={d.id} className={`overflow-hidden rounded-2xl border transition ${isSelected ? "border-sky-400/30 bg-sky-500/5" : "border-white/10 bg-[rgba(20,20,30,0.5)] hover:border-white/15"}`}>
+                {/* 卡片主列 */}
+                <div
+                  className="grid cursor-pointer grid-cols-[1fr_auto] items-center gap-3 px-4 py-3.5 sm:px-5"
+                  onClick={() => setSelectedId(isSelected ? null : d.id)}
+                >
                   <div className="min-w-0 space-y-1.5">
-                    {/* 日期 */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span className="text-sm font-bold text-white sm:text-base">{info.full}</span>
+                      <span className="text-sm font-bold text-white">{info.short}</span>
                       {d.label && (
-                        <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
-                          {d.label}
-                        </span>
+                        <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">{d.label}</span>
                       )}
                     </div>
-                    {/* 航空 + 價格 */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      {d.airline && (
-                        <span className="flex items-center gap-1 text-xs text-white/80">
-                          <svg className="h-3 w-3 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                      {displayAirline && (
+                        <span className="flex items-center gap-1 text-xs text-white/70">
+                          <svg className="h-3 w-3 text-white/40" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                           </svg>
-                          {d.airline}
+                          {displayAirline}
                         </span>
                       )}
                       {d.price ? (
-                        <span className="text-sm font-bold text-amber-300 sm:text-base">
-                          NT$ {d.price.toLocaleString()}
-                        </span>
+                        <span className="text-sm font-bold text-amber-300">NT$ {d.price.toLocaleString()}</span>
                       ) : (
-                        <span className="text-xs text-white/50">洽詢報價</span>
+                        <span className="text-xs text-white/45">洽詢報價</span>
+                      )}
+                      {(d.flight_segments && d.flight_segments.length > 0) && (
+                        <span className="text-[10px] text-white/35">{d.flight_segments.length} 航段</span>
                       )}
                     </div>
                   </div>
 
-                  {/* 右側按鈕 */}
-                  {!isDevMode && (
-                    <a
-                      href={lineMessageHref(`我想詢問【${routeLabel}】${info.full} 的機票${d.airline ? `（${d.airline}）` : ""}`)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
-                      立即詢問
-                    </a>
-                  )}
-
-                  {isDevMode && (
-                    <div className="flex shrink-0 gap-1.5">
-                      <button
-                        onClick={() => openEditForm(d)}
-                        className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-semibold text-amber-300 transition hover:bg-amber-500/30"
+                  <div className="flex shrink-0 items-center gap-2">
+                    {!isDevMode && (
+                      <a
+                        href={lineMessageHref(`我想詢問【${routeLabel}】${info.full} 的機票${displayAirline ? `（${displayAirline}）` : ""}`)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95"
                       >
-                        編輯
-                      </button>
-                      <button
-                        onClick={() => handleDelete(d.id)}
-                        className="rounded-full bg-red-500/20 px-2.5 py-1 text-[10px] font-semibold text-red-300 transition hover:bg-red-500/30"
-                      >
-                        刪除
-                      </button>
-                    </div>
-                  )}
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                        立即詢問
+                      </a>
+                    )}
+                    {isDevMode && (
+                      <div className="flex gap-1.5">
+                        <button onClick={(e) => { e.stopPropagation(); openEditForm(d); }}
+                          className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(d.id); }}
+                          className="rounded-full bg-red-500/20 px-2.5 py-1 text-[10px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
+                      </div>
+                    )}
+                    <svg className={`h-4 w-4 text-white/30 transition-transform ${isSelected ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
+
+                {/* 展開詳情 */}
+                {isSelected && (
+                  <div className="border-t border-white/8 px-4 py-3 sm:px-5">
+                    {d.flight_segments && d.flight_segments.length > 0 ? (
+                      <>
+                        <div className="mb-1.5 hidden grid-cols-[32px_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
+                          <span></span>
+                          <span>班機日期・航空公司及航班</span>
+                          <span>起飛時間及機場</span>
+                          <span>抵達時間及機場</span>
+                        </div>
+                        {d.flight_segments.map((seg, i) => {
+                          const total = d.flight_segments!.length;
+                          const isFirst = i === 0;
+                          const isLast = i === total - 1 && total > 1;
+                          const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
+                          const segDate = seg.date ? formatDate(seg.date) : null;
+                          return (
+                            <div key={i} className={`grid grid-cols-1 gap-1 py-2 sm:grid-cols-[32px_1fr_1fr_1fr] sm:gap-2 ${i > 0 ? "border-t border-white/5" : ""}`}>
+                              <div className="flex items-start pt-0.5">
+                                <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                                </svg>
+                              </div>
+                              <div>
+                                {segDate && <div className="text-[10px] text-white/45">{segDate.full}</div>}
+                                <div className="text-xs text-white/90">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-white/50">{seg.flight_number}</span>}</div>
+                              </div>
+                              <div className="text-xs">
+                                {seg.dep_time && <span className="font-semibold text-white/90">{seg.dep_time}</span>}
+                                {seg.dep_airport && <span className="text-white/50"> {seg.dep_airport}</span>}
+                              </div>
+                              <div className="text-xs">
+                                {seg.arr_time && <span className="font-semibold text-white/90">{seg.arr_time}</span>}
+                                {seg.arr_airport && <span className="text-white/50"> {seg.arr_airport}</span>}
+                                {seg.next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    ) : (
+                      <p className="text-xs text-white/40">此航班尚無詳細時刻表</p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       ) : (
         <p className="text-sm text-white/50">
-          {dates.length > 0 ? "此月份無航班票價" : isDevMode ? "尚未新增航班票價，點擊上方「新增航班」開始" : "目前無可訂購航班"}
+          {dates.length > 0
+            ? "此月份無航班票價"
+            : isDevMode
+            ? "尚未新增航班，點擊上方「新增航班」開始"
+            : "目前無可訂購航班"}
         </p>
       )}
     </section>

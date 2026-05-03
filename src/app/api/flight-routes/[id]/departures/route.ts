@@ -21,7 +21,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { departure_date, airline, price, seats_total, seats_available, label } = body;
+    const { departure_date, airline, price, seats_total, seats_available, label, flight_segments } = body;
 
     if (!departure_date) {
       return NextResponse.json({ error: '請選擇出發日期' }, { status: 400 });
@@ -39,6 +39,7 @@ export async function POST(
         seats_total: seats_total || 0,
         seats_available: seats_available ?? seats_total ?? 0,
         label: label || null,
+        flight_segments: flight_segments ?? null,
       })
       .select()
       .single();
@@ -68,7 +69,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const allowedFields = ['departure_date', 'airline', 'price', 'seats_total', 'seats_available', 'label', 'is_active'];
+    const allowedFields = ['departure_date', 'airline', 'price', 'seats_total', 'seats_available', 'label', 'is_active', 'flight_segments'];
     const updates: Record<string, any> = {};
 
     for (const field of allowedFields) {
