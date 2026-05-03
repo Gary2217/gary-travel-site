@@ -439,7 +439,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
           <p className="mb-2 text-[10px] font-semibold text-amber-400/70">✈ 回程航班（選填）</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7">
-            <div>
+            <div className="col-span-2 sm:col-span-1">
               <label className={labelClass}>回程日期</label>
               <div className="flex gap-1">
                 <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
