@@ -114,9 +114,9 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
 
           {/* Dropdown */}
           {destOpen && (
-            <div className="absolute left-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
+            <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20 sm:w-80">
               {/* Region tabs */}
-              <div className="flex overflow-x-auto border-b border-gray-100 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-wrap border-b border-gray-100">
                 <button
                   onClick={() => setActiveTab("all")}
                   className={`shrink-0 px-4 py-2.5 text-xs font-semibold transition ${
