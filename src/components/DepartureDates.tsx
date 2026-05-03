@@ -203,10 +203,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const today = new Date().toLocaleDateString("sv-SE");
   const [formDate, setFormDate] = useState(today);
-  const [formCity, setFormCity] = useState("桃園");
   const [formAirline, setFormAirline] = useState("");
-  const [formPrice, setFormPrice] = useState("");
-  const [formLabel, setFormLabel] = useState("");
   const [formOutboundFlight, setFormOutboundFlight] = useState("");
   const [formOutboundTime, setFormOutboundTime] = useState("");
   const [formOutboundFrom, setFormOutboundFrom] = useState("");
@@ -270,10 +267,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const resetForm = () => {
     setFormDate(today);
-    setFormCity("桃園");
     setFormAirline("");
-    setFormPrice("");
-    setFormLabel("");
     setFormOutboundFlight(""); setFormOutboundTime(""); setFormOutboundFrom("");
     setFormOutboundArrivalTime(""); setFormOutboundTo(""); setFormOutboundNextDay(false);
     setFormReturnDate(""); setFormReturnFlight(""); setFormReturnTime("");
@@ -283,10 +277,10 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const buildPayload = () => ({
     departure_date: formDate,
-    departure_city: formCity,
+    departure_city: '桃園',
     airline: formAirline || null,
-    price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
-    label: formLabel || null,
+    price: null,
+    label: null,
     outbound_flight: formOutboundFlight || null,
     outbound_time: formOutboundTime || null,
     outbound_from: formOutboundFrom || null,
@@ -356,10 +350,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const openEditForm = (d: DepartureDate) => {
     setEditingId(d.id);
     setFormDate(d.departure_date);
-    setFormCity(d.departure_city);
     setFormAirline(d.airline || "");
-    setFormPrice(d.price ? String(d.price) : "");
-    setFormLabel(d.label || "");
     setFormOutboundFlight(d.outbound_flight || "");
     setFormOutboundTime(d.outbound_time || "");
     setFormOutboundFrom(d.outbound_from || "");
@@ -402,7 +393,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
           <p className="mb-3 text-xs font-bold text-amber-400">{editingId ? "編輯梯次" : "新增梯次"}</p>
 
           <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
-          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
               <label className={labelClass}>出發日期 *</label>
               <div className="flex gap-1">
@@ -414,13 +405,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                   </span>
                 )}
               </div>
-            </div>
-            <div>
-              <label className={labelClass}>出發地</label>
-              <select value={formCity} onChange={(e) => setFormCity(e.target.value)}
-                className={`${inputClass} [color-scheme:dark]`}>
-                {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
             </div>
             <div ref={airlineRef} className="relative">
               <label className={labelClass}>航空公司</label>
@@ -440,14 +424,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                   ))}
                 </div>
               )}
-            </div>
-            <div>
-              <label className={labelClass}>售價</label>
-              <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：42000" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>備註</label>
-              <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：確認出團" className={inputClass} />
             </div>
           </div>
 
