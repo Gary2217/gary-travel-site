@@ -33,6 +33,7 @@ export async function POST(
     const { departure_date, departure_city, airline, price, label, seats_total, seats_available,
       outbound_flight, outbound_time, outbound_from, outbound_arrival_time, outbound_to, outbound_next_day,
       return_date, return_flight, return_time, return_from, return_arrival_time, return_to, return_next_day,
+      flight_segments,
     } = body;
 
     if (!departure_date) {
@@ -65,6 +66,7 @@ export async function POST(
         return_arrival_time: return_arrival_time || null,
         return_to: return_to || null,
         return_next_day: return_next_day || false,
+        flight_segments: flight_segments ?? null,
       })
       .select()
       .single();
@@ -101,6 +103,7 @@ export async function PATCH(request: NextRequest) {
       'departure_date', 'departure_city', 'airline', 'price', 'label', 'is_active', 'seats_total', 'seats_available',
       'outbound_flight', 'outbound_time', 'outbound_from', 'outbound_arrival_time', 'outbound_to', 'outbound_next_day',
       'return_date', 'return_flight', 'return_time', 'return_from', 'return_arrival_time', 'return_to', 'return_next_day',
+      'flight_segments',
     ];
     const updates: Record<string, any> = {};
 

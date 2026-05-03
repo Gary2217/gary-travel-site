@@ -67,6 +67,17 @@ export type Trip = {
   destinations?: Destination;
 };
 
+export type FlightSegment = {
+  date: string;
+  airline: string;
+  flight_number: string;
+  dep_time: string;
+  dep_airport: string;
+  arr_time: string;
+  arr_airport: string;
+  next_day: boolean;
+};
+
 export type DepartureDate = {
   id: string;
   trip_id: string;
@@ -77,14 +88,14 @@ export type DepartureDate = {
   seats_total: number;
   seats_available: number;
   label: string | null;
-  // 去程航班
+  // 去程航班（向下相容）
   outbound_flight: string | null;
   outbound_time: string | null;
   outbound_from: string | null;
   outbound_arrival_time: string | null;
   outbound_to: string | null;
   outbound_next_day: boolean;
-  // 回程航班
+  // 回程航班（向下相容）
   return_date: string | null;
   return_flight: string | null;
   return_time: string | null;
@@ -92,6 +103,8 @@ export type DepartureDate = {
   return_arrival_time: string | null;
   return_to: string | null;
   return_next_day: boolean;
+  // 多航段（含轉機）
+  flight_segments: FlightSegment[] | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

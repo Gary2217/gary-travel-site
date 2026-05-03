@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { type DepartureDate, lineMessageHref } from "@/lib/supabase";
+import { type DepartureDate, type FlightSegment, lineMessageHref } from "@/lib/supabase";
 
 const CITIES = ["桃園", "台中", "高雄", "松山", "其他"];
 
@@ -195,6 +195,125 @@ function AirportInput({ value, onChange, placeholder, preferTw = false }: {
   );
 }
 
+function AirlineInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const q = value.trim().toLowerCase();
+  const filtered = q
+    ? AIRLINES.filter((a) => a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q) || a.en.toLowerCase().includes(q))
+    : AIRLINES.slice(0, 20);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="如：長榮航空"
+        className={inputClass}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+          {filtered.map((a, i) => (
+            <button key={i} type="button"
+              onClick={() => { onChange(`${a.name}（${a.code}）`); setOpen(false); }}
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
+              <span>{a.name}</span>
+              <span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SegmentRow({ index, total, segment, onChange, onDelete }: {
+  index: number;
+  total: number;
+  segment: FlightSegment;
+  onChange: (field: keyof FlightSegment, value: string | boolean) => void;
+  onDelete: () => void;
+}) {
+  const label = index === 0 ? "去程" : total > 1 && index === total - 1 ? "回程" : "轉機";
+  const labelColor =
+    index === 0 ? "bg-sky-500/20 text-sky-300" :
+    total > 1 && index === total - 1 ? "bg-amber-500/20 text-amber-300" :
+    "bg-violet-500/20 text-violet-300";
+  const dayLabel = segment.date ? getWeekdayFromDate(segment.date) : "";
+
+  return (
+    <div className="mb-2 rounded-lg border border-white/8 bg-white/[0.03] p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-white/30">第 {index + 1} 段</span>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${labelColor}`}>{label}</span>
+        </div>
+        <button type="button" onClick={onDelete} className="text-[10px] text-red-400/50 transition hover:text-red-400">✕ 刪除</button>
+      </div>
+
+      <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="overflow-hidden">
+          <label className={labelClass}>日期</label>
+          <div className="flex gap-1 overflow-hidden">
+            <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)}
+              className={`${inputClass} flex-1 [color-scheme:dark]`} />
+            {dayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{dayLabel}</span>}
+          </div>
+        </div>
+        <div>
+          <label className={labelClass}>航空公司</label>
+          <AirlineInput value={segment.airline} onChange={(v) => onChange("airline", v)} />
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <label className={labelClass}>航班編號</label>
+          <input type="text" value={segment.flight_number} onChange={(e) => onChange("flight_number", e.target.value)}
+            placeholder="如：BR087" autoComplete="off" className={inputClass} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_2fr_1fr_2fr_auto]">
+        <div>
+          <label className={labelClass}>起飛時間</label>
+          <input type="time" value={segment.dep_time} onChange={(e) => onChange("dep_time", e.target.value)}
+            className={`${inputClass} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <label className={labelClass}>起飛機場</label>
+          <AirportInput value={segment.dep_airport} onChange={(v) => onChange("dep_airport", v)} placeholder="出發地" preferTw={index === 0} />
+        </div>
+        <div>
+          <label className={labelClass}>抵達時間</label>
+          <input type="time" value={segment.arr_time} onChange={(e) => onChange("arr_time", e.target.value)}
+            className={`${inputClass} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <label className={labelClass}>抵達機場</label>
+          <AirportInput value={segment.arr_airport} onChange={(v) => onChange("arr_airport", v)} placeholder="目的地" preferTw={total > 1 && index === total - 1} />
+        </div>
+        <div className="col-span-2 flex items-end sm:col-span-1">
+          <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
+            <input type="checkbox" checked={segment.next_day} onChange={(e) => onChange("next_day", e.target.checked)} className="rounded border-white/20 bg-white/5" />
+            跨日+1
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange, selectedDateId, onSelectedDateChange }: DepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -203,41 +322,15 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const today = new Date().toLocaleDateString("sv-SE");
   const [formDate, setFormDate] = useState(today);
-  const [formAirline, setFormAirline] = useState("");
-  const [formOutboundFlight, setFormOutboundFlight] = useState("");
-  const [formOutboundTime, setFormOutboundTime] = useState("");
-  const [formOutboundFrom, setFormOutboundFrom] = useState("");
-  const [formOutboundArrivalTime, setFormOutboundArrivalTime] = useState("");
-  const [formOutboundTo, setFormOutboundTo] = useState("");
-  const [formOutboundNextDay, setFormOutboundNextDay] = useState(false);
-  const [formReturnDate, setFormReturnDate] = useState("");
-  const [formReturnFlight, setFormReturnFlight] = useState("");
-  const [formReturnTime, setFormReturnTime] = useState("");
-  const [formReturnFrom, setFormReturnFrom] = useState("");
-  const [formReturnArrivalTime, setFormReturnArrivalTime] = useState("");
-  const [formReturnTo, setFormReturnTo] = useState("");
-  const [formReturnNextDay, setFormReturnNextDay] = useState(false);
+  const [formSegments, setFormSegments] = useState<FlightSegment[]>([]);
 
-  const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
-  const airlineRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!airlineDropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (airlineRef.current && !airlineRef.current.contains(e.target as Node)) {
-        setAirlineDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [airlineDropdownOpen]);
-
-  const filteredAirlines = formAirline.trim()
-    ? AIRLINES.filter((a) => {
-        const q = formAirline.trim().toLowerCase();
-        return a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q) || a.en.toLowerCase().includes(q);
-      })
-    : AIRLINES;
+  const emptySegment = (): FlightSegment => ({
+    date: "", airline: "", flight_number: "", dep_time: "", dep_airport: "", arr_time: "", arr_airport: "", next_day: false,
+  });
+  const addSegment = () => setFormSegments((prev) => [...prev, emptySegment()]);
+  const removeSegment = (i: number) => setFormSegments((prev) => prev.filter((_, idx) => idx !== i));
+  const updateSegment = (i: number, field: keyof FlightSegment, value: string | boolean) =>
+    setFormSegments((prev) => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
 
   // 月份分組
   const grouped = new Map<string, DepartureDate[]>();
@@ -267,36 +360,37 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const resetForm = () => {
     setFormDate(today);
-    setFormAirline("");
-    setFormOutboundFlight(""); setFormOutboundTime(""); setFormOutboundFrom("");
-    setFormOutboundArrivalTime(""); setFormOutboundTo(""); setFormOutboundNextDay(false);
-    setFormReturnDate(""); setFormReturnFlight(""); setFormReturnTime("");
-    setFormReturnFrom(""); setFormReturnArrivalTime(""); setFormReturnTo(""); setFormReturnNextDay(false);
+    setFormSegments([]);
     setEditingId(null);
   };
 
-  const buildPayload = () => ({
-    departure_date: formDate,
-    departure_city: '桃園',
-    airline: formAirline || null,
-    price: null,
-    label: null,
-    outbound_flight: formOutboundFlight || null,
-    outbound_time: formOutboundTime || null,
-    outbound_from: formOutboundFrom || null,
-    outbound_arrival_time: formOutboundArrivalTime || null,
-    outbound_to: formOutboundTo || null,
-    outbound_next_day: formOutboundNextDay,
-    return_date: formReturnDate || null,
-    return_flight: formReturnFlight || null,
-    return_time: formReturnTime || null,
-    return_from: formReturnFrom || null,
-    return_arrival_time: formReturnArrivalTime || null,
-    return_to: formReturnTo || null,
-    return_next_day: formReturnNextDay,
-    seats_available: 0,
-    seats_total: 0,
-  });
+  const buildPayload = () => {
+    const out = formSegments[0];
+    const ret = formSegments.length > 1 ? formSegments[formSegments.length - 1] : null;
+    return {
+      departure_date: formDate,
+      departure_city: '桃園',
+      airline: out?.airline || null,
+      price: null,
+      label: null,
+      outbound_flight: out?.flight_number || null,
+      outbound_time: out?.dep_time || null,
+      outbound_from: out?.dep_airport || null,
+      outbound_arrival_time: out?.arr_time || null,
+      outbound_to: out?.arr_airport || null,
+      outbound_next_day: out?.next_day || false,
+      return_date: ret?.date || null,
+      return_flight: ret?.flight_number || null,
+      return_time: ret?.dep_time || null,
+      return_from: ret?.dep_airport || null,
+      return_arrival_time: ret?.arr_time || null,
+      return_to: ret?.arr_airport || null,
+      return_next_day: ret?.next_day || false,
+      flight_segments: formSegments.length > 0 ? formSegments : null,
+      seats_available: 0,
+      seats_total: 0,
+    };
+  };
 
   const handleAdd = async () => {
     if (!formDate) return;
@@ -350,28 +444,44 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const openEditForm = (d: DepartureDate) => {
     setEditingId(d.id);
     setFormDate(d.departure_date);
-    setFormAirline(d.airline || "");
-    setFormOutboundFlight(d.outbound_flight || "");
-    setFormOutboundTime(d.outbound_time || "");
-    setFormOutboundFrom(d.outbound_from || "");
-    setFormOutboundArrivalTime(d.outbound_arrival_time || "");
-    setFormOutboundTo(d.outbound_to || "");
-    setFormOutboundNextDay(d.outbound_next_day || false);
-    setFormReturnDate(d.return_date || "");
-    setFormReturnFlight(d.return_flight || "");
-    setFormReturnTime(d.return_time || "");
-    setFormReturnFrom(d.return_from || "");
-    setFormReturnArrivalTime(d.return_arrival_time || "");
-    setFormReturnTo(d.return_to || "");
-    setFormReturnNextDay(d.return_next_day || false);
+    if (d.flight_segments && d.flight_segments.length > 0) {
+      setFormSegments(d.flight_segments);
+    } else {
+      const segs: FlightSegment[] = [];
+      if (d.outbound_flight || d.outbound_time || d.outbound_from || d.outbound_to) {
+        segs.push({
+          date: d.departure_date,
+          airline: d.airline || "",
+          flight_number: d.outbound_flight || "",
+          dep_time: d.outbound_time || "",
+          dep_airport: d.outbound_from || "",
+          arr_time: d.outbound_arrival_time || "",
+          arr_airport: d.outbound_to || "",
+          next_day: d.outbound_next_day || false,
+        });
+      }
+      if (d.return_flight || d.return_time || d.return_from || d.return_to) {
+        segs.push({
+          date: d.return_date || "",
+          airline: d.airline || "",
+          flight_number: d.return_flight || "",
+          dep_time: d.return_time || "",
+          dep_airport: d.return_from || "",
+          arr_time: d.return_arrival_time || "",
+          arr_airport: d.return_to || "",
+          next_day: d.return_next_day || false,
+        });
+      }
+      setFormSegments(segs);
+    }
     setShowAddForm(true);
   };
 
   const departureDayLabel = getWeekdayFromDate(formDate);
-  const returnDayLabel = getWeekdayFromDate(formReturnDate);
 
   const hasFlightInfo = (d: DepartureDate) =>
-    d.outbound_flight || d.outbound_time || d.return_flight || d.return_time;
+    (d.flight_segments && d.flight_segments.length > 0) ||
+    !!(d.outbound_flight || d.outbound_time || d.return_flight || d.return_time);
 
   return (
     <div className="mb-8">
@@ -406,53 +516,45 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 )}
               </div>
             </div>
-            <div ref={airlineRef} className="relative">
-              <label className={labelClass}>航空公司</label>
-              <input type="text" value={formAirline}
-                onChange={(e) => { setFormAirline(e.target.value); setAirlineDropdownOpen(true); }}
-                onFocus={() => setAirlineDropdownOpen(true)}
-                placeholder="搜尋航空公司" className={inputClass} autoComplete="off" />
-              {airlineDropdownOpen && filteredAirlines.length > 0 && (
-                <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/10 bg-[rgba(20,20,30,0.98)] shadow-xl backdrop-blur-xl">
-                  {filteredAirlines.map((a) => (
-                    <button key={a.code} type="button"
-                      onClick={() => { setFormAirline(`${a.name}（${a.code}）`); setAirlineDropdownOpen(false); }}
-                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
-                      <span>{a.name}（{a.code}）</span>
-                      <span className="text-[10px] text-white/40">{a.en}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
-          <p className="mb-2 text-[10px] font-semibold text-sky-400/70">✈ 去程航班（選填）</p>
-          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
-            <div><label className={labelClass}>航班編號</label><input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850" autoComplete="off" className={inputClass} /></div>
-            <div><label className={labelClass}>起飛時間</label><input type="time" value={formOutboundTime} onChange={(e) => setFormOutboundTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>起飛機場</label><AirportInput value={formOutboundFrom} onChange={setFormOutboundFrom} placeholder="如：台北桃園 T1" preferTw /></div>
-            <div><label className={labelClass}>抵達時間</label><input type="time" value={formOutboundArrivalTime} onChange={(e) => setFormOutboundArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>抵達機場</label><AirportInput value={formOutboundTo} onChange={setFormOutboundTo} placeholder="如：新千歲" /></div>
-            <div className="flex items-end"><label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70"><input type="checkbox" checked={formOutboundNextDay} onChange={(e) => setFormOutboundNextDay(e.target.checked)} className="rounded border-white/20 bg-white/5" />跨日+1</label></div>
+          {/* 航班明細 */}
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-sky-400/70">✈ 航班明細（選填）</p>
+            <button type="button" onClick={addSegment}
+              className="text-[10px] font-semibold text-sky-400/70 transition hover:text-sky-400">
+              + 新增航段
+            </button>
           </div>
 
-          <p className="mb-2 text-[10px] font-semibold text-amber-400/70">✈ 回程航班（選填）</p>
-          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7">
-            <div className="col-span-2 overflow-hidden sm:col-span-1">
-              <label className={labelClass}>回程日期</label>
-              <div className="flex gap-1">
-                <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer`} />
-                {returnDayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{returnDayLabel}</span>}
+          {formSegments.length === 0 ? (
+            <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-5">
+              <p className="text-[11px] text-white/30">尚未新增航班，可直接儲存或點擊新增航段</p>
+              <div className="mt-2 flex gap-2">
+                <button type="button" onClick={() => { addSegment(); }}
+                  className="rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] text-sky-400/80 transition hover:bg-sky-500/20">
+                  + 新增去程
+                </button>
               </div>
             </div>
-            <div><label className={labelClass}>航班編號</label><input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861" autoComplete="off" className={inputClass} /></div>
-            <div><label className={labelClass}>起飛時間</label><input type="time" value={formReturnTime} onChange={(e) => setFormReturnTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>起飛機場</label><AirportInput value={formReturnFrom} onChange={setFormReturnFrom} placeholder="如：函館" /></div>
-            <div><label className={labelClass}>抵達時間</label><input type="time" value={formReturnArrivalTime} onChange={(e) => setFormReturnArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>抵達機場</label><AirportInput value={formReturnTo} onChange={setFormReturnTo} placeholder="如：台北桃園 T1" preferTw /></div>
-            <div className="flex items-end"><label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70"><input type="checkbox" checked={formReturnNextDay} onChange={(e) => setFormReturnNextDay(e.target.checked)} className="rounded border-white/20 bg-white/5" />跨日+1</label></div>
-          </div>
+          ) : (
+            <div className="mb-2">
+              {formSegments.map((seg, i) => (
+                <SegmentRow
+                  key={i}
+                  index={i}
+                  total={formSegments.length}
+                  segment={seg}
+                  onChange={(field, val) => updateSegment(i, field, val)}
+                  onDelete={() => removeSegment(i)}
+                />
+              ))}
+              <button type="button" onClick={addSegment}
+                className="mb-4 mt-1 text-[11px] text-sky-400/60 transition hover:text-sky-400">
+                + 新增航段（轉機或回程）
+              </button>
+            </div>
+          )}
 
           <button disabled={!formDate || saving} onClick={editingId ? handleEdit : handleAdd}
             className="rounded-lg bg-sky-600 px-6 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50">
@@ -530,7 +632,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             const d = filtered.find((x) => x.id === selectedDateId);
             if (!d) return null;
             const info = formatDate(d.departure_date);
-            const returnInfo = d.return_date ? formatDate(d.return_date) : null;
             const showFlight = hasFlightInfo(d);
 
             return (
@@ -547,32 +648,73 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 {/* 航班表格 */}
                 {showFlight && (
                   <div className="mb-3">
-                    <div className="mb-1 hidden grid-cols-[60px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
-                      <span></span><span>班機日期</span><span>航空公司及航班</span><span>起飛時間及機場</span><span>抵達時間及機場</span>
-                    </div>
-                    {(d.outbound_flight || d.outbound_time) && (
-                      <div className="grid grid-cols-1 gap-1 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
-                        <span className="text-xs font-bold text-sky-400">去程</span>
-                        <div className="flex items-center gap-1">
-                          <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                          <span className="text-xs text-white/90">{info.full}</span>
+                    {d.flight_segments && d.flight_segments.length > 0 ? (
+                      // 新格式：多航段表格
+                      <>
+                        <div className="mb-1 hidden grid-cols-[32px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
+                          <span></span><span>班機日期・航空公司及航班</span><span>起飛時間及機場</span><span>抵達時間及機場</span>
                         </div>
-                        <div className="text-xs text-white/90">{d.airline} {d.outbound_flight && <span className="text-white/60">{d.outbound_flight}</span>}</div>
-                        <div className="text-xs">{d.outbound_time && <span className="font-semibold text-white/90">{d.outbound_time}</span>}{d.outbound_from && <span className="text-white/60"> {d.outbound_from}</span>}</div>
-                        <div className="text-xs">{d.outbound_arrival_time && <span className="font-semibold text-white/90">{d.outbound_arrival_time}</span>}{d.outbound_to && <span className="text-white/60"> {d.outbound_to}</span>}{d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
-                      </div>
-                    )}
-                    {(d.return_flight || d.return_time) && (
-                      <div className="grid grid-cols-1 gap-1 border-t border-white/5 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
-                        <span className="text-xs font-bold text-amber-400">回程</span>
-                        <div className="flex items-center gap-1">
-                          <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                          <span className="text-xs text-white/90">{returnInfo ? returnInfo.full : "—"}</span>
+                        {d.flight_segments.map((seg, i) => {
+                          const total = d.flight_segments!.length;
+                          const isFirst = i === 0;
+                          const isLast = i === total - 1 && total > 1;
+                          const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
+                          const segDate = seg.date ? formatDate(seg.date) : null;
+                          return (
+                            <div key={i} className={`grid grid-cols-1 gap-1 py-2 sm:grid-cols-[32px_1fr_1fr_1fr] sm:gap-2 ${i > 0 ? "border-t border-white/5" : ""}`}>
+                              <div className="flex items-start pt-0.5">
+                                <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                                </svg>
+                              </div>
+                              <div>
+                                {segDate && <div className="text-[10px] text-white/50">{segDate.full}</div>}
+                                <div className="text-xs text-white/90">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-white/55">{seg.flight_number}</span>}</div>
+                              </div>
+                              <div className="text-xs">
+                                {seg.dep_time && <span className="font-semibold text-white/90">{seg.dep_time}</span>}
+                                {seg.dep_airport && <span className="text-white/55"> {seg.dep_airport}</span>}
+                              </div>
+                              <div className="text-xs">
+                                {seg.arr_time && <span className="font-semibold text-white/90">{seg.arr_time}</span>}
+                                {seg.arr_airport && <span className="text-white/55"> {seg.arr_airport}</span>}
+                                {seg.next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    ) : (
+                      // 舊格式：去程 / 回程
+                      <>
+                        <div className="mb-1 hidden grid-cols-[60px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
+                          <span></span><span>班機日期</span><span>航空公司及航班</span><span>起飛時間及機場</span><span>抵達時間及機場</span>
                         </div>
-                        <div className="text-xs text-white/90">{d.airline} {d.return_flight && <span className="text-white/60">{d.return_flight}</span>}</div>
-                        <div className="text-xs">{d.return_time && <span className="font-semibold text-white/90">{d.return_time}</span>}{d.return_from && <span className="text-white/60"> {d.return_from}</span>}</div>
-                        <div className="text-xs">{d.return_arrival_time && <span className="font-semibold text-white/90">{d.return_arrival_time}</span>}{d.return_to && <span className="text-white/60"> {d.return_to}</span>}{d.return_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
-                      </div>
+                        {(d.outbound_flight || d.outbound_time) && (
+                          <div className="grid grid-cols-1 gap-1 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
+                            <span className="text-xs font-bold text-sky-400">去程</span>
+                            <div className="flex items-center gap-1">
+                              <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                              <span className="text-xs text-white/90">{info.full}</span>
+                            </div>
+                            <div className="text-xs text-white/90">{d.airline} {d.outbound_flight && <span className="text-white/60">{d.outbound_flight}</span>}</div>
+                            <div className="text-xs">{d.outbound_time && <span className="font-semibold text-white/90">{d.outbound_time}</span>}{d.outbound_from && <span className="text-white/60"> {d.outbound_from}</span>}</div>
+                            <div className="text-xs">{d.outbound_arrival_time && <span className="font-semibold text-white/90">{d.outbound_arrival_time}</span>}{d.outbound_to && <span className="text-white/60"> {d.outbound_to}</span>}{d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
+                          </div>
+                        )}
+                        {(d.return_flight || d.return_time) && (
+                          <div className="grid grid-cols-1 gap-1 border-t border-white/5 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
+                            <span className="text-xs font-bold text-amber-400">回程</span>
+                            <div className="flex items-center gap-1">
+                              <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                              <span className="text-xs text-white/90">{d.return_date ? formatDate(d.return_date).full : "—"}</span>
+                            </div>
+                            <div className="text-xs text-white/90">{d.airline} {d.return_flight && <span className="text-white/60">{d.return_flight}</span>}</div>
+                            <div className="text-xs">{d.return_time && <span className="font-semibold text-white/90">{d.return_time}</span>}{d.return_from && <span className="text-white/60"> {d.return_from}</span>}</div>
+                            <div className="text-xs">{d.return_arrival_time && <span className="font-semibold text-white/90">{d.return_arrival_time}</span>}{d.return_to && <span className="text-white/60"> {d.return_to}</span>}{d.return_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
