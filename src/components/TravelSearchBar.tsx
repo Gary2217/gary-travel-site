@@ -273,23 +273,11 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
         {destOpen && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
 
-            {/* Region tabs — 底線樣式，單行可橫向滾動 */}
+            {/* 第一列：地區 tabs，可橫向滾動 */}
             <div className="relative border-b border-gray-100">
-              {/* 左側 fade */}
-              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white to-transparent" />
-              {/* 右側 fade */}
-              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white to-transparent" />
+              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-6 bg-gradient-to-r from-white to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-6 bg-gradient-to-l from-white to-transparent" />
               <div className="flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  onClick={() => setActiveTab("all")}
-                  className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${
-                    activeTab === "all"
-                      ? "border-sky-500 text-sky-600"
-                      : "border-transparent text-gray-400 hover:text-gray-700"
-                  }`}
-                >
-                  全部地區
-                </button>
                 {regions.map((r) => (
                   <button
                     key={r.id}
@@ -304,6 +292,20 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* 第二列：全部地區 */}
+            <div className="border-b border-gray-100 px-4 py-2">
+              <button
+                onClick={() => setActiveTab("all")}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                  activeTab === "all"
+                    ? "bg-sky-500 text-white"
+                    : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                }`}
+              >
+                全部地區
+              </button>
             </div>
 
             {/* Options — 2 欄佈局 */}
