@@ -429,7 +429,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
           <p className="mb-2 text-[10px] font-semibold text-sky-400/70">✈ 去程航班（選填）</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
-            <div><label className={labelClass}>航班編號</label><input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850" className={inputClass} /></div>
+            <div><label className={labelClass}>航班編號</label><input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850" autoComplete="off" className={inputClass} /></div>
             <div><label className={labelClass}>起飛時間</label><input type="time" value={formOutboundTime} onChange={(e) => setFormOutboundTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
             <div><label className={labelClass}>起飛機場</label><AirportInput value={formOutboundFrom} onChange={setFormOutboundFrom} placeholder="如：台北桃園 T1" preferTw /></div>
             <div><label className={labelClass}>抵達時間</label><input type="time" value={formOutboundArrivalTime} onChange={(e) => setFormOutboundArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
@@ -439,14 +439,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
           <p className="mb-2 text-[10px] font-semibold text-amber-400/70">✈ 回程航班（選填）</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7">
-            <div className="col-span-2 sm:col-span-1">
+            <div className="col-span-2 overflow-hidden sm:col-span-1">
               <label className={labelClass}>回程日期</label>
               <div className="flex gap-1">
-                <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                <input type="date" value={formReturnDate} onChange={(e) => setFormReturnDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer`} />
                 {returnDayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{returnDayLabel}</span>}
               </div>
             </div>
-            <div><label className={labelClass}>航班編號</label><input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861" className={inputClass} /></div>
+            <div><label className={labelClass}>航班編號</label><input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861" autoComplete="off" className={inputClass} /></div>
             <div><label className={labelClass}>起飛時間</label><input type="time" value={formReturnTime} onChange={(e) => setFormReturnTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
             <div><label className={labelClass}>起飛機場</label><AirportInput value={formReturnFrom} onChange={setFormReturnFrom} placeholder="如：函館" /></div>
             <div><label className={labelClass}>抵達時間</label><input type="time" value={formReturnArrivalTime} onChange={(e) => setFormReturnArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
