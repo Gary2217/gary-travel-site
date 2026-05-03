@@ -235,6 +235,25 @@ export default function DestinationPage() {
           </div>
         )}
 
+        {/* 無符合梯次提示 */}
+        {dateFilter && trips.length > 0 && !trips.some((t) => t.departure_dates?.some((d) => d.departure_date === dateFilter)) && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5">
+            <div className="flex items-start gap-3">
+              <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-amber-300">
+                  {formatDate(dateFilter)} 目前暫無出發梯次
+                </p>
+                <p className="mt-0.5 text-xs text-amber-200/70">
+                  以下為其他可選行程，歡迎諮詢旅遊規劃師蓋瑞，為您安排客製出發日期
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <h2 className="mb-4 text-lg font-bold text-white sm:mb-6 sm:text-xl md:text-2xl">
           可選行程（{trips.length}）
         </h2>
