@@ -273,11 +273,9 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
         {destOpen && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
 
-            {/* 第一列：地區 tabs，可橫向滾動 */}
-            <div className="relative border-b border-gray-100">
-              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-6 bg-gradient-to-r from-white to-transparent" />
-              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-6 bg-gradient-to-l from-white to-transparent" />
-              <div className="flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* 第一列：地區 tabs，自動換行 */}
+            <div className="border-b border-gray-100">
+              <div className="flex flex-wrap">
                 {regions.map((r) => (
                   <button
                     key={r.id}
