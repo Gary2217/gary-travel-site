@@ -116,7 +116,6 @@ export default function TripPage() {
   const [departureEditorPrice, setDepartureEditorPrice] = useState('');
   const [departureEditorGroupCode, setDepartureEditorGroupCode] = useState('');
   const [departureEditorWaitlist, setDepartureEditorWaitlist] = useState('');
-  const [departureEditorPriceDetail, setDepartureEditorPriceDetail] = useState('');
   const [detailTitle, setDetailTitle] = useState('');
   const [detailSubtitle, setDetailSubtitle] = useState('');
   const [detailAdultPrice, setDetailAdultPrice] = useState('');
@@ -134,7 +133,6 @@ export default function TripPage() {
   const [detailVisaNote, setDetailVisaNote] = useState('');
   const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
-  const [editDocumentText, setEditDocumentText] = useState('');
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
@@ -197,31 +195,6 @@ export default function TripPage() {
     setEditBannerTagInput('');
   };
 
-  const saveBanner = async () => {
-    setSaving(true);
-    const { dayText, nightText } = toBannerDaysNights(editDayCount, editNightCount);
-    const formattedBanner = formatTripBanner({
-      ...EMPTY_TRIP_BANNER,
-      ...editTripBanner,
-      code_label: dayText,
-      duration_label: nightText,
-    });
-    const res = await fetch(`/api/trips/${tripId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trip_banner: formattedBanner }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setTrip(prev => prev ? { ...prev, ...updated } : prev);
-      setEditTripBanner(formattedBanner);
-      alert('儲存成功');
-    } else {
-      alert('儲存失敗，請再試一次');
-    }
-    setSaving(false);
-  };
-
   const openTripInfoEditor = () => {
     if (!trip) return;
     setEditTitle(trip.title);
@@ -229,6 +202,7 @@ export default function TripPage() {
     setEditPriceRange(trip.price_range || '');
     setEditHighlights((trip.highlights || []).join('、'));
     openBannerEditor();
+    setShowEditPanel(true);
   };
 
   const formatDateInput = (value: string) => {
@@ -282,17 +256,6 @@ export default function TripPage() {
     return Number(digits).toLocaleString('zh-TW');
   };
 
-  const formatDaysNights = (value: string) => {
-    const digits = value.replace(/\D/g, '');
-    if (!digits) return '';
-    if (digits.length >= 2) {
-      const day = digits[0];
-      const night = digits[1];
-      return `${day}天${night}夜`;
-    }
-    return `${digits}天`;
-  };
-
   const toBannerDaysNights = (days: string, nights: string) => {
     const d = days.replace(/\D/g, '');
     const n = nights.replace(/\D/g, '');
@@ -313,20 +276,6 @@ export default function TripPage() {
         <span className={baseClassName}>{item}</span>
       </div>
     ));
-
-  const formatTripBanner = (banner: TripBanner) => ({
-    ...EMPTY_TRIP_BANNER,
-    ...banner,
-    code_label: formatDaysNights(banner.code_label),
-    price_label: banner.price_label ? `NT$${formatMoney(banner.price_label)}` : '',
-    departure_label: formatDateInput(banner.departure_label.replace(/[^\d]/g, '')) + (banner.departure_label.includes('台北出發') ? ' 台北出發' : banner.departure_label.includes('出發') ? ' 出發' : ''),
-    duration_label: formatDaysNights(banner.duration_label),
-    seats_total: banner.seats_total,
-    seats_available: banner.seats_available,
-    deposit_label: banner.deposit_label ? `訂金 ${formatMoney(banner.deposit_label)}/人` : '',
-    tags: banner.tags,
-    departure_info_map: banner.departure_info_map || {},
-  });
 
   const getDepartureBannerInfoMap = (source?: TripBanner | null) => source?.departure_info_map || {};
 
@@ -462,7 +411,6 @@ export default function TripPage() {
       setDepartureEditorPrice('');
       setDepartureEditorGroupCode('');
       setDepartureEditorWaitlist('');
-      setDepartureEditorPriceDetail('');
       setDetailTitle('');
       setDetailSubtitle('');
       setDetailAdultPrice('');
@@ -485,7 +433,6 @@ export default function TripPage() {
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
     setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
     setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : '');
-    setDepartureEditorPriceDetail(selectedDepartureInfo.price_detail || '');
     const parsedDetail = parsePriceDetail(selectedDepartureInfo.price_detail || '');
     setDetailTitle(parsedDetail.title);
     setDetailSubtitle(parsedDetail.subtitle);
@@ -914,7 +861,6 @@ export default function TripPage() {
                             setDepartureEditorGroupCode('');
                             setDepartureEditorWaitlist('');
                             setDepartureEditorPrice('');
-                            setDepartureEditorPriceDetail('');
                             setDetailTitle('');
                             setDetailSubtitle('');
                             setDetailAdultPrice('');
@@ -952,7 +898,6 @@ export default function TripPage() {
                     <button
                       onClick={() => {
                         const fullText = trip.document_text || '';
-                        setEditDocumentText(fullText);
                         const dayPattern = /第\s*(\d+)\s*天/g;
                         const positions: { num: number; index: number }[] = [];
                         let m;
@@ -1163,23 +1108,6 @@ export default function TripPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        setDepartureEditorPriceDetail(stringifyPriceDetail({
-                          title: detailTitle,
-                          subtitle: detailSubtitle,
-                          adultPrice: detailAdultPrice,
-                          childWithBedPrice: detailChildWithBedPrice,
-                          childNoBedPrice: detailChildNoBedPrice,
-                          childExtraBedPrice: detailChildExtraBedPrice,
-                          infantPrice: detailInfantPrice,
-                          pricingNote: detailPricingNote,
-                          deposit: detailDeposit,
-                          singleRoom: detailSingleRoom,
-                          visaFee: detailVisaFee,
-                          surcharge: detailSurcharge,
-                          groupNote: detailGroupNote,
-                          quoteNote: detailQuoteNote,
-                          visaNote: detailVisaNote,
-                        }));
                         await saveSelectedDepartureInfo();
                         setShowPriceDetailModal(false);
                       }}
@@ -1512,7 +1440,6 @@ export default function TripPage() {
                 });
                 if (res.ok) {
                   setTrip(prev => prev ? { ...prev, document_text: combinedText } : prev);
-                  setEditDocumentText(combinedText);
                   setShowTextEditor(false);
                 } else {
                   alert('儲存失敗，請再試一次');

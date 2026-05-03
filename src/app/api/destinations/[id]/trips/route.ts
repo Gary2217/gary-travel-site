@@ -47,10 +47,13 @@ export async function GET(
     }
 
     const tripIds = trips.map((trip: { id: string }) => trip.id);
+    const today = new Date().toISOString().slice(0, 10);
     const { data: departureDates } = await supabase
       .from('trip_departure_dates')
       .select('*')
       .in('trip_id', tripIds)
+      .eq('is_active', true)
+      .gte('departure_date', today)
       .order('departure_date', { ascending: true });
 
     const departureDatesMap = new Map<string, any[]>();

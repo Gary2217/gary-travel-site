@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
+import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
 
 export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+function isDevUser(req: NextRequest) {
+  const cookie = req.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
+  return verifyDevAuthCookie(cookie);
+}
 
 export async function GET(
   _request: NextRequest,
@@ -81,6 +87,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  if (!isDevUser(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 });
+  }
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -121,9 +130,12 @@ export async function PATCH(
 
 // DELETE: 刪除行程
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  if (!isDevUser(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 });
+  }
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });

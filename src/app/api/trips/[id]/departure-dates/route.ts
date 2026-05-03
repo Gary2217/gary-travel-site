@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +11,19 @@ function createSupabase() {
   return createClient(supabaseUrl, supabaseServiceRoleKey);
 }
 
+function isDevUser(req: NextRequest) {
+  const cookie = req.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
+  return verifyDevAuthCookie(cookie);
+}
+
 // POST: 新增出團梯次
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  if (!isDevUser(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 });
+  }
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -72,6 +81,9 @@ export async function POST(
 
 // PATCH: 更新出團梯次
 export async function PATCH(request: NextRequest) {
+  if (!isDevUser(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 });
+  }
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -123,6 +135,9 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE: 刪除出團梯次
 export async function DELETE(request: NextRequest) {
+  if (!isDevUser(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 });
+  }
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
