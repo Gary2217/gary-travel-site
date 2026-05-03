@@ -15,9 +15,11 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
-  const [selectedLabel, setSelectedLabel] = useState("不限");
+  const [selectedLabel, setSelectedLabel] = useState("不限目的地");
   const [date, setDate] = useState("");
+  const [dateFocused, setDateFocused] = useState(false);
   const destRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -34,14 +36,14 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   const handleSelectAll = () => {
     setSelectedRegionId(null);
     setSelectedDestId(null);
-    setSelectedLabel("不限");
+    setSelectedLabel("不限目的地");
     setDestOpen(false);
   };
 
   const handleSelectRegion = (regionId: string, label: string) => {
     setSelectedRegionId(regionId);
     setSelectedDestId(null);
-    setSelectedLabel(`${label}全部`);
+    setSelectedLabel(`${label}（全部）`);
     setDestOpen(false);
   };
 
@@ -59,30 +61,51 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   const handleClear = () => {
     setSelectedRegionId(null);
     setSelectedDestId(null);
-    setSelectedLabel("不限");
+    setSelectedLabel("不限目的地");
     setDate("");
     onSearch({ regionId: null, destinationId: null, date: "" });
   };
 
   const hasFilter = selectedRegionId || date;
 
+  const formatDate = (d: string) => {
+    if (!d) return "";
+    const [y, m, day] = d.split("-");
+    return `${y}/${m}/${day}`;
+  };
+
   return (
-    <div className="mx-auto max-w-3xl px-3 py-4 sm:px-4 md:px-6">
-      <div className="relative flex flex-col gap-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.65)] shadow-xl shadow-black/30 backdrop-blur-[14px] sm:flex-row sm:rounded-[1.75rem]">
+    <div className="mx-auto max-w-3xl px-3 py-5 sm:px-4 md:px-6">
+      {/* 標題 */}
+      <div className="mb-4 text-center">
+        <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">探索您的夢想旅途</h2>
+        <p className="mt-1 text-xs text-white/50 sm:text-sm">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
+      </div>
+
+      {/* 搜尋列主體 - 白色卡片風格 */}
+      <div className="relative flex flex-col overflow-visible rounded-2xl bg-white shadow-2xl shadow-black/40 sm:flex-row sm:rounded-full">
 
         {/* 目的地 */}
-        <div ref={destRef} className="relative flex-1 border-b border-white/8 sm:border-b-0 sm:border-r">
+        <div ref={destRef} className="relative flex-1">
           <button
             type="button"
             onClick={() => setDestOpen((v) => !v)}
-            className="flex w-full flex-row items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-white/5 sm:flex-col sm:items-start sm:justify-start sm:gap-0.5 sm:py-4"
+            className="group flex w-full items-center gap-3 rounded-t-2xl px-5 py-4 text-left transition hover:bg-gray-50 focus:outline-none sm:rounded-l-full sm:rounded-r-none sm:py-0 sm:h-[60px]"
           >
-            <div>
-              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">目的地</span>
-              <span className="mt-0.5 block text-sm font-bold text-white sm:text-[15px]">{selectedLabel}</span>
+            {/* 地點 icon */}
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-500">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.079 3.791-5.16 3.791-9.077A8 8 0 003.05 9.25c0 3.916 1.847 6.997 3.791 9.077a19.58 19.58 0 002.683 2.282 16.974 16.974 0 001.144.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <span className="block text-[10px] font-semibold uppercase tracking-widest text-gray-400">目的地</span>
+              <span className={`mt-0.5 block truncate text-sm font-bold ${selectedRegionId ? "text-gray-900" : "text-gray-400"}`}>
+                {selectedLabel}
+              </span>
             </div>
             <svg
-              className={`h-4 w-4 shrink-0 text-white/30 transition-transform sm:hidden ${destOpen ? "rotate-180" : ""}`}
+              className={`h-4 w-4 shrink-0 text-gray-300 transition-transform ${destOpen ? "rotate-180" : ""}`}
               fill="none" stroke="currentColor" viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -91,13 +114,13 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
 
           {/* Dropdown */}
           {destOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-80 overflow-hidden rounded-2xl border border-white/10 bg-[rgba(12,14,28,0.98)] shadow-2xl backdrop-blur-xl sm:mt-2">
+            <div className="absolute left-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
               {/* Region tabs */}
-              <div className="flex overflow-x-auto border-b border-white/8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex overflow-x-auto border-b border-gray-100 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                   onClick={() => setActiveTab("all")}
                   className={`shrink-0 px-4 py-2.5 text-xs font-semibold transition ${
-                    activeTab === "all" ? "border-b-2 border-sky-400 text-sky-300" : "text-white/50 hover:text-white"
+                    activeTab === "all" ? "border-b-2 border-sky-500 text-sky-600" : "text-gray-400 hover:text-gray-700"
                   }`}
                 >
                   全部
@@ -107,7 +130,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                     key={r.id}
                     onClick={() => setActiveTab(r.id)}
                     className={`shrink-0 px-4 py-2.5 text-xs font-semibold transition ${
-                      activeTab === r.id ? "border-b-2 border-sky-400 text-sky-300" : "text-white/50 hover:text-white"
+                      activeTab === r.id ? "border-b-2 border-sky-500 text-sky-600" : "text-gray-400 hover:text-gray-700"
                     }`}
                   >
                     {r.categoryLabel}
@@ -121,20 +144,20 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                   <>
                     <button
                       onClick={handleSelectAll}
-                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 transition hover:bg-white/8 hover:text-white"
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-500 transition hover:bg-sky-50 hover:text-sky-700"
                     >
-                      <span className="text-xs text-white/25">—</span>
-                      <span>不限</span>
+                      <span className="text-xs text-gray-300">—</span>
+                      <span>不限目的地</span>
                     </button>
                     {regions.map((r) => (
                       <button
                         key={r.id}
                         onClick={() => handleSelectRegion(r.id, r.categoryLabel)}
-                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 transition hover:bg-white/8 hover:text-white"
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-sky-50 hover:text-sky-700"
                       >
-                        <span className="text-xs text-white/25">—</span>
-                        <span>{r.categoryLabel}</span>
-                        <span className="ml-auto text-[11px] text-white/30">全部</span>
+                        <span className="text-xs text-gray-300">—</span>
+                        <span className="font-medium">{r.categoryLabel}</span>
+                        <span className="ml-auto text-[11px] text-gray-400">全部</span>
                       </button>
                     ))}
                   </>
@@ -147,18 +170,18 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                         <>
                           <button
                             onClick={() => handleSelectRegion(region.id, region.categoryLabel)}
-                            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-sky-300 transition hover:bg-sky-400/10"
+                            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-sky-600 transition hover:bg-sky-50"
                           >
-                            <span className="text-xs text-sky-400/40">—</span>
-                            {region.categoryLabel}全部
+                            <span className="text-xs text-sky-300">—</span>
+                            {region.categoryLabel}（全部）
                           </button>
                           {region.destinations.map((d) => (
                             <button
                               key={d.id}
                               onClick={() => handleSelectDest(region.id, d.id, d.title)}
-                              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-white/75 transition hover:bg-white/8 hover:text-white"
+                              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 transition hover:bg-sky-50 hover:text-sky-700"
                             >
-                              <span className="text-xs text-white/25">—</span>
+                              <span className="text-xs text-gray-300">—</span>
                               {d.title}
                             </button>
                           ))}
@@ -172,16 +195,48 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
           )}
         </div>
 
+        {/* 分隔線 */}
+        <div className="hidden h-[60px] w-px shrink-0 self-center bg-gray-100 sm:block" />
+        <div className="mx-5 h-px bg-gray-100 sm:hidden" />
+
         {/* 出發日期 */}
-        <div className="flex-1 border-b border-white/8 px-5 py-3.5 sm:border-b-0 sm:border-r sm:py-4">
-          <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">出發日期</span>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            min={today}
-            className="mt-0.5 w-full bg-transparent text-sm font-bold text-white outline-none [color-scheme:dark] empty:text-white/30"
-          />
+        <div
+          className="flex flex-1 cursor-pointer items-center gap-3 px-5 py-4 transition hover:bg-gray-50 sm:py-0 sm:h-[60px]"
+          onClick={() => dateInputRef.current?.showPicker?.()}
+        >
+          {/* 日曆 icon */}
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-500">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </span>
+          <div className="relative flex-1">
+            <span className="block text-[10px] font-semibold uppercase tracking-widest text-gray-400">出發日期</span>
+            <div className={`mt-0.5 text-sm font-bold ${date ? "text-gray-900" : "text-gray-400"}`}>
+              {date ? formatDate(date) : "選擇日期"}
+            </div>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              onFocus={() => setDateFocused(true)}
+              onBlur={() => setDateFocused(false)}
+              min={today}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
+          </div>
+          {date && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setDate(""); }}
+              className="shrink-0 text-gray-300 transition hover:text-gray-500"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* 搜尋按鈕 */}
@@ -189,7 +244,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
           <button
             type="button"
             onClick={handleSearch}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-sky-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 active:scale-95 sm:flex-none sm:h-11 sm:w-11 sm:rounded-full sm:px-0"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition hover:bg-sky-400 active:scale-95 sm:flex-none sm:h-[44px] sm:w-[44px] sm:px-0"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -201,9 +256,9 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
               type="button"
               onClick={handleClear}
               title="清除篩選"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/40 transition hover:bg-white/10 hover:text-white sm:h-11 sm:w-11"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 sm:hidden"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -211,19 +266,31 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
         </div>
       </div>
 
-      {/* 篩選標籤提示 */}
+      {/* 篩選標籤 */}
       {hasFilter && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 px-1">
+        <div className="mt-3 flex flex-wrap items-center gap-2 px-1">
           {selectedRegionId && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.079 3.791-5.16 3.791-9.077A8 8 0 003.05 9.25c0 3.916 1.847 6.997 3.791 9.077a19.58 19.58 0 002.683 2.282 16.974 16.974 0 001.144.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
               {selectedLabel}
             </span>
           )}
           {date && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
-              出發：{date.replace(/-/g, "/")}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              出發：{formatDate(date)}
             </span>
           )}
+          <button
+            onClick={handleClear}
+            className="hidden text-xs text-gray-400 underline underline-offset-2 transition hover:text-gray-600 sm:inline"
+          >
+            清除篩選
+          </button>
         </div>
       )}
     </div>
