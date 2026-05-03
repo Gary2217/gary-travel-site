@@ -5,6 +5,64 @@ import { type DepartureDate, lineMessageHref } from "@/lib/supabase";
 
 const CITIES = ["桃園", "台中", "高雄", "松山", "其他"];
 
+// 機場清單：tw:true 為台灣出發機場（預設優先顯示）
+const AIRPORTS = [
+  { code: "TPE", name: "台北桃園 T1", tw: true },
+  { code: "TPE", name: "台北桃園 T2", tw: true },
+  { code: "TSA", name: "台北松山", tw: true },
+  { code: "RMQ", name: "台中", tw: true },
+  { code: "KHH", name: "高雄", tw: true },
+  { code: "HUN", name: "花蓮", tw: true },
+  { code: "TNN", name: "台南", tw: true },
+  { code: "CTS", name: "新千歲（北海道）", tw: false },
+  { code: "HKD", name: "函館", tw: false },
+  { code: "AOJ", name: "青森", tw: false },
+  { code: "SDJ", name: "仙台", tw: false },
+  { code: "HND", name: "東京羽田", tw: false },
+  { code: "NRT", name: "東京成田", tw: false },
+  { code: "KIX", name: "大阪關西", tw: false },
+  { code: "ITM", name: "大阪伊丹", tw: false },
+  { code: "NGO", name: "名古屋", tw: false },
+  { code: "FUK", name: "福岡", tw: false },
+  { code: "KMJ", name: "熊本", tw: false },
+  { code: "KOJ", name: "鹿兒島", tw: false },
+  { code: "OKA", name: "那霸（沖繩）", tw: false },
+  { code: "ISG", name: "石垣島", tw: false },
+  { code: "MMY", name: "宮古島", tw: false },
+  { code: "ICN", name: "首爾仁川", tw: false },
+  { code: "GMP", name: "首爾金浦", tw: false },
+  { code: "PUS", name: "釜山", tw: false },
+  { code: "CJU", name: "濟州島", tw: false },
+  { code: "BKK", name: "曼谷素萬那普", tw: false },
+  { code: "DMK", name: "曼谷廊曼", tw: false },
+  { code: "HKT", name: "普吉島", tw: false },
+  { code: "CNX", name: "清邁", tw: false },
+  { code: "KUL", name: "吉隆坡", tw: false },
+  { code: "SIN", name: "新加坡樟宜", tw: false },
+  { code: "DPS", name: "峇里島登巴薩", tw: false },
+  { code: "SGN", name: "胡志明市", tw: false },
+  { code: "HAN", name: "河內內排", tw: false },
+  { code: "DAD", name: "峴港", tw: false },
+  { code: "MNL", name: "馬尼拉", tw: false },
+  { code: "CEB", name: "宿霧", tw: false },
+  { code: "CGK", name: "雅加達", tw: false },
+  { code: "SUB", name: "泗水", tw: false },
+  { code: "LHR", name: "倫敦希斯洛", tw: false },
+  { code: "CDG", name: "巴黎戴高樂", tw: false },
+  { code: "FRA", name: "法蘭克福", tw: false },
+  { code: "VIE", name: "維也納", tw: false },
+  { code: "AMS", name: "阿姆斯特丹", tw: false },
+  { code: "FCO", name: "羅馬達文西", tw: false },
+  { code: "ZRH", name: "蘇黎世", tw: false },
+  { code: "DXB", name: "杜拜", tw: false },
+  { code: "SYD", name: "雪梨", tw: false },
+  { code: "AKL", name: "奧克蘭", tw: false },
+  { code: "LAX", name: "洛杉磯", tw: false },
+  { code: "JFK", name: "紐約甘迺迪", tw: false },
+  { code: "YVR", name: "溫哥華", tw: false },
+  { code: "YYZ", name: "多倫多", tw: false },
+];
+
 const AIRLINES = [
   { name: "中華航空", code: "CI", en: "China Airlines" },
   { name: "長榮航空", code: "BR", en: "EVA Air" },
@@ -75,6 +133,68 @@ function getWeekdayFromDate(dateStr: string) {
 const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400";
 const labelClass = "mb-1 block text-[10px] text-white/50";
 
+function AirportInput({ value, onChange, placeholder, preferTw = false }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  preferTw?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const q = value.trim().toLowerCase();
+  const filtered = q
+    ? AIRPORTS.filter((a) =>
+        a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q)
+      )
+    : preferTw
+    ? AIRPORTS.filter((a) => a.tw)
+    : AIRPORTS.slice(0, 20);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className={inputClass}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-52 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+          {!q && (
+            <div className="border-b border-white/8 px-2.5 py-1.5 text-[10px] text-white/30">
+              {preferTw ? "台灣出發機場" : "常用機場"}
+            </div>
+          )}
+          {filtered.map((a, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { onChange(a.name); setOpen(false); }}
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10"
+            >
+              <span>{a.name}</span>
+              <span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange, selectedDateId, onSelectedDateChange }: DepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -100,8 +220,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [formReturnArrivalTime, setFormReturnArrivalTime] = useState("");
   const [formReturnTo, setFormReturnTo] = useState("");
   const [formReturnNextDay, setFormReturnNextDay] = useState(false);
-  const [formSeatsAvailable, setFormSeatsAvailable] = useState("");
-  const [formSeatsTotal, setFormSeatsTotal] = useState("");
 
   const [airlineDropdownOpen, setAirlineDropdownOpen] = useState(false);
   const airlineRef = useRef<HTMLDivElement>(null);
@@ -160,7 +278,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormOutboundArrivalTime(""); setFormOutboundTo(""); setFormOutboundNextDay(false);
     setFormReturnDate(""); setFormReturnFlight(""); setFormReturnTime("");
     setFormReturnFrom(""); setFormReturnArrivalTime(""); setFormReturnTo(""); setFormReturnNextDay(false);
-    setFormSeatsAvailable(""); setFormSeatsTotal("");
     setEditingId(null);
   };
 
@@ -183,8 +300,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     return_arrival_time: formReturnArrivalTime || null,
     return_to: formReturnTo || null,
     return_next_day: formReturnNextDay,
-    seats_available: formSeatsAvailable ? parseInt(formSeatsAvailable) : 0,
-    seats_total: formSeatsTotal ? parseInt(formSeatsTotal) : 0,
+    seats_available: 0,
+    seats_total: 0,
   });
 
   const handleAdd = async () => {
@@ -256,8 +373,6 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormReturnArrivalTime(d.return_arrival_time || "");
     setFormReturnTo(d.return_to || "");
     setFormReturnNextDay(d.return_next_day || false);
-    setFormSeatsAvailable(d.seats_available ? String(d.seats_available) : "");
-    setFormSeatsTotal(d.seats_total ? String(d.seats_total) : "");
     setShowAddForm(true);
   };
 
@@ -334,23 +449,15 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
               <label className={labelClass}>備註</label>
               <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：確認出團" className={inputClass} />
             </div>
-            <div>
-              <label className={labelClass}>可售座位</label>
-              <input type="number" value={formSeatsAvailable} onChange={(e) => setFormSeatsAvailable(e.target.value)} placeholder="如：20" className={inputClass} min="0" />
-            </div>
-            <div>
-              <label className={labelClass}>總座位數</label>
-              <input type="number" value={formSeatsTotal} onChange={(e) => setFormSeatsTotal(e.target.value)} placeholder="如：30" className={inputClass} min="0" />
-            </div>
           </div>
 
           <p className="mb-2 text-[10px] font-semibold text-sky-400/70">✈ 去程航班（選填）</p>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
             <div><label className={labelClass}>航班編號</label><input type="text" value={formOutboundFlight} onChange={(e) => setFormOutboundFlight(e.target.value)} placeholder="如：JX850" className={inputClass} /></div>
             <div><label className={labelClass}>起飛時間</label><input type="time" value={formOutboundTime} onChange={(e) => setFormOutboundTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>起飛機場</label><input type="text" value={formOutboundFrom} onChange={(e) => setFormOutboundFrom(e.target.value)} placeholder="如：台北(桃園)" className={inputClass} /></div>
+            <div><label className={labelClass}>起飛機場</label><AirportInput value={formOutboundFrom} onChange={setFormOutboundFrom} placeholder="如：台北桃園 T1" preferTw /></div>
             <div><label className={labelClass}>抵達時間</label><input type="time" value={formOutboundArrivalTime} onChange={(e) => setFormOutboundArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>抵達機場</label><input type="text" value={formOutboundTo} onChange={(e) => setFormOutboundTo(e.target.value)} placeholder="如：新千歲機場" className={inputClass} /></div>
+            <div><label className={labelClass}>抵達機場</label><AirportInput value={formOutboundTo} onChange={setFormOutboundTo} placeholder="如：新千歲" /></div>
             <div className="flex items-end"><label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70"><input type="checkbox" checked={formOutboundNextDay} onChange={(e) => setFormOutboundNextDay(e.target.checked)} className="rounded border-white/20 bg-white/5" />跨日+1</label></div>
           </div>
 
@@ -365,9 +472,9 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             </div>
             <div><label className={labelClass}>航班編號</label><input type="text" value={formReturnFlight} onChange={(e) => setFormReturnFlight(e.target.value)} placeholder="如：JX861" className={inputClass} /></div>
             <div><label className={labelClass}>起飛時間</label><input type="time" value={formReturnTime} onChange={(e) => setFormReturnTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>起飛機場</label><input type="text" value={formReturnFrom} onChange={(e) => setFormReturnFrom(e.target.value)} placeholder="如：函館市" className={inputClass} /></div>
+            <div><label className={labelClass}>起飛機場</label><AirportInput value={formReturnFrom} onChange={setFormReturnFrom} placeholder="如：函館" /></div>
             <div><label className={labelClass}>抵達時間</label><input type="time" value={formReturnArrivalTime} onChange={(e) => setFormReturnArrivalTime(e.target.value)} className={`${inputClass} [color-scheme:dark]`} /></div>
-            <div><label className={labelClass}>抵達機場</label><input type="text" value={formReturnTo} onChange={(e) => setFormReturnTo(e.target.value)} placeholder="如：台北(桃園)" className={inputClass} /></div>
+            <div><label className={labelClass}>抵達機場</label><AirportInput value={formReturnTo} onChange={setFormReturnTo} placeholder="如：台北桃園 T1" preferTw /></div>
             <div className="flex items-end"><label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70"><input type="checkbox" checked={formReturnNextDay} onChange={(e) => setFormReturnNextDay(e.target.checked)} className="rounded border-white/20 bg-white/5" />跨日+1</label></div>
           </div>
 
