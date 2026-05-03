@@ -339,7 +339,7 @@ export default function HomePage() {
     loadSiteLogo();
   }, []);
 
-  const handleSearch = ({ regionId, destinationId, date }: { regionId: string | null; destinationId: string | null; date: string }) => {
+  const handleSearch = ({ regionId, destinationId, date }: { departureCity: string; regionId: string | null; destinationId: string | null; date: string }) => {
     setFilterRegionId(regionId);
     setFilterDestId(destinationId);
     setFilterDate(date);
@@ -470,7 +470,7 @@ export default function HomePage() {
                 <div className="py-16 text-center">
                   <p className="text-lg text-white/50">找不到符合條件的目的地</p>
                   <button
-                    onClick={() => handleSearch({ regionId: null, destinationId: null, date: '' })}
+                    onClick={() => handleSearch({ departureCity: '', regionId: null, destinationId: null, date: '' })}
                     className="mt-4 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
                   >
                     清除篩選

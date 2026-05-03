@@ -7,10 +7,25 @@ type RegionOption = { id: string; categoryLabel: string; destinations: Destinati
 
 interface TravelSearchBarProps {
   regions: RegionOption[];
-  onSearch: (params: { regionId: string | null; destinationId: string | null; date: string }) => void;
+  onSearch: (params: {
+    departureCity: string;
+    regionId: string | null;
+    destinationId: string | null;
+    date: string;
+  }) => void;
 }
 
+const DEPARTURE_CITIES = [
+  { id: "", label: "不限" },
+  { id: "桃園", label: "台北（桃園機場）" },
+  { id: "松山", label: "台北（松山機場）" },
+  { id: "台中", label: "台中" },
+  { id: "高雄", label: "高雄" },
+];
+
 export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarProps) {
+  const [departureOpen, setDepartureOpen] = useState(false);
+  const [departureCityId, setDepartureCityId] = useState("");
   const [destOpen, setDestOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
@@ -22,15 +37,24 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    if (!destOpen) return;
+    if (!departureOpen && !destOpen) return;
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setDepartureOpen(false);
         setDestOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [destOpen]);
+  }, [departureOpen, destOpen]);
+
+  const openDeparture = () => { setDepartureOpen(true); setDestOpen(false); };
+  const openDest = () => { setDestOpen(true); setDepartureOpen(false); };
+
+  const handleSelectDepartureCity = (id: string) => {
+    setDepartureCityId(id);
+    setDepartureOpen(false);
+  };
 
   const handleSelectAll = () => {
     setSelectedRegionId(null);
@@ -54,18 +78,21 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   };
 
   const handleSearch = () => {
-    onSearch({ regionId: selectedRegionId, destinationId: selectedDestId, date });
+    onSearch({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: selectedDestId, date });
   };
 
   const handleClear = () => {
+    setDepartureCityId("");
     setSelectedRegionId(null);
     setSelectedDestId(null);
     setSelectedLabel("不限目的地");
     setDate("");
-    onSearch({ regionId: null, destinationId: null, date: "" });
+    onSearch({ departureCity: "", regionId: null, destinationId: null, date: "" });
   };
 
-  const hasFilter = selectedRegionId || date;
+  const hasFilter = departureCityId || selectedRegionId || date;
+
+  const departureCityLabel = DEPARTURE_CITIES.find((c) => c.id === departureCityId)?.label ?? "不限";
 
   const formatDate = (d: string) => {
     if (!d) return "";
@@ -81,17 +108,42 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
         <p className="mt-1 text-xs text-white/50 sm:text-sm">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
       </div>
 
-      {/* 外層容器 — 搜尋列 + dropdown 共用定位基準 */}
+      {/* 外層容器 — 搜尋列 + 兩個 dropdown 共用定位基準 */}
       <div ref={containerRef} className="relative">
 
         {/* 搜尋列主體 */}
         <div className="flex flex-col overflow-visible rounded-2xl bg-white shadow-2xl shadow-black/40 sm:flex-row sm:rounded-full">
 
+          {/* 出發地 */}
+          <button
+            type="button"
+            onClick={openDeparture}
+            className="flex flex-1 items-center gap-3 rounded-t-2xl px-5 py-4 text-left transition hover:bg-gray-50 focus:outline-none sm:h-[60px] sm:rounded-l-full sm:rounded-r-none"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-500">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <span className="block text-[10px] font-semibold uppercase tracking-widest text-gray-400">出發地</span>
+              <span className={`mt-0.5 block truncate text-sm font-bold ${departureCityId ? "text-gray-900" : "text-gray-400"}`}>
+                {departureCityLabel}
+              </span>
+            </div>
+            <svg className={`h-4 w-4 shrink-0 text-gray-300 transition-transform ${departureOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <div className="hidden h-[60px] w-px shrink-0 self-center bg-gray-100 sm:block" />
+          <div className="mx-5 h-px bg-gray-100 sm:hidden" />
+
           {/* 目的地 */}
           <button
             type="button"
-            onClick={() => setDestOpen((v) => !v)}
-            className="flex flex-1 items-center gap-3 rounded-t-2xl px-5 py-4 text-left transition hover:bg-gray-50 focus:outline-none sm:rounded-l-full sm:rounded-r-none sm:h-[60px]"
+            onClick={openDest}
+            className="flex flex-1 items-center gap-3 px-5 py-4 text-left transition hover:bg-gray-50 focus:outline-none sm:h-[60px] sm:rounded-none"
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-500">
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -104,15 +156,11 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                 {selectedLabel}
               </span>
             </div>
-            <svg
-              className={`h-4 w-4 shrink-0 text-gray-300 transition-transform ${destOpen ? "rotate-180" : ""}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
+            <svg className={`h-4 w-4 shrink-0 text-gray-300 transition-transform ${destOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          {/* 分隔線 */}
           <div className="hidden h-[60px] w-px shrink-0 self-center bg-gray-100 sm:block" />
           <div className="mx-5 h-px bg-gray-100 sm:hidden" />
 
@@ -180,17 +228,42 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
           </div>
         </div>
 
-        {/* Dropdown — 對齊整個搜尋列寬度 */}
+        {/* Dropdown 出發地 */}
+        {departureOpen && (
+          <div className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
+            <div className="py-1.5">
+              {DEPARTURE_CITIES.map((city) => (
+                <button
+                  key={city.id}
+                  onClick={() => handleSelectDepartureCity(city.id)}
+                  className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition ${
+                    departureCityId === city.id
+                      ? "bg-sky-50 font-semibold text-sky-600"
+                      : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
+                  }`}
+                >
+                  {departureCityId === city.id && (
+                    <svg className="h-3.5 w-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  {departureCityId !== city.id && <span className="h-3.5 w-3.5 shrink-0" />}
+                  {city.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Dropdown 目的地 — 對齊整個搜尋列寬度 */}
         {destOpen && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
-            {/* Region tabs — 全寬排列，自動換行 */}
+            {/* Region tabs */}
             <div className="flex flex-wrap border-b border-gray-100 px-2 pt-1">
               <button
                 onClick={() => setActiveTab("all")}
                 className={`mb-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  activeTab === "all"
-                    ? "bg-sky-500 text-white"
-                    : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  activeTab === "all" ? "bg-sky-500 text-white" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                 }`}
               >
                 全部
@@ -200,9 +273,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                   key={r.id}
                   onClick={() => setActiveTab(r.id)}
                   className={`mb-1 ml-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    activeTab === r.id
-                      ? "bg-sky-500 text-white"
-                      : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                    activeTab === r.id ? "bg-sky-500 text-white" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                   }`}
                 >
                   {r.categoryLabel}
@@ -210,10 +281,10 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
               ))}
             </div>
 
-            {/* Options — 多欄顯示 */}
+            {/* Options — 多欄 grid */}
             <div className="max-h-56 overflow-y-auto py-2">
               {activeTab === "all" ? (
-                <div className="grid grid-cols-2 gap-0 sm:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                   <button
                     onClick={handleSelectAll}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 transition hover:bg-sky-50 hover:text-sky-700"
@@ -233,7 +304,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-0 sm:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                   {(() => {
                     const region = regions.find((r) => r.id === activeTab);
                     if (!region) return null;
@@ -269,6 +340,14 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
       {/* 篩選標籤 */}
       {hasFilter && (
         <div className="mt-3 flex flex-wrap items-center gap-2 px-1">
+          {departureCityId && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              出發：{departureCityLabel}
+            </span>
+          )}
           {selectedRegionId && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
               <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
