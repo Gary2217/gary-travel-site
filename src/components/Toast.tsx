@@ -29,7 +29,7 @@ export default function Toast({ message, duration = 3000, onClose }: ToastProps)
 
   return createPortal(
     <div
-      className={`fixed left-1/2 top-20 z-[9999] -translate-x-1/2 rounded-xl border border-white/10 bg-[rgba(20,20,30,0.95)] px-5 py-3 text-sm font-medium text-white shadow-xl backdrop-blur-xl transition-all duration-300 ${
+      className={`fixed left-1/2 top-20 z-[9999] -translate-x-1/2 rounded-xl border border-white/10 bg-[rgba(15,25,35,0.95)] px-5 py-3 text-sm font-medium text-white shadow-xl backdrop-blur-xl transition-all duration-300 ${
         visible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
       }`}
     >

@@ -22,7 +22,7 @@ export default function DayItinerary({
   const [isOpen, setIsOpen] = useState(dayNumber <= 2);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1a3347] backdrop-blur-[12px]">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between p-4 text-left transition hover:bg-white/5"

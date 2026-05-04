@@ -33,7 +33,7 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
       <>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
         <div className="fixed bottom-20 right-3 z-[9998] flex flex-col items-end gap-1.5 sm:bottom-8 sm:right-4 sm:gap-2">
-          <p className="mb-0.5 rounded-lg border border-white/10 bg-[rgba(20,20,30,0.95)] px-2.5 py-1 text-center text-xs font-medium text-white/90 shadow-lg backdrop-blur-xl sm:mb-1 sm:px-3 sm:py-1.5">
+          <p className="mb-0.5 rounded-lg border border-white/10 bg-[rgba(15,25,35,0.95)] px-2.5 py-1 text-center text-xs font-medium text-white/90 shadow-lg backdrop-blur-xl sm:mb-1 sm:px-3 sm:py-1.5">
             私訊
           </p>
           <button
@@ -66,7 +66,7 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
   return (
     <>
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-      <div className="rounded-xl border border-white/10 bg-[rgba(20,20,30,0.38)] px-2 py-0.25 backdrop-blur-[12px] md:px-3 md:py-0.5">
+      <div className="rounded-xl border border-white/10 bg-[#1a3347] px-2 py-0.25 backdrop-blur-[12px] md:px-3 md:py-0.5">
         <h3 className="mb-0 text-center text-xs font-bold text-white md:text-sm">
           對此行程有興趣？
         </h3>

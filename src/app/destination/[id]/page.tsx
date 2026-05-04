@@ -147,7 +147,7 @@ export default function DestinationPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+      <main className="min-h-screen bg-[#0f1923] text-white">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
@@ -161,7 +161,7 @@ export default function DestinationPage() {
 
   if (error || !destination) {
     return (
-      <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+      <main className="min-h-screen bg-[#0f1923] text-white">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
@@ -179,7 +179,7 @@ export default function DestinationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] pt-[86px] text-white md:pt-[98px] lg:pt-[74px]">
+    <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
@@ -188,9 +188,9 @@ export default function DestinationPage() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${destination.image_url})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1923] via-black/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
-          <div className="mx-auto max-w-[1400px]">
+          <div className="mx-auto max-w-[1100px]">
             {destination.regions && (
               <span className="mb-1.5 inline-block rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:mb-2 sm:px-3 sm:py-1 sm:text-xs">
                 {destination.regions.category_label}
@@ -207,7 +207,7 @@ export default function DestinationPage() {
       </div>
 
       {/* 行程列表 */}
-      <section className="mx-auto max-w-[1400px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
+      <section className="mx-auto max-w-[1100px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
 
         {/* 搜尋條件 banner */}
         {(dateFilter || cityFilter) && (
@@ -304,7 +304,7 @@ export default function DestinationPage() {
               {isDevMode && (
                 <button
                   onClick={handleAddTrip}
-                  className="group/add flex flex-col overflow-hidden rounded-[1.25rem] border-2 border-dashed border-sky-500/30 bg-[rgba(20,20,30,0.3)] transition hover:border-sky-400/50 hover:bg-sky-500/10 sm:rounded-[1.5rem]"
+                  className="group/add flex flex-col overflow-hidden rounded-xl border-2 border-dashed border-[#00b4d8]/30 bg-[#1a3347]/50 transition hover:border-[#00b4d8]/50 hover:bg-[#00b4d8]/10"
                 >
                   <div className="flex h-28 items-center justify-center sm:h-36 md:h-44">
                     <svg className="h-10 w-10 text-sky-500/50 transition group-hover/add:text-sky-400/70 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">

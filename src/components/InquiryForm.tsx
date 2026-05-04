@@ -52,7 +52,7 @@ export default function InquiryForm({ tripId, tripTitle }: InquiryFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-6 backdrop-blur-[12px]">
+    <form onSubmit={handleSubmit} className="rounded-xl border border-white/10 bg-[#1a3347] p-6 backdrop-blur-[12px]">
       <h3 className="mb-4 text-lg font-bold text-white">線上諮詢表單</h3>
       <div className="space-y-4">
         <div>

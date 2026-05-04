@@ -177,7 +177,7 @@ export default function AdminPage() {
 
   if (checking) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)]">
+      <main className="flex min-h-screen items-center justify-center bg-[#0f1923]">
         <div className="flex items-center gap-2 text-white/50">
           <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -207,7 +207,7 @@ export default function AdminPage() {
   const maxFlightViews = Math.max(...flights.map(f => f.views), 1);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+    <main className="min-h-screen bg-[#0f1923] text-white">
       {/* Header */}
       <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(10,10,20,0.85)] backdrop-blur-[12px]">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">

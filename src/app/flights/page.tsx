@@ -205,29 +205,23 @@ export default function FlightsPage() {
   // ── Render ───────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+    <main className="min-h-screen bg-[#0f1923] text-white">
       <StickyHeader
         logoUrl={siteLogoUrl}
         showBackButton
+        backHref="/"
         devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
       />
 
-      <div className="px-4 pt-[86px] md:pt-[98px] lg:pt-[74px]">
+      <div className="px-4 pt-14">
 
         {/* Hero */}
-        <div className="mx-auto max-w-3xl py-8 text-center md:py-10">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1.5 text-sm text-sky-300">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-            </svg>
-            <span>Flight Consultation</span>
-          </div>
-          <h1 className="bg-gradient-to-r from-sky-200 via-cyan-300 to-blue-400 bg-clip-text text-3xl font-bold text-transparent sm:text-4xl md:text-5xl">
+        <div className="mx-auto max-w-3xl py-8 text-center">
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">
             機票諮詢服務
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-white/65 sm:text-base">
-            台北出發，飛往亞洲各地熱門航線<br className="hidden sm:block" />
-            由旅遊規劃師蓋瑞為您比價，找到最划算票價
+          <p className="mt-2 text-sm text-white/50">
+            台北出發，飛往各地熱門航線・由蓋瑞為您比價
           </p>
         </div>
 
@@ -235,27 +229,29 @@ export default function FlightsPage() {
         <TravelSearchBar flightOnly />
 
         {/* Region filter tabs */}
-        <div className="sticky top-[84px] z-40 overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[96px] lg:top-[72px]">
-          <div className="flex min-w-max justify-center gap-3 md:min-w-0 md:flex-wrap">
-            {REGIONS.map((region) => (
-              <button
-                key={region}
-                type="button"
-                onClick={() => setActiveRegion(region)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium text-white shadow-sm transition ${
-                  activeRegion === region
-                    ? "border-sky-400/60 bg-sky-600/30 text-sky-200"
-                    : "border-white/10 bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.14)]"
-                }`}
-              >
-                {region}
-              </button>
-            ))}
+        <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
+          <div className="mx-auto max-w-[1100px] overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-max justify-center gap-2 md:min-w-0 md:flex-wrap">
+              {REGIONS.map((region) => (
+                <button
+                  key={region}
+                  type="button"
+                  onClick={() => setActiveRegion(region)}
+                  className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
+                    activeRegion === region
+                      ? "border-[#00b4d8] bg-[rgba(0,180,216,0.15)] text-[#48cae4]"
+                      : "border-white/[0.08] text-white/75 hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
+                  }`}
+                >
+                  {region}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Cards grid */}
-        <div className="mx-auto max-w-7xl py-6">
+        <div className="mx-auto max-w-[1100px] py-6">
           {loading ? (
             <div className="flex items-center justify-center py-20 text-white/50">
               <svg className="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">

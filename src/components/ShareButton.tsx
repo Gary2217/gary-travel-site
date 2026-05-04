@@ -84,7 +84,7 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
       </button>
 
       {open && (
-        <div className="absolute right-0 top-8 z-50 w-36 overflow-hidden rounded-xl border border-white/10 bg-[rgba(20,20,30,0.95)] shadow-xl backdrop-blur-xl">
+        <div className="absolute right-0 top-8 z-50 w-36 overflow-hidden rounded-xl border border-white/10 bg-[rgba(15,25,35,0.95)] shadow-xl backdrop-blur-xl">
           <button
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); shareLine(); }}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-white transition hover:bg-white/10"

@@ -539,7 +539,7 @@ export default function TripPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+      <main className="min-h-screen bg-[#0f1923] text-white">
         <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
@@ -553,7 +553,7 @@ export default function TripPage() {
 
   if (error || !trip) {
     return (
-      <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+      <main className="min-h-screen bg-[#0f1923] text-white">
         <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
@@ -575,7 +575,7 @@ export default function TripPage() {
   const priceDetailPreview = parsePriceDetail(selectedDepartureInfo.price_detail || '');
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
+    <main className="min-h-screen bg-[#0f1923] text-white">
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* 浮動詢問按鈕 */}
@@ -584,7 +584,7 @@ export default function TripPage() {
       <div id="trip-content" />
 
       {/* 標題區塊 */}
-      <div className="mx-auto max-w-[1100px] px-3 pt-[104px] sm:px-4 sm:pt-[112px] md:px-6 lg:px-6 lg:pt-[92px]">
+      <div className="mx-auto max-w-[1100px] px-3 pt-[72px] sm:px-4 md:px-6 lg:px-6">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <div className="min-w-0 lg:col-span-1">
             <h1 className="text-2xl font-bold text-white sm:text-[1.75rem] md:text-[2rem]">{trip.title}</h1>
@@ -614,7 +614,7 @@ export default function TripPage() {
             )}
 
             <div className="mt-4 hidden lg:block">
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347]">
                 {editTripBanner.side_image_url ? (
                   <img
                     src={editTripBanner.side_image_url}
@@ -656,7 +656,7 @@ export default function TripPage() {
             </div>
           </div>
           <div className="mt-4 lg:mt-0 lg:col-span-1">
-            <div className="relative rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-3.5 backdrop-blur-[12px]">
+            <div className="relative rounded-xl border border-white/[0.08] bg-[#1a3347] p-3.5">
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div>
                   <h3 className="text-xs font-medium uppercase tracking-wider text-white/50">出團資訊</h3>
@@ -907,7 +907,7 @@ export default function TripPage() {
             </div>
 
             {trip.document_url && (
-              <div className="mt-2 min-h-[240px] rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.5)] p-2.5 backdrop-blur-[12px]">
+              <div className="mt-2 min-h-[240px] rounded-xl border border-white/[0.08] bg-[#1a3347] p-2.5">
                 <div className="mb-1.5 flex items-start justify-between gap-3">
                   <h3 className="text-sm font-bold text-sky-300">行程概要</h3>
                   {isDevMode && (
@@ -1199,7 +1199,7 @@ export default function TripPage() {
       {showEditPanel && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={e => { if (e.target === e.currentTarget) setShowEditPanel(false); }}>
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl"
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1923] p-5 shadow-2xl backdrop-blur-xl"
             onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-bold text-white">編輯行程資訊</h3>
@@ -1375,7 +1375,7 @@ export default function TripPage() {
       {showTextEditor && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={() => setShowTextEditor(false)}>
-          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl"
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1923] p-5 shadow-2xl backdrop-blur-xl"
             onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-bold text-white">編輯行程概要</h3>
@@ -1512,7 +1512,7 @@ export default function TripPage() {
       {/* 沒有 trip_days 也沒有 document_url */}
       {days.length === 0 && !trip.document_url && (
         <div className="mx-auto max-w-[1000px] px-3 pb-8 sm:px-4 md:px-8">
-          <div className="mb-8 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-5 text-center backdrop-blur-[12px] sm:p-6">
+          <div className="mb-8 rounded-2xl border border-white/10 bg-[#1a3347] p-5 text-center backdrop-blur-[12px] sm:p-6">
             <h2 className="mb-2 text-xl font-bold text-white md:text-2xl">每日行程尚未建立</h2>
             <p className="text-sm leading-6 text-white/70 md:text-base">
               目前這個行程尚未建立詳細內容，請透過 LINE 聯繫蓋瑞取得完整行程資料。
@@ -1571,7 +1571,7 @@ export default function TripPage() {
           }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl sm:p-6"
+            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0f1923] p-5 shadow-2xl backdrop-blur-xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -1687,7 +1687,7 @@ export default function TripPage() {
           }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl sm:p-6"
+            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0f1923] p-5 shadow-2xl backdrop-blur-xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">

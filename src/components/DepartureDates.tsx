@@ -567,14 +567,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {monthKeys.length > 1 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           <button onClick={() => setActiveMonth("all")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
             全部
           </button>
           {monthKeys.map((m) => {
             const [, mo] = m.split("-");
             return (
               <button key={m} onClick={() => setActiveMonth(m)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === m ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === m ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
                 {mo}月
               </button>
             );
@@ -590,7 +590,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             {Array.from(filteredGrouped.entries()).map(([monthLabel, monthDates]) => (
               <div key={monthLabel} className="contents">
                 {/* 月份分隔標籤 */}
-                <div className="flex items-center rounded-xl bg-white/5 px-3 py-2">
+                <div className="flex items-center rounded-lg bg-white/5 px-3 py-2">
                   <span className="text-xs font-bold text-white/50">{monthLabel}</span>
                 </div>
                 {monthDates.map((d) => {
@@ -601,10 +601,10 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                        key={d.id}
                        type="button"
                        onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
-                      className={`rounded-xl border px-3 py-2 text-center transition ${
+                      className={`rounded-lg border px-3 py-2 text-center transition ${
                         isSelected
-                          ? "border-sky-400/40 bg-sky-500/15"
-                          : "border-white/10 bg-[rgba(20,20,30,0.55)] hover:border-white/20"
+                          ? "border-[#00b4d8]/50 bg-[#00b4d8]/15"
+                          : "border-white/[0.08] bg-[#1a3347] hover:border-white/15"
                       }`}
                     >
                       <div className="text-sm font-bold text-white">{info.short}（{info.weekday}）</div>
@@ -635,7 +635,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             const showFlight = hasFlightInfo(d);
 
             return (
-              <div className="mt-3 rounded-xl border border-sky-400/20 bg-[rgba(20,20,30,0.6)] p-4 backdrop-blur-sm">
+              <div className="mt-3 rounded-xl border border-[#00b4d8]/20 bg-[#1a3347] p-4">
                 {isDevMode && (
                   <div className="mb-3 flex items-center gap-2">
                     <button onClick={() => openEditForm(d)}

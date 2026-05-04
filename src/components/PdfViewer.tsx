@@ -150,7 +150,7 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
 
   if (error) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4 bg-[rgba(20,20,30,0.6)]">
+      <div className="flex h-64 flex-col items-center justify-center gap-4 bg-[#1a3347]">
         <a
           href={url}
           target="_blank"

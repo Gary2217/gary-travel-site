@@ -69,7 +69,7 @@ export default function TripCard({
 
   return (
     <>
-      <div className="group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-[rgba(20,20,30,0.45)] shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[1.5rem]">
+      <div className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30">
         {/* 封面圖 */}
         <div
           className={`relative h-28 overflow-hidden sm:h-36 md:h-44${!isDevMode ? ' cursor-pointer' : ''}`}
@@ -81,7 +81,7 @@ export default function TripCard({
               style={{ backgroundImage: `url(${cover_image_url})` }}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[rgba(20,20,30,0.6)]">
+            <div className="flex h-full w-full items-center justify-center bg-[#162a3a]">
               <svg className="h-10 w-10 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -243,7 +243,7 @@ export default function TripCard({
           }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.98)] p-5 shadow-2xl backdrop-blur-xl sm:p-6"
+            className="w-full max-w-sm rounded-xl border border-white/[0.08] bg-[#0f1923] p-5 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
