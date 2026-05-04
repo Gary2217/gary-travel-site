@@ -326,23 +326,23 @@ function SegmentRow_Display({ segment, label }: { segment: FlightSegment; label:
     <div className="py-2 first:pt-0 last:pb-0">
       {/* 表頭：出發機場 / 抵達機場 / 飛行時數 */}
       <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:grid-cols-[1fr_auto_1fr_auto]">
-        <div className="text-xs text-white/50">
+        <div className="text-center text-xs text-white/50">
           {depCode && <span className="font-bold text-white/70">{depCode}</span>}{" "}
           {depShort}
         </div>
         {/* 飛機圖示佔位（表頭） */}
         <div />
-        <div className="text-xs text-white/50">
+        <div className="text-center text-xs text-white/50">
           {arrCode && <span className="font-bold text-white/70">{arrCode}</span>}{" "}
           {arrShort}
         </div>
-        <div className="hidden text-xs text-white/50 sm:block">飛行時數</div>
+        <div className="hidden text-center text-xs text-white/50 sm:block">飛行時數</div>
       </div>
 
       {/* 時間列 */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:grid-cols-[1fr_auto_1fr_auto]">
         {/* 出發時間 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-[#00b4d8]" />
           <span className="text-xl font-bold tabular-nums text-white">{segment.dep_time || "--:--"}</span>
         </div>
@@ -357,13 +357,13 @@ function SegmentRow_Display({ segment, label }: { segment: FlightSegment; label:
         </div>
 
         {/* 抵達時間 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <span className="text-xl font-bold tabular-nums text-white">{segment.arr_time || "--:--"}</span>
           {segment.next_day && <span className="text-xs font-bold text-amber-400">+1</span>}
         </div>
 
         {/* 飛行時數（桌機版） */}
-        <div className="hidden min-w-[130px] items-center text-sm text-white/50 sm:flex">
+        <div className="hidden min-w-[130px] items-center justify-center text-sm text-white/50 sm:flex">
           {segment.dep_time && segment.arr_time ? (() => {
             const [dh, dm] = segment.dep_time.split(":").map(Number);
             const [ah, am] = segment.arr_time.split(":").map(Number);
@@ -611,8 +611,10 @@ export default function FlightDepartureDates({
                   <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-2.5 sm:w-[160px] sm:shrink-0 sm:flex-col sm:justify-center sm:border-b-0 sm:border-r sm:py-3">
                     <AirlineLogo code={airlineCode} name={airlineName} />
                     <div className="sm:text-center">
-                      {airlineCode && <p className="text-xs font-semibold text-white/45">{airlineCode}</p>}
-                      <p className="text-sm font-semibold text-white/80">{airlineName}</p>
+                      <p className="text-sm font-semibold text-white/80">
+                        {airlineName}
+                        {airlineCode && <span className="ml-1 text-xs font-semibold text-white/45">{airlineCode}</span>}
+                      </p>
                     </div>
                   </div>
 
@@ -638,43 +640,29 @@ export default function FlightDepartureDates({
                     )}
                   </div>
 
-                  {/* 右欄：價格 + LINE 按鈕 */}
+                  {/* 右欄：價格 */}
                   <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5 sm:w-[190px] sm:shrink-0 sm:flex-col sm:items-end sm:justify-center sm:gap-2 sm:border-l sm:border-t-0 sm:px-5 sm:py-3">
                     <div className="sm:text-right">
+                      <p className="text-xs text-white/45">每人(含稅)</p>
                       {d.price ? (
-                        <>
-                          <p className="text-xs text-white/45">每人(含稅)</p>
-                          <p className="text-2xl font-bold text-[#ff6b35]">
-                            ${d.price.toLocaleString()}
-                          </p>
-                        </>
+                        <p className="text-2xl font-bold text-[#ff6b35]">
+                          ${d.price.toLocaleString()}
+                        </p>
                       ) : (
-                        <p className="text-base font-medium text-white/45">洽詢報價</p>
+                        <p className="text-2xl font-bold text-[#ff6b35]">洽詢報價</p>
                       )}
                       {d.label && (
                         <span className="mt-1 inline-block rounded border border-[#00b4d8]/25 bg-[#00b4d8]/10 px-2 py-0.5 text-[11px] font-semibold text-[#48cae4]">{d.label}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {isDevMode && (
-                        <>
-                          <button onClick={() => openEditForm(d)}
-                            className="rounded bg-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
-                          <button onClick={() => handleDelete(d.id)}
-                            className="rounded bg-red-500/20 px-2.5 py-1 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
-                        </>
-                      )}
-                      <a
-                        href={lineMessageHref(`我想詢問【${routeLabel}】${info.full} 的機票${displayAirline ? `（${displayAirline}）` : ""}`)}
-                        target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-85 active:scale-95"
-                      >
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-                        </svg>
-                        LINE 詢問
-                      </a>
-                    </div>
+                    {isDevMode && (
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEditForm(d)}
+                          className="rounded bg-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
+                        <button onClick={() => handleDelete(d.id)}
+                          className="rounded bg-red-500/20 px-2.5 py-1 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
