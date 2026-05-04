@@ -289,64 +289,48 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
   );
 }
 
-// ── Flight segment display (user-facing) ──────────────────
+// ── Flight segment row (user-facing, colatour-style) ──────
 
-function SegmentDisplay({ segment, label }: { segment: FlightSegment; label: "去程" | "回程" | "轉機" }) {
-  const isOutbound = label === "去程";
-  const isReturn = label === "回程";
-  const accentColor = isOutbound ? "text-sky-400" : isReturn ? "text-amber-400" : "text-violet-400";
-  const accentBg = isOutbound ? "bg-sky-500/15 text-sky-300" : isReturn ? "bg-amber-500/15 text-amber-300" : "bg-violet-500/15 text-violet-300";
-
+function SegmentRow_Display({ segment, label }: { segment: FlightSegment; label: "去程" | "回程" | "轉機" }) {
   const depCode = extractAirportCode(segment.dep_airport);
   const arrCode = extractAirportCode(segment.arr_airport);
-  const airlineCode = extractAirlineCode(segment.airline);
   const depShort = shortAirportName(segment.dep_airport);
   const arrShort = shortAirportName(segment.arr_airport);
-  const segDate = segment.date ? formatDate(segment.date) : null;
 
   return (
-    <div className="py-3 first:pt-0 last:pb-0">
-      {/* 航段標籤 + 航空公司 */}
-      <div className="mb-2.5 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${accentBg}`}>{label}</span>
-        <span className={`text-xs font-semibold ${accentColor}`}>
-          {segment.airline}
-          {segment.flight_number && <span className="ml-1 text-white/50">{segment.flight_number}</span>}
-        </span>
-        {segDate && <span className="text-[10px] text-white/40">{segDate.short}</span>}
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-2.5 sm:grid-cols-[1fr_auto_1fr] sm:gap-4 first:pt-0 last:pb-0">
+      {/* 出發 */}
+      <div>
+        <p className="text-[10px] font-medium text-white/40 sm:text-[11px]">
+          {depCode && <span className="font-semibold text-sky-300">{depCode}</span>}
+          {depCode && depShort ? " " : ""}{depShort}
+        </p>
+        <div className="mt-0.5 flex items-baseline gap-1">
+          <span className="text-base font-bold text-white sm:text-lg">{segment.dep_time || "--:--"}</span>
+        </div>
       </div>
 
-      {/* 時間軸卡片 */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* 出發 */}
-        <div className="min-w-0 text-center">
-          <p className="text-lg font-bold leading-tight text-white sm:text-xl">{segment.dep_time || "--:--"}</p>
-          <p className="text-[10px] font-semibold text-sky-300 sm:text-xs">{depCode}</p>
-          <p className="max-w-[90px] truncate text-[10px] text-white/40 sm:max-w-[120px]">{depShort}</p>
+      {/* 中間連接 */}
+      <div className="flex flex-col items-center gap-0.5 px-1">
+        <div className="flex items-center gap-1.5">
+          <div className="h-[1px] w-4 bg-white/20 sm:w-6" />
+          <svg className="h-3 w-3 shrink-0 text-white/30" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+          </svg>
+          <div className="h-[1px] w-4 bg-white/20 sm:w-6" />
         </div>
+        <span className={`text-[9px] font-semibold ${label === "去程" ? "text-sky-400" : label === "回程" ? "text-amber-400" : "text-violet-400"}`}>{label}</span>
+      </div>
 
-        {/* 連接線 */}
-        <div className="flex flex-1 flex-col items-center gap-0.5">
-          <div className="flex w-full items-center gap-1">
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-sky-400/60 to-white/20" />
-            <svg className={`h-3.5 w-3.5 shrink-0 ${accentColor} ${isReturn ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
-              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-            </svg>
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 to-amber-400/60" />
-          </div>
-          {airlineCode && (
-            <span className="text-[9px] text-white/30">{airlineCode}</span>
-          )}
-        </div>
-
-        {/* 抵達 */}
-        <div className="min-w-0 text-center">
-          <div className="flex items-baseline justify-center gap-0.5">
-            <p className="text-lg font-bold leading-tight text-white sm:text-xl">{segment.arr_time || "--:--"}</p>
-            {segment.next_day && <span className="text-[10px] font-bold text-amber-400">+1</span>}
-          </div>
-          <p className="text-[10px] font-semibold text-amber-300 sm:text-xs">{arrCode}</p>
-          <p className="max-w-[90px] truncate text-[10px] text-white/40 sm:max-w-[120px]">{arrShort}</p>
+      {/* 抵達 */}
+      <div className="text-right">
+        <p className="text-[10px] font-medium text-white/40 sm:text-[11px]">
+          {arrCode && <span className="font-semibold text-amber-300">{arrCode}</span>}
+          {arrCode && arrShort ? " " : ""}{arrShort}
+        </p>
+        <div className="mt-0.5 flex items-baseline justify-end gap-1">
+          <span className="text-base font-bold text-white sm:text-lg">{segment.arr_time || "--:--"}</span>
+          {segment.next_day && <span className="text-[10px] font-bold text-amber-400">+1</span>}
         </div>
       </div>
     </div>
@@ -467,66 +451,13 @@ export default function FlightDepartureDates({
     setShowAddForm(true);
   };
 
-  const airlineList = airlines.split(/[/／、,，]/).map((a) => a.trim()).filter(Boolean);
-
   return (
     <section>
-
-      {/* ── 航線總覽卡片 ── */}
-      <div className="mb-4 rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-white">航線資訊</h2>
-        </div>
-
-        {/* 視覺化航線 */}
-        <div className="mt-4 flex items-center gap-3 sm:gap-5">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white sm:text-3xl">{fromCity}</p>
-          </div>
-          <div className="flex flex-1 flex-col items-center gap-0.5">
-            <p className="text-[10px] text-white/40">{duration}</p>
-            <div className="flex w-full items-center gap-1">
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-sky-400/60 to-white/20" />
-              <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${direct ? "bg-sky-500/20 text-sky-300" : "bg-amber-500/20 text-amber-300"}`}>
-                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                </svg>
-                {direct ? "直飛" : "轉機"}
-              </div>
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 to-amber-400/60" />
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white sm:text-3xl">{toCity}</p>
-          </div>
-        </div>
-
-        {/* 可選航空 */}
-        {airlineList.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="text-[10px] text-white/40">可選航空</span>
-            {airlineList.map((a) => (
-              <span key={a} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-0.5 text-xs text-white/85">{a}</span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── 航班列表 ── */}
-      <div className="rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-bold text-white">可訂購航班</h2>
-          {isDevMode && (
-            <button onClick={() => { resetForm(); setShowAddForm(!showAddForm); }}
-              className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
-              {showAddForm ? "取消" : "新增航班"}
-            </button>
-          )}
-        </div>
-
-        {/* 月份篩選 */}
+      {/* 標題列 + 月份篩選 + 新增按鈕 */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <h2 className="mr-auto text-base font-bold text-white">可訂購航班</h2>
         {monthLabels.length > 1 && (
-          <div className="mb-4 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             <button onClick={() => setActiveMonth("all")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-sky-500 text-white" : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
               全部
@@ -539,178 +470,185 @@ export default function FlightDepartureDates({
             ))}
           </div>
         )}
+        {isDevMode && (
+          <button onClick={() => { resetForm(); setShowAddForm(!showAddForm); }}
+            className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
+            {showAddForm ? "取消" : "新增航班"}
+          </button>
+        )}
+      </div>
 
-        {/* Dev 編輯表單 Modal */}
-        {isDevMode && showAddForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            onClick={(e) => { if (e.target === e.currentTarget) { setShowAddForm(false); resetForm(); } }}>
-            <div className="w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] p-6 shadow-2xl" style={{ maxHeight: "90dvh" }}>
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white">{editingId ? "編輯航班" : "新增航班"}</h2>
-                <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
-                  className="rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+      {/* Dev 編輯表單 Modal */}
+      {isDevMode && showAddForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowAddForm(false); resetForm(); } }}>
+          <div className="w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] p-6 shadow-2xl" style={{ maxHeight: "90dvh" }}>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">{editingId ? "編輯航班" : "新增航班"}</h2>
+              <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
+                className="rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-              {/* 基本資訊 */}
-              <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
-              <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <div className="overflow-hidden">
-                  <label className={labelClass}>出發日期 *</label>
-                  <div className="flex gap-1 overflow-hidden">
-                    <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
-                    {departureDayLabel && <span className="flex items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">{departureDayLabel}</span>}
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>票價（NT$）</label>
-                  <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：8900" autoComplete="off" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>備註標籤</label>
-                  <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：早鳥優惠" className={inputClass} />
+            <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
+            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="overflow-hidden">
+                <label className={labelClass}>出發日期 *</label>
+                <div className="flex gap-1 overflow-hidden">
+                  <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                  {departureDayLabel && <span className="flex items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">{departureDayLabel}</span>}
                 </div>
               </div>
-
-              {/* 航班明細 */}
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[10px] font-semibold text-sky-400/70">航班明細（選填）</p>
-                <button type="button" onClick={addSegment} className="text-[10px] font-semibold text-sky-400/70 transition hover:text-sky-400">+ 新增航段</button>
+              <div>
+                <label className={labelClass}>票價（NT$）</label>
+                <input type="text" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="如：8900" autoComplete="off" className={inputClass} />
               </div>
-              {formSegments.length === 0 ? (
-                <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-5">
-                  <p className="text-[11px] text-white/30">尚未新增航班，可直接儲存或點擊新增航段</p>
-                  <button type="button" onClick={addSegment}
-                    className="mt-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] text-sky-400/80 transition hover:bg-sky-500/20">
-                    + 新增去程
-                  </button>
-                </div>
-              ) : (
-                <div className="mb-2">
-                  {formSegments.map((seg, i) => (
-                    <SegmentRow key={i} index={i} total={formSegments.length} segment={seg}
-                      onChange={(field, val) => updateSegment(i, field, val)} onDelete={() => removeSegment(i)} />
-                  ))}
-                  <button type="button" onClick={addSegment} className="mb-4 mt-1 text-[11px] text-sky-400/60 transition hover:text-sky-400">
-                    + 新增航段（轉機或回程）
-                  </button>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button disabled={!formDate || saving} onClick={editingId ? handleEdit : handleAdd}
-                  className="flex-1 rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50">
-                  {saving ? "儲存中..." : editingId ? "更新航班" : "新增航班"}
-                </button>
-                <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
-                  className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15">
-                  取消
-                </button>
+              <div>
+                <label className={labelClass}>備註標籤</label>
+                <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：早鳥優惠" className={inputClass} />
               </div>
             </div>
+
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-semibold text-sky-400/70">航班明細（選填）</p>
+              <button type="button" onClick={addSegment} className="text-[10px] font-semibold text-sky-400/70 transition hover:text-sky-400">+ 新增航段</button>
+            </div>
+            {formSegments.length === 0 ? (
+              <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-5">
+                <p className="text-[11px] text-white/30">尚未新增航班，可直接儲存或點擊新增航段</p>
+                <button type="button" onClick={addSegment}
+                  className="mt-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] text-sky-400/80 transition hover:bg-sky-500/20">
+                  + 新增去程
+                </button>
+              </div>
+            ) : (
+              <div className="mb-2">
+                {formSegments.map((seg, i) => (
+                  <SegmentRow key={i} index={i} total={formSegments.length} segment={seg}
+                    onChange={(field, val) => updateSegment(i, field, val)} onDelete={() => removeSegment(i)} />
+                ))}
+                <button type="button" onClick={addSegment} className="mb-4 mt-1 text-[11px] text-sky-400/60 transition hover:text-sky-400">
+                  + 新增航段（轉機或回程）
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button disabled={!formDate || saving} onClick={editingId ? handleEdit : handleAdd}
+                className="flex-1 rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50">
+                {saving ? "儲存中..." : editingId ? "更新航班" : "新增航班"}
+              </button>
+              <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
+                className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15">
+                取消
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 航班卡片列表 */}
-        {filtered.length > 0 ? (
-          <div className="space-y-3">
-            {filtered.map((d) => {
-              const info = formatDate(d.departure_date);
-              const displayAirline = d.flight_segments?.[0]?.airline || d.airline;
-              const hasSegments = d.flight_segments && d.flight_segments.length > 0;
+      {/* ── 航班卡片列表（可樂旅遊風格） ── */}
+      {filtered.length > 0 ? (
+        <div className="space-y-3">
+          {filtered.map((d) => {
+            const info = formatDate(d.departure_date);
+            const displayAirline = d.flight_segments?.[0]?.airline || d.airline;
+            const airlineCode = displayAirline ? extractAirlineCode(displayAirline) : "";
+            const airlineName = displayAirline?.replace(/（.*）/, "").trim() || "";
+            const hasSegments = d.flight_segments && d.flight_segments.length > 0;
 
-              return (
-                <div key={d.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(15,15,25,0.6)] transition hover:border-white/15">
+            return (
+              <div key={d.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(15,15,25,0.6)] transition hover:border-white/20">
+                {/* 卡片主體：航空公司 | 航段資訊 | 價格+操作 */}
+                <div className="flex flex-col sm:flex-row">
 
-                  {/* 卡片頂部：日期 + 價格 */}
-                  <div className="flex items-center justify-between border-b border-white/8 px-4 py-2.5 sm:px-5">
-                    <div className="flex items-center gap-2">
-                      <svg className="h-4 w-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm font-bold text-white">{info.short}</span>
-                      {d.label && (
-                        <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">{d.label}</span>
-                      )}
+                  {/* 左側：航空公司 + 日期 */}
+                  <div className="flex items-center gap-3 border-b border-white/8 px-4 py-3 sm:w-[140px] sm:shrink-0 sm:flex-col sm:justify-center sm:border-b-0 sm:border-r sm:py-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-sm font-bold text-sky-300 sm:h-12 sm:w-12 sm:text-base">
+                      {airlineCode || "✈"}
                     </div>
-                    <div className="text-right">
-                      {d.price ? (
-                        <p className="text-base font-bold text-sky-300 sm:text-lg">NT$ {d.price.toLocaleString()}</p>
-                      ) : (
-                        <p className="text-sm font-semibold text-white/45">洽詢報價</p>
-                      )}
-                      {d.price && <p className="text-[10px] text-white/35">每人含稅</p>}
+                    <div className="sm:text-center">
+                      <p className="text-xs font-semibold text-white/90 sm:text-sm">{airlineName || "航空公司"}</p>
+                      <p className="mt-0.5 text-[10px] text-white/40">{info.short}</p>
                     </div>
                   </div>
 
-                  {/* 航段明細 */}
-                  <div className="px-4 py-3 sm:px-5">
+                  {/* 中間：航段資訊 */}
+                  <div className="flex-1 px-4 py-3 sm:px-5">
                     {hasSegments ? (
                       <div className="divide-y divide-white/8">
                         {d.flight_segments!.map((seg, i) => {
                           const total = d.flight_segments!.length;
-                          const label = i === 0 ? "去程" : (total > 1 && i === total - 1) ? "回程" : "轉機";
-                          return <SegmentDisplay key={i} segment={seg} label={label as "去程" | "回程" | "轉機"} />;
+                          const segLabel = i === 0 ? "去程" : (total > 1 && i === total - 1) ? "回程" : "轉機";
+                          return <SegmentRow_Display key={i} segment={seg} label={segLabel as "去程" | "回程" | "轉機"} />;
                         })}
                       </div>
                     ) : (
-                      /* 無航段明細時的簡易顯示 */
-                      <div className="flex items-center gap-3">
-                        <svg className="h-4 w-4 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
+                      <div className="flex h-full items-center gap-3 py-2">
+                        <svg className="h-4 w-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                         </svg>
-                        <span className="text-sm text-white/70">{displayAirline || `${fromCity} → ${toCity}`}</span>
-                        {!displayAirline && <span className="text-xs text-white/40">航班時間待確認</span>}
+                        <span className="text-sm text-white/50">{fromCity} → {toCity}　航班時間待確認</span>
                       </div>
                     )}
                   </div>
 
-                  {/* 底部操作列 */}
-                  <div className="flex items-center justify-between border-t border-white/8 px-4 py-2.5 sm:px-5">
-                    {isDevMode ? (
-                      <div className="flex gap-1.5">
-                        <button onClick={() => openEditForm(d)}
-                          className="rounded-full bg-amber-500/20 px-3 py-1 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
-                        <button onClick={() => handleDelete(d.id)}
-                          className="rounded-full bg-red-500/20 px-3 py-1 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
-                      </div>
-                    ) : (
-                      <div />
-                    )}
+                  {/* 右側：價格 + LINE 詢問 */}
+                  <div className="flex items-center gap-3 border-t border-white/8 px-4 py-3 sm:w-[160px] sm:shrink-0 sm:flex-col sm:justify-center sm:border-l sm:border-t-0 sm:py-4">
+                    <div className="flex-1 sm:text-center">
+                      {d.price ? (
+                        <>
+                          <p className="text-[10px] text-white/40">每人含稅</p>
+                          <p className="text-xl font-bold text-sky-300">NT$ {d.price.toLocaleString()}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm font-semibold text-white/45">洽詢報價</p>
+                      )}
+                      {d.label && (
+                        <span className="mt-1 inline-block rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">{d.label}</span>
+                      )}
+                    </div>
                     <a
                       href={lineMessageHref(`我想詢問【${routeLabel}】${info.full} 的機票${displayAirline ? `（${displayAirline}）` : ""}`)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95"
+                      target="_blank" rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#06C755] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-95 sm:w-full sm:justify-center"
                     >
                       <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
                       </svg>
                       LINE 詢問
                     </a>
+                    {isDevMode && (
+                      <div className="flex gap-1 sm:mt-2 sm:justify-center">
+                        <button onClick={() => openEditForm(d)}
+                          className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
+                        <button onClick={() => handleDelete(d.id)}
+                          className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-8 text-center">
-            <svg className="mx-auto mb-3 h-10 w-10 text-white/15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-            <p className="text-sm text-white/50">
-              {dates.length > 0
-                ? "此月份無航班票價"
-                : isDevMode
-                ? "尚未新增航班，點擊上方「新增航班」開始"
-                : "目前無可訂購航班"}
-            </p>
-          </div>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-[rgba(15,15,25,0.6)] py-10 text-center">
+          <svg className="mx-auto mb-3 h-10 w-10 text-white/15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+          <p className="text-sm text-white/50">
+            {dates.length > 0
+              ? "此月份無航班票價"
+              : isDevMode
+              ? "尚未新增航班，點擊上方「新增航班」開始"
+              : "目前無可訂購航班"}
+          </p>
+        </div>
+      )}
     </section>
   );
 }
