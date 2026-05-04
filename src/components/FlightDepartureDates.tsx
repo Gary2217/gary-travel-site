@@ -269,11 +269,11 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         <button type="button" onClick={onDelete} className="text-[10px] text-red-400/50 transition hover:text-red-400">✕ 刪除</button>
       </div>
       <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <div className="overflow-hidden">
+        <div>
           <label className={labelClass}>日期</label>
-          <div className="flex gap-1 overflow-hidden">
-            <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
-            {dayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{dayLabel}</span>}
+          <div className="flex gap-1.5">
+            <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)} className={`${inputClass} min-w-0 flex-1 [color-scheme:dark]`} />
+            {dayLabel && <span className="flex shrink-0 items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{dayLabel}</span>}
           </div>
         </div>
         <div>
@@ -316,7 +316,7 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
 
 // ── Flight segment row (user-facing, colatour table-style) ──
 
-function SegmentRow_Display({ segment, label }: { segment: FlightSegment; label: "去程" | "回程" | "轉機" }) {
+function SegmentRow_Display({ segment, label, transferType }: { segment: FlightSegment; label: "去程" | "回程" | "轉機"; transferType?: string | null }) {
   const depCode = extractAirportCode(segment.dep_airport);
   const arrCode = extractAirportCode(segment.arr_airport);
   const depShort = shortAirportName(segment.dep_airport);
@@ -363,16 +363,23 @@ function SegmentRow_Display({ segment, label }: { segment: FlightSegment; label:
         </div>
 
         {/* 飛行時數（桌機版） */}
-        <div className="hidden min-w-[130px] items-center justify-center text-sm text-white/50 sm:flex">
-          {segment.dep_time && segment.arr_time ? (() => {
-            const [dh, dm] = segment.dep_time.split(":").map(Number);
-            const [ah, am] = segment.arr_time.split(":").map(Number);
-            let diff = (ah * 60 + am) - (dh * 60 + dm);
-            if (segment.next_day || diff < 0) diff += 24 * 60;
-            const hrs = Math.floor(diff / 60);
-            const mins = diff % 60;
-            return `${String(hrs).padStart(2, "0")}小時${mins > 0 ? `${String(mins).padStart(2, "0")}分鐘` : ""}`;
-          })() : ""}
+        <div className="hidden min-w-[130px] flex-col items-center justify-center text-sm text-white/50 sm:flex">
+          <span>
+            {segment.dep_time && segment.arr_time ? (() => {
+              const [dh, dm] = segment.dep_time.split(":").map(Number);
+              const [ah, am] = segment.arr_time.split(":").map(Number);
+              let diff = (ah * 60 + am) - (dh * 60 + dm);
+              if (segment.next_day || diff < 0) diff += 24 * 60;
+              const hrs = Math.floor(diff / 60);
+              const mins = diff % 60;
+              return `${String(hrs).padStart(2, "0")}小時${mins > 0 ? `${String(mins).padStart(2, "0")}分鐘` : ""}`;
+            })() : ""}
+          </span>
+          {transferType && (
+            <span className={`mt-0.5 text-xs font-semibold ${transferType === "direct" ? "text-[#00b4d8]" : "text-amber-400"}`}>
+              {transferType === "direct" ? "直飛" : "轉機"}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -407,6 +414,7 @@ export default function FlightDepartureDates({
   const [formDate, setFormDate] = useState(today);
   const [formPrice, setFormPrice] = useState("");
   const [formLabel, setFormLabel] = useState("");
+  const [formTransferType, setFormTransferType] = useState<"direct" | "transfer">("direct");
   const [formSegments, setFormSegments] = useState<FlightSegment[]>([]);
 
   const departureDayLabel = getWeekdayFromDate(formDate);
@@ -436,13 +444,14 @@ export default function FlightDepartureDates({
         return `${info.year}-${info.month}` === activeMonth;
       });
 
-  const resetForm = () => { setFormDate(today); setFormPrice(""); setFormLabel(""); setFormSegments([]); setEditingId(null); };
+  const resetForm = () => { setFormDate(today); setFormPrice(""); setFormLabel(""); setFormTransferType("direct"); setFormSegments([]); setEditingId(null); };
 
   const buildPayload = () => ({
     departure_date: formDate,
     airline: formSegments[0]?.airline || null,
     price: formPrice ? parseInt(formPrice.replace(/,/g, "")) : null,
     label: formLabel || null,
+    transfer_type: formTransferType,
     flight_segments: formSegments.length > 0 ? formSegments : null,
   });
 
@@ -489,6 +498,7 @@ export default function FlightDepartureDates({
     setFormDate(d.departure_date);
     setFormPrice(d.price ? String(d.price) : "");
     setFormLabel(d.label || "");
+    setFormTransferType((d as FlightDepartureDate & { transfer_type?: string }).transfer_type === "transfer" ? "transfer" : "direct");
     setFormSegments(d.flight_segments && d.flight_segments.length > 0 ? d.flight_segments : []);
     setShowAddForm(true);
   };
@@ -524,7 +534,7 @@ export default function FlightDepartureDates({
       {isDevMode && showAddForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddForm(false); resetForm(); } }}>
-          <div className="w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] p-6 shadow-2xl" style={{ maxHeight: "90dvh" }}>
+          <div className="w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] p-6 shadow-2xl sm:p-8" style={{ maxHeight: "90dvh" }}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-white">{editingId ? "編輯航班" : "新增航班"}</h2>
               <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
@@ -536,12 +546,12 @@ export default function FlightDepartureDates({
             </div>
 
             <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
-            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <div className="overflow-hidden">
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div>
                 <label className={labelClass}>出發日期 *</label>
-                <div className="flex gap-1 overflow-hidden">
-                  <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className={`${inputClass} flex-1 [color-scheme:dark]`} />
-                  {departureDayLabel && <span className="flex items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">{departureDayLabel}</span>}
+                <div className="flex gap-1.5">
+                  <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className={`${inputClass} min-w-0 flex-1 [color-scheme:dark]`} />
+                  {departureDayLabel && <span className="flex shrink-0 items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">{departureDayLabel}</span>}
                 </div>
               </div>
               <div>
@@ -551,6 +561,19 @@ export default function FlightDepartureDates({
               <div>
                 <label className={labelClass}>備註標籤</label>
                 <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="如：早鳥優惠" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>航班類型</label>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => setFormTransferType("direct")}
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${formTransferType === "direct" ? "bg-[#00b4d8] text-white" : "border border-white/10 bg-white/5 text-white/50 hover:border-white/20"}`}>
+                    直飛
+                  </button>
+                  <button type="button" onClick={() => setFormTransferType("transfer")}
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${formTransferType === "transfer" ? "bg-amber-500 text-white" : "border border-white/10 bg-white/5 text-white/50 hover:border-white/20"}`}>
+                    轉機
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -602,6 +625,7 @@ export default function FlightDepartureDates({
             const displayAirline = firstSeg?.airline || d.airline || airlines;
             const airlineCode = extractAirlineCode(displayAirline);
             const airlineName = displayAirline.replace(/（[A-Z0-9]{2}）/, "").trim();
+            const transferType = (d as FlightDepartureDate & { transfer_type?: string }).transfer_type;
 
             return (
               <div key={d.id} className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition hover:border-white/15">
@@ -625,7 +649,7 @@ export default function FlightDepartureDates({
                         {d.flight_segments!.map((seg, i) => {
                           const total = d.flight_segments!.length;
                           const segLabel = i === 0 ? "去程" : (total > 1 && i === total - 1) ? "回程" : "轉機";
-                          return <SegmentRow_Display key={i} segment={seg} label={segLabel as "去程" | "回程" | "轉機"} />;
+                          return <SegmentRow_Display key={i} segment={seg} label={segLabel as "去程" | "回程" | "轉機"} transferType={transferType} />;
                         })}
                       </div>
                     ) : (
