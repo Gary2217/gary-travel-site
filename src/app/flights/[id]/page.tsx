@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
+import TravelSearchBar from "@/components/TravelSearchBar";
 import FlightDepartureDates from "@/components/FlightDepartureDates";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
@@ -80,8 +81,13 @@ export default function FlightDetailPage() {
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
+      {/* 機票搜尋框 */}
+      <div className="mx-auto max-w-5xl px-4 pt-[86px] sm:px-6 sm:pt-[98px] md:px-10 lg:pt-[74px]">
+        <TravelSearchBar flightOnly />
+      </div>
+
       {/* ── Title Block ────────────────────────────────── */}
-      <div className="mx-auto max-w-5xl px-4 pt-[92px] sm:px-6 sm:pt-[104px] md:px-10 lg:pt-[80px]">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 md:px-10">
         <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white sm:px-3 sm:py-1 sm:text-xs ${REGION_COLOR[route.region] ?? "bg-slate-600/80"}`}>
             {route.region}

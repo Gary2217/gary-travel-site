@@ -7,6 +7,7 @@ import SocialCta from "@/components/SocialCta";
 import FloatingContact from "@/components/FloatingContact";
 import ScrollToTop from "@/components/ScrollToTop";
 import DevModeToggle from "@/components/DevModeToggle";
+import TravelSearchBar from "@/components/TravelSearchBar";
 import { getSiteLogo, type FlightRoute } from "@/lib/supabase";
 
 const REGIONS = ["全部", "日本", "韓國", "東南亞", "中港澳", "歐洲", "美洲", "澳紐"];
@@ -229,6 +230,9 @@ export default function FlightsPage() {
             由旅遊規劃師蓋瑞為您比價，找到最划算票價
           </p>
         </div>
+
+        {/* 機票搜尋框 */}
+        <TravelSearchBar flightOnly />
 
         {/* Region filter tabs */}
         <div className="sticky top-[84px] z-40 overflow-x-auto rounded-none bg-[rgba(10,10,18,0.82)] px-2 py-1.5 shadow-lg shadow-black/20 backdrop-blur-[6px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:top-[96px] lg:top-[72px]">

@@ -9,13 +9,15 @@ type Destination = { id: string; title: string };
 type RegionOption = { id: string; categoryLabel: string; destinations: Destination[] };
 
 interface TravelSearchBarProps {
-  regions: RegionOption[];
-  onSearch: (params: {
+  regions?: RegionOption[];
+  onSearch?: (params: {
     departureCity: string;
     regionId: string | null;
     destinationId: string | null;
     date: string;
   }) => void;
+  /** 僅顯示機票搜尋（隱藏行程搜尋 tab） */
+  flightOnly?: boolean;
 }
 
 const DEPARTURE_CITIES = [
@@ -70,9 +72,9 @@ const FLIGHT_DESTINATIONS = [
   { code: "AKL", label: "奧克蘭", region: "澳紐" },
 ];
 
-export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarProps) {
+export default function TravelSearchBar({ regions = [], onSearch, flightOnly = false }: TravelSearchBarProps) {
   // 模式切換
-  const [activeMode, setActiveMode] = useState<"trip" | "flight">("trip");
+  const [activeMode, setActiveMode] = useState<"trip" | "flight">(flightOnly ? "flight" : "trip");
 
   // === 行程搜尋 state ===
   const [departureOpen, setDepartureOpen] = useState(false);
@@ -191,7 +193,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
       setDepartureOpen(false);
       return;
     }
-    onSearch({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: null, date });
+    onSearch?.({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: null, date });
   };
 
   const handleClear = () => {
@@ -200,7 +202,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
     setSelectedDestId(null);
     setSelectedLabel("不限目的地");
     setDate("");
-    onSearch({ departureCity: "", regionId: null, destinationId: null, date: "" });
+    onSearch?.({ departureCity: "", regionId: null, destinationId: null, date: "" });
   };
 
   const hasFilter = departureCityId || selectedRegionId || date;
@@ -247,12 +249,15 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
   return (
     <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 md:px-6">
       {/* 標題 */}
-      <div className="mb-4 text-center">
-        <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">探索您的夢想旅途</h2>
-        <p className="mt-1 text-xs text-white/50 sm:text-sm">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
-      </div>
+      {!flightOnly && (
+        <div className="mb-4 text-center">
+          <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">探索您的夢想旅途</h2>
+          <p className="mt-1 text-xs text-white/50 sm:text-sm">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
+        </div>
+      )}
 
       {/* 模式 Tab */}
+      {!flightOnly && (
       <div className="mb-3 flex justify-center">
         <div className="inline-flex rounded-full bg-white/10 p-1 backdrop-blur-sm">
           <button
@@ -285,6 +290,7 @@ export default function TravelSearchBar({ regions, onSearch }: TravelSearchBarPr
           </button>
         </div>
       </div>
+      )}
 
       {/* ── 行程搜尋 ── */}
       {activeMode === "trip" && (
