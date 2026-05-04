@@ -605,7 +605,7 @@ export default function FlightDepartureDates({
 
             return (
               <div key={d.id} className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition hover:border-white/15">
-                <div className="flex flex-col sm:flex-row">
+                <div className="flex flex-col sm:flex-row sm:items-center">
 
                   {/* 左欄：航空公司 */}
                   <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-2.5 sm:w-[160px] sm:shrink-0 sm:flex-col sm:justify-center sm:border-b-0 sm:border-r sm:py-3">
@@ -619,7 +619,7 @@ export default function FlightDepartureDates({
                   </div>
 
                   {/* 中欄：航段資訊 */}
-                  <div className="flex-1 px-4 py-2 sm:px-5 sm:py-2">
+                  <div className="flex flex-1 flex-col justify-center px-4 py-2 sm:px-5 sm:py-2">
                     {hasSegments ? (
                       <div className="divide-y divide-white/[0.06]">
                         {d.flight_segments!.map((seg, i) => {
