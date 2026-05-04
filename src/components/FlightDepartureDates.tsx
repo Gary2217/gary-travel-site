@@ -165,11 +165,15 @@ function extractAirlineCode(name: string): string {
 
 /** 擷取機場簡短名 */
 function shortAirportName(name: string): string {
-  return name
+  // 保留航廈資訊
+  const terminalMatch = name.match(/(第.航廈)/);
+  const terminal = terminalMatch ? terminalMatch[1] : "";
+  const short = name
     .replace(/國際機場.*/, "")
     .replace(/機場.*/, "")
     .replace(/（.*）/, "")
     .trim();
+  return terminal ? `${short} ${terminal}` : short;
 }
 
 // ── Autocomplete inputs ──────────────────────────────────
