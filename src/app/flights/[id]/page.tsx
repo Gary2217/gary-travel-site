@@ -11,16 +11,6 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 
-const REGION_COLOR: Record<string, string> = {
-  日本: "bg-rose-600/80",
-  韓國: "bg-fuchsia-600/80",
-  東南亞: "bg-emerald-600/80",
-  中港澳: "bg-amber-600/80",
-  歐洲: "bg-blue-600/80",
-  美洲: "bg-indigo-600/80",
-  澳紐: "bg-teal-600/80",
-};
-
 export default function FlightDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -77,7 +67,6 @@ export default function FlightDetailPage() {
   }
 
   const metaEntries = Object.entries(route.metadata || {});
-  const airlineList = route.airlines.split(/[/／、,，]/).map((a) => a.trim()).filter(Boolean);
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)] text-white">
@@ -87,58 +76,6 @@ export default function FlightDetailPage() {
 
         {/* ── 搜尋框（精簡版） ── */}
         <TravelSearchBar flightOnly />
-
-        {/* ── 航線標題區 ── */}
-        <div className="mb-6 mt-2 rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px] sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* 左側：航線資訊 */}
-            <div>
-              <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white sm:text-xs ${REGION_COLOR[route.region] ?? "bg-slate-600/80"}`}>
-                  {route.region}
-                </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white sm:text-xs ${route.direct ? "bg-sky-600/80" : "border border-white/20 bg-white/10"}`}>
-                  {route.direct ? "直飛" : "轉機"}
-                </span>
-                <span className="text-[11px] text-white/40">{route.duration}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-base text-white/70 sm:text-lg">{route.from_city}</span>
-                <svg className="h-4 w-4 shrink-0 text-sky-400 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                </svg>
-                <h1 className="text-2xl font-bold text-white sm:text-3xl">{route.to_city}</h1>
-              </div>
-              {airlineList.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {airlineList.map((a) => (
-                    <span key={a} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-0.5 text-[11px] text-white/75">{a}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 右側：價格 + LINE 按鈕 */}
-            <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:text-right">
-              <div>
-                <p className="text-[10px] text-white/40">參考票價</p>
-                <p className="text-2xl font-bold text-sky-300 sm:text-3xl">{route.price_range}</p>
-              </div>
-              <a
-                href={lineDmHref}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => track({ event_type: "flight_inquiry", platform: "LINE", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` })}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#06C755] px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#05b54c] active:scale-95"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-                </svg>
-                LINE 詢問報價
-              </a>
-            </div>
-          </div>
-        </div>
 
         {/* ── 航班列表（全寬） ── */}
         <FlightDepartureDates
