@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { lineDmHref } from "@/lib/supabase";
 
 interface ContactFormModalProps {
   isOpen: boolean;
@@ -132,12 +133,24 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
             </div>
             <h3 className="text-lg font-bold text-white">已送出！</h3>
             <p className="mt-2 text-sm text-white/60">蓋瑞 Gary 會盡快跟您聯絡！</p>
-            <button
-              onClick={handleClose}
-              className="mt-5 rounded-lg bg-[#00b4d8] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#0096c7]"
-            >
-              關閉
-            </button>
+            <p className="mt-1 text-xs text-white/40">也可加 LINE 私訊蓋瑞 Gary 更快回覆您</p>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <a
+                href={lineDmHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-85"
+              >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                LINE 私訊
+              </a>
+              <button
+                onClick={handleClose}
+                className="rounded-lg border border-white/15 px-5 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                關閉
+              </button>
+            </div>
           </div>
         ) : (
           /* 表單 */

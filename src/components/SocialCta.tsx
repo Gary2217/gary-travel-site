@@ -58,7 +58,7 @@ export default function SocialCta({
         </a>
         <button
           onClick={() => setShowContactForm(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#00b4d8] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#0096c7]"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#ff6b35] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#e55a2b]"
         >
           聯絡我們
         </button>
