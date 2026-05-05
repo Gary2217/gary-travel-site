@@ -222,7 +222,7 @@ export default function HomePage() {
                 <Link
                   key={trip.id}
                   href={`/trip/${trip.id}`}
-                  className="group relative block overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d1520] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                  className="group relative block overflow-hidden rounded-xl border border-white/10 bg-[#182838] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
                 >
                   {/* 排名徽章 */}
                   {i < 3 && (
