@@ -226,8 +226,10 @@ export default function HomePage() {
                 >
                   {/* 排名徽章 */}
                   {i < 3 && (
-                    <div className="absolute left-1.5 top-1.5 z-10 text-2xl drop-shadow-lg">
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                    <div className={`absolute -left-1 -top-1 z-10 flex h-10 w-10 items-center justify-center rounded-br-2xl text-sm font-black shadow-lg ${
+                      i === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white' : i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' : 'bg-gradient-to-br from-orange-500 to-orange-700 text-white'
+                    }`}>
+                      {i + 1}
                     </div>
                   )}
                   {/* 封面圖 */}
