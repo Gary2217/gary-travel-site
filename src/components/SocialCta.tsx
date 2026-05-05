@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { lineDmHref, fbDmHref, igDmHref, fbHref, igHref } from "@/lib/supabase";
+import ContactFormModal from "./ContactFormModal";
 
 interface SocialCtaProps {
   title: string;
@@ -21,6 +23,7 @@ export default function SocialCta({
   instagramLabel = "IG 私訊",
   className = "",
 }: SocialCtaProps) {
+  const [showContactForm, setShowContactForm] = useState(false);
   return (
     <div className={`rounded-2xl border border-white/[0.08] bg-[#1a3347] p-6 text-center ${className}`.trim()}>
       <h3 className="text-base font-bold text-white">{title}</h3>
@@ -53,6 +56,12 @@ export default function SocialCta({
         >
           {instagramLabel}
         </a>
+        <button
+          onClick={() => setShowContactForm(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#00b4d8] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#0096c7]"
+        >
+          聯絡我們
+        </button>
       </div>
 
       {/* 底部：版權 + 社群圖示靠右 */}
@@ -79,6 +88,7 @@ export default function SocialCta({
           </a>
         </div>
       </div>
+      <ContactFormModal isOpen={showContactForm} onClose={() => setShowContactForm(false)} />
     </div>
   );
 }
