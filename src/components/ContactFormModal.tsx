@@ -16,14 +16,52 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   if (!isOpen) return null;
 
+  // 格式驗證
+  const validatePhone = (v: string) => {
+    if (!v.trim()) return "";
+    // 台灣手機 09xx 或市話 02/03/04... 或國際 +886，允許 - 和空格
+    const cleaned = v.replace(/[\s-]/g, "");
+    if (/^09\d{8}$/.test(cleaned)) return "";
+    if (/^0[2-8]\d{7,8}$/.test(cleaned)) return "";
+    if (/^\+?\d{10,15}$/.test(cleaned)) return "";
+    return "請輸入正確的電話號碼（例如 0912345678）";
+  };
+
+  const validateLineId = (v: string) => {
+    if (!v.trim()) return "";
+    // LINE ID：4-20 字元，英數字、點、底線、橫線
+    if (/^[a-zA-Z0-9._-]{4,20}$/.test(v.trim())) return "";
+    return "LINE ID 格式不正確（4-20 字元，僅限英數字、點、底線）";
+  };
+
+  const validateEmail = (v: string) => {
+    if (!v.trim()) return "";
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return "";
+    return "請輸入正確的信箱格式（例如 example@mail.com）";
+  };
+
   const hasContact = phone.trim() || lineId.trim() || email.trim();
-  const canSubmit = name.trim() && hasContact && !submitting;
+  const hasFieldErrors = Object.values(fieldErrors).some((e) => e);
+  const canSubmit = name.trim() && hasContact && !hasFieldErrors && !submitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 送出前再驗證一次
+    const errors: Record<string, string> = {};
+    const phoneErr = validatePhone(phone);
+    const lineErr = validateLineId(lineId);
+    const emailErr = validateEmail(email);
+    if (phoneErr) errors.phone = phoneErr;
+    if (lineErr) errors.lineId = lineErr;
+    if (emailErr) errors.email = emailErr;
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     if (!canSubmit) return;
 
     setSubmitting(true);
@@ -62,6 +100,7 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
     setEmail("");
     setMessage("");
     setError("");
+    setFieldErrors({});
     setSubmitted(false);
     onClose();
   };
@@ -130,10 +169,12 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="手機或市話號碼"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8]"
+                  onChange={(e) => { setPhone(e.target.value); setFieldErrors((p) => ({ ...p, phone: "" })); }}
+                  onBlur={() => { const err = validatePhone(phone); setFieldErrors((p) => ({ ...p, phone: err })); }}
+                  placeholder="例如 0912345678"
+                  className={`w-full rounded-lg border bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8] ${fieldErrors.phone ? "border-red-400/60" : "border-white/10"}`}
                 />
+                {fieldErrors.phone && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.phone}</p>}
               </div>
 
               {/* LINE ID */}
@@ -142,10 +183,12 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
                 <input
                   type="text"
                   value={lineId}
-                  onChange={(e) => setLineId(e.target.value)}
-                  placeholder="您的 LINE ID"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8]"
+                  onChange={(e) => { setLineId(e.target.value); setFieldErrors((p) => ({ ...p, lineId: "" })); }}
+                  onBlur={() => { const err = validateLineId(lineId); setFieldErrors((p) => ({ ...p, lineId: err })); }}
+                  placeholder="例如 gary_travel"
+                  className={`w-full rounded-lg border bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8] ${fieldErrors.lineId ? "border-red-400/60" : "border-white/10"}`}
                 />
+                {fieldErrors.lineId && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.lineId}</p>}
               </div>
 
               {/* 信箱 */}
@@ -154,10 +197,12 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@mail.com"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8]"
+                  onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: "" })); }}
+                  onBlur={() => { const err = validateEmail(email); setFieldErrors((p) => ({ ...p, email: err })); }}
+                  placeholder="例如 example@mail.com"
+                  className={`w-full rounded-lg border bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8] ${fieldErrors.email ? "border-red-400/60" : "border-white/10"}`}
                 />
+                {fieldErrors.email && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.email}</p>}
               </div>
 
               {/* 想詢問的問題 */}
