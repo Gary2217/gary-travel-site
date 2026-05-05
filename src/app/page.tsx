@@ -11,6 +11,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
+import ContactInquiries from "@/components/ContactInquiries";
 
 type Destination = {
   id: string;
@@ -263,6 +264,8 @@ export default function HomePage() {
           description="立即聯繫旅遊規劃師 蓋瑞 GARY，為您量身打造專屬行程"
           logoUrl={siteLogoUrl}
         />
+
+        {isDevMode && <ContactInquiries />}
       </div>
 
       <FloatingContact />
