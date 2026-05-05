@@ -364,6 +364,47 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setEditingId(null);
   };
 
+  /** 新增梯次時，預填上一筆資料（只清空日期） */
+  const prefillFromLast = () => {
+    const last = dates.length > 0 ? dates[dates.length - 1] : null;
+    if (!last) { resetForm(); return; }
+
+    setEditingId(null);
+    setFormDate(today);
+
+    if (last.flight_segments && last.flight_segments.length > 0) {
+      // 複製航段，清空日期
+      setFormSegments(last.flight_segments.map((seg) => ({ ...seg, date: "" })));
+    } else {
+      const segs: FlightSegment[] = [];
+      if (last.outbound_flight || last.outbound_time || last.outbound_from || last.outbound_to) {
+        segs.push({
+          date: "",
+          airline: last.airline || "",
+          flight_number: last.outbound_flight || "",
+          dep_time: last.outbound_time || "",
+          dep_airport: last.outbound_from || "",
+          arr_time: last.outbound_arrival_time || "",
+          arr_airport: last.outbound_to || "",
+          next_day: last.outbound_next_day || false,
+        });
+      }
+      if (last.return_flight || last.return_time || last.return_from || last.return_to) {
+        segs.push({
+          date: "",
+          airline: last.airline || "",
+          flight_number: last.return_flight || "",
+          dep_time: last.return_time || "",
+          dep_airport: last.return_from || "",
+          arr_time: last.return_arrival_time || "",
+          arr_airport: last.return_to || "",
+          next_day: last.return_next_day || false,
+        });
+      }
+      setFormSegments(segs);
+    }
+  };
+
   const buildPayload = () => {
     const out = formSegments[0];
     const ret = formSegments.length > 1 ? formSegments[formSegments.length - 1] : null;
@@ -489,7 +530,10 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         <h2 className="text-sm font-medium uppercase tracking-wider text-white/50">出團日期</h2>
         {isDevMode && (
           <button
-            onClick={() => { resetForm(); setShowAddForm(!showAddForm); }}
+            onClick={() => {
+              if (showAddForm) { resetForm(); setShowAddForm(false); }
+              else { prefillFromLast(); setShowAddForm(true); }
+            }}
             className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
           >
             {showAddForm ? "取消" : "新增梯次"}
