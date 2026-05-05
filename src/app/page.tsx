@@ -226,8 +226,8 @@ export default function HomePage() {
                 >
                   {/* 排名徽章 */}
                   {i < 3 && (
-                    <div className={`absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white shadow-lg ${
-                      i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-gray-400' : 'bg-amber-700'
+                    <div className={`absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shadow-lg ring-2 ${
+                      i === 0 ? 'bg-gradient-to-br from-yellow-300 to-amber-500 text-amber-900 ring-yellow-300/50' : i === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-400 text-gray-700 ring-gray-300/50' : 'bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100 ring-amber-600/50'
                     }`}>
                       {i + 1}
                     </div>
