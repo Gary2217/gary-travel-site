@@ -230,7 +230,7 @@ export default function FlightsPage() {
 
         {/* Region filter tabs */}
         <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
-          <div className="mx-auto max-w-[1100px] overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mx-auto max-w-site overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex min-w-max justify-center gap-2 md:min-w-0 md:flex-wrap">
               {REGIONS.map((region) => (
                 <button
@@ -251,7 +251,7 @@ export default function FlightsPage() {
         </div>
 
         {/* Cards grid */}
-        <div className="mx-auto max-w-[1100px] py-6">
+        <div className="mx-auto max-w-site py-6">
           {loading ? (
             <div className="flex items-center justify-center py-20 text-white/50">
               <svg className="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">

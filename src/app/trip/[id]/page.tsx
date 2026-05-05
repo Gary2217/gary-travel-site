@@ -619,7 +619,7 @@ export default function TripPage() {
       <div id="trip-content" />
 
       {/* 標題區塊 */}
-      <div className="mx-auto max-w-[1100px] px-3 pt-[72px] sm:px-4 md:px-6 lg:px-6">
+      <div className="mx-auto max-w-site px-3 pt-[72px] sm:px-4 md:px-6 lg:px-6">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <div className="min-w-0 lg:col-span-1">
             <div ref={titleRef}>
@@ -995,7 +995,7 @@ export default function TripPage() {
 
       {showPriceDetailModal && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           onClick={() => setShowPriceDetailModal(false)}
         >
           <div
@@ -1203,7 +1203,7 @@ export default function TripPage() {
       {/* DevMode 編輯面板 */}
       {/* 編輯彈窗 */}
       {showEditPanel && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={e => { if (e.target === e.currentTarget) setShowEditPanel(false); }}>
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1923] p-5 shadow-2xl backdrop-blur-xl"
             onClick={e => e.stopPropagation()}>
@@ -1379,7 +1379,7 @@ export default function TripPage() {
 
       {/* 行程概要編輯彈窗 */}
       {showTextEditor && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={() => setShowTextEditor(false)}>
           <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1923] p-5 shadow-2xl backdrop-blur-xl"
             onClick={e => e.stopPropagation()}>
@@ -1571,7 +1571,7 @@ export default function TripPage() {
       {/* 下載門檻彈窗 */}
       {showDownloadGate && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) { setShowDownloadGate(false); setDownloadReady(false); }
           }}
@@ -1687,7 +1687,7 @@ export default function TripPage() {
       {/* 分享門檻彈窗 */}
       {showShareGate && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowShareGate(false);
           }}

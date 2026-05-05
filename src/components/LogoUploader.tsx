@@ -71,7 +71,7 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
       </button>
 
       {isOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setIsOpen(false)}>
+        <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setIsOpen(false)}>
           <div className="w-full max-w-lg rounded-xl bg-[rgba(20,20,30,0.98)] p-4 shadow-2xl backdrop-blur-xl sm:p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-bold text-white sm:text-lg">編輯網站 LOGO</h3>

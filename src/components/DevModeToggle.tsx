@@ -155,7 +155,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
 
     {/* 聯絡表單記錄浮動面板 */}
     {showInquiries && (
-      <div className="fixed inset-0 z-[90] flex items-start justify-center pt-16 px-4" onClick={() => setShowInquiries(false)}>
+      <div className="fixed inset-0 z-modal flex items-start justify-center pt-16 px-4" onClick={() => setShowInquiries(false)}>
         <div className="absolute inset-0 bg-black/50" />
         <div
           className="relative w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0f1923] p-4 shadow-2xl"

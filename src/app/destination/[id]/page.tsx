@@ -190,7 +190,7 @@ export default function DestinationPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f1923] via-black/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
-          <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto max-w-site">
             {destination.regions && (
               <span className="mb-1.5 inline-block rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:mb-2 sm:px-3 sm:py-1 sm:text-xs">
                 {destination.regions.category_label}
@@ -207,7 +207,7 @@ export default function DestinationPage() {
       </div>
 
       {/* 行程列表 */}
-      <section className="mx-auto max-w-[1100px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
+      <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
 
         {/* 搜尋條件 banner */}
         {(dateFilter || cityFilter) && (

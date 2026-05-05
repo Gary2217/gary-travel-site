@@ -237,7 +237,7 @@ export default function TripCard({
       {/* 下載門檻彈窗 */}
       {showDownloadGate && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowDownloadGate(false);
           }}

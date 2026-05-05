@@ -36,8 +36,8 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-[60] h-14 border-b border-white/[0.08] bg-[rgba(15,25,35,0.95)] backdrop-blur-[12px]">
-        <div className="mx-auto flex h-full max-w-[1100px] items-center justify-between px-4 md:px-6">
+      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-white/[0.08] bg-[rgba(15,25,35,0.95)] backdrop-blur-[12px]">
+        <div className="mx-auto flex h-full max-w-site items-center justify-between px-4 md:px-6">
           {/* 左側：返回 + Logo + 品牌 */}
           <div className="flex items-center gap-2">
             {showBackButton && (

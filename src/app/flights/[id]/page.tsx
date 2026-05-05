@@ -72,7 +72,7 @@ export default function FlightDetailPage() {
     <main className="min-h-screen bg-[#0f1923] text-white">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
-      <div className="mx-auto max-w-[1100px] px-4 pt-16 md:px-5">
+      <div className="mx-auto max-w-site px-4 pt-16 md:px-5">
 
         {/* ── 搜尋框（精簡版） ── */}
         <TravelSearchBar flightOnly />

@@ -140,7 +140,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
       {mounted && isOpen && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4"
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4"
           onClick={(e) => {
             e.stopPropagation();
             if (e.target === e.currentTarget) {

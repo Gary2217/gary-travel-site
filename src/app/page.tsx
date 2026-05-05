@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getRegionsWithDestinations, getSiteLogo, trackClick } from "@/lib/supabase";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
@@ -12,6 +13,7 @@ import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
 import ContactInquiries from "@/components/ContactInquiries";
+import { Skeleton, GridSkeleton } from "@/components/Skeleton";
 
 type Destination = {
   id: string;
@@ -120,10 +122,22 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0f1923] text-white">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#00b4d8] border-r-transparent"></div>
-          <p className="mt-4 text-white/50">載入中...</p>
+      <main className="min-h-screen bg-brand-bg pt-14 text-white">
+        <div className="mx-auto max-w-site px-4 py-6 md:px-5">
+          <div className="mb-8">
+            <Skeleton className="mb-2 h-5 w-32" />
+            <Skeleton className="h-3 w-56" />
+            <div className="mt-4">
+              <GridSkeleton count={4} cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4" />
+            </div>
+          </div>
+          <div>
+            <Skeleton className="mb-2 h-5 w-24" />
+            <Skeleton className="h-3 w-48" />
+            <div className="mt-4">
+              <GridSkeleton count={5} />
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -178,7 +192,7 @@ export default function HomePage() {
 
       {/* Region Tabs */}
       <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
-        <div className="mx-auto max-w-[1100px] overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mx-auto max-w-site overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex gap-2 justify-center min-w-max md:min-w-0 md:flex-wrap">
             {sections.map((section) => (
               <button
@@ -201,7 +215,7 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-[1100px] px-4 py-6 md:px-5">
+      <div className="mx-auto max-w-site px-4 py-6 md:px-5">
         {/* 熱門推薦 */}
         {popularTrips.length > 0 && !filterRegionId && (
           <section className="mb-10">
@@ -234,11 +248,12 @@ export default function HomePage() {
                   )}
                   {/* 封面圖 */}
                   <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
+                    <Image
                       src={trip.cover_image_url}
                       alt={trip.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                      className="object-cover transition duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     {/* 天數標籤 */}
@@ -325,12 +340,12 @@ export default function HomePage() {
                           onUpdate={(newUrl) => handleImageUpdate(destination.id, newUrl)}
                         />
                       )}
-                      <img
+                      <Image
                         src={destination.image_url}
                         alt={destination.title}
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                        className="object-cover transition duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
                       <div className="absolute inset-x-0 bottom-0 p-3">
