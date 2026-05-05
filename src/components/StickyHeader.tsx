@@ -61,8 +61,6 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
           {/* 右側：導航 + 社群 */}
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="hidden items-center gap-4 sm:flex">
-              <Link href="/" className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]">行程</Link>
-              <span className="text-white/20">|</span>
               <button
                 onClick={() => setShowContactForm(true)}
                 className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]"
