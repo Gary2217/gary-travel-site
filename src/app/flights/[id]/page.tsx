@@ -7,7 +7,6 @@ import DevModeToggle from "@/components/DevModeToggle";
 import TravelSearchBar from "@/components/TravelSearchBar";
 import FlightDepartureDates from "@/components/FlightDepartureDates";
 import FloatingContact from "@/components/FloatingContact";
-import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
@@ -135,7 +134,6 @@ export default function FlightDetailPage() {
         </div>
       </div>
 
-      <Footer />
       <FloatingContact />
       <ScrollToTop />
     </main>

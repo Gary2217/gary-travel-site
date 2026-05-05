@@ -5,7 +5,6 @@ import Link from "next/link";
 import StickyHeader from "@/components/StickyHeader";
 import SocialCta from "@/components/SocialCta";
 import FloatingContact from "@/components/FloatingContact";
-import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import DevModeToggle from "@/components/DevModeToggle";
 import TravelSearchBar from "@/components/TravelSearchBar";
@@ -590,7 +589,6 @@ export default function FlightsPage() {
         </div>
       )}
 
-      <Footer />
       <FloatingContact />
       <ScrollToTop />
     </main>
