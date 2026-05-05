@@ -7,6 +7,7 @@ import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import LogoUploader from "@/components/LogoUploader";
 import FloatingContact from "@/components/FloatingContact";
+import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
@@ -265,6 +266,7 @@ export default function HomePage() {
         />
       </div>
 
+      <Footer />
       <FloatingContact />
       <ScrollToTop />
     </main>

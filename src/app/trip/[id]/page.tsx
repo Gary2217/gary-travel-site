@@ -10,6 +10,7 @@ import DayItinerary from "@/components/DayItinerary";
 import DepartureDates from "@/components/DepartureDates";
 import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
+import Footer from "@/components/Footer";
 import ImageEditor from "@/components/ImageEditor";
 import { track } from "@/lib/analytics";
 
@@ -998,6 +999,8 @@ export default function TripPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
 
       {showPriceDetailModal && createPortal(
         <div
