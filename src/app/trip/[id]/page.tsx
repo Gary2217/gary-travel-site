@@ -432,18 +432,21 @@ export default function TripPage() {
 
     setDepartureEditorDate(selectedDeparture.departure_date);
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
-    setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
-    setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : '');
-    // 若當前梯次無 price_detail，從其他梯次找最近一筆有資料的來預填
-    let detailSource = selectedDepartureInfo.price_detail || '';
-    if (!detailSource && banner.departure_info_map) {
+
+    // 若當前梯次無資料，從其他梯次找最近一筆來預填
+    let infoSource = selectedDepartureInfo;
+    const hasOwnData = !!(selectedDepartureInfo.group_code || selectedDepartureInfo.price_detail);
+    if (!hasOwnData && banner.departure_info_map) {
       for (const d of departureDates) {
         if (d.id === selectedDepartureId) continue;
         const info = banner.departure_info_map[d.id];
-        if (info?.price_detail) { detailSource = info.price_detail; break; }
+        if (info?.price_detail) { infoSource = info; break; }
       }
     }
-    const parsedDetail = parsePriceDetail(detailSource);
+
+    setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
+    setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : '');
+    const parsedDetail = parsePriceDetail(infoSource.price_detail || '');
     setDetailTitle(parsedDetail.title);
     setDetailSubtitle(parsedDetail.subtitle);
     setDetailAdultPrice(parsedDetail.adultPrice);
@@ -459,7 +462,7 @@ export default function TripPage() {
     setDetailGroupNote(parsedDetail.groupNote);
     setDetailQuoteNote(parsedDetail.quoteNote);
     setDetailVisaNote(parsedDetail.visaNote);
-  }, [selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail]);
+  }, [selectedDepartureId, selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail]);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
