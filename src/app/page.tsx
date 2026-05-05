@@ -7,7 +7,6 @@ import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import LogoUploader from "@/components/LogoUploader";
 import FloatingContact from "@/components/FloatingContact";
-import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
@@ -142,7 +141,7 @@ export default function HomePage() {
       />
 
       {/* Search Section */}
-      <section className="bg-gradient-to-b from-[#162a3a] to-[#0f1923] px-4 pb-6 pt-8">
+      <section className="bg-gradient-to-b from-[#162a3a] to-[#0f1923] px-4 pb-6 pt-3">
         <TravelSearchBar
           regions={sections.map((s) => ({
             id: s.id,
@@ -266,7 +265,6 @@ export default function HomePage() {
         />
       </div>
 
-      <Footer />
       <FloatingContact />
       <ScrollToTop />
     </main>
