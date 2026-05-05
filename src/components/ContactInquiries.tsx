@@ -59,14 +59,12 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
     if (records.length === 0) return;
 
     const header = "發送日期,姓名/暱稱,電話,LINE ID,信箱,詢問內容";
+    const esc = (v: string) => `"${(v || "").replace(/"/g, '""').replace(/\n/g, " ")}"`;
+    // 電話用 ="xxx" 格式防止 Excel 轉科學記號
+    const escPhone = (v: string) => v ? `="'${v.replace(/"/g, '""')}"` : `""`;
     const rows = records.map((r) => {
       const date = formatDate(r.created_at);
-      const name = (r.name || "").replace(/"/g, '""');
-      const phone = (r.phone || "").replace(/"/g, '""');
-      const lineId = (r.line_id || "").replace(/"/g, '""');
-      const email = (r.email || "").replace(/"/g, '""');
-      const msg = (r.message || "").replace(/"/g, '""').replace(/\n/g, " ");
-      return `"${date}","${name}","${phone}","${lineId}","${email}","${msg}"`;
+      return `${esc(date)},${esc(r.name)},${escPhone(r.phone || "")},${esc(r.line_id || "")},${esc(r.email || "")},${esc(r.message || "")}`;
     });
 
     const bom = "\uFEFF";
