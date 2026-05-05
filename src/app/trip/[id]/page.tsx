@@ -11,6 +11,7 @@ import DepartureDates from "@/components/DepartureDates";
 import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
+import SideMediaCarousel from "@/components/SideMediaCarousel";
 import { track } from "@/lib/analytics";
 
 const EMPTY_TRIP_BANNER: TripBanner = {
@@ -626,45 +627,12 @@ export default function TripPage() {
             )}
 
             <div className="mt-4 hidden lg:block">
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347]">
-                {editTripBanner.side_image_url ? (
-                  <img
-                    src={editTripBanner.side_image_url}
-                    alt={`${trip.title} 出團資訊圖片`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(255,255,255,0.04),rgba(251,191,36,0.08))] px-8 text-center">
-                    <div>
-                      <p className="text-sm font-semibold tracking-[0.22em] text-white/55">行程形象圖</p>
-                      <p className="mt-3 text-base text-white/45">開發者模式可在這裡上傳圖片</p>
-                    </div>
-                  </div>
-                )}
-
-                {isDevMode && (
-                  <ImageEditor
-                    entityId={tripId}
-                    currentImageUrl={editTripBanner.side_image_url || ""}
-                    title={`${trip.title} 出團資訊圖片`}
-                    uploadFn={uploadTripBannerImage}
-                    onUpdate={(newUrl) => {
-                      setEditTripBanner((prev) => ({ ...prev, side_image_url: newUrl }));
-                      setTrip((prev) => {
-                        if (!prev) return prev;
-                        return {
-                          ...prev,
-                          trip_banner: {
-                            ...EMPTY_TRIP_BANNER,
-                            ...(prev.trip_banner || {}),
-                            side_image_url: newUrl,
-                          },
-                        };
-                      });
-                    }}
-                  />
-                )}
-              </div>
+              <SideMediaCarousel
+                tripId={tripId}
+                fallbackImageUrl={editTripBanner.side_image_url || ""}
+                tripTitle={trip.title}
+                isDevMode={isDevMode}
+              />
             </div>
           </div>
           <div className="mt-4 lg:mt-0 lg:col-span-1">
