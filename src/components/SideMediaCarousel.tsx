@@ -205,7 +205,7 @@ export default function SideMediaCarousel({
                     top: -64,
                     left: 0,
                     width: "100%",
-                    height: "calc(100% + 100px)",
+                    height: "calc(100% + 230px)",
                   }}
                   allow="autoplay; encrypted-media"
                   allowFullScreen
