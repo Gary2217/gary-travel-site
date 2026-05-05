@@ -16,6 +16,7 @@ interface SideMediaCarouselProps {
   fallbackImageUrl?: string;
   tripTitle: string;
   isDevMode: boolean;
+  videoMatchHeight?: number;
 }
 
 // 從 IG 網址取得嵌入用的短碼
@@ -29,6 +30,7 @@ export default function SideMediaCarousel({
   fallbackImageUrl,
   tripTitle,
   isDevMode,
+  videoMatchHeight,
 }: SideMediaCarouselProps) {
   const [mediaList, setMediaList] = useState<SideMedia[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -197,7 +199,10 @@ export default function SideMediaCarousel({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "4/4.8" }}>
+              <div
+                className="relative w-full overflow-hidden rounded-xl"
+                style={videoMatchHeight ? { height: videoMatchHeight } : { aspectRatio: "4/4.8" }}
+              >
                 <iframe
                   src={`https://www.instagram.com/p/${getIgPostId(currentMedia.url)}/embed/?autoplay=1&hidecaption=true`}
                   className="absolute border-0"

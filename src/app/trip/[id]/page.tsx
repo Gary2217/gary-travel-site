@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { getTripWithDays, getSiteLogo, uploadTripBannerImage, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
@@ -101,6 +101,9 @@ export default function TripPage() {
   const [showShareGate, setShowShareGate] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
   const [isDevMode, setIsDevMode] = useState(false);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const [videoMatchHeight, setVideoMatchHeight] = useState<number | undefined>(undefined);
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editSubtitle, setEditSubtitle] = useState('');
@@ -378,6 +381,25 @@ export default function TripPage() {
     loadData();
   }, [tripId]);
 
+  // 測量右欄高度，讓 IG 影片底部對齊行程概要底部
+  useEffect(() => {
+    function measure() {
+      if (!rightColumnRef.current || !titleRef.current) return;
+      const rightH = rightColumnRef.current.offsetHeight;
+      const titleH = titleRef.current.offsetHeight;
+      // carousel 的 mt-4 = 16px
+      const available = rightH - titleH - 16;
+      if (available > 200) setVideoMatchHeight(available);
+    }
+    // 延遲一幀確保 DOM 已更新
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", measure);
+    };
+  }, [trip, selectedDepartureId]);
+
   useEffect(() => {
     if (!trip) return;
 
@@ -600,6 +622,7 @@ export default function TripPage() {
       <div className="mx-auto max-w-[1100px] px-3 pt-[72px] sm:px-4 md:px-6 lg:px-6">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <div className="min-w-0 lg:col-span-1">
+            <div ref={titleRef}>
             <h1 className="text-2xl font-bold text-white sm:text-[1.75rem] md:text-[2rem]">{trip.title}</h1>
             {trip.subtitle && (
               <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-[15px] md:text-base">{trip.subtitle}</p>
@@ -626,16 +649,18 @@ export default function TripPage() {
               </div>
             )}
 
+            </div>
             <div className="mt-4 hidden lg:block">
               <SideMediaCarousel
                 tripId={tripId}
                 fallbackImageUrl={editTripBanner.side_image_url || ""}
                 tripTitle={trip.title}
                 isDevMode={isDevMode}
+                videoMatchHeight={videoMatchHeight}
               />
             </div>
           </div>
-          <div className="mt-4 lg:mt-0 lg:col-span-1">
+          <div ref={rightColumnRef} className="mt-4 lg:mt-0 lg:col-span-1">
             <div className="relative rounded-xl border border-white/[0.08] bg-[#1a3347] p-3.5">
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div>
