@@ -12,12 +12,16 @@ interface ContactForm {
   created_at: string;
 }
 
-export default function ContactInquiries() {
+interface ContactInquiriesProps {
+  defaultOpen?: boolean;
+}
+
+export default function ContactInquiries({ defaultOpen = false }: ContactInquiriesProps) {
   const [records, setRecords] = useState<ContactForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
   const [filterMonth, setFilterMonth] = useState("");
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!defaultOpen);
 
   const fetchRecords = async (year: string, month: string) => {
     setLoading(true);

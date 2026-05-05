@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ContactInquiries from "./ContactInquiries";
 
 interface DevModeToggleProps {
   onToggle: (enabled: boolean) => void;
@@ -12,6 +13,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const [mounted, setMounted] = useState(false);
   const [maintenanceOn, setMaintenanceOn] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [showInquiries, setShowInquiries] = useState(false);
 
   useEffect(() => {
     async function loadAuth() {
@@ -80,6 +82,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   }
 
   return (
+    <>
     <div className="flex items-center gap-1.5">
       {isDevMode && (
         <>
@@ -119,6 +122,18 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
             </svg>
             後台
           </a>
+          <button
+            onClick={() => setShowInquiries(!showInquiries)}
+            className={`inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold text-white transition sm:h-8 sm:px-3 sm:text-xs ${
+              showInquiries ? "bg-violet-500" : "bg-violet-500/80 hover:bg-violet-500"
+            }`}
+            title="聯絡表單記錄"
+          >
+            <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            表單
+          </button>
         </>
       )}
       <button
@@ -137,5 +152,27 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
         </svg>
       </button>
     </div>
+
+    {/* 聯絡表單記錄浮動面板 */}
+    {showInquiries && (
+      <div className="fixed inset-0 z-[90] flex items-start justify-center pt-16 px-4" onClick={() => setShowInquiries(false)}>
+        <div className="absolute inset-0 bg-black/50" />
+        <div
+          className="relative w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0f1923] p-4 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setShowInquiries(false)}
+            className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <ContactInquiries defaultOpen />
+        </div>
+      </div>
+    )}
+    </>
   );
 }
