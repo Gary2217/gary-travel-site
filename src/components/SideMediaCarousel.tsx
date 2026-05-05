@@ -197,7 +197,7 @@ export default function SideMediaCarousel({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "4/5" }}>
+              <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "4/4.8" }}>
                 <iframe
                   src={`https://www.instagram.com/p/${getIgPostId(currentMedia.url)}/embed/?autoplay=1&hidecaption=true`}
                   className="absolute border-0"
