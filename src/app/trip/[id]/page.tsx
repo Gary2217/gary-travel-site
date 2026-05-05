@@ -434,7 +434,16 @@ export default function TripPage() {
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
     setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
     setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : '');
-    const parsedDetail = parsePriceDetail(selectedDepartureInfo.price_detail || '');
+    // 若當前梯次無 price_detail，從其他梯次找最近一筆有資料的來預填
+    let detailSource = selectedDepartureInfo.price_detail || '';
+    if (!detailSource && banner.departure_info_map) {
+      for (const d of departureDates) {
+        if (d.id === selectedDepartureId) continue;
+        const info = banner.departure_info_map[d.id];
+        if (info?.price_detail) { detailSource = info.price_detail; break; }
+      }
+    }
+    const parsedDetail = parsePriceDetail(detailSource);
     setDetailTitle(parsedDetail.title);
     setDetailSubtitle(parsedDetail.subtitle);
     setDetailAdultPrice(parsedDetail.adultPrice);
