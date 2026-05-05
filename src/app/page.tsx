@@ -37,6 +37,14 @@ export default function HomePage() {
   const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
   const [filterDestId, setFilterDestId] = useState<string | null>(null);
   const [filterDate, setFilterDate] = useState('');
+  const [popularTrips, setPopularTrips] = useState<{
+    id: string;
+    title: string;
+    duration: string;
+    price_range: string;
+    cover_image_url: string;
+    destination_name: string;
+  }[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -78,6 +86,21 @@ export default function HomePage() {
     }
 
     loadSiteLogo();
+  }, []);
+
+  useEffect(() => {
+    async function loadPopular() {
+      try {
+        const res = await fetch('/api/popular-trips', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setPopularTrips(data);
+        }
+      } catch {
+        // 靜默失敗
+      }
+    }
+    loadPopular();
   }, []);
 
   const handleSearch = ({ regionId, destinationId, date }: { departureCity: string; regionId: string | null; destinationId: string | null; date: string }) => {
@@ -179,6 +202,70 @@ export default function HomePage() {
 
       {/* Content */}
       <div className="mx-auto max-w-[1100px] px-4 py-6 md:px-5">
+        {/* 熱門推薦 */}
+        {popularTrips.length > 0 && !filterRegionId && (
+          <section className="mb-10">
+            <div className="mb-4 px-1">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">&#x1F525;</span>
+                <h2 className="text-lg font-bold text-white">
+                  熱門推薦
+                </h2>
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                  2025–2026
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-white/50">最多台灣人出發的團體行程，精選人氣路線一次看</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {popularTrips.map((trip, i) => (
+                <Link
+                  key={trip.id}
+                  href={`/trip/${trip.id}`}
+                  className="group relative block overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                >
+                  {/* 排名徽章 */}
+                  {i < 3 && (
+                    <div className={`absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white shadow-lg ${
+                      i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-gray-400' : 'bg-amber-700'
+                    }`}>
+                      {i + 1}
+                    </div>
+                  )}
+                  {/* 封面圖 */}
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <img
+                      src={trip.cover_image_url}
+                      alt={trip.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    {/* 天數標籤 */}
+                    <div className="absolute right-2 top-2 rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                      {trip.duration}
+                    </div>
+                  </div>
+                  {/* 行程資訊 */}
+                  <div className="p-2.5 sm:p-3">
+                    {trip.destination_name && (
+                      <p className="mb-0.5 text-[10px] font-medium text-sky-400">{trip.destination_name}</p>
+                    )}
+                    <h3 className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-snug text-white sm:text-sm">
+                      {trip.title}
+                    </h3>
+                    {trip.price_range && (
+                      <p className="mt-1 text-xs font-bold text-amber-300">
+                        {trip.price_range.replace(/NT\$\s*/g, 'NT $ ').replace(/\s*[~～]\s*/g, ' ~ ')}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {(() => {
           let filtered = sections;
 
