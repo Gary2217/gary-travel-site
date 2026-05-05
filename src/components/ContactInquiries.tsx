@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
 
 interface ContactForm {
   id: string;
@@ -55,28 +56,35 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
     return `${y}/${m}/${day} ${h}:${min}`;
   };
 
-  const downloadCsv = () => {
+  const downloadXlsx = () => {
     if (records.length === 0) return;
 
-    const header = "發送日期,姓名/暱稱,電話,LINE ID,信箱,詢問內容";
-    const esc = (v: string) => `"${(v || "").replace(/"/g, '""').replace(/\n/g, " ")}"`;
-    // 電話用 ="xxx" 格式防止 Excel 轉科學記號
-    const escPhone = (v: string) => v ? `="'${v.replace(/"/g, '""')}"` : `""`;
-    const rows = records.map((r) => {
-      const date = formatDate(r.created_at);
-      return `${esc(date)},${esc(r.name)},${escPhone(r.phone || "")},${esc(r.line_id || "")},${esc(r.email || "")},${esc(r.message || "")}`;
-    });
+    const data = records.map((r) => ({
+      "發送日期": formatDate(r.created_at),
+      "姓名/暱稱": r.name || "",
+      "電話": r.phone || "",
+      "LINE ID": r.line_id || "",
+      "信箱": r.email || "",
+      "詢問內容": r.message || "",
+    }));
 
-    const bom = "\uFEFF";
-    const csv = bom + header + "\n" + rows.join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // 設定欄寬
+    ws["!cols"] = [
+      { wch: 18 }, // 發送日期
+      { wch: 14 }, // 姓名
+      { wch: 14 }, // 電話
+      { wch: 16 }, // LINE ID
+      { wch: 24 }, // 信箱
+      { wch: 30 }, // 詢問內容
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "聯絡表單");
+
     const monthLabel = filterMonth ? `${filterYear}-${filterMonth.padStart(2, "0")}` : filterYear;
-    a.download = `聯絡表單_${monthLabel}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    XLSX.writeFile(wb, `聯絡表單_${monthLabel}.xlsx`);
   };
 
   const currentYear = new Date().getFullYear();
@@ -124,14 +132,14 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
               ))}
             </select>
             <button
-              onClick={downloadCsv}
+              onClick={downloadXlsx}
               disabled={records.length === 0}
               className="ml-auto inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-40"
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
               </svg>
-              下載 CSV
+              下載 Excel
             </button>
           </div>
 
