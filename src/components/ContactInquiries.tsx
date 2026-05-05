@@ -56,7 +56,7 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
     return `${y}/${m}/${day} ${h}:${min}`;
   };
 
-  const downloadXlsx = () => {
+  const downloadXlsx = async () => {
     if (records.length === 0) return;
 
     const data = records.map((r) => ({
@@ -84,7 +84,29 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
     XLSX.utils.book_append_sheet(wb, ws, "聯絡表單");
 
     const monthLabel = filterMonth ? `${filterYear}-${filterMonth.padStart(2, "0")}` : filterYear;
-    XLSX.writeFile(wb, `聯絡表單_${monthLabel}.xlsx`);
+    const fileName = `聯絡表單_${monthLabel}.xlsx`;
+
+    // 使用 File System Access API 讓用戶選擇儲存位置
+    if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+      try {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: "Excel 檔案",
+            accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        await writable.write(new Uint8Array(buf));
+        await writable.close();
+        return;
+      } catch {
+        // 用戶取消或不支援，改用傳統下載
+      }
+    }
+
+    XLSX.writeFile(wb, fileName);
   };
 
   const currentYear = new Date().getFullYear();
