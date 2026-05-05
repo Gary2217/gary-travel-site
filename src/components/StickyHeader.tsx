@@ -47,8 +47,8 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             </button>
           )}
           <Link href="/" className="flex shrink-0 items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
-            <img src={logoUrl} alt="蓋瑞旅遊" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-            <span className="text-sm font-bold text-white">蓋瑞旅遊</span>
+            <img src={logoUrl} alt="旅行沒有終點" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+            <span className="text-sm font-bold text-white">旅行沒有終點</span>
           </Link>
           {logoEditorSlot}
         </div>
