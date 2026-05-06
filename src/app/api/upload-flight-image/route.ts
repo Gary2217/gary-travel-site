@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { verifyDevAuthCookie, DEV_AUTH_COOKIE_NAME } from '@/lib/dev-auth';
+import { requireDevAuth } from '@/lib/api-auth';
+import { validateFileSignature } from '@/lib/file-validation';
+import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -9,29 +10,13 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024;
 
-function extractStoragePath(publicUrl: string): string | null {
-  try {
-    const projectUrl = new URL(supabaseUrl);
-    const url = new URL(publicUrl);
-    if (url.origin !== projectUrl.origin) return null;
-    const prefix = '/storage/v1/object/public/images/';
-    if (!url.pathname.startsWith(prefix)) return null;
-    return url.pathname.slice(prefix.length) || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server upload configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' }, { status: 500 });
-    }
-
-    const cookieStore = cookies();
-    const devCookie = cookieStore.get(DEV_AUTH_COOKIE_NAME)?.value;
-    if (!verifyDevAuthCookie(devCookie)) {
-      return NextResponse.json({ error: '未授權' }, { status: 401 });
+      return NextResponse.json({ error: 'Missing server upload configuration.' }, { status: 500 });
     }
 
     const formData = await request.formData();
@@ -48,13 +33,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '圖片不可超過 5MB' }, { status: 400 });
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (!validateFileSignature(buffer, file.type)) {
+      return NextResponse.json({ error: '檔案內容與類型不符' }, { status: 400 });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const fileExt = (file.name.split('.').pop()?.toLowerCase() || 'jpg').replace(/[^a-z0-9]/g, '');
     const fileName = `flight-${Date.now()}.${fileExt}`;
     const filePath = `flights/${fileName}`;
-
-    const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
       .from('images')
@@ -73,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // 刪除舊圖
     if (oldImageUrl) {
-      const oldPath = extractStoragePath(oldImageUrl);
+      const oldPath = getStoragePathFromPublicUrl(oldImageUrl);
       if (oldPath && oldPath !== filePath) {
         await supabase.storage.from('images').remove([oldPath]);
       }

@@ -106,6 +106,13 @@ export async function GET(request: NextRequest) {
       query = query.gte('created_at', startDate).lt('created_at', endDate);
     }
 
+    // 分頁保護，預設最多 500 筆
+    const rawLimit = Number.parseInt(searchParams.get('limit') || '500', 10);
+    const rawOffset = Number.parseInt(searchParams.get('offset') || '0', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 500) : 500;
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
+    query = query.range(offset, offset + limit - 1);
+
     const { data, error } = await query;
 
     if (error) {

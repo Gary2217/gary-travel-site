@@ -1,34 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireDevAuth } from '@/lib/api-auth';
+import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const ALLOWED_EXTENSIONS = ['pdf'];
 
-function getStoragePathFromPublicUrl(publicUrl: string) {
-  try {
-    const currentProjectUrl = new URL(supabaseUrl);
-    const url = new URL(publicUrl);
-
-    if (url.origin !== currentProjectUrl.origin) {
-      return null;
-    }
-
-    const prefix = '/storage/v1/object/public/images/';
-
-    if (!url.pathname.startsWith(prefix)) {
-      return null;
-    }
-
-    return url.pathname.slice(prefix.length) || null;
-  } catch {
-    return null;
-  }
-}
-
 // POST: 建立 signed upload URL（檔案不經過 Vercel）
 export async function POST(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -81,6 +65,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE: 刪除行程檔案
 export async function DELETE(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -126,6 +113,9 @@ export async function DELETE(request: NextRequest) {
 
 // PUT: 確認上傳完成，更新資料庫，清除舊檔案
 export async function PUT(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });

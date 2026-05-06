@@ -4,49 +4,72 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// GET - 取得熱門推薦行程（依瀏覽次數排序）
+function pickDestinationTitle(destinations: unknown): string {
+  if (Array.isArray(destinations)) {
+    const first = destinations[0];
+    if (first && typeof first === 'object') {
+      const title = (first as { title?: unknown }).title;
+      return typeof title === 'string' ? title : '';
+    }
+    return '';
+  }
+
+  if (destinations && typeof destinations === 'object') {
+    const title = (destinations as { title?: unknown }).title;
+    return typeof title === 'string' ? title : '';
+  }
+
+  return '';
+}
+
+// GET - 取得熱門推薦行程（依近 6 個月瀏覽次數排序）
 export async function GET() {
   try {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // 從 analytics 統計各行程瀏覽次數
-    const { data: events } = await supabase
-      .from('analytics_events')
-      .select('trip_id')
-      .eq('event_type', 'trip_view')
-      .not('trip_id', 'is', null);
+    // 只統計近 6 個月的瀏覽事件
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    // 計算每個 trip 的瀏覽次數
-    const viewCounts = new Map<string, number>();
-    (events || []).forEach((e: any) => {
-      if (e.trip_id) {
-        viewCounts.set(e.trip_id, (viewCounts.get(e.trip_id) || 0) + 1);
-      }
-    });
-
-    // 取得所有 active 行程
-    const { data: trips, error } = await supabase
+    const { data: trips, error: tripsError } = await supabase
       .from('trips')
-      .select('id, title, subtitle, duration, price_range, cover_image_url, destination_id, destinations(title)')
-      .eq('is_active', true);
+      .select('id, title, subtitle, duration, price_range, cover_image_url, destinations(title)')
+      .eq('is_active', true)
+      .not('cover_image_url', 'is', null);
 
-    if (error) {
-      console.error('popular-trips query error:', error.message);
+    if (tripsError) {
+      console.error('popular-trips query error:', tripsError.message);
       return NextResponse.json({ error: '載入失敗' }, { status: 500 });
     }
 
-    // 依瀏覽次數排序，取前 8 個有封面圖的行程
-    const ranked = (trips || [])
-      .filter((t: any) => t.cover_image_url)
-      .map((t: any) => ({
+    if (!trips || trips.length === 0) {
+      return NextResponse.json([], {
+        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+      });
+    }
+
+    // 由資料庫執行聚合（count），避免載入大量 analytics 到記憶體
+    const viewCountResults = await Promise.all(
+      trips.map((trip) =>
+        supabase
+          .from('analytics_events')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_type', 'trip_view')
+          .eq('trip_id', trip.id)
+          .gte('created_at', sixMonthsAgo.toISOString())
+      )
+    );
+
+    const ranked = trips
+      .map((t, index) => ({
         id: t.id,
         title: t.title,
         subtitle: t.subtitle || '',
         duration: t.duration,
         price_range: t.price_range || '',
         cover_image_url: t.cover_image_url,
-        destination_name: t.destinations?.title || '',
-        view_count: viewCounts.get(t.id) || 0,
+        destination_name: pickDestinationTitle(t.destinations),
+        view_count: viewCountResults[index]?.count ?? 0,
       }))
       .sort((a: any, b: any) => b.view_count - a.view_count)
       .slice(0, 8);

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
+import { requireDevAuth } from '@/lib/api-auth';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -17,9 +19,9 @@ function createSupabase() {
   });
 }
 
-function isDevUser(req: NextRequest) {
-  const cookie = req.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
-  return verifyDevAuthCookie(cookie);
+function checkIsDevUser(): boolean {
+  const token = cookies().get(DEV_AUTH_COOKIE_NAME)?.value;
+  return verifyDevAuthCookie(token);
 }
 
 // GET: 查詢維護模式狀態
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest) {
       .single();
 
     const enabled = data?.value === true || data?.value === 'true';
-    const devUser = isDevUser(req);
+    const devUser = checkIsDevUser();
 
     return NextResponse.json(
       { enabled, isDevUser: devUser },
@@ -46,15 +48,14 @@ export async function GET(req: NextRequest) {
     );
   } catch {
     // 表不存在或其他錯誤，預設關閉維護模式
-    return NextResponse.json({ enabled: false, isDevUser: isDevUser(req) });
+    return NextResponse.json({ enabled: false, isDevUser: checkIsDevUser() });
   }
 }
 
 // PUT: 切換維護模式（需要 dev auth）
 export async function PUT(req: NextRequest) {
-  if (!isDevUser(req)) {
-    return NextResponse.json({ error: '未授權' }, { status: 401 });
-  }
+  const authError = requireDevAuth();
+  if (authError) return authError;
 
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {

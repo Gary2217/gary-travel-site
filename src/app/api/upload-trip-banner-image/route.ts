@@ -2,33 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
 import { validateFileSignature } from '@/lib/file-validation';
+import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024;
-
-function getStoragePathFromPublicUrl(publicUrl: string) {
-  try {
-    const currentProjectUrl = new URL(supabaseUrl);
-    const url = new URL(publicUrl);
-
-    if (url.origin !== currentProjectUrl.origin) {
-      return null;
-    }
-
-    const prefix = '/storage/v1/object/public/images/';
-
-    if (!url.pathname.startsWith(prefix)) {
-      return null;
-    }
-
-    return url.pathname.slice(prefix.length) || null;
-  } catch {
-    return null;
-  }
-}
 
 export async function POST(request: NextRequest) {
   const authError = requireDevAuth();

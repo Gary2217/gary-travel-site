@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
-import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
+import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function isDevUser(req: NextRequest) {
-  const cookie = req.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
-  return verifyDevAuthCookie(cookie);
-}
 
 export async function GET(
   _request: NextRequest,
@@ -89,9 +84,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isDevUser(request)) {
-    return NextResponse.json({ error: '未授權' }, { status: 401 });
-  }
+  const authError = requireDevAuth();
+  if (authError) return authError;
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -135,9 +129,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isDevUser(request)) {
-    return NextResponse.json({ error: '未授權' }, { status: 401 });
-  }
+  const authErr = requireDevAuth();
+  if (authErr) return authErr;
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -145,11 +138,12 @@ export async function DELETE(
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // 先刪除關聯的 trip_days
-    await supabase
-      .from('trip_days')
-      .delete()
-      .eq('trip_id', params.id);
+    // 先刪除所有關聯資料
+    await Promise.all([
+      supabase.from('trip_days').delete().eq('trip_id', params.id),
+      supabase.from('trip_departure_dates').delete().eq('trip_id', params.id),
+      supabase.from('trip_side_media').delete().eq('trip_id', params.id),
+    ]);
 
     // 刪除行程
     const { error } = await supabase

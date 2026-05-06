@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from "@/lib/dev-auth";
+import { requireDevAuth } from "@/lib/api-auth";
 
 interface AnalyticsRow {
   event_type: string;
@@ -13,10 +13,8 @@ interface AnalyticsRow {
 }
 
 export async function GET(req: NextRequest) {
-  const cookie = req.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
-  if (!verifyDevAuthCookie(cookie)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const authError = requireDevAuth();
+  if (authError) return authError;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

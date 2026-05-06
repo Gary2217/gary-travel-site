@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
-import { cookies } from 'next/headers';
-import { verifyDevAuthCookie, DEV_AUTH_COOKIE_NAME } from '@/lib/dev-auth';
+import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,11 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
     }
 
-    const cookieStore = cookies();
-    const devCookie = cookieStore.get(DEV_AUTH_COOKIE_NAME)?.value;
-    if (!verifyDevAuthCookie(devCookie)) {
-      return NextResponse.json({ error: '未授權' }, { status: 401 });
-    }
+    const authError = requireDevAuth();
+    if (authError) return authError;
 
     const body = await request.json();
     const { region, from_city, to_city, airlines, duration, price_range, image_url, direct, metadata } = body;

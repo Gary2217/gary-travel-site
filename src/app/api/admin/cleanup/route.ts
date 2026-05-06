@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
+import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  // 需要開發者身份驗證
-  const cookie = req.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
-  if (!verifyDevAuthCookie(cookie)) {
-    return NextResponse.json({ error: '未授權' }, { status: 401 });
-  }
+  const authError = requireDevAuth();
+  if (authError) return authError;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
