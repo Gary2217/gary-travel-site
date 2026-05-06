@@ -231,13 +231,13 @@ export default function FlightsPage() {
         {/* Region filter tabs */}
         <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
           <div className="mx-auto max-w-site overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max justify-center gap-2 md:min-w-0 md:flex-wrap">
+            <div className="flex min-w-max justify-start gap-2 md:min-w-0 md:flex-wrap md:justify-center">
               {REGIONS.map((region) => (
                 <button
                   key={region}
                   type="button"
                   onClick={() => setActiveRegion(region)}
-                  className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
+                  className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${
                     activeRegion === region
                       ? "border-[#00b4d8] bg-[rgba(0,180,216,0.15)] text-[#48cae4]"
                       : "border-white/[0.08] text-white/75 hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"

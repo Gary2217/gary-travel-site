@@ -515,12 +515,12 @@ export default function FlightDepartureDates({
         {monthLabels.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => setActiveMonth("all")}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
               全部
             </button>
             {monthLabels.map((m) => (
               <button key={m.key} onClick={() => setActiveMonth(m.key)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === m.key ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === m.key ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
                 {m.label}
               </button>
             ))}

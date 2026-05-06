@@ -611,14 +611,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {monthKeys.length > 1 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           <button onClick={() => setActiveMonth("all")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
             全部
           </button>
           {monthKeys.map((m) => {
             const [, mo] = m.split("-");
             return (
               <button key={m} onClick={() => setActiveMonth(m)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${activeMonth === m ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === m ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
                 {mo}月
               </button>
             );

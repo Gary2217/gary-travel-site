@@ -730,7 +730,7 @@ export default function TripPage() {
                       <button
                         type="button"
                         onClick={() => setShowPriceDetailModal(true)}
-                        className="text-xs font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
+                        className="inline-flex min-h-10 items-center px-2 text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
                       >
                         看詳細內容
                       </button>

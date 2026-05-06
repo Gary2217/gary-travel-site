@@ -30,7 +30,7 @@ export default function FavoriteButton({ tripId }: FavoriteButtonProps) {
     <button
       type="button"
       onClick={handleClick}
-      className={`absolute right-2 bottom-2 z-10 flex h-7 w-7 items-center justify-center rounded-full transition active:scale-90 ${
+      className={`absolute right-2 bottom-2 z-10 flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 ${
         liked
           ? "bg-red-500/90 text-white"
           : "bg-black/40 text-white/60 hover:bg-black/60 hover:text-white"
@@ -38,7 +38,7 @@ export default function FavoriteButton({ tripId }: FavoriteButtonProps) {
       title={liked ? "取消收藏" : "加入收藏"}
     >
       <svg
-        className="h-3.5 w-3.5"
+        className="h-5 w-5"
         fill={liked ? "currentColor" : "none"}
         stroke="currentColor"
         viewBox="0 0 24 24"

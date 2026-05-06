@@ -193,20 +193,20 @@ export default function HomePage() {
       {/* Region Tabs */}
       <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
         <div className="mx-auto max-w-site overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex gap-2 justify-center min-w-max md:min-w-0 md:flex-wrap">
+          <div className="flex min-w-max justify-start gap-2 md:min-w-0 md:flex-wrap md:justify-center">
             {sections.map((section) => (
               <button
                 key={section.id}
                 type="button"
                 onClick={() => scrollToSection(section.id)}
-                className="rounded-full border border-white/[0.08] bg-transparent px-4 py-1.5 text-xs font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
+                className="rounded-full border border-white/[0.08] bg-transparent px-4 py-2.5 text-sm font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
               >
                 {section.categoryLabel}
               </button>
             ))}
             <Link
               href="/flights"
-              className="rounded-full border border-white/[0.08] bg-transparent px-4 py-1.5 text-xs font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
+              className="rounded-full border border-white/[0.08] bg-transparent px-4 py-2.5 text-sm font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
             >
               機票
             </Link>
