@@ -995,11 +995,11 @@ export default function TripPage() {
 
       {showPriceDetailModal && createPortal(
         <div
-          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-modal-top flex items-start justify-center overflow-y-auto bg-black/70 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-[calc(env(safe-area-inset-top)+10px)] backdrop-blur-sm sm:items-center sm:p-4"
           onClick={() => setShowPriceDetailModal(false)}
         >
           <div
-            className="w-full max-w-5xl overflow-hidden rounded-[1.9rem] border border-white/10 bg-[rgba(12,16,28,0.98)] shadow-2xl backdrop-blur-xl"
+            className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[1.25rem] border border-white/10 bg-[rgba(12,16,28,0.98)] shadow-2xl backdrop-blur-xl sm:rounded-[1.9rem]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(15,23,42,0.18),rgba(251,191,36,0.12))] px-4 py-4 sm:px-6 sm:py-5">
@@ -1023,7 +1023,7 @@ export default function TripPage() {
               </div>
             </div>
 
-            <div className="space-y-4 p-4 sm:p-6">
+            <div className="max-h-[calc(100dvh-170px)] space-y-4 overflow-y-auto p-4 sm:max-h-[calc(100dvh-220px)] sm:p-6">
               {isDevMode ? (
                 <div className="space-y-4">
                   <div className="grid gap-4 xl:grid-cols-[0.82fr_1.38fr]">
