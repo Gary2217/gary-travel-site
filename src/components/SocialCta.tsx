@@ -64,12 +64,12 @@ export default function SocialCta({
         </button>
       </div>
 
-      {/* 底部：版權 + 社群圖示靠右 */}
-      <div className="relative mt-4">
+      {/* 底部：版權 + 社群圖示 */}
+      <div className="relative mt-4 border-t border-white/10 pt-3">
         <p className="text-center text-[11px] text-white/25">
           © {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.
         </p>
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        <div className="mt-2 flex items-center justify-center gap-2 sm:absolute sm:right-0 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2">
           <a href={fbHref} target="_blank" rel="noreferrer" aria-label="Facebook"
             className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/45 transition hover:border-[#1877F2] hover:text-[#1877F2]">
             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">

@@ -721,16 +721,16 @@ export default function TripPage() {
                     )}
                   </div>
 
-                  <div className="absolute bottom-0 right-4 w-fit px-1 py-1 text-left">
+                  <div className="border-t border-white/10 pt-2 text-left">
                     <p className="text-[11px] font-semibold tracking-[0.2em] text-amber-200/70">團費價格</p>
-                    <div className="mt-1 flex items-center gap-3">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="text-base font-bold text-amber-300">
                         {formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)}
                       </span>
                       <button
                         type="button"
                         onClick={() => setShowPriceDetailModal(true)}
-                        className="inline-flex min-h-10 items-center px-2 text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
+                        className="inline-flex min-h-9 items-center px-1 text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
                       >
                         看詳細內容
                       </button>
