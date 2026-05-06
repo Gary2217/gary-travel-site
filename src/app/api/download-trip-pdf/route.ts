@@ -15,6 +15,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '缺少 url 參數' }, { status: 400 });
   }
 
+  // SSRF 防護：只允許 fetch Supabase storage 的 URL
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) {
+    return NextResponse.json({ error: '伺服器設定錯誤' }, { status: 500 });
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const allowedOrigin = new URL(supabaseUrl).origin;
+
+    if (parsedUrl.origin !== allowedOrigin || !parsedUrl.pathname.startsWith('/storage/')) {
+      return NextResponse.json({ error: '不允許的檔案來源' }, { status: 403 });
+    }
+  } catch {
+    return NextResponse.json({ error: '無效的 URL' }, { status: 400 });
+  }
+
   try {
     const res = await fetch(url);
     if (!res.ok) {

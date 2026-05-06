@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('inquiries insert error:', error.message);
+      return NextResponse.json({ error: '提交失敗，請稍後再試' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

@@ -2,18 +2,21 @@ import crypto from "crypto";
 
 const COOKIE_NAME = "dev_auth";
 
-function getSecret() {
-  return process.env.DEV_AUTH_SECRET || process.env.NEXT_PUBLIC_DEV_PASSWORD || "dev-auth-fallback-secret";
+function getSecret(): string | null {
+  return process.env.DEV_AUTH_SECRET || process.env.NEXT_PUBLIC_DEV_PASSWORD || null;
 }
 
-export function signDevAuth(payload: string) {
-  return crypto.createHmac("sha256", getSecret()).update(payload).digest("hex");
+export function signDevAuth(payload: string): string | null {
+  const secret = getSecret();
+  if (!secret) return null;
+  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-export function createDevAuthCookie(userId: string) {
+export function createDevAuthCookie(userId: string): string | null {
   const timestamp = Date.now().toString();
   const payload = `${userId}.${timestamp}`;
   const signature = signDevAuth(payload);
+  if (!signature) return null;
   return `${payload}.${signature}`;
 }
 
@@ -26,6 +29,9 @@ export function verifyDevAuthCookie(cookieValue?: string | null) {
   const [userId, timestamp, signature] = parts;
   const payload = `${userId}.${timestamp}`;
   const expected = signDevAuth(payload);
+
+  // 密鑰未設定時一律拒絕
+  if (!expected) return false;
 
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
     return false;

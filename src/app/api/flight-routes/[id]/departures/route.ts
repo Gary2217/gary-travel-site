@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +11,14 @@ function createSupabase() {
   return createClient(supabaseUrl, supabaseServiceRoleKey);
 }
 
-// POST: 新增航班出發日期
+// POST: 新增航班出發日期（需登入）
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -55,8 +59,11 @@ export async function POST(
   }
 }
 
-// PATCH: 更新航班出發日期
+// PATCH: 更新航班出發日期（需登入）
 export async function PATCH(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -102,8 +109,11 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// DELETE: 刪除航班出發日期
+// DELETE: 刪除航班出發日期（需登入）
 export async function DELETE(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });

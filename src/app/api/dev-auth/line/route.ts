@@ -53,8 +53,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/?devAuth=denied", req.url));
   }
 
+  const cookie = createDevAuthCookie(profile.userId || "");
+  if (!cookie) {
+    return NextResponse.redirect(new URL("/?devAuth=failed", req.url));
+  }
+
   const response = NextResponse.redirect(new URL("/?devAuth=ok", req.url));
-  response.cookies.set(DEV_AUTH_COOKIE_NAME, createDevAuthCookie(profile.userId || ""), {
+  response.cookies.set(DEV_AUTH_COOKIE_NAME, cookie, {
     httpOnly: true,
     sameSite: "lax",
     secure: true,

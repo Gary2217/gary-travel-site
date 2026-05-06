@@ -7,16 +7,17 @@ import { verifyDevAuthCookie, DEV_AUTH_COOKIE_NAME } from '@/lib/dev-auth';
 export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET() {
   noStore();
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         fetch: (url: RequestInfo | URL, options?: RequestInit) =>
           fetch(url, { ...options, cache: 'no-store' }),
@@ -30,14 +31,15 @@ export async function GET() {
       .order('display_order', { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('flight-routes query error:', error.message);
+      return NextResponse.json({ error: '載入失敗' }, { status: 500 });
     }
 
     return NextResponse.json(data ?? [], {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: '載入失敗' }, { status: 500 });
   }
 }
 

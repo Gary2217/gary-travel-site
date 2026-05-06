@@ -1,18 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireDevAuth } from '@/lib/api-auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // POST - 提交聯絡表單
 export async function POST(request: NextRequest) {
+  // Rate limit：每 IP 每分鐘最多 5 次提交
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateLimited = checkRateLimit(ip, 'contact-forms', { windowMs: 60_000, max: 5 });
+  if (rateLimited) {
+    return NextResponse.json(
+      { error: '提交過於頻繁，請稍後再試' },
+      { status: 429, headers: { 'Retry-After': String(rateLimited.retryAfterSeconds) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const { name, phone, line_id, email, message } = body;
 
-    // 驗證：暱稱必填
+    // 驗證：暱稱必填 + 長度限制
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: '請填寫姓名或暱稱' }, { status: 400 });
+    }
+    if (name.trim().length > 50) {
+      return NextResponse.json({ error: '姓名長度不得超過 50 字' }, { status: 400 });
+    }
+
+    // 各欄位長度限制
+    if (phone && typeof phone === 'string' && phone.trim().length > 20) {
+      return NextResponse.json({ error: '電話長度不得超過 20 字' }, { status: 400 });
+    }
+    if (line_id && typeof line_id === 'string' && line_id.trim().length > 50) {
+      return NextResponse.json({ error: 'LINE ID 長度不得超過 50 字' }, { status: 400 });
+    }
+    if (email && typeof email === 'string' && email.trim().length > 100) {
+      return NextResponse.json({ error: '信箱長度不得超過 100 字' }, { status: 400 });
+    }
+    if (message && typeof message === 'string' && message.trim().length > 1000) {
+      return NextResponse.json({ error: '留言長度不得超過 1000 字' }, { status: 400 });
     }
 
     // 驗證：至少一個聯繫方式
@@ -37,17 +66,21 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('contact-forms insert error:', error.message);
+      return NextResponse.json({ error: '提交失敗，請稍後再試' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: '提交失敗，請稍後再試' }, { status: 500 });
   }
 }
 
-// GET - 讀取聯絡表單記錄（開發者模式用）
+// GET - 讀取聯絡表單記錄（需登入）
 export async function GET(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const year = searchParams.get('year');
   const month = searchParams.get('month');

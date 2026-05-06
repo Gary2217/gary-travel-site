@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireDevAuth } from '@/lib/api-auth';
+import { validateFileSignature } from '@/lib/file-validation';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -30,6 +32,9 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json(
@@ -54,6 +59,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Max 5MB' }, { status: 400 });
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (!validateFileSignature(buffer, file.type)) {
+      return NextResponse.json({ error: '檔案內容與類型不符' }, { status: 400 });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const { data: existingDestination, error: destinationError } = await supabase
@@ -70,8 +80,6 @@ export async function POST(request: NextRequest) {
     const sanitizedExt = fileExt.replace(/[^a-z0-9]/g, '');
     const fileName = `${destinationId}-${Date.now()}.${sanitizedExt}`;
     const filePath = `destinations/${fileName}`;
-
-    const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
       .from('images')

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireDevAuth } from '@/lib/api-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -29,8 +30,11 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// POST - 新增媒體
+// POST - 新增媒體（需登入）
 export async function POST(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { trip_id, media_type, url } = body;
@@ -41,6 +45,10 @@ export async function POST(request: NextRequest) {
 
     if (!['image', 'instagram_video'].includes(media_type)) {
       return NextResponse.json({ error: '不支援的媒體類型' }, { status: 400 });
+    }
+
+    if (typeof url !== 'string' || url.length > 2048) {
+      return NextResponse.json({ error: 'URL 長度不得超過 2048 字元' }, { status: 400 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -86,8 +94,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - 刪除媒體
+// DELETE - 刪除媒體（需登入）
 export async function DELETE(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 

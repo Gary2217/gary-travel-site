@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
+import { requireDevAuth } from '@/lib/api-auth';
+import { validateFileSignature } from '@/lib/file-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,8 +65,11 @@ export async function GET() {
   }
 }
 
-// DELETE: 清除所有舊 logo，重置為預設
+// DELETE: 清除所有舊 logo，重置為預設（需登入）
 export async function DELETE() {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -91,6 +96,9 @@ export async function DELETE() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json({ error: 'Missing server upload configuration.' }, { status: 500 });
@@ -111,8 +119,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Max 5MB' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
     const buffer = Buffer.from(await file.arrayBuffer());
+    if (!validateFileSignature(buffer, file.type)) {
+      return NextResponse.json({ error: '檔案內容與類型不符' }, { status: 400 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
     const fileExt = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
     const filePath = `${LOGO_DIR}/logo-${Date.now()}.${fileExt}`;
 
