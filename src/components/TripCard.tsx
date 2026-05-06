@@ -7,6 +7,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ImageEditor from "@/components/ImageEditor";
 import ShareButton from "@/components/ShareButton";
 import { uploadTripImage, uploadTripDocument, lineHref, fbHref, igHref } from "@/lib/supabase";
+import { openExternalLink } from "@/lib/external-link";
 
 interface TripCardProps {
   id: string;
@@ -54,10 +55,10 @@ export default function TripCard({
   };
 
   const handleFollowAndDownload = (socialUrl: string) => {
-    window.open(socialUrl, '_blank');
+    openExternalLink(socialUrl);
     setTimeout(() => {
       if (document_url) {
-        window.open(document_url, '_blank');
+        openExternalLink(document_url);
       }
       setShowDownloadGate(false);
     }, 1500);

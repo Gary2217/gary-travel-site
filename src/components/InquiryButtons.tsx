@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import Toast from "@/components/Toast";
 import { lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
+import { openExternalLink } from "@/lib/external-link";
 
 interface InquiryButtonsProps {
   tripTitle: string;
@@ -24,7 +25,7 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
       setToast(`請複製行程名稱：${tripTitle}`);
     }
     setTimeout(() => {
-      window.open(url, "_blank");
+      openExternalLink(url);
     }, 400);
   }, [tripTitle, tripId]);
 

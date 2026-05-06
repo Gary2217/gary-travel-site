@@ -10,6 +10,7 @@ import FloatingContact from "@/components/FloatingContact";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
+import { openExternalLink } from "@/lib/external-link";
 
 export default function FlightDetailPage() {
   const params = useParams();
@@ -114,18 +115,30 @@ export default function FlightDetailPage() {
               <p className="mt-0.5 text-xs text-white/50">免費諮詢 · 不收服務費 · 即時回覆</p>
             </div>
             <div className="flex gap-2">
-              <a href={lineDmHref} target="_blank" rel="noreferrer"
-                onClick={() => track({ event_type: "flight_inquiry", platform: "LINE", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` })}
+              <a href={lineDmHref}
+                onClick={(e) => {
+                  e.preventDefault();
+                  track({ event_type: "flight_inquiry", platform: "LINE", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` });
+                  openExternalLink(lineDmHref);
+                }}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:opacity-85">
                 LINE 詢問
               </a>
-              <a href={fbDmHref} target="_blank" rel="noreferrer"
-                onClick={() => track({ event_type: "flight_inquiry", platform: "FB", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` })}
+              <a href={fbDmHref}
+                onClick={(e) => {
+                  e.preventDefault();
+                  track({ event_type: "flight_inquiry", platform: "FB", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` });
+                  openExternalLink(fbDmHref);
+                }}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#1877F2] px-4 py-2.5 text-[13px] font-semibold text-white transition hover:opacity-85">
                 FB 私訊
               </a>
-              <a href={igDmHref} target="_blank" rel="noreferrer"
-                onClick={() => track({ event_type: "flight_inquiry", platform: "IG", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` })}
+              <a href={igDmHref}
+                onClick={(e) => {
+                  e.preventDefault();
+                  track({ event_type: "flight_inquiry", platform: "IG", flight_id: route.id, flight_route: `${route.from_city} → ${route.to_city}` });
+                  openExternalLink(igDmHref);
+                }}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#E4405F] px-4 py-2.5 text-[13px] font-semibold text-white transition hover:opacity-85">
                 IG 私訊
               </a>

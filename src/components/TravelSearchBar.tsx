@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { lineHref, type FlightRoute } from "@/lib/supabase";
+import { openExternalLink } from "@/lib/external-link";
 
 type Destination = { id: string; title: string };
 type RegionOption = { id: string; categoryLabel: string; destinations: Destination[] };
@@ -790,7 +791,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
           {/* 說明文字 */}
           <p className="mt-2 text-center text-xs text-white/40">
             搜尋蓋瑞提供的機票諮詢航線｜需要協助請
-            <a href={lineHref} target="_blank" rel="noreferrer" className="text-sky-400 underline underline-offset-2 transition hover:text-sky-300">
+            <a href={lineHref} onClick={(e) => { e.preventDefault(); openExternalLink(lineHref); }} className="text-sky-400 underline underline-offset-2 transition hover:text-sky-300">
               LINE 詢問蓋瑞
             </a>
           </p>
@@ -874,8 +875,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                   <div className="mt-4 border-t border-white/10 pt-4">
                     <a
                       href={lineHref}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={(e) => { e.preventDefault(); openExternalLink(lineHref); }}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#05b34d] active:scale-[0.98]"
                     >
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

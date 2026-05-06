@@ -13,6 +13,7 @@ import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import SideMediaCarousel from "@/components/SideMediaCarousel";
 import { track } from "@/lib/analytics";
+import { openExternalLink } from "@/lib/external-link";
 
 const EMPTY_TRIP_BANNER: TripBanner = {
   code_label: "",
@@ -1604,11 +1605,11 @@ export default function TripPage() {
                 <div className="space-y-2">
                   <a
                     href={lineHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       track({ event_type: "trip_download", platform: "LINE", trip_id: tripId, trip_title: trip.title });
                       setDownloadReady(true);
+                      openExternalLink(lineHref);
                     }}
                     className="flex w-full items-center gap-3 rounded-xl bg-[#06C755] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#05b64d] active:scale-[0.98]"
                   >
@@ -1619,11 +1620,11 @@ export default function TripPage() {
 
                   <a
                     href={fbHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       track({ event_type: "trip_download", platform: "FB", trip_id: tripId, trip_title: trip.title });
                       setDownloadReady(true);
+                      openExternalLink(fbHref);
                     }}
                     className="flex w-full items-center gap-3 rounded-xl bg-[#1877F2] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1565d8] active:scale-[0.98]"
                   >
@@ -1634,11 +1635,11 @@ export default function TripPage() {
 
                   <a
                     href={igHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       track({ event_type: "trip_download", platform: "IG", trip_id: tripId, trip_title: trip.title });
                       setDownloadReady(true);
+                      openExternalLink(igHref);
                     }}
                     className="flex w-full items-center gap-3 rounded-xl bg-[#E4405F] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#d62d4a] active:scale-[0.98]"
                   >
