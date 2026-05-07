@@ -375,7 +375,7 @@ export default function HomePage() {
           </section>
         )}
 
-        {!filterRegionId && isDevMode && <FocusTopicManager />}
+        {isDevMode && <FocusTopicManager />}
 
         {(() => {
           let filtered = sections;
