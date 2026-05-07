@@ -12,6 +12,7 @@ import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import SideMediaCarousel from "@/components/SideMediaCarousel";
+import LegalNotice from "@/components/LegalNotice";
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
 
@@ -1566,6 +1567,8 @@ export default function TripPage() {
         <div className="mb-8 mt-6">
           <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="inline" />
         </div>
+
+        <LegalNotice className="mb-4" />
 
       </div>
 

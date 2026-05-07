@@ -4,6 +4,7 @@ import { useState } from "react";
 import { lineDmHref, fbDmHref, igDmHref, fbHref, igHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 import ContactFormModal from "./ContactFormModal";
+import LegalNotice from "./LegalNotice";
 
 interface SocialCtaProps {
   title: string;
@@ -26,64 +27,79 @@ export default function SocialCta({
 }: SocialCtaProps) {
   const [showContactForm, setShowContactForm] = useState(false);
   return (
-    <div className={`rounded-2xl border border-white/[0.08] bg-[#1a3347] p-6 text-center ${className}`.trim()}>
-      <h3 className="text-base font-bold text-white">{title}</h3>
-      <p className="mt-1 text-xs text-white/50">{description}</p>
-      <p className="mt-3 text-[11px] leading-5 text-white/60">
-        免費諮詢 · 不收服務費 · 即時回覆
-      </p>
-      <div className="mt-4 flex flex-wrap justify-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => openExternalLink(lineDmHref)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:opacity-85"
-        >
-          {lineLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => openExternalLink(fbDmHref)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#1877F2] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:opacity-85"
-        >
-          {facebookLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => openExternalLink(igDmHref)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#E4405F] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:opacity-85"
-        >
-          {instagramLabel}
-        </button>
-        <button
-          onClick={() => setShowContactForm(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#ff6b35] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#e55a2b]"
-        >
-          聯絡我們
-        </button>
-      </div>
+    <div className={`rounded-2xl border border-white/[0.08] bg-[#1a3347] p-4 sm:p-5 ${className}`.trim()}>
+      <div className="grid gap-3 lg:grid-cols-[1fr_1.12fr] lg:items-center">
+        <div className="lg:flex lg:justify-end">
+          <LegalNotice className="mt-1 w-full max-w-[620px] lg:mt-0" />
+        </div>
 
-      {/* 底部：版權 + 社群圖示 */}
-      <div className="relative mt-4 border-t border-white/10 pt-3">
-        <p className="text-center text-[11px] text-white/25">
-          © {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.
-        </p>
-        <div className="mt-2 flex items-center justify-center gap-2 sm:absolute sm:right-0 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2">
-          <button type="button" onClick={() => openExternalLink(fbHref)} aria-label="Facebook"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/45 transition hover:border-[#1877F2] hover:text-[#1877F2]">
-            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-          </button>
-          <button type="button" onClick={() => openExternalLink(igHref)} aria-label="Instagram"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/45 transition hover:border-[#E4405F] hover:text-[#E4405F]">
-            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-            </svg>
-          </button>
-          <button type="button" onClick={() => openExternalLink(lineDmHref)} aria-label="LINE"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/45 transition hover:border-[#06C755] hover:text-[#06C755]">
-            <span className="text-[9px] font-bold leading-none">LINE</span>
-          </button>
+        <div className="text-center lg:flex lg:justify-start lg:pl-12">
+          <div className="w-full max-w-[620px] text-center lg:text-left">
+          <h3 className="text-base font-bold text-white">{title}</h3>
+          <p className="mt-1 text-xs text-white/50">{description}</p>
+          <p className="mt-2 text-[11px] leading-5 text-white/60">
+            免費諮詢 · 不收服務費 · 即時回覆
+          </p>
+
+          <div className="mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
+            <button
+              type="button"
+              onClick={() => openExternalLink(lineDmHref)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-85"
+            >
+              {lineLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => openExternalLink(fbDmHref)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#1877F2] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-85"
+            >
+              {facebookLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => openExternalLink(igDmHref)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#E4405F] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-85"
+            >
+              {instagramLabel}
+            </button>
+            <button
+              onClick={() => setShowContactForm(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#ff6b35] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#e55a2b]"
+            >
+              聯絡我們
+            </button>
+          </div>
+
+          <div className="mt-2 space-y-1.5">
+            <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[9px] text-white/30 sm:text-[10px] sm:whitespace-nowrap sm:text-left">
+                © {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.
+              </p>
+              <p className="text-[10px] text-white/45 sm:text-[11px]">追蹤社群獲得更多資訊</p>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 sm:justify-end">
+                <button type="button" onClick={() => openExternalLink(fbHref)} aria-label="Facebook"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(135deg,#2b67bc_0%,#1f4f98_100%)] text-white transition hover:brightness-105">
+                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                </button>
+                <button type="button" onClick={() => openExternalLink(igHref)} aria-label="Instagram"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(135deg,#b44978_0%,#87365b_100%)] text-white transition hover:brightness-105">
+                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                  </svg>
+                </button>
+                <button type="button" onClick={() => openExternalLink(lineDmHref)} aria-label="LINE"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(135deg,#1e9f5f_0%,#157c49_100%)] text-white transition hover:brightness-105">
+                  <span className="text-[9px] font-bold leading-none">LINE</span>
+                </button>
+            </div>
+          </div>
+
+          </div>
         </div>
       </div>
       <ContactFormModal isOpen={showContactForm} onClose={() => setShowContactForm(false)} />

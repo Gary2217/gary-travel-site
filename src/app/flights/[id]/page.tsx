@@ -8,6 +8,7 @@ import TravelSearchBar from "@/components/TravelSearchBar";
 import FlightDepartureDates from "@/components/FlightDepartureDates";
 import FloatingContact from "@/components/FloatingContact";
 import ScrollToTop from "@/components/ScrollToTop";
+import LegalNotice from "@/components/LegalNotice";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
@@ -145,6 +146,8 @@ export default function FlightDetailPage() {
             </div>
           </div>
         </div>
+
+        <LegalNotice className="mb-6" />
       </div>
 
       <FloatingContact />
