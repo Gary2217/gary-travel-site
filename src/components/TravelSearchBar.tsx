@@ -275,20 +275,6 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             </svg>
             團體旅遊
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveMode("flight")}
-            className={`flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition ${
-              activeMode === "flight"
-                ? "bg-white text-gray-900 shadow"
-                : "text-white/70 hover:text-white"
-            }`}
-          >
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-            機票搜尋
-          </button>
         </div>
       </div>
       )}

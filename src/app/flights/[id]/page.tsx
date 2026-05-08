@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
-import TravelSearchBar from "@/components/TravelSearchBar";
 import FlightDepartureDates from "@/components/FlightDepartureDates";
 import FloatingContact from "@/components/FloatingContact";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -75,9 +74,6 @@ export default function FlightDetailPage() {
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       <div className="mx-auto max-w-site px-4 pt-16 md:px-5">
-
-        {/* ── 搜尋框（精簡版） ── */}
-        <TravelSearchBar flightOnly />
 
         {/* ── 航班列表（全寬） ── */}
         <FlightDepartureDates
