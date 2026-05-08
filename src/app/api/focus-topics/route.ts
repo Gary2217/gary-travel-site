@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (isAllScope) {
-      const authError = requireDevAuth();
+      const authError = requireDevAuth(request);
       if (authError) return authError;
     }
 
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
 // POST - 新增焦點話題（需開發者授權）
 export async function POST(request: NextRequest) {
-  const authError = requireDevAuth();
+  const authError = requireDevAuth(request);
   if (authError) return authError;
 
   try {
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH - 更新焦點話題（需開發者授權）
 export async function PATCH(request: NextRequest) {
-  const authError = requireDevAuth();
+  const authError = requireDevAuth(request);
   if (authError) return authError;
 
   try {
@@ -216,7 +216,7 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE - 刪除焦點話題（需開發者授權）
 export async function DELETE(request: NextRequest) {
-  const authError = requireDevAuth();
+  const authError = requireDevAuth(request);
   if (authError) return authError;
 
   try {

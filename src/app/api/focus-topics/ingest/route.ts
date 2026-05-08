@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
 
@@ -49,8 +49,8 @@ function toItem(row: ExternalPayloadItem) {
   };
 }
 
-export async function POST() {
-  const authError = requireDevAuth();
+export async function POST(request: NextRequest) {
+  const authError = requireDevAuth(request);
   if (authError) return authError;
 
   try {

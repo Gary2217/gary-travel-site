@@ -103,7 +103,11 @@ export default function FocusTopicManager() {
     setIngesting(true);
     setIngestResult("");
     try {
-      const res = await fetch('/api/focus-topics/ingest', { method: 'POST' });
+      const res = await fetch('/api/focus-topics/ingest', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      });
       const data = await res.json();
       if (res.ok) {
         setIngestResult(`抓取完成：新增 ${data.inserted ?? 0} 筆，略過 ${data.skipped ?? 0} 筆，來源 ${data.sources ?? 0} 個`);
