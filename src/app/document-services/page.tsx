@@ -1,54 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
 import FloatingContact from "@/components/FloatingContact";
 import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import { getSiteLogo } from "@/lib/supabase";
-
-const SERVICE_ITEMS = [
-  {
-    id: "roc0001",
-    title: "中華民國護照(十年效期)",
-    summary: "成人護照十年效期代辦，含基本文件檢核與送件流程協助。",
-    image: "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=1200&q=80",
-    requirements: [
-      "身分證正本",
-      "兩吋六個月內白底彩色大頭照 2 張",
-      "未過期舊護照（若有）",
-      "初次辦理需先完成人別確認",
-      "委任書（依申請人所在地使用 D 式或 E 式）",
-    ],
-  },
-  {
-    id: "roc0002",
-    title: "中華民國護照<孩童>(五年效期)",
-    summary: "孩童護照五年效期代辦，協助文件準備與申辦流程。",
-    image: "https://images.unsplash.com/photo-1577985043696-8bd54d2b938a?auto=format&fit=crop&w=1200&q=80",
-    requirements: [
-      "監護人與孩童身分證明文件",
-      "兩吋六個月內白底彩色大頭照 2 張",
-      "未過期舊護照（若有）",
-      "初次辦理需先完成人別確認",
-      "委任書（依申請人所在地使用 D 式或 E 式）",
-    ],
-  },
-  {
-    id: "tcc0001",
-    title: "台胞證 卡片式",
-    summary: "台胞證卡片式申辦代辦，協助檢核文件並安排送件。",
-    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1200&q=80",
-    requirements: [
-      "身分證影本",
-      "兩吋六個月內白底彩色大頭照 1 張",
-      "六個月以上效期護照正本",
-      "未過期舊台胞證（若有）",
-      "其他送件所需補充文件（依個案通知）",
-    ],
-  },
-];
+import { DOCUMENT_SERVICE_ITEMS } from "@/lib/document-services";
 
 export default function DocumentServicesPage() {
   const [siteLogoUrl, setSiteLogoUrl] = useState("/travel-logo.svg");
@@ -132,18 +92,20 @@ export default function DocumentServicesPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICE_ITEMS.map((item) => (
+          {DOCUMENT_SERVICE_ITEMS.map((item) => (
             <article
               key={item.id}
               className="group overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]"
             >
               <div className="relative aspect-[4/2.7] overflow-hidden">
-                <img
-                  src={imageMap[item.id] || item.image}
-                  alt={item.title}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                <Link href={`/document-services/${item.id}`} className="block h-full w-full">
+                  <img
+                    src={imageMap[item.id] || item.image}
+                    alt={item.title}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                </Link>
                 {isDevMode && (
                   <label className="absolute right-2 top-2 inline-flex cursor-pointer items-center gap-1 rounded-full bg-sky-600/90 px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-sky-500">
                     {uploadingId === item.id ? "上傳中..." : "更換圖片"}
@@ -167,18 +129,13 @@ export default function DocumentServicesPage() {
               <div className="p-4">
                 <h2 className="text-base font-bold text-white">{item.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-white/75">{item.summary}</p>
-
-                <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                  <p className="mb-2 text-xs font-semibold text-sky-300">需準備資料</p>
-                  <ul className="space-y-1 text-xs leading-5 text-white/75">
-                    {item.requirements.map((row) => (
-                      <li key={row} className="flex items-start gap-1.5">
-                        <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-sky-300" />
-                        <span>{row}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Link
+                  href={`/document-services/${item.id}`}
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-sky-300 transition hover:text-sky-200"
+                >
+                  查看詳細內容
+                  <span aria-hidden>→</span>
+                </Link>
               </div>
             </article>
           ))}
