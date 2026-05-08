@@ -160,7 +160,7 @@ export default function DocumentServicesPage() {
               </div>
 
               <div className="p-4">
-                <h2 className="text-base font-bold text-white">{item.title}</h2>
+                <h2 className="text-xl font-bold leading-tight text-white sm:text-2xl">{item.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-white/75">{item.summary}</p>
                 <Link
                   href={`/document-services/${item.id}`}
