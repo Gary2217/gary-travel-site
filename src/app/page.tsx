@@ -13,7 +13,6 @@ import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
 import ContactInquiries from "@/components/ContactInquiries";
-import FocusTopicManager from "@/components/FocusTopicManager";
 import { Skeleton, GridSkeleton } from "@/components/Skeleton";
 
 type Destination = {
@@ -29,16 +28,6 @@ type RouteSection = {
   title: string;
   description: string;
   destinations: Destination[];
-};
-
-type FocusTopic = {
-  id: string;
-  title: string;
-  summary: string;
-  image_url: string;
-  source_name: string;
-  source_url: string;
-  published_at: string | null;
 };
 
 export default function HomePage() {
@@ -58,7 +47,6 @@ export default function HomePage() {
     cover_image_url: string;
     destination_name: string;
   }[]>([]);
-  const [focusTopics, setFocusTopics] = useState<FocusTopic[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -115,22 +103,6 @@ export default function HomePage() {
       }
     }
     loadPopular();
-  }, []);
-
-  useEffect(() => {
-    async function loadFocusTopics() {
-      try {
-        const res = await fetch('/api/focus-topics', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setFocusTopics(Array.isArray(data) ? data : []);
-        }
-      } catch {
-        // 靜默失敗，顯示骨架框即可
-      }
-    }
-
-    loadFocusTopics();
   }, []);
 
   const handleSearch = ({ regionId, destinationId, date }: { departureCity: string; regionId: string | null; destinationId: string | null; date: string }) => {
@@ -311,71 +283,41 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* 焦點話題（版位雛形） */}
+        {/* 護照簽證服務（版位保留） */}
         {!filterRegionId && (
           <section className="mx-auto mb-10 max-w-[1180px] rounded-[1.45rem] border border-white/10 bg-[#13263a] p-3 sm:p-4">
             <div className="mb-3 px-1">
               <div className="flex items-center gap-2">
-                <span className="text-xl">📰</span>
-                <h2 className="text-lg font-bold text-white">焦點話題</h2>
-                <span className="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-sky-300">規劃中</span>
+                <span className="text-xl">🛂</span>
+                <h2 className="text-lg font-bold text-white">護照簽證服務</h2>
+                <span className="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-sky-300">即將上線</span>
               </div>
             </div>
 
-            {focusTopics.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
-                {focusTopics.slice(0, 4).map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/focus-topic/${item.id}`}
-                    className="group overflow-hidden rounded-lg border border-white/10 bg-[#182838] text-left transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
-                  >
-                    <div className="relative aspect-[4/2.8] overflow-hidden">
-                      {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.title}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-white/5" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    </div>
-
-                    <div className="p-2 sm:p-2.5">
-                      <p className="mb-0.5 text-[9px] font-medium text-sky-400">{item.source_name || '焦點資訊'}</p>
-                      <h3 className="line-clamp-2 min-h-[1.8rem] text-[11px] font-bold leading-snug text-white sm:text-xs">
-                        {item.title}
-                      </h3>
-                      {item.summary && (
-                        <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/65 sm:text-[11px]">
-                          {item.summary}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
+                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
+                <p className="text-[11px] font-semibold text-white">新辦護照</p>
+                <p className="mt-1 text-[10px] text-white/60">成人 / 未成年文件需求整理中</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5"
-                  >
-                    <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
-                    <div className="h-3 w-4/5 rounded bg-white/10" />
-                    <div className="mt-1.5 h-2.5 w-full rounded bg-white/10" />
-                    <div className="mt-1 h-2.5 w-3/4 rounded bg-white/10" />
-                  </div>
-                ))}
+              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
+                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
+                <p className="text-[11px] font-semibold text-white">護照換發</p>
+                <p className="mt-1 text-[10px] text-white/60">效期不足、遺失補發流程整理中</p>
               </div>
-            )}
+              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
+                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
+                <p className="text-[11px] font-semibold text-white">熱門簽證代辦</p>
+                <p className="mt-1 text-[10px] text-white/60">日本、韓國、美加等送件規則整理中</p>
+              </div>
+              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
+                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
+                <p className="text-[11px] font-semibold text-white">落地簽 / 電子簽</p>
+                <p className="mt-1 text-[10px] text-white/60">入境限制與線上申請提醒整理中</p>
+              </div>
+            </div>
           </section>
         )}
-
-        {isDevMode && <FocusTopicManager />}
 
         {(() => {
           let filtered = sections;
