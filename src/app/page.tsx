@@ -204,12 +204,6 @@ export default function HomePage() {
                 {section.categoryLabel}
               </button>
             ))}
-            <Link
-              href="/flights"
-              className="rounded-full border border-white/[0.08] bg-transparent px-4 py-2.5 text-sm font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
-            >
-              機票
-            </Link>
           </div>
         </div>
       </div>
