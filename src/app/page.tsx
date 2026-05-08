@@ -283,42 +283,6 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* 護照簽證服務（版位保留） */}
-        {!filterRegionId && (
-          <section className="mx-auto mb-10 max-w-[1180px] rounded-[1.45rem] border border-white/10 bg-[#13263a] p-3 sm:p-4">
-            <div className="mb-3 px-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🛂</span>
-                <h2 className="text-lg font-bold text-white">護照簽證服務</h2>
-                <span className="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-sky-300">即將上線</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
-              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
-                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
-                <p className="text-[11px] font-semibold text-white">新辦護照</p>
-                <p className="mt-1 text-[10px] text-white/60">成人 / 未成年文件需求整理中</p>
-              </div>
-              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
-                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
-                <p className="text-[11px] font-semibold text-white">護照換發</p>
-                <p className="mt-1 text-[10px] text-white/60">效期不足、遺失補發流程整理中</p>
-              </div>
-              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
-                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
-                <p className="text-[11px] font-semibold text-white">熱門簽證代辦</p>
-                <p className="mt-1 text-[10px] text-white/60">日本、韓國、美加等送件規則整理中</p>
-              </div>
-              <div className="rounded-lg border border-dashed border-white/20 bg-white/[0.03] p-2.5">
-                <div className="mb-2 aspect-[4/2.8] rounded-md border border-white/10 bg-white/[0.05]" />
-                <p className="text-[11px] font-semibold text-white">落地簽 / 電子簽</p>
-                <p className="mt-1 text-[10px] text-white/60">入境限制與線上申請提醒整理中</p>
-              </div>
-            </div>
-          </section>
-        )}
-
         {(() => {
           let filtered = sections;
 
