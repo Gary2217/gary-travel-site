@@ -16,22 +16,43 @@ export default function DocumentServiceDetailPage() {
   const [siteLogoUrl, setSiteLogoUrl] = useState("/travel-logo.svg");
   const [isDevMode, setIsDevMode] = useState(false);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   const service = useMemo(() => getDocumentServiceById(params?.id || ""), [params?.id]);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => setSiteLogoUrl("/travel-logo.svg"));
 
+    try {
+      const cached = localStorage.getItem("document_service_images");
+      if (cached) {
+        const parsed = JSON.parse(cached) as Record<string, string>;
+        if (parsed && typeof parsed === "object") {
+          setImageMap(parsed);
+          setImagesLoaded(true);
+        }
+      }
+    } catch {
+      // 忽略快取解析錯誤
+    }
+
     fetch("/api/document-service-images", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         const images = data?.images;
         if (images && typeof images === "object") {
-          setImageMap(images as Record<string, string>);
+          const normalized = images as Record<string, string>;
+          setImageMap(normalized);
+          try {
+            localStorage.setItem("document_service_images", JSON.stringify(normalized));
+          } catch {
+            // 忽略快取寫入錯誤
+          }
         }
+        setImagesLoaded(true);
       })
       .catch(() => {
-        // 靜默失敗，使用預設圖
+        setImagesLoaded(true);
       });
   }, []);
 
@@ -78,11 +99,15 @@ export default function DocumentServiceDetailPage() {
 
         <article className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
           <div className="relative aspect-[16/8] overflow-hidden">
-            <img
-              src={imageMap[service.id] || service.image}
-              alt={service.title}
-              className="h-full w-full object-cover"
-            />
+            {imagesLoaded ? (
+              <img
+                src={imageMap[service.id] || service.image}
+                alt={service.title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full animate-pulse bg-white/10" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           </div>
 

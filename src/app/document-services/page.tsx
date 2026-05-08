@@ -15,20 +15,41 @@ export default function DocumentServicesPage() {
   const [isDevMode, setIsDevMode] = useState(false);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => setSiteLogoUrl("/travel-logo.svg"));
+
+    try {
+      const cached = localStorage.getItem("document_service_images");
+      if (cached) {
+        const parsed = JSON.parse(cached) as Record<string, string>;
+        if (parsed && typeof parsed === "object") {
+          setImageMap(parsed);
+          setImagesLoaded(true);
+        }
+      }
+    } catch {
+      // 忽略快取解析錯誤，改走 API
+    }
 
     fetch("/api/document-service-images", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         const images = data?.images;
         if (images && typeof images === "object") {
-          setImageMap(images as Record<string, string>);
+          const normalized = images as Record<string, string>;
+          setImageMap(normalized);
+          try {
+            localStorage.setItem("document_service_images", JSON.stringify(normalized));
+          } catch {
+            // 忽略快取寫入錯誤
+          }
         }
+        setImagesLoaded(true);
       })
       .catch(() => {
-        // 靜默失敗，使用預設圖片
+        setImagesLoaded(true);
       });
   }, []);
 
@@ -63,7 +84,15 @@ export default function DocumentServicesPage() {
 
       const url = String(data?.url || "");
       if (url) {
-        setImageMap((prev) => ({ ...prev, [serviceId]: url }));
+        setImageMap((prev) => {
+          const next = { ...prev, [serviceId]: url };
+          try {
+            localStorage.setItem("document_service_images", JSON.stringify(next));
+          } catch {
+            // 忽略快取寫入錯誤
+          }
+          return next;
+        });
       }
       alert("圖片已更新");
     } catch (error) {
@@ -99,11 +128,15 @@ export default function DocumentServicesPage() {
             >
               <div className="relative aspect-[4/2.7] overflow-hidden">
                 <Link href={`/document-services/${item.id}`} className="block h-full w-full">
-                  <img
-                    src={imageMap[item.id] || item.image}
-                    alt={item.title}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  {imagesLoaded ? (
+                    <img
+                      src={imageMap[item.id] || item.image}
+                      alt={item.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full animate-pulse bg-white/10" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
                 </Link>
                 {isDevMode && (
