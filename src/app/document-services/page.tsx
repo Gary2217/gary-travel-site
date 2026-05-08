@@ -137,7 +137,7 @@ export default function DocumentServicesPage() {
                   ) : (
                     <div className="h-full w-full animate-pulse bg-white/10" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/38 via-black/8 to-transparent" />
                 </Link>
                 {isDevMode && (
                   <label className="absolute right-2 top-2 inline-flex cursor-pointer items-center gap-1 rounded-full bg-sky-600/90 px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-sky-500">

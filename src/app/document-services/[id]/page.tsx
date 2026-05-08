@@ -108,7 +108,7 @@ export default function DocumentServiceDetailPage() {
             ) : (
               <div className="h-full w-full animate-pulse bg-white/10" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
           </div>
 
           <div className="p-5 sm:p-6">
