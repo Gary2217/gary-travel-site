@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { lineHref, fbHref, igHref } from "@/lib/supabase";
@@ -18,6 +18,35 @@ interface StickyHeaderProps {
 export default function StickyHeader({ showBackButton, backHref, devModeSlot, logoUrl = '/travel-logo.svg', logoEditorSlot }: StickyHeaderProps) {
   const router = useRouter();
   const [showContactForm, setShowContactForm] = useState(false);
+  const [displayLogoUrl, setDisplayLogoUrl] = useState(logoUrl);
+  const [logoReady, setLogoReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let next = logoUrl;
+    if (logoUrl === "/travel-logo.svg") {
+      try {
+        const cached = localStorage.getItem("site_logo_url");
+        if (cached) {
+          next = cached;
+        }
+      } catch {
+        // ignore cache read errors
+      }
+    }
+
+    setDisplayLogoUrl(next);
+    setLogoReady(true);
+
+    if (!next || next === "/travel-logo.svg") return;
+
+    try {
+      localStorage.setItem("site_logo_url", next);
+    } catch {
+      // ignore cache write errors
+    }
+  }, [logoUrl]);
 
   const handleBackClick = () => {
     if (backHref?.startsWith("#")) {
@@ -53,7 +82,11 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
               </button>
             )}
             <Link href="/" className="flex min-h-10 shrink-0 items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
-              <img src={logoUrl} alt="旅行沒有終點" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
+              {logoReady ? (
+                <img src={displayLogoUrl} alt="旅行沒有終點" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
+              ) : (
+                <div className="h-9 w-9 shrink-0 rounded-lg bg-white/10" />
+              )}
               <span className="text-sm font-bold text-white">旅行沒有終點</span>
             </Link>
             {logoEditorSlot}

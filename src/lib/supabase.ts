@@ -445,13 +445,40 @@ export async function deleteTrip(tripId: string): Promise<void> {
 }
 
 export async function getSiteLogo(): Promise<string> {
-  const res = await fetch('/api/site-logo', { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error('Failed to fetch site logo');
+  const fallback = '/travel-logo.svg';
+
+  let cached: string | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      cached = localStorage.getItem('site_logo_url');
+    } catch {
+      // ignore cache read errors
+    }
   }
 
-  const data = await res.json();
-  return data.url || '/travel-logo.svg';
+  try {
+    const res = await fetch('/api/site-logo', { cache: 'no-store' });
+    if (!res.ok) {
+      if (cached) return cached;
+      throw new Error('Failed to fetch site logo');
+    }
+
+    const data = await res.json();
+    const url = data.url || fallback;
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('site_logo_url', url);
+      } catch {
+        // ignore cache write errors
+      }
+    }
+
+    return url;
+  } catch {
+    if (cached) return cached;
+    return fallback;
+  }
 }
 
 export async function uploadSiteLogo(file: File): Promise<string> {
@@ -469,5 +496,15 @@ export async function uploadSiteLogo(file: File): Promise<string> {
   }
 
   const data = await res.json();
-  return data.url;
+  const url = data.url;
+
+  if (typeof window !== 'undefined' && url) {
+    try {
+      localStorage.setItem('site_logo_url', url);
+    } catch {
+      // ignore cache write errors
+    }
+  }
+
+  return url;
 }
