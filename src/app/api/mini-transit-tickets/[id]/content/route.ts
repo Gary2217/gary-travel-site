@@ -25,6 +25,7 @@ const CONTRACT_LABELS: Record<ContractKey, string> = {
 type EditableContent = {
   title: string;
   summary: string;
+  inquiryTitle: string;
   requirementsTitle: string;
   requirements: string[];
   optionSectionTitle: string;
@@ -91,6 +92,7 @@ function sanitizeContent(input: unknown): EditableContent | null {
   return {
     title: String(data.title || "").trim(),
     summary: String(data.summary || "").trim(),
+    inquiryTitle: String(data.inquiryTitle || "購買詢問").trim(),
     requirementsTitle: String(data.requirementsTitle || "購買流程").trim(),
     requirements,
     optionSectionTitle: String(data.optionSectionTitle || "選擇票券方案").trim(),
@@ -201,6 +203,7 @@ export async function POST(request: NextRequest, context: { params: { id: string
     const existing = (await readContent(ticketIdRaw)) || {
       title: "",
       summary: "",
+      inquiryTitle: "購買詢問",
       requirementsTitle: "購買流程",
       requirements: [],
       optionSectionTitle: "選擇票券方案",

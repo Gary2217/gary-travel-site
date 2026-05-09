@@ -24,6 +24,7 @@ type EditableContent = {
   title: string;
   summary: string;
   departureLabel: string;
+  inquiryTitle: string;
   requirementsTitle: string;
   requirements: string[];
   optionSectionTitle: string;
@@ -189,6 +190,7 @@ function normalizeEditableContent(base: EditableContent, incoming: Partial<Edita
     title: String(incoming.title || base.title).trim(),
     summary: String(incoming.summary || base.summary).trim(),
     departureLabel: String(incoming.departureLabel || base.departureLabel).trim(),
+    inquiryTitle: String(incoming.inquiryTitle || base.inquiryTitle).trim(),
     requirementsTitle: normalizeRequirementsTitle(String(incoming.requirementsTitle || base.requirementsTitle)),
     requirements: hasEssentialSections ? incomingRequirements : base.requirements,
     optionSectionTitle: String(incoming.optionSectionTitle || base.optionSectionTitle).trim(),
@@ -215,6 +217,7 @@ export default function MiniTransitTicketDetailPage() {
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
   const [editingRequirementSection, setEditingRequirementSection] = useState<RequirementSectionKey | null>(null);
+  const [editingInquirySection, setEditingInquirySection] = useState(false);
 
   const ticket = useMemo(() => getMiniTransitTicketById(params?.id || ""), [params?.id]);
 
@@ -224,6 +227,7 @@ export default function MiniTransitTicketDetailPage() {
       title: ticket.title,
       summary: ticket.summary,
       departureLabel: ticket.departureLabel,
+      inquiryTitle: "購買詢問",
       requirementsTitle: DEFAULT_REQUIREMENTS_TITLE,
       requirements: ticket.requirements,
       optionSectionTitle: "票券方案",
@@ -501,9 +505,54 @@ export default function MiniTransitTicketDetailPage() {
             </div>
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="mb-3 flex items-center justify-end">
+                {isDevMode && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingInquirySection((prev) => !prev)}
+                    className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                  >
+                    {editingInquirySection ? "關閉編輯" : "編輯"}
+                  </button>
+                )}
+              </div>
+
+              {isDevMode && editingInquirySection && (
+                <div className="mb-3 rounded-lg border border-white/15 bg-black/20 p-3">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-white/70">區塊標題</p>
+                      <input
+                        type="text"
+                        className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                        value={content.inquiryTitle}
+                        onChange={(e) => setContent((prev) => (prev ? { ...prev, inquiryTitle: e.target.value } : prev))}
+                      />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-white/70">出發地文字</p>
+                      <input
+                        type="text"
+                        className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                        value={content.departureLabel}
+                        onChange={(e) => setContent((prev) => (prev ? { ...prev, departureLabel: e.target.value } : prev))}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={saveContent}
+                    disabled={savingContent || loadingContent}
+                    className="mt-3 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-400 disabled:opacity-60"
+                  >
+                    {savingContent ? "儲存中..." : "儲存此區塊"}
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#06C755]/40 bg-white/[0.02] p-4">
                 <div>
-                  <p className="text-base font-bold text-white sm:text-lg">購買詢問</p>
+                  <p className="text-base font-bold text-white sm:text-lg">{content.inquiryTitle || "購買詢問"}</p>
                   <p className="mt-1 text-sm text-white/80">出發地：{content.departureLabel || ticket.departureLabel}</p>
                 </div>
                 <a
