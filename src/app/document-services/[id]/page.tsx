@@ -17,6 +17,7 @@ export default function DocumentServiceDetailPage() {
   const [isDevMode, setIsDevMode] = useState(false);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const service = useMemo(() => getDocumentServiceById(params?.id || ""), [params?.id]);
 
@@ -80,6 +81,57 @@ export default function DocumentServiceDetailPage() {
     );
   }
 
+  const isRoc0001 = service.id === "roc0001";
+
+  const handleReplaceImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      alert("請選擇圖片檔案");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("圖片檔案不能超過 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("service_id", service.id);
+
+      const res = await fetch("/api/document-service-images", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "上傳失敗");
+      }
+
+      const url = String(data?.url || "");
+      if (url) {
+        setImageMap((prev) => {
+          const next = { ...prev, [service.id]: url };
+          try {
+            localStorage.setItem("document_service_images", JSON.stringify(next));
+          } catch {
+            // 忽略快取寫入錯誤
+          }
+          return next;
+        });
+      }
+
+      alert("圖片已更新");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "上傳失敗";
+      alert(`上傳失敗：${message}`);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
       <StickyHeader
@@ -98,22 +150,42 @@ export default function DocumentServiceDetailPage() {
         </Link>
 
         <article className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
-          <div className="relative aspect-[16/8] overflow-hidden">
+          <div className={`relative overflow-hidden ${isRoc0001 ? "bg-[#0b1020]" : "aspect-[16/8]"}`}>
             {imagesLoaded ? (
               <img
                 src={imageMap[service.id] || service.image}
                 alt={service.title}
-                className="h-full w-full object-cover"
+                className={isRoc0001 ? "h-auto w-full object-contain" : "h-full w-full object-cover"}
               />
             ) : (
-              <div className="h-full w-full animate-pulse bg-white/10" />
+              <div className={`h-full w-full animate-pulse bg-white/10 ${isRoc0001 ? "min-h-[360px]" : ""}`} />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+
+            {!isRoc0001 && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />}
+
+            {isDevMode && (
+              <label className="absolute right-3 top-3 inline-flex cursor-pointer items-center rounded-full bg-sky-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
+                {uploadingImage ? "上傳中..." : "上傳/更換圖片"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploadingImage}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleReplaceImage(file);
+                    }
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           <div className="p-5 sm:p-6">
             <h1 className="text-xl font-black text-white sm:text-2xl">{service.title}</h1>
-            <p className="mt-2 text-sm leading-6 text-white/75">{service.summary}</p>
+            {!isRoc0001 && <p className="mt-2 text-sm leading-6 text-white/75">{service.summary}</p>}
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <h2 className="mb-3 text-sm font-bold text-sky-300">需準備資料</h2>
