@@ -8,7 +8,7 @@ import DevModeToggle from "@/components/DevModeToggle";
 import FloatingContact from "@/components/FloatingContact";
 import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
-import { getSiteLogo } from "@/lib/supabase";
+import { getSiteLogo, lineDmHref } from "@/lib/supabase";
 import { getDocumentServiceById } from "@/lib/document-services";
 
 type ContractKey = "self" | "other";
@@ -92,9 +92,6 @@ export default function DocumentServiceDetailPage() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<"regular" | "urgent" | null>(null);
-  const [regularQty, setRegularQty] = useState(0);
-  const [urgentQty, setUrgentQty] = useState(0);
   const [content, setContent] = useState<EditableContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
   const [savingContent, setSavingContent] = useState(false);
@@ -113,21 +110,57 @@ export default function DocumentServiceDetailPage() {
   const [deletingContractKey, setDeletingContractKey] = useState<ContractKey | null>(null);
 
   const service = useMemo(() => getDocumentServiceById(params?.id || ""), [params?.id]);
-  const isRoc0001 = service?.id === "roc0001";
+  const isEnhancedDocumentPage = service ? ["roc0001", "roc0002", "tcc0001"].includes(service.id) : false;
 
   const defaultContent = useMemo<EditableContent | null>(() => {
     if (!service) return null;
+
+    const serviceDefaults: Record<
+      string,
+      {
+        optionSectionTitle: string;
+        regularTitle: string;
+        regularPrice: number;
+        urgentTitle: string;
+        urgentPrice: number;
+      }
+    > = {
+      roc0001: {
+        optionSectionTitle: "選擇普通送件 or 急件送審",
+        regularTitle: "（一般普件）約 10-15天",
+        regularPrice: 1700,
+        urgentTitle: "加急送件 約 3-5天",
+        urgentPrice: 2600,
+      },
+      roc0002: {
+        optionSectionTitle: "選擇中華民國護照",
+        regularTitle: "（孩童一般普件）五年效期 10-15天",
+        regularPrice: 1400,
+        urgentTitle: "（孩童急件）五年效期 5-7天",
+        urgentPrice: 2400,
+      },
+      tcc0001: {
+        optionSectionTitle: "選擇【台胞證】中國-台胞卡",
+        regularTitle: "(普通件) 7 天",
+        regularPrice: 1550,
+        urgentTitle: "(急件)3-5天",
+        urgentPrice: 2550,
+      },
+    };
+
+    const selectedDefaults = serviceDefaults[service.id] || serviceDefaults.roc0001;
+
     return {
       title: service.title,
       summary: service.summary,
       requirementsTitle: "需準備資料",
       requirements: service.requirements,
-      optionSectionTitle: "選擇普通送件 or 急件送審",
-      regularTitle: "（一般普件）約 10-15天",
-      regularPrice: DEFAULT_REGULAR_PRICE,
+      optionSectionTitle: selectedDefaults.optionSectionTitle,
+      regularTitle: selectedDefaults.regularTitle,
+      regularPrice: selectedDefaults.regularPrice,
       regularOptionLabel: "每人",
-      urgentTitle: "加急送件 約 3-5天",
-      urgentPrice: DEFAULT_URGENT_PRICE,
+      urgentTitle: selectedDefaults.urgentTitle,
+      urgentPrice: selectedDefaults.urgentPrice,
       urgentOptionLabel: "每人",
       contracts: [
         { key: "self", label: "護照申請委任書(本人)", url: "" },
@@ -227,8 +260,10 @@ export default function DocumentServiceDetailPage() {
   }
 
   const displayImage = imageMap[service.id] || service.image;
-  const regularPrice = Number(content.regularPrice) > 0 ? Number(content.regularPrice) : DEFAULT_REGULAR_PRICE;
-  const urgentPrice = Number(content.urgentPrice) > 0 ? Number(content.urgentPrice) : DEFAULT_URGENT_PRICE;
+  const fallbackRegularPrice = defaultContent?.regularPrice ?? DEFAULT_REGULAR_PRICE;
+  const fallbackUrgentPrice = defaultContent?.urgentPrice ?? DEFAULT_URGENT_PRICE;
+  const regularPrice = Number(content.regularPrice) > 0 ? Number(content.regularPrice) : fallbackRegularPrice;
+  const urgentPrice = Number(content.urgentPrice) > 0 ? Number(content.urgentPrice) : fallbackUrgentPrice;
 
   const setContractField = (key: ContractKey, field: "label" | "url", value: string) => {
     setContent((prev) => {
@@ -255,8 +290,8 @@ export default function DocumentServiceDetailPage() {
       const normalized: EditableContent = {
         ...content,
         requirements: content.requirements.map((item) => item.trim()).filter(Boolean),
-        regularPrice: Number(content.regularPrice) > 0 ? Number(content.regularPrice) : DEFAULT_REGULAR_PRICE,
-        urgentPrice: Number(content.urgentPrice) > 0 ? Number(content.urgentPrice) : DEFAULT_URGENT_PRICE,
+        regularPrice: Number(content.regularPrice) > 0 ? Number(content.regularPrice) : fallbackRegularPrice,
+        urgentPrice: Number(content.urgentPrice) > 0 ? Number(content.urgentPrice) : fallbackUrgentPrice,
       };
 
       const res = await fetch(`/api/document-services/${service.id}/content`, {
@@ -414,18 +449,18 @@ export default function DocumentServiceDetailPage() {
         )}
 
         <article className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
-          <div className={`relative overflow-hidden ${isRoc0001 ? "bg-[#0b1020]" : "aspect-[16/8]"}`}>
+          <div className={`relative overflow-hidden ${isEnhancedDocumentPage ? "bg-[#0b1020]" : "aspect-[16/8]"}`}>
             {imagesLoaded ? (
               <img
                 src={displayImage}
                 alt={content.title}
-                className={isRoc0001 ? "h-auto w-full object-contain" : "h-full w-full object-cover"}
+                className={isEnhancedDocumentPage ? "h-auto w-full object-contain" : "h-full w-full object-cover"}
               />
             ) : (
-              <div className={`h-full w-full animate-pulse bg-white/10 ${isRoc0001 ? "min-h-[360px]" : ""}`} />
+              <div className={`h-full w-full animate-pulse bg-white/10 ${isEnhancedDocumentPage ? "min-h-[360px]" : ""}`} />
             )}
 
-            {!isRoc0001 && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />}
+            {!isEnhancedDocumentPage && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />}
 
             {isDevMode && (
               <label className="absolute right-3 top-3 inline-flex cursor-pointer items-center rounded-full bg-sky-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
@@ -449,7 +484,7 @@ export default function DocumentServiceDetailPage() {
 
           <div className="p-5 sm:p-6">
             <h1 className="text-xl font-black text-white sm:text-2xl">{content.title}</h1>
-            {!isRoc0001 && <p className="mt-2 text-sm leading-6 text-white/75">{content.summary}</p>}
+            {!isEnhancedDocumentPage && <p className="mt-2 text-sm leading-6 text-white/75">{content.summary}</p>}
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -517,7 +552,7 @@ export default function DocumentServiceDetailPage() {
               </ul>
             </div>
 
-            {isRoc0001 && (
+            {isEnhancedDocumentPage && (
               <>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-base text-white/95">
                   <div className="mb-3 flex items-center justify-end">
@@ -728,53 +763,16 @@ export default function DocumentServiceDetailPage() {
                         <p className="text-xl font-bold text-white">{content.regularTitle}</p>
                         <div className="flex items-center gap-3">
                           <span className="text-xl font-black text-white">NT${regularPrice.toLocaleString()} /人</span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedOption((prev) => (prev === "regular" ? null : "regular"))}
-                            className="rounded-md border border-sky-300 px-5 py-1.5 text-sm font-semibold text-sky-200 transition hover:bg-sky-500/10"
+                          <a
+                            href={lineDmHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-md border border-[#06C755] bg-[#06C755]/20 px-5 py-1.5 text-sm font-semibold text-[#b9ffd4] transition hover:bg-[#06C755]/30"
                           >
-                            {selectedOption === "regular" ? "關閉" : "選擇"}
-                          </button>
+                            LINE 洽詢
+                          </a>
                         </div>
                       </div>
-
-                      {selectedOption === "regular" && (
-                        <div className="mt-4 border-t border-white/15 pt-4">
-                          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-white/15 pb-3 text-sm text-white/70">
-                            <span>選項</span>
-                            <span>價格</span>
-                            <span>數量</span>
-                          </div>
-
-                          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-white/15 py-4 text-white">
-                            <span className="text-lg font-semibold">{content.regularOptionLabel}</span>
-                            <span className="text-2xl font-bold">NT${regularPrice.toLocaleString()}</span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setRegularQty((q) => Math.max(0, q - 1))}
-                                className="h-8 w-8 rounded-full border border-sky-300 text-lg leading-none text-sky-300 hover:bg-sky-500/10"
-                              >
-                                -
-                              </button>
-                              <div className="flex h-10 min-w-[3rem] items-center justify-center rounded-md border border-white/20 bg-black/20 text-xl font-bold">
-                                {regularQty}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setRegularQty((q) => q + 1)}
-                                className="h-8 w-8 rounded-full border border-sky-300 text-lg leading-none text-sky-300 hover:bg-sky-500/10"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 text-right text-xl font-bold text-white">
-                            總金額 <span className="text-3xl text-rose-400">$ {regularQty * regularPrice}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <div className="rounded-xl border border-white/20 bg-white/[0.02] p-4">
@@ -782,53 +780,16 @@ export default function DocumentServiceDetailPage() {
                         <p className="text-xl font-bold text-white">{content.urgentTitle}</p>
                         <div className="flex items-center gap-3">
                           <span className="text-xl font-black text-white">NT${urgentPrice.toLocaleString()} /人</span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedOption((prev) => (prev === "urgent" ? null : "urgent"))}
-                            className="rounded-md border border-sky-300 px-5 py-1.5 text-sm font-semibold text-sky-200 transition hover:bg-sky-500/10"
+                          <a
+                            href={lineDmHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-md border border-[#06C755] bg-[#06C755]/20 px-5 py-1.5 text-sm font-semibold text-[#b9ffd4] transition hover:bg-[#06C755]/30"
                           >
-                            {selectedOption === "urgent" ? "關閉" : "選擇"}
-                          </button>
+                            LINE 洽詢
+                          </a>
                         </div>
                       </div>
-
-                      {selectedOption === "urgent" && (
-                        <div className="mt-4 border-t border-white/15 pt-4">
-                          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-white/15 pb-3 text-sm text-white/70">
-                            <span>選項</span>
-                            <span>價格</span>
-                            <span>數量</span>
-                          </div>
-
-                          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-white/15 py-4 text-white">
-                            <span className="text-lg font-semibold">{content.urgentOptionLabel}</span>
-                            <span className="text-2xl font-bold">NT${urgentPrice.toLocaleString()}</span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setUrgentQty((q) => Math.max(0, q - 1))}
-                                className="h-8 w-8 rounded-full border border-sky-300 text-lg leading-none text-sky-300 hover:bg-sky-500/10"
-                              >
-                                -
-                              </button>
-                              <div className="flex h-10 min-w-[3rem] items-center justify-center rounded-md border border-white/20 bg-black/20 text-xl font-bold">
-                                {urgentQty}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setUrgentQty((q) => q + 1)}
-                                className="h-8 w-8 rounded-full border border-sky-300 text-lg leading-none text-sky-300 hover:bg-sky-500/10"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 text-right text-xl font-bold text-white">
-                            總金額 <span className="text-3xl text-rose-400">$ {urgentQty * urgentPrice}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
