@@ -32,6 +32,9 @@ type EditableContent = {
   }>;
 };
 
+const DEFAULT_REGULAR_PRICE = 1700;
+const DEFAULT_URGENT_PRICE = 2600;
+
 function normalizeEditableContent(base: EditableContent, incoming: Partial<EditableContent> | null | undefined): EditableContent {
   if (!incoming) return base;
 
@@ -61,6 +64,8 @@ function normalizeEditableContent(base: EditableContent, incoming: Partial<Edita
   const optionSectionTitleRaw = String(incoming.optionSectionTitle || base.optionSectionTitle).trim();
   const optionSectionTitle =
     optionSectionTitleRaw === "選擇中華民國護照" ? "選擇普通送件 or 急件送審" : optionSectionTitleRaw;
+  const parsedRegularPrice = Number(incoming.regularPrice);
+  const parsedUrgentPrice = Number(incoming.urgentPrice);
 
   return {
     title: String(incoming.title || base.title).trim(),
@@ -71,10 +76,10 @@ function normalizeEditableContent(base: EditableContent, incoming: Partial<Edita
       : base.requirements,
     optionSectionTitle,
     regularTitle: String(incoming.regularTitle || base.regularTitle).trim(),
-    regularPrice: Number.isFinite(Number(incoming.regularPrice)) ? Number(incoming.regularPrice) : base.regularPrice,
+    regularPrice: Number.isFinite(parsedRegularPrice) && parsedRegularPrice > 0 ? parsedRegularPrice : base.regularPrice,
     regularOptionLabel: String(incoming.regularOptionLabel || base.regularOptionLabel).trim(),
     urgentTitle: String(incoming.urgentTitle || base.urgentTitle).trim(),
-    urgentPrice: Number.isFinite(Number(incoming.urgentPrice)) ? Number(incoming.urgentPrice) : base.urgentPrice,
+    urgentPrice: Number.isFinite(parsedUrgentPrice) && parsedUrgentPrice > 0 ? parsedUrgentPrice : base.urgentPrice,
     urgentOptionLabel: String(incoming.urgentOptionLabel || base.urgentOptionLabel).trim(),
     contracts: mergedContracts,
   };
@@ -94,6 +99,7 @@ export default function DocumentServiceDetailPage() {
   const [loadingContent, setLoadingContent] = useState(false);
   const [savingContent, setSavingContent] = useState(false);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
   const [editingSections, setEditingSections] = useState<{
     requirements: boolean;
     contracts: boolean;
@@ -118,10 +124,10 @@ export default function DocumentServiceDetailPage() {
       requirements: service.requirements,
       optionSectionTitle: "選擇普通送件 or 急件送審",
       regularTitle: "（一般普件）約 10-15天",
-      regularPrice: 1700,
+      regularPrice: DEFAULT_REGULAR_PRICE,
       regularOptionLabel: "每人",
       urgentTitle: "加急送件 約 3-5天",
-      urgentPrice: 2600,
+      urgentPrice: DEFAULT_URGENT_PRICE,
       urgentOptionLabel: "每人",
       contracts: [
         { key: "self", label: "護照申請委任書(本人)", url: "" },
@@ -187,6 +193,15 @@ export default function DocumentServiceDetailPage() {
       });
   }, [service, defaultContent]);
 
+  useEffect(() => {
+    if (!showSaveSuccessModal) return;
+    const timer = setTimeout(() => {
+      setShowSaveSuccessModal(false);
+    }, 1300);
+
+    return () => clearTimeout(timer);
+  }, [showSaveSuccessModal]);
+
   if (!service || !content) {
     return (
       <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
@@ -212,8 +227,8 @@ export default function DocumentServiceDetailPage() {
   }
 
   const displayImage = imageMap[service.id] || service.image;
-  const regularPrice = Number(content.regularPrice) || 0;
-  const urgentPrice = Number(content.urgentPrice) || 0;
+  const regularPrice = Number(content.regularPrice) > 0 ? Number(content.regularPrice) : DEFAULT_REGULAR_PRICE;
+  const urgentPrice = Number(content.urgentPrice) > 0 ? Number(content.urgentPrice) : DEFAULT_URGENT_PRICE;
 
   const setContractField = (key: ContractKey, field: "label" | "url", value: string) => {
     setContent((prev) => {
@@ -240,8 +255,8 @@ export default function DocumentServiceDetailPage() {
       const normalized: EditableContent = {
         ...content,
         requirements: content.requirements.map((item) => item.trim()).filter(Boolean),
-        regularPrice: Number(content.regularPrice) || 0,
-        urgentPrice: Number(content.urgentPrice) || 0,
+        regularPrice: Number(content.regularPrice) > 0 ? Number(content.regularPrice) : DEFAULT_REGULAR_PRICE,
+        urgentPrice: Number(content.urgentPrice) > 0 ? Number(content.urgentPrice) : DEFAULT_URGENT_PRICE,
       };
 
       const res = await fetch(`/api/document-services/${service.id}/content`, {
@@ -257,6 +272,7 @@ export default function DocumentServiceDetailPage() {
 
       setContent(normalizeEditableContent(normalized, data?.content || normalized));
       setSavingMessage("內容已儲存");
+      setShowSaveSuccessModal(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : "儲存失敗";
       setSavingMessage(`儲存失敗：${message}`);
@@ -837,6 +853,14 @@ export default function DocumentServiceDetailPage() {
 
       <FloatingContact />
       <ScrollToTop />
+
+      {showSaveSuccessModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4">
+          <div className="rounded-2xl border border-sky-300/50 bg-[rgba(20,20,30,0.92)] px-8 py-6 text-center shadow-[0_0_30px_rgba(56,189,248,0.25)]">
+            <p className="text-xl font-black text-sky-200">儲存成功</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
