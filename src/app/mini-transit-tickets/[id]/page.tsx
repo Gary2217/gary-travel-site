@@ -36,6 +36,25 @@ type EditableContent = {
   contracts: Array<{ key: ContractKey; label: string; url: string }>;
 };
 
+type RequirementSectionKey = "steps" | "process" | "included" | "notes" | "orderInfo";
+
+const REQUIREMENT_SECTION_ORDER: RequirementSectionKey[] = ["steps", "process", "included", "notes", "orderInfo"];
+
+const REQUIREMENT_SECTION_TITLES: Record<RequirementSectionKey, string> = {
+  steps: "購買流程",
+  process: "小三通通關流程",
+  included: "費用包含",
+  notes: "注意事項",
+  orderInfo: "訂購必填資訊",
+};
+
+const REQUIREMENT_SECTION_MARKERS: Record<Exclude<RequirementSectionKey, "steps">, string> = {
+  process: "## 小三通通關流程",
+  included: "## 費用包含",
+  notes: "## 注意事項",
+  orderInfo: "## 訂購時請於備註欄位確實提供下列資訊(必填)",
+};
+
 const DEFAULT_REQUIREMENTS_TITLE = "購買流程";
 
 function normalizeRequirementsTitle(value: string) {
@@ -51,6 +70,59 @@ function normalizeRequirementLine(line: string) {
   if (normalized === "【注意事項】") return "## 注意事項";
   if (normalized.startsWith("【訂購時請於備註欄位確實提供下列資訊")) return "## 訂購時請於備註欄位確實提供下列資訊(必填)";
   return normalized;
+}
+
+function createEmptyRequirementSections(): Record<RequirementSectionKey, string[]> {
+  return {
+    steps: [],
+    process: [],
+    included: [],
+    notes: [],
+    orderInfo: [],
+  };
+}
+
+function parseRequirementSections(requirements: string[]) {
+  const sections = createEmptyRequirementSections();
+  let currentSection: RequirementSectionKey = "steps";
+
+  for (const raw of requirements) {
+    const line = normalizeRequirementLine(raw);
+    if (!line) continue;
+
+    if (line === REQUIREMENT_SECTION_MARKERS.process) {
+      currentSection = "process";
+      continue;
+    }
+    if (line === REQUIREMENT_SECTION_MARKERS.included) {
+      currentSection = "included";
+      continue;
+    }
+    if (line === REQUIREMENT_SECTION_MARKERS.notes) {
+      currentSection = "notes";
+      continue;
+    }
+    if (line === REQUIREMENT_SECTION_MARKERS.orderInfo) {
+      currentSection = "orderInfo";
+      continue;
+    }
+
+    sections[currentSection].push(line);
+  }
+
+  return sections;
+}
+
+function serializeRequirementSections(sections: Record<RequirementSectionKey, string[]>) {
+  const lines: string[] = [];
+
+  lines.push(...sections.steps);
+  lines.push(REQUIREMENT_SECTION_MARKERS.process, ...sections.process);
+  lines.push(REQUIREMENT_SECTION_MARKERS.included, ...sections.included);
+  lines.push(REQUIREMENT_SECTION_MARKERS.notes, ...sections.notes);
+  lines.push(REQUIREMENT_SECTION_MARKERS.orderInfo, ...sections.orderInfo);
+
+  return lines.map((line) => line.trim()).filter(Boolean);
 }
 
 function normalizeEditableContent(base: EditableContent, incoming: Partial<EditableContent> | null | undefined): EditableContent {
@@ -118,7 +190,7 @@ export default function MiniTransitTicketDetailPage() {
   const [savingContent, setSavingContent] = useState(false);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
-  const [editingSections, setEditingSections] = useState({ requirements: false });
+  const [editingRequirementSection, setEditingRequirementSection] = useState<RequirementSectionKey | null>(null);
 
   const ticket = useMemo(() => getMiniTransitTicketById(params?.id || ""), [params?.id]);
 
@@ -216,6 +288,23 @@ export default function MiniTransitTicketDetailPage() {
   }
 
   const displayImage = imageMap[ticket.id] || ticket.image;
+  const requirementSections = useMemo(() => parseRequirementSections(content.requirements), [content.requirements]);
+
+  const updateRequirementSection = (sectionKey: RequirementSectionKey, value: string) => {
+    setContent((prev) => {
+      if (!prev) return prev;
+      const nextSections = parseRequirementSections(prev.requirements);
+      nextSections[sectionKey] = value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      return {
+        ...prev,
+        requirements: serializeRequirementSections(nextSections),
+      };
+    });
+  };
 
   const saveContent = async () => {
     setSavingContent(true);
@@ -329,61 +418,56 @@ export default function MiniTransitTicketDetailPage() {
             <h1 className="text-xl font-black text-white sm:text-2xl">{content.title}</h1>
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-lg font-black text-sky-300 sm:text-xl">{content.requirementsTitle}</h2>
-                {isDevMode && (
-                  <button
-                    type="button"
-                    onClick={() => setEditingSections((prev) => ({ ...prev, requirements: !prev.requirements }))}
-                    className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
-                  >
-                    {editingSections.requirements ? "關閉編輯" : "編輯"}
-                  </button>
-                )}
-              </div>
+              <h2 className="mb-4 text-xl font-black text-sky-300 sm:text-2xl">{content.requirementsTitle}</h2>
 
-              {isDevMode && editingSections.requirements && (
-                <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
-                  <textarea
-                    rows={8}
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.requirements.join("\n")}
-                    onChange={(e) =>
-                      setContent((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              requirements: e.target.value
-                                .split("\n")
-                                .map((line) => line.trim())
-                                .filter(Boolean),
-                            }
-                          : prev,
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={saveContent}
-                    disabled={savingContent || loadingContent}
-                    className="mt-3 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-400 disabled:opacity-60"
-                  >
-                    {savingContent ? "儲存中..." : "儲存此區塊"}
-                  </button>
-                </div>
-              )}
+              <div className="space-y-4">
+                {REQUIREMENT_SECTION_ORDER.map((sectionKey) => {
+                  const lines = requirementSections[sectionKey];
+                  const isEditingThisSection = isDevMode && editingRequirementSection === sectionKey;
 
-              <div className="space-y-2 text-base leading-7 text-white/95">
-                {content.requirements.map((row, idx) => {
-                  if (row.startsWith("## ")) {
-                    return (
-                      <h3 key={`${idx}-${row}`} className="pt-3 text-lg font-black text-sky-300 sm:text-xl">
-                        {row.replace(/^##\s*/, "")}
-                      </h3>
-                    );
-                  }
+                  return (
+                    <section key={sectionKey} className="rounded-xl border border-white/10 bg-black/10 p-3 sm:p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-lg font-black text-sky-300 sm:text-xl">{REQUIREMENT_SECTION_TITLES[sectionKey]}</h3>
+                        {isDevMode && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingRequirementSection((prev) => (prev === sectionKey ? null : sectionKey))}
+                            className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                          >
+                            {editingRequirementSection === sectionKey ? "關閉編輯" : "編輯"}
+                          </button>
+                        )}
+                      </div>
 
-                  return <p key={`${idx}-${row}`}>{row}</p>;
+                      {isEditingThisSection && (
+                        <div className="mb-3 rounded-lg border border-white/15 bg-black/20 p-3">
+                          <textarea
+                            rows={8}
+                            className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                            value={lines.join("\n")}
+                            onChange={(e) => updateRequirementSection(sectionKey, e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            onClick={saveContent}
+                            disabled={savingContent || loadingContent}
+                            className="mt-3 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-400 disabled:opacity-60"
+                          >
+                            {savingContent ? "儲存中..." : "儲存此區塊"}
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="space-y-2 text-base leading-7 text-white/95">
+                        {lines.length > 0 ? (
+                          lines.map((row, idx) => <p key={`${sectionKey}-${idx}-${row}`}>{row}</p>)
+                        ) : (
+                          <p className="text-sm text-white/60">（尚未填寫）</p>
+                        )}
+                      </div>
+                    </section>
+                  );
                 })}
               </div>
             </div>
