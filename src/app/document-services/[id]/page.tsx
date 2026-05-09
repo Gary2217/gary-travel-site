@@ -11,7 +11,14 @@ import SocialCta from "@/components/SocialCta";
 import { getSiteLogo, lineDmHref } from "@/lib/supabase";
 import { getDocumentServiceById } from "@/lib/document-services";
 
-type ContractKey = "self" | "other";
+type ContractKey = "template" | "self" | "other";
+
+const CONTRACT_KEYS: ContractKey[] = ["template", "self", "other"];
+const CONTRACT_LABELS: Record<ContractKey, string> = {
+  template: "委託書填寫範本",
+  self: "護照申請委任書(本人)",
+  other: "護照申請委任書(非本人)",
+};
 
 type EditableContent = {
   title: string;
@@ -41,22 +48,22 @@ function normalizeEditableContent(base: EditableContent, incoming: Partial<Edita
   const contracts = (Array.isArray(incoming.contracts) ? incoming.contracts : [])
     .map((item) => {
       if (!item || typeof item !== "object") return null;
-      const key = item.key === "self" || item.key === "other" ? item.key : null;
+      const key = CONTRACT_KEYS.includes(item.key as ContractKey) ? (item.key as ContractKey) : null;
       if (!key) return null;
       return {
         key,
-        label: String(item.label || "").trim() || (key === "self" ? "護照申請委任書(本人)" : "護照申請委任書(非本人)"),
+        label: String(item.label || "").trim() || CONTRACT_LABELS[key],
         url: String(item.url || "").trim(),
       };
     })
     .filter((item): item is { key: ContractKey; label: string; url: string } => Boolean(item));
 
-  const mergedContracts: EditableContent["contracts"] = (["self", "other"] as const).map((key) => {
+  const mergedContracts: EditableContent["contracts"] = CONTRACT_KEYS.map((key) => {
     const found = contracts.find((item) => item.key === key);
     const fallback = base.contracts.find((item) => item.key === key);
     return {
       key,
-      label: found?.label || fallback?.label || (key === "self" ? "護照申請委任書(本人)" : "護照申請委任書(非本人)"),
+      label: found?.label || fallback?.label || CONTRACT_LABELS[key],
       url: found?.url || fallback?.url || "",
     };
   });
@@ -163,8 +170,9 @@ export default function DocumentServiceDetailPage() {
       urgentPrice: selectedDefaults.urgentPrice,
       urgentOptionLabel: "每人",
       contracts: [
-        { key: "self", label: "護照申請委任書(本人)", url: "" },
-        { key: "other", label: "護照申請委任書(非本人)", url: "" },
+        { key: "template", label: CONTRACT_LABELS.template, url: "" },
+        { key: "self", label: CONTRACT_LABELS.self, url: "" },
+        { key: "other", label: CONTRACT_LABELS.other, url: "" },
       ],
     };
   }, [service]);

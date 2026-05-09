@@ -13,7 +13,13 @@ const FILE_MAX_SIZE = 15 * 1024 * 1024;
 const FILE_EXTENSIONS = ["pdf", "doc", "docx"];
 
 type ServiceId = (typeof SERVICE_IDS)[number];
-type ContractKey = "self" | "other";
+type ContractKey = "template" | "self" | "other";
+const CONTRACT_KEYS: ContractKey[] = ["template", "self", "other"];
+const CONTRACT_LABELS: Record<ContractKey, string> = {
+  template: "委託書填寫範本",
+  self: "護照申請委任書(本人)",
+  other: "護照申請委任書(非本人)",
+};
 
 type DocumentServiceEditableContent = {
   title: string;
@@ -39,7 +45,7 @@ function isServiceId(value: string): value is ServiceId {
 }
 
 function isContractKey(value: string): value is ContractKey {
-  return value === "self" || value === "other";
+  return CONTRACT_KEYS.includes(value as ContractKey);
 }
 
 function createAdminClient() {
@@ -62,7 +68,7 @@ function sanitizeContent(input: unknown): DocumentServiceEditableContent | null 
       if (!isContractKey(key)) return null;
       return {
         key,
-        label: String((item as { label?: string }).label || "").trim(),
+        label: String((item as { label?: string }).label || "").trim() || CONTRACT_LABELS[key],
         url: String((item as { url?: string }).url || "").trim(),
       };
     })
@@ -220,20 +226,20 @@ export async function POST(request: NextRequest, context: { params: { id: string
       urgentPrice: 0,
       urgentOptionLabel: "每人",
       contracts: [
-        { key: "self" as const, label: "護照申請委任書(本人)", url: "" },
-        { key: "other" as const, label: "護照申請委任書(非本人)", url: "" },
+        { key: "template" as const, label: CONTRACT_LABELS.template, url: "" },
+        { key: "self" as const, label: CONTRACT_LABELS.self, url: "" },
+        { key: "other" as const, label: CONTRACT_LABELS.other, url: "" },
       ],
     };
 
     const oldContract = existing.contracts.find((item) => item.key === contractKeyRaw);
     const oldPath = getStoragePathFromPublicUrl(oldContract?.url || "");
 
-    const nextContracts = ["self", "other"].map((key) => {
+    const nextContracts = CONTRACT_KEYS.map((key) => {
       const prev = existing.contracts.find((item) => item.key === key);
-      const fallbackLabel = key === "self" ? "護照申請委任書(本人)" : "護照申請委任書(非本人)";
       return {
         key: key as ContractKey,
-        label: prev?.label || fallbackLabel,
+        label: prev?.label || CONTRACT_LABELS[key],
         url: key === contractKeyRaw ? newUrl : prev?.url || "",
       };
     });
