@@ -424,11 +424,9 @@ export default function MiniTransitTicketDetailPage() {
         <article className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
           <div className="relative overflow-hidden bg-[#0b1020]">
             {imagesLoaded ? (
-              <div className="flex min-h-[240px] w-full items-center justify-center bg-[radial-gradient(circle_at_50%_10%,rgba(56,189,248,0.2),rgba(11,16,32,0.92)_55%)] p-2 sm:min-h-[320px] md:min-h-[420px]">
-                <img src={displayImage} alt={content.title} className="max-h-[620px] w-full object-contain" />
-              </div>
+              <img src={displayImage} alt={content.title} className="h-auto w-full object-contain" />
             ) : (
-              <div className="h-full min-h-[240px] w-full animate-pulse bg-white/10 sm:min-h-[320px] md:min-h-[420px]" />
+              <div className="h-full min-h-[360px] w-full animate-pulse bg-white/10" />
             )}
             {isDevMode && (
               <label className="absolute right-3 top-3 inline-flex cursor-pointer items-center rounded-full bg-sky-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
