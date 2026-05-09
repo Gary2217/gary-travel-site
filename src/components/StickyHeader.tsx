@@ -96,6 +96,12 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="hidden items-center gap-4 sm:flex">
               <Link
+                href="/mini-transit-tickets"
+                className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]"
+              >
+                小三通票卷
+              </Link>
+              <Link
                 href="/document-services"
                 className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]"
               >
