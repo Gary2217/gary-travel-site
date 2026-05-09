@@ -94,6 +94,15 @@ export default function DocumentServiceDetailPage() {
   const [loadingContent, setLoadingContent] = useState(false);
   const [savingContent, setSavingContent] = useState(false);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
+  const [editingSections, setEditingSections] = useState<{
+    requirements: boolean;
+    contracts: boolean;
+    options: boolean;
+  }>({
+    requirements: false,
+    contracts: false,
+    options: false,
+  });
   const [uploadingContractKey, setUploadingContractKey] = useState<ContractKey | null>(null);
   const [deletingContractKey, setDeletingContractKey] = useState<ContractKey | null>(null);
 
@@ -358,6 +367,13 @@ export default function DocumentServiceDetailPage() {
     }
   };
 
+  const toggleSectionEdit = (section: "requirements" | "contracts" | "options") => {
+    setEditingSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   return (
     <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
       <StickyHeader
@@ -375,210 +391,9 @@ export default function DocumentServiceDetailPage() {
           ← 返回證件代辦列表
         </Link>
 
-        {isDevMode && (
-          <div className="mb-5 rounded-2xl border border-sky-400/30 bg-sky-500/10 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-bold text-sky-200">開發者模式：頁面文字與下載檔編輯</h2>
-              <button
-                type="button"
-                onClick={saveContent}
-                disabled={savingContent || loadingContent}
-                className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {savingContent ? "儲存中..." : "儲存全部文字設定"}
-              </button>
-            </div>
-
-            {savingMessage && <p className="mb-3 text-xs text-sky-100">{savingMessage}</p>}
-            {loadingContent && <p className="mb-3 text-xs text-white/70">讀取已儲存設定中...</p>}
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm">
-                <span className="mb-1 block text-white/80">主標題</span>
-                <input
-                  className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                  value={content.title}
-                  onChange={(e) => setContent((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
-                />
-              </label>
-
-              <label className="text-sm">
-                <span className="mb-1 block text-white/80">摘要文字</span>
-                <input
-                  className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                  value={content.summary}
-                  onChange={(e) => setContent((prev) => (prev ? { ...prev, summary: e.target.value } : prev))}
-                />
-              </label>
-
-              <label className="text-sm md:col-span-2">
-                <span className="mb-1 block text-white/80">需準備資料標題</span>
-                <input
-                  className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                  value={content.requirementsTitle}
-                  onChange={(e) => setContent((prev) => (prev ? { ...prev, requirementsTitle: e.target.value } : prev))}
-                />
-              </label>
-
-              <label className="text-sm md:col-span-2">
-                <span className="mb-1 block text-white/80">需準備資料（每行一條）</span>
-                <textarea
-                  rows={8}
-                  className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                  value={content.requirements.join("\n")}
-                  onChange={(e) =>
-                    setContent((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            requirements: e.target.value
-                              .split("\n")
-                              .map((line) => line.trim())
-                              .filter(Boolean),
-                          }
-                        : prev,
-                    )
-                  }
-                />
-              </label>
-
-              <label className="text-sm md:col-span-2">
-                <span className="mb-1 block text-white/80">方案區塊標題</span>
-                <input
-                  className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                  value={content.optionSectionTitle}
-                  onChange={(e) => setContent((prev) => (prev ? { ...prev, optionSectionTitle: e.target.value } : prev))}
-                />
-              </label>
-
-              <div className="rounded-lg border border-white/20 p-3 md:col-span-1">
-                <p className="mb-2 text-sm font-bold text-white">一般普件設定</p>
-                <label className="mb-2 block text-sm">
-                  <span className="mb-1 block text-white/80">標題文字</span>
-                  <input
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.regularTitle}
-                    onChange={(e) => setContent((prev) => (prev ? { ...prev, regularTitle: e.target.value } : prev))}
-                  />
-                </label>
-                <label className="mb-2 block text-sm">
-                  <span className="mb-1 block text-white/80">價格（數字）</span>
-                  <input
-                    type="number"
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.regularPrice}
-                    onChange={(e) =>
-                      setContent((prev) => (prev ? { ...prev, regularPrice: Number(e.target.value || 0) } : prev))
-                    }
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1 block text-white/80">選項文字（例如：每人）</span>
-                  <input
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.regularOptionLabel}
-                    onChange={(e) =>
-                      setContent((prev) => (prev ? { ...prev, regularOptionLabel: e.target.value } : prev))
-                    }
-                  />
-                </label>
-              </div>
-
-              <div className="rounded-lg border border-white/20 p-3 md:col-span-1">
-                <p className="mb-2 text-sm font-bold text-white">加急送件設定</p>
-                <label className="mb-2 block text-sm">
-                  <span className="mb-1 block text-white/80">標題文字</span>
-                  <input
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.urgentTitle}
-                    onChange={(e) => setContent((prev) => (prev ? { ...prev, urgentTitle: e.target.value } : prev))}
-                  />
-                </label>
-                <label className="mb-2 block text-sm">
-                  <span className="mb-1 block text-white/80">價格（數字）</span>
-                  <input
-                    type="number"
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.urgentPrice}
-                    onChange={(e) => setContent((prev) => (prev ? { ...prev, urgentPrice: Number(e.target.value || 0) } : prev))}
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1 block text-white/80">選項文字（例如：每人）</span>
-                  <input
-                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                    value={content.urgentOptionLabel}
-                    onChange={(e) => setContent((prev) => (prev ? { ...prev, urgentOptionLabel: e.target.value } : prev))}
-                  />
-                </label>
-              </div>
-
-              <div className="rounded-lg border border-white/20 p-3 md:col-span-2">
-                <p className="mb-2 text-sm font-bold text-white">下載合約檔案設定</p>
-                <div className="space-y-3">
-                  {content.contracts.map((contract) => (
-                    <div key={contract.key} className="rounded-lg border border-white/15 p-3">
-                      <label className="mb-2 block text-sm">
-                        <span className="mb-1 block text-white/80">顯示文字</span>
-                        <input
-                          className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                          value={contract.label}
-                          onChange={(e) => setContractField(contract.key, "label", e.target.value)}
-                        />
-                      </label>
-
-                      <label className="mb-2 block text-sm">
-                        <span className="mb-1 block text-white/80">下載連結（可手動貼 URL）</span>
-                        <input
-                          className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
-                          value={contract.url}
-                          onChange={(e) => setContractField(contract.key, "url", e.target.value)}
-                        />
-                      </label>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label className="inline-flex cursor-pointer items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500">
-                          {uploadingContractKey === contract.key ? "上傳中..." : "上傳檔案（PDF/DOC/DOCX）"}
-                          <input
-                            type="file"
-                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                            className="hidden"
-                            disabled={uploadingContractKey === contract.key}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                uploadContractFile(contract.key, file);
-                              }
-                              e.currentTarget.value = "";
-                            }}
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          disabled={deletingContractKey === contract.key || !contract.url}
-                          onClick={() => deleteContractFile(contract.key)}
-                          className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {deletingContractKey === contract.key ? "刪除中..." : "刪除檔案"}
-                        </button>
-
-                        {contract.url && (
-                          <a
-                            href={contract.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-sky-200 underline"
-                          >
-                            測試下載
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+        {isDevMode && savingMessage && (
+          <div className="mb-4 rounded-lg border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-100">
+            {savingMessage}
           </div>
         )}
 
@@ -621,7 +436,61 @@ export default function DocumentServiceDetailPage() {
             {!isRoc0001 && <p className="mt-2 text-sm leading-6 text-white/75">{content.summary}</p>}
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <h2 className="mb-3 text-sm font-bold text-sky-300">{content.requirementsTitle}</h2>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-sm font-bold text-sky-300">{content.requirementsTitle}</h2>
+                {isDevMode && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSectionEdit("requirements")}
+                    className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                  >
+                    {editingSections.requirements ? "關閉編輯" : "編輯"}
+                  </button>
+                )}
+              </div>
+
+              {isDevMode && editingSections.requirements && (
+                <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
+                  <label className="mb-2 block text-sm">
+                    <span className="mb-1 block text-white/80">區塊標題</span>
+                    <input
+                      className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                      value={content.requirementsTitle}
+                      onChange={(e) => setContent((prev) => (prev ? { ...prev, requirementsTitle: e.target.value } : prev))}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-white/80">清單內容（每行一條）</span>
+                    <textarea
+                      rows={8}
+                      className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                      value={content.requirements.join("\n")}
+                      onChange={(e) =>
+                        setContent((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                requirements: e.target.value
+                                  .split("\n")
+                                  .map((line) => line.trim())
+                                  .filter(Boolean),
+                              }
+                            : prev,
+                        )
+                      }
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={saveContent}
+                    disabled={savingContent || loadingContent}
+                    className="mt-3 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-400 disabled:opacity-60"
+                  >
+                    {savingContent ? "儲存中..." : "儲存此區塊"}
+                  </button>
+                </div>
+              )}
+
               <ul className="space-y-2 text-base leading-7 text-white/95">
                 {content.requirements.map((row) => (
                   <li key={row} className="flex items-start gap-2">
@@ -635,6 +504,89 @@ export default function DocumentServiceDetailPage() {
             {isRoc0001 && (
               <>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-base text-white/95">
+                  <div className="mb-3 flex items-center justify-end">
+                    {isDevMode && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSectionEdit("contracts")}
+                        className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                      >
+                        {editingSections.contracts ? "關閉編輯" : "編輯"}
+                      </button>
+                    )}
+                  </div>
+
+                  {isDevMode && editingSections.contracts && (
+                    <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
+                      <p className="mb-2 text-sm font-bold text-white">下載合約檔案設定</p>
+                      <div className="space-y-3">
+                        {content.contracts.map((contract) => (
+                          <div key={contract.key} className="rounded-lg border border-white/15 p-3">
+                            <label className="mb-2 block text-sm">
+                              <span className="mb-1 block text-white/80">顯示文字</span>
+                              <input
+                                className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                                value={contract.label}
+                                onChange={(e) => setContractField(contract.key, "label", e.target.value)}
+                              />
+                            </label>
+
+                            <label className="mb-2 block text-sm">
+                              <span className="mb-1 block text-white/80">下載連結（可手動貼 URL）</span>
+                              <input
+                                className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                                value={contract.url}
+                                onChange={(e) => setContractField(contract.key, "url", e.target.value)}
+                              />
+                            </label>
+
+                            <div className="flex flex-wrap items-center gap-2">
+                              <label className="inline-flex cursor-pointer items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500">
+                                {uploadingContractKey === contract.key ? "上傳中..." : "上傳檔案（PDF/DOC/DOCX）"}
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                  className="hidden"
+                                  disabled={uploadingContractKey === contract.key}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      uploadContractFile(contract.key, file);
+                                    }
+                                    e.currentTarget.value = "";
+                                  }}
+                                />
+                              </label>
+
+                              <button
+                                type="button"
+                                disabled={deletingContractKey === contract.key || !contract.url}
+                                onClick={() => deleteContractFile(contract.key)}
+                                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {deletingContractKey === contract.key ? "刪除中..." : "刪除檔案"}
+                              </button>
+
+                              {contract.url && (
+                                <a href={contract.url} target="_blank" rel="noreferrer" className="text-xs text-sky-200 underline">
+                                  測試下載
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={saveContent}
+                        disabled={savingContent || loadingContent}
+                        className="mt-3 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-400 disabled:opacity-60"
+                      >
+                        {savingContent ? "儲存中..." : "儲存此區塊"}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-2">
                     {content.contracts.map((contract) => (
                       <p key={contract.key} className="font-semibold">
@@ -652,9 +604,109 @@ export default function DocumentServiceDetailPage() {
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <h2 className="text-xl font-black text-sky-300">{content.optionSectionTitle}</h2>
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h2 className="text-xl font-black text-sky-300">{content.optionSectionTitle}</h2>
+                    {isDevMode && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSectionEdit("options")}
+                        className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                      >
+                        {editingSections.options ? "關閉編輯" : "編輯"}
+                      </button>
+                    )}
+                  </div>
 
-                  <div className="mt-4 space-y-4">
+                  {isDevMode && editingSections.options && (
+                    <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
+                      <label className="mb-2 block text-sm">
+                        <span className="mb-1 block text-white/80">方案區塊標題</span>
+                        <input
+                          className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                          value={content.optionSectionTitle}
+                          onChange={(e) => setContent((prev) => (prev ? { ...prev, optionSectionTitle: e.target.value } : prev))}
+                        />
+                      </label>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="rounded-lg border border-white/15 p-3">
+                          <p className="mb-2 text-sm font-bold text-white">一般普件</p>
+                          <label className="mb-2 block text-sm">
+                            <span className="mb-1 block text-white/80">標題文字</span>
+                            <input
+                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              value={content.regularTitle}
+                              onChange={(e) => setContent((prev) => (prev ? { ...prev, regularTitle: e.target.value } : prev))}
+                            />
+                          </label>
+                          <label className="mb-2 block text-sm">
+                            <span className="mb-1 block text-white/80">價格（數字）</span>
+                            <input
+                              type="number"
+                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              value={content.regularPrice}
+                              onChange={(e) =>
+                                setContent((prev) => (prev ? { ...prev, regularPrice: Number(e.target.value || 0) } : prev))
+                              }
+                            />
+                          </label>
+                          <label className="block text-sm">
+                            <span className="mb-1 block text-white/80">選項文字</span>
+                            <input
+                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              value={content.regularOptionLabel}
+                              onChange={(e) =>
+                                setContent((prev) => (prev ? { ...prev, regularOptionLabel: e.target.value } : prev))
+                              }
+                            />
+                          </label>
+                        </div>
+
+                        <div className="rounded-lg border border-white/15 p-3">
+                          <p className="mb-2 text-sm font-bold text-white">加急送件</p>
+                          <label className="mb-2 block text-sm">
+                            <span className="mb-1 block text-white/80">標題文字</span>
+                            <input
+                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              value={content.urgentTitle}
+                              onChange={(e) => setContent((prev) => (prev ? { ...prev, urgentTitle: e.target.value } : prev))}
+                            />
+                          </label>
+                          <label className="mb-2 block text-sm">
+                            <span className="mb-1 block text-white/80">價格（數字）</span>
+                            <input
+                              type="number"
+                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              value={content.urgentPrice}
+                              onChange={(e) =>
+                                setContent((prev) => (prev ? { ...prev, urgentPrice: Number(e.target.value || 0) } : prev))
+                              }
+                            />
+                          </label>
+                          <label className="block text-sm">
+                            <span className="mb-1 block text-white/80">選項文字</span>
+                            <input
+                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              value={content.urgentOptionLabel}
+                              onChange={(e) =>
+                                setContent((prev) => (prev ? { ...prev, urgentOptionLabel: e.target.value } : prev))
+                              }
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={saveContent}
+                        disabled={savingContent || loadingContent}
+                        className="mt-3 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-400 disabled:opacity-60"
+                      >
+                        {savingContent ? "儲存中..." : "儲存此區塊"}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
                     <div className="rounded-xl border border-sky-400/50 bg-white/[0.02] p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-xl font-bold text-white">{content.regularTitle}</p>
