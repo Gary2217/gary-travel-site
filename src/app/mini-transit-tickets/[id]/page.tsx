@@ -65,11 +65,29 @@ function normalizeRequirementsTitle(value: string) {
 
 function normalizeRequirementLine(line: string) {
   const normalized = line.trim();
+  if (!normalized) return "";
+
+  if (/^##\s*小三通通關流程/.test(normalized)) return REQUIREMENT_SECTION_MARKERS.process;
+  if (/^##\s*費用包含/.test(normalized)) return REQUIREMENT_SECTION_MARKERS.included;
+  if (/^##\s*注意事項/.test(normalized)) return REQUIREMENT_SECTION_MARKERS.notes;
+  if (/^##\s*訂購時請於備註欄位確實提供下列資訊/.test(normalized)) return REQUIREMENT_SECTION_MARKERS.orderInfo;
+
   if (normalized === "【流程說明】") return "## 小三通通關流程";
   if (normalized === "【票券包含】") return "## 費用包含";
   if (normalized === "【注意事項】") return "## 注意事項";
   if (normalized.startsWith("【訂購時請於備註欄位確實提供下列資訊")) return "## 訂購時請於備註欄位確實提供下列資訊(必填)";
   return normalized;
+}
+
+function detectRequirementSection(line: string): RequirementSectionKey | null {
+  if (!line.startsWith("##")) return null;
+  const heading = line.replace(/^##\s*/, "").replace(/\s+/g, "");
+
+  if (heading.includes("小三通通關流程")) return "process";
+  if (heading.includes("費用包含")) return "included";
+  if (heading.includes("注意事項")) return "notes";
+  if (heading.includes("訂購時請於備註欄位確實提供下列資訊")) return "orderInfo";
+  return null;
 }
 
 function createEmptyRequirementSections(): Record<RequirementSectionKey, string[]> {
@@ -89,6 +107,12 @@ function parseRequirementSections(requirements: string[]) {
   for (const raw of requirements) {
     const line = normalizeRequirementLine(raw);
     if (!line) continue;
+
+    const detectedSection = detectRequirementSection(line);
+    if (detectedSection) {
+      currentSection = detectedSection;
+      continue;
+    }
 
     if (line === REQUIREMENT_SECTION_MARKERS.process) {
       currentSection = "process";
@@ -443,8 +467,8 @@ export default function MiniTransitTicketDetailPage() {
                       {isEditingThisSection && (
                         <div className="mb-3 rounded-lg border border-white/15 bg-black/20 p-3">
                           <textarea
-                            rows={8}
-                            className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                            rows={14}
+                            className="min-h-[340px] w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
                             value={lines.join("\n")}
                             onChange={(e) => updateRequirementSection(sectionKey, e.target.value)}
                           />
