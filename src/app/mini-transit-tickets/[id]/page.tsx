@@ -298,6 +298,11 @@ export default function MiniTransitTicketDetailPage() {
     return () => clearTimeout(timer);
   }, [showSaveSuccessModal]);
 
+  const requirementSections = useMemo(
+    () => parseRequirementSections(content?.requirements || []),
+    [content?.requirements],
+  );
+
   if (!ticket || !content || !defaultContent) {
     return (
       <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
@@ -312,7 +317,6 @@ export default function MiniTransitTicketDetailPage() {
   }
 
   const displayImage = imageMap[ticket.id] || ticket.image;
-  const requirementSections = useMemo(() => parseRequirementSections(content.requirements), [content.requirements]);
 
   const updateRequirementSection = (sectionKey: RequirementSectionKey, value: string) => {
     setContent((prev) => {
