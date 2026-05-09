@@ -10,7 +10,7 @@ const SERVICE_IDS = ["roc0001", "roc0002", "tcc0001"] as const;
 const CONTENT_FOLDER = "document-services-content";
 const FILE_FOLDER = "document-services-files";
 const FILE_MAX_SIZE = 15 * 1024 * 1024;
-const FILE_EXTENSIONS = ["pdf", "doc", "docx"];
+const FILE_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"];
 
 type ServiceId = (typeof SERVICE_IDS)[number];
 type ContractKey = "template" | "self" | "other";
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest, context: { params: { id: string
 
     const ext = (file.name.split(".").pop() || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     if (!FILE_EXTENSIONS.includes(ext)) {
-      return NextResponse.json({ error: "僅支援 PDF / DOC / DOCX" }, { status: 400 });
+      return NextResponse.json({ error: "僅支援 PDF / DOC / DOCX / JPG / JPEG / PNG / WEBP" }, { status: 400 });
     }
 
     const supabase = createAdminClient();

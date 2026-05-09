@@ -21,7 +21,7 @@ export default function DocumentServicesPage() {
     getSiteLogo().then(setSiteLogoUrl).catch(() => setSiteLogoUrl("/travel-logo.svg"));
 
     try {
-      const cached = localStorage.getItem("document_service_images");
+      const cached = localStorage.getItem("document_service_list_images");
       if (cached) {
         const parsed = JSON.parse(cached) as Record<string, string>;
         if (parsed && typeof parsed === "object") {
@@ -36,12 +36,12 @@ export default function DocumentServicesPage() {
     fetch("/api/document-service-images", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        const images = data?.images;
+        const images = data?.list_images || data?.images;
         if (images && typeof images === "object") {
           const normalized = images as Record<string, string>;
           setImageMap(normalized);
           try {
-            localStorage.setItem("document_service_images", JSON.stringify(normalized));
+            localStorage.setItem("document_service_list_images", JSON.stringify(normalized));
           } catch {
             // 忽略快取寫入錯誤
           }
@@ -71,6 +71,7 @@ export default function DocumentServicesPage() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("service_id", serviceId);
+      formData.append("image_type", "list");
 
       const res = await fetch("/api/document-service-images", {
         method: "POST",
@@ -87,7 +88,7 @@ export default function DocumentServicesPage() {
         setImageMap((prev) => {
           const next = { ...prev, [serviceId]: url };
           try {
-            localStorage.setItem("document_service_images", JSON.stringify(next));
+            localStorage.setItem("document_service_list_images", JSON.stringify(next));
           } catch {
             // 忽略快取寫入錯誤
           }
@@ -112,7 +113,7 @@ export default function DocumentServicesPage() {
         devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
       />
 
-      <section className="mx-auto max-w-site px-4 py-8 md:px-5">
+      <section className="mx-auto max-w-[1520px] px-3 py-8 md:px-4">
         <div className="mb-5 rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-5 backdrop-blur-[12px]">
           <h1 className="text-2xl font-black text-white">證件代辦</h1>
           <p className="mt-2 text-sm text-white/70">
@@ -159,12 +160,11 @@ export default function DocumentServicesPage() {
                 )}
               </div>
 
-              <div className="p-4">
+              <div className="flex h-full flex-col p-4">
                 <h2 className="text-xl font-bold leading-tight text-white sm:text-2xl">{item.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-white/75">{item.summary}</p>
                 <Link
                   href={`/document-services/${item.id}`}
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-sky-300 transition hover:text-sky-200"
+                  className="mt-5 inline-flex self-end items-center gap-1 text-sm font-semibold text-sky-300 transition hover:text-sky-200"
                 >
                   查看詳細內容
                   <span aria-hidden>→</span>
@@ -183,7 +183,7 @@ export default function DocumentServicesPage() {
       </section>
 
       {isDevMode && (
-        <div className="mx-auto max-w-site px-4 pb-2 text-right text-xs text-white/40 md:px-5">
+        <div className="mx-auto max-w-[1520px] px-3 pb-2 text-right text-xs text-white/40 md:px-4">
           開發者模式已啟用
         </div>
       )}

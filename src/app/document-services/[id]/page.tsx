@@ -181,7 +181,7 @@ export default function DocumentServiceDetailPage() {
     getSiteLogo().then(setSiteLogoUrl).catch(() => setSiteLogoUrl("/travel-logo.svg"));
 
     try {
-      const cached = localStorage.getItem("document_service_images");
+      const cached = localStorage.getItem("document_service_detail_images");
       if (cached) {
         const parsed = JSON.parse(cached) as Record<string, string>;
         if (parsed && typeof parsed === "object") {
@@ -196,12 +196,12 @@ export default function DocumentServiceDetailPage() {
     fetch("/api/document-service-images", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        const images = data?.images;
+        const images = data?.detail_images || data?.images;
         if (images && typeof images === "object") {
           const normalized = images as Record<string, string>;
           setImageMap(normalized);
           try {
-            localStorage.setItem("document_service_images", JSON.stringify(normalized));
+            localStorage.setItem("document_service_detail_images", JSON.stringify(normalized));
           } catch {
             // 忽略快取寫入錯誤
           }
@@ -340,6 +340,7 @@ export default function DocumentServiceDetailPage() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("service_id", service.id);
+      formData.append("image_type", "detail");
 
       const res = await fetch("/api/document-service-images", {
         method: "POST",
@@ -356,7 +357,7 @@ export default function DocumentServiceDetailPage() {
         setImageMap((prev) => {
           const next = { ...prev, [service.id]: url };
           try {
-            localStorage.setItem("document_service_images", JSON.stringify(next));
+            localStorage.setItem("document_service_detail_images", JSON.stringify(next));
           } catch {
             // 忽略快取寫入錯誤
           }
@@ -601,10 +602,10 @@ export default function DocumentServiceDetailPage() {
 
                             <div className="flex flex-wrap items-center gap-2">
                               <label className="inline-flex cursor-pointer items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500">
-                                {uploadingContractKey === contract.key ? "上傳中..." : "上傳檔案（PDF/DOC/DOCX）"}
+                                {uploadingContractKey === contract.key ? "上傳中..." : "上傳檔案或圖片"}
                                 <input
                                   type="file"
-                                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp"
                                   className="hidden"
                                   disabled={uploadingContractKey === contract.key}
                                   onChange={(e) => {

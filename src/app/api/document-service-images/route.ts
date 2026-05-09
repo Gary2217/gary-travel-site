@@ -11,11 +11,21 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 const FOLDER = "document-services";
 const SERVICE_IDS = ["roc0001", "roc0002", "tcc0001"] as const;
+const IMAGE_TYPES = ["list", "detail"] as const;
 
 type ServiceId = (typeof SERVICE_IDS)[number];
+type ImageType = (typeof IMAGE_TYPES)[number];
 
 function isServiceId(value: string): value is ServiceId {
   return SERVICE_IDS.includes(value as ServiceId);
+}
+
+function isImageType(value: string): value is ImageType {
+  return IMAGE_TYPES.includes(value as ImageType);
+}
+
+function filePrefix(serviceId: ServiceId, imageType: ImageType) {
+  return `${serviceId}-${imageType}-`;
 }
 
 function createReadClient() {
@@ -43,21 +53,35 @@ export async function GET() {
       return NextResponse.json({ images: {} });
     }
 
-    const images: Record<string, string> = {};
+    const listImages: Record<string, string> = {};
+    const detailImages: Record<string, string> = {};
 
     for (const serviceId of SERVICE_IDS) {
-      const matched = files
-        .filter((f) => f.name && f.name.startsWith(`${serviceId}-`))
+      const listMatched = files
+        .filter((f) => f.name && f.name.startsWith(filePrefix(serviceId, "list")))
         .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+      if (listMatched[0]?.name) {
+        listImages[serviceId] = buildPublicUrl(`${FOLDER}/${listMatched[0].name}`);
+      }
 
-      if (matched[0]?.name) {
-        images[serviceId] = buildPublicUrl(`${FOLDER}/${matched[0].name}`);
+      const detailMatched = files
+        .filter((f) => f.name && f.name.startsWith(filePrefix(serviceId, "detail")))
+        .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+      if (detailMatched[0]?.name) {
+        detailImages[serviceId] = buildPublicUrl(`${FOLDER}/${detailMatched[0].name}`);
       }
     }
 
-    return NextResponse.json({ images }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      {
+        list_images: listImages,
+        detail_images: detailImages,
+        images: listImages,
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch {
-    return NextResponse.json({ images: {} }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ list_images: {}, detail_images: {}, images: {} }, { headers: { "Cache-Control": "no-store" } });
   }
 }
 
@@ -73,6 +97,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const serviceIdRaw = String(formData.get("service_id") || "").trim();
+    const imageTypeRaw = String(formData.get("image_type") || "detail").trim();
 
     if (!file || !serviceIdRaw) {
       return NextResponse.json({ error: "缺少 file 或 service_id" }, { status: 400 });
@@ -80,6 +105,10 @@ export async function POST(request: NextRequest) {
 
     if (!isServiceId(serviceIdRaw)) {
       return NextResponse.json({ error: "不支援的 service_id" }, { status: 400 });
+    }
+
+    if (!isImageType(imageTypeRaw)) {
+      return NextResponse.json({ error: "不支援的 image_type" }, { status: 400 });
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -103,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     const oldPaths = (files || [])
-      .filter((f) => f.name && f.name.startsWith(`${serviceIdRaw}-`))
+      .filter((f) => f.name && f.name.startsWith(filePrefix(serviceIdRaw, imageTypeRaw)))
       .map((f) => `${FOLDER}/${f.name}`);
 
     // 先刪除舊圖，再上傳新圖
@@ -115,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const path = `${FOLDER}/${serviceIdRaw}-${Date.now()}.${ext}`;
+    const path = `${FOLDER}/${serviceIdRaw}-${imageTypeRaw}-${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage.from("images").upload(path, buffer, {
       contentType: file.type,
@@ -127,7 +156,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ service_id: serviceIdRaw, url: buildPublicUrl(path) });
+    return NextResponse.json({ service_id: serviceIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path) });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
