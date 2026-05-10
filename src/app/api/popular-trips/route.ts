@@ -44,7 +44,8 @@ export async function GET() {
       .from('trips')
       .select('id, title, subtitle, duration, price_range, cover_image_url, display_order, destinations(title)')
       .eq('is_active', true)
-      .not('cover_image_url', 'is', null);
+      .not('cover_image_url', 'is', null)
+      .neq('cover_image_url', '');
 
     if (tripsError) {
       console.error('popular-trips query error:', tripsError.message);
