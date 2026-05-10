@@ -39,6 +39,7 @@ export default function HomePage() {
   const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
   const [filterDestId, setFilterDestId] = useState<string | null>(null);
   const [filterDate, setFilterDate] = useState('');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [popularTrips, setPopularTrips] = useState<{
     id: string;
     title: string;
@@ -323,39 +324,68 @@ export default function HomePage() {
                 <div className="rounded-xl border border-white/[0.08] bg-[#1a3347] px-5 py-6 text-sm text-white/50">
                   尚無目的地
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {section.destinations.map((destination) => (
-                    <Link
-                      key={destination.id}
-                      href={`/destination/${destination.id}`}
-                      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
-                      onClick={() => { if (!isDevMode) trackClick(destination.id); }}
-                    >
-                      {isDevMode && (
-                        <ImageEditor
-                          entityId={destination.id}
-                          currentImageUrl={destination.image_url}
-                          title={destination.title}
-                          onUpdate={(newUrl) => handleImageUpdate(destination.id, newUrl)}
-                        />
-                      )}
-                      <Image
-                        src={destination.image_url}
-                        alt={destination.title}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                        className="object-cover transition duration-300 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-3">
-                        <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
-                        <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              ) : (() => {
+                const VISIBLE_COUNT = 5;
+                const isExpanded = expandedSections.has(section.id);
+                const hasMore = section.destinations.length > VISIBLE_COUNT;
+                const visibleDestinations = isExpanded ? section.destinations : section.destinations.slice(0, VISIBLE_COUNT);
+
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                      {visibleDestinations.map((destination) => (
+                        <Link
+                          key={destination.id}
+                          href={`/destination/${destination.id}`}
+                          className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                          onClick={() => { if (!isDevMode) trackClick(destination.id); }}
+                        >
+                          {isDevMode && (
+                            <ImageEditor
+                              entityId={destination.id}
+                              currentImageUrl={destination.image_url}
+                              title={destination.title}
+                              onUpdate={(newUrl) => handleImageUpdate(destination.id, newUrl)}
+                            />
+                          )}
+                          <Image
+                            src={destination.image_url}
+                            alt={destination.title}
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                            className="object-cover transition duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+                          <div className="absolute inset-x-0 bottom-0 p-3">
+                            <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
+                            <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    {hasMore && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSections((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(section.id)) {
+                            next.delete(section.id);
+                          } else {
+                            next.add(section.id);
+                          }
+                          return next;
+                        })}
+                        className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 text-sm font-medium text-sky-300 transition hover:bg-white/[0.06] hover:text-sky-200"
+                      >
+                        {isExpanded ? '收合' : `查看全部 ${section.destinations.length} 個目的地`}
+                        <svg className={`h-4 w-4 transition ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </section>
           ));
         })()}
