@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getRegionsWithDestinations, getSiteLogo, trackClick } from "@/lib/supabase";
+import { getRegionsWithDestinations, getSiteLogo, trackClick, uploadTripImage } from "@/lib/supabase";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import LogoUploader from "@/components/LogoUploader";
@@ -249,20 +249,31 @@ export default function HomePage() {
                        {i + 1}
                      </div>
                    )}
-                   {/* 封面圖 */}
-                   <div className="relative aspect-[4/2.8] overflow-hidden">
-                     <Image
-                       src={trip.cover_image_url}
-                       alt={trip.title}
-                       fill
-                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                       className="object-cover transition duration-500 group-hover:scale-105"
-                     />
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                     <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
-                       {trip.duration}
-                     </div>
-                   </div>
+                    {/* 封面圖 */}
+                    <div className="relative aspect-[4/2.8] overflow-hidden">
+                      {isDevMode && (
+                        <ImageEditor
+                          entityId={trip.id}
+                          currentImageUrl={trip.cover_image_url}
+                          title={trip.title}
+                          uploadFn={uploadTripImage}
+                          onUpdate={(newUrl) => {
+                            setPopularTrips((prev) => prev.map((t) => t.id === trip.id ? { ...t, cover_image_url: newUrl } : t));
+                          }}
+                        />
+                      )}
+                      <Image
+                        src={trip.cover_image_url}
+                        alt={trip.title}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                        className="object-cover transition duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                        {trip.duration}
+                      </div>
+                    </div>
                    {/* 行程資訊 */}
                    <div className="p-2 sm:p-2.5">
                      {trip.destination_name && (
