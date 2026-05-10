@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+const FEATURED_DESTINATION_ORDER = ['杜拜', '烏茲別克', '斯里蘭卡', '馬爾地夫'];
+
+function getFeaturedPriority(destinationName: string) {
+  const index = FEATURED_DESTINATION_ORDER.indexOf(destinationName);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
 
 function pickDestinationTitle(destinations: unknown): string {
   if (Array.isArray(destinations)) {
@@ -33,7 +42,7 @@ export async function GET() {
 
     const { data: trips, error: tripsError } = await supabase
       .from('trips')
-      .select('id, title, subtitle, duration, price_range, cover_image_url, destinations(title)')
+      .select('id, title, subtitle, duration, price_range, cover_image_url, display_order, destinations(title)')
       .eq('is_active', true)
       .not('cover_image_url', 'is', null);
 
@@ -69,9 +78,18 @@ export async function GET() {
         price_range: t.price_range || '',
         cover_image_url: t.cover_image_url,
         destination_name: pickDestinationTitle(t.destinations),
+        display_order: t.display_order ?? 0,
         view_count: viewCountResults[index]?.count ?? 0,
       }))
-      .sort((a: any, b: any) => b.view_count - a.view_count)
+      .sort((a: any, b: any) => {
+        const featuredDiff = getFeaturedPriority(a.destination_name) - getFeaturedPriority(b.destination_name);
+        if (featuredDiff !== 0) return featuredDiff;
+
+        const viewDiff = b.view_count - a.view_count;
+        if (viewDiff !== 0) return viewDiff;
+
+        return a.display_order - b.display_order;
+      })
       .slice(0, 8);
 
     return NextResponse.json(ranked, {

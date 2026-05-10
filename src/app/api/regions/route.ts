@@ -57,10 +57,12 @@ export async function GET() {
       }, new Map<string, any[]>());
     }
 
-    const regions = (regionsData || []).map((region: any) => ({
-      ...region,
-      destinations: destinationsByRegion.get(region.id) || [],
-    }));
+    const regions = (regionsData || [])
+      .map((region: any) => ({
+        ...region,
+        destinations: destinationsByRegion.get(region.id) || [],
+      }))
+      .filter((region: any) => region.destinations.length > 0);
 
     return NextResponse.json(regions, {
       headers: {
