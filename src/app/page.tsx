@@ -20,6 +20,7 @@ type Destination = {
   title: string;
   subtitle: string;
   image_url: string;
+  sub_region?: string;
 };
 
 type RouteSection = {
@@ -63,7 +64,8 @@ export default function HomePage() {
             id: dest.id,
             title: dest.title,
             subtitle: dest.subtitle || '',
-            image_url: dest.image_url
+            image_url: dest.image_url,
+            sub_region: dest.sub_region || ''
           }))
         }));
         setSections(formattedSections);
@@ -325,44 +327,76 @@ export default function HomePage() {
                   尚無目的地
                 </div>
               ) : (() => {
-                const VISIBLE_COUNT = 5;
                 const isExpanded = expandedSections.has(section.id);
-                const hasMore = section.destinations.length > VISIBLE_COUNT;
-                const visibleDestinations = isExpanded ? section.destinations : section.destinations.slice(0, VISIBLE_COUNT);
+
+                // 按 sub_region 分組
+                const hasSubRegions = section.destinations.some((d) => d.sub_region);
+                const subGroups: { label: string; destinations: Destination[] }[] = [];
+
+                if (hasSubRegions) {
+                  const seen = new Set<string>();
+                  section.destinations.forEach((dest) => {
+                    const key = dest.sub_region || '';
+                    if (!seen.has(key)) {
+                      seen.add(key);
+                      subGroups.push({ label: key, destinations: section.destinations.filter((d) => (d.sub_region || '') === key) });
+                    }
+                  });
+                }
+
+                const VISIBLE_GROUPS = 3;
+                const hasMore = hasSubRegions ? subGroups.length > VISIBLE_GROUPS : section.destinations.length > 5;
+                const visibleGroups = hasSubRegions && !isExpanded ? subGroups.slice(0, VISIBLE_GROUPS) : subGroups;
+                const visibleDestinations = !hasSubRegions ? (isExpanded ? section.destinations : section.destinations.slice(0, 5)) : [];
+
+                const renderCard = (destination: Destination) => (
+                  <Link
+                    key={destination.id}
+                    href={`/destination/${destination.id}`}
+                    className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                    onClick={() => { if (!isDevMode) trackClick(destination.id); }}
+                  >
+                    {isDevMode && (
+                      <ImageEditor
+                        entityId={destination.id}
+                        currentImageUrl={destination.image_url}
+                        title={destination.title}
+                        onUpdate={(newUrl) => handleImageUpdate(destination.id, newUrl)}
+                      />
+                    )}
+                    <Image
+                      src={destination.image_url}
+                      alt={destination.title}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                      className="object-cover transition duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-3">
+                      <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
+                      <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
+                    </div>
+                  </Link>
+                );
 
                 return (
                   <>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                      {visibleDestinations.map((destination) => (
-                        <Link
-                          key={destination.id}
-                          href={`/destination/${destination.id}`}
-                          className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
-                          onClick={() => { if (!isDevMode) trackClick(destination.id); }}
-                        >
-                          {isDevMode && (
-                            <ImageEditor
-                              entityId={destination.id}
-                              currentImageUrl={destination.image_url}
-                              title={destination.title}
-                              onUpdate={(newUrl) => handleImageUpdate(destination.id, newUrl)}
-                            />
+                    {hasSubRegions ? (
+                      visibleGroups.map((group) => (
+                        <div key={group.label || 'ungrouped'} className="mb-5">
+                          {group.label && (
+                            <h3 className="mb-2 px-1 text-sm font-semibold text-white/70">{group.label}</h3>
                           )}
-                          <Image
-                            src={destination.image_url}
-                            alt={destination.title}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                            className="object-cover transition duration-300 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
-                          <div className="absolute inset-x-0 bottom-0 p-3">
-                            <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
-                            <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                            {group.destinations.map(renderCard)}
                           </div>
-                        </Link>
-                      ))}
-                    </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                        {visibleDestinations.map(renderCard)}
+                      </div>
+                    )}
                     {hasMore && (
                       <button
                         type="button"
@@ -377,7 +411,7 @@ export default function HomePage() {
                         })}
                         className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 text-sm font-medium text-sky-300 transition hover:bg-white/[0.06] hover:text-sky-200"
                       >
-                        {isExpanded ? '收合' : `查看全部 ${section.destinations.length} 個目的地`}
+                        {isExpanded ? '收合' : `查看全部 ${hasSubRegions ? subGroups.length + ' 個區域' : section.destinations.length + ' 個目的地'}`}
                         <svg className={`h-4 w-4 transition ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
