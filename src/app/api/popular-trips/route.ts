@@ -69,7 +69,7 @@ export async function GET() {
       )
     );
 
-    const ranked = trips
+    const rankedTrips = trips
       .map((t, index) => ({
         id: t.id,
         title: t.title,
@@ -89,8 +89,18 @@ export async function GET() {
         if (viewDiff !== 0) return viewDiff;
 
         return a.display_order - b.display_order;
-      })
-      .slice(0, 8);
+      });
+
+    const featuredTrips = FEATURED_DESTINATION_ORDER
+      .map((destinationName) => rankedTrips.find((trip) => trip.destination_name === destinationName))
+      .filter((trip): trip is (typeof rankedTrips)[number] => Boolean(trip));
+
+    const featuredIds = new Set(featuredTrips.map((trip) => trip.id));
+
+    const ranked = [
+      ...featuredTrips,
+      ...rankedTrips.filter((trip) => !featuredIds.has(trip.id)),
+    ].slice(0, 8);
 
     return NextResponse.json(ranked, {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
