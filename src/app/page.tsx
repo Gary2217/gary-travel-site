@@ -385,7 +385,7 @@ export default function HomePage() {
                       visibleGroups.map((group) => (
                         <div key={group.label || 'ungrouped'} className="mb-5">
                           {group.label && (
-                            <h3 className="mb-2 px-1 text-sm font-semibold text-white/70">{group.label}</h3>
+                            <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{group.label}</h3>
                           )}
                           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                             {group.destinations.map(renderCard)}
