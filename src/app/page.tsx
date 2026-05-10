@@ -231,53 +231,51 @@ export default function HomePage() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-white/50">最多台灣人出發的團體行程，精選人氣路線一次看</p>
-            </div>
+             </div>
              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
-              {popularTrips.slice(0, 4).map((trip, i) => (
-                <Link
-                  key={trip.id}
-                  href={`/trip/${trip.id}`}
-                  className="group relative block overflow-hidden rounded-lg border border-white/10 bg-[#182838] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
-                >
-                  {/* 排名徽章 */}
-                  {i < 3 && (
-                    <div className={`absolute -left-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-br-xl text-xs font-black shadow-lg ${
-                      i === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white' : i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' : 'bg-gradient-to-br from-orange-500 to-orange-700 text-white'
-                    }`}>
-                      {i + 1}
-                    </div>
-                  )}
-                  {/* 封面圖 */}
-                  <div className="relative aspect-[4/2.8] overflow-hidden">
-                    <Image
-                      src={trip.cover_image_url}
-                      alt={trip.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    {/* 天數標籤 */}
-                    <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
-                      {trip.duration}
-                    </div>
-                  </div>
-                  {/* 行程資訊 */}
-                  <div className="p-2 sm:p-2.5">
-                    {trip.destination_name && (
-                      <p className="mb-0.5 text-[9px] font-medium text-sky-400">{trip.destination_name}</p>
-                    )}
-                    <h3 className="line-clamp-2 min-h-[1.8rem] text-[11px] font-bold leading-snug text-white sm:text-xs">
-                      {trip.title}
-                    </h3>
-                    {trip.price_range && (
-                      <p className="mt-0.5 text-[11px] font-bold text-amber-300 sm:text-xs">
-                        {trip.price_range.replace(/NT\$\s*/g, 'NT $ ').replace(/\s*[~～]\s*/g, ' ~ ')}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
+               {popularTrips.slice(0, 4).map((trip, i) => (
+                 <Link
+                   key={trip.id}
+                   href={`/trip/${trip.id}`}
+                   className="group relative block overflow-hidden rounded-lg border border-white/10 bg-[#182838] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                 >
+                   {i < 3 && (
+                     <div className={`absolute -left-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-br-xl text-xs font-black shadow-lg ${
+                       i === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white' : i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' : 'bg-gradient-to-br from-orange-500 to-orange-700 text-white'
+                     }`}>
+                       {i + 1}
+                     </div>
+                   )}
+                   {/* 封面圖 */}
+                   <div className="relative aspect-[4/2.8] overflow-hidden">
+                     <Image
+                       src={trip.cover_image_url}
+                       alt={trip.title}
+                       fill
+                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                       className="object-cover transition duration-500 group-hover:scale-105"
+                     />
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                     <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                       {trip.duration}
+                     </div>
+                   </div>
+                   {/* 行程資訊 */}
+                   <div className="p-2 sm:p-2.5">
+                     {trip.destination_name && (
+                       <p className="mb-0.5 text-[9px] font-medium text-sky-400">{trip.destination_name}</p>
+                     )}
+                     <h3 className="line-clamp-2 min-h-[1.8rem] text-[11px] font-bold leading-snug text-white sm:text-xs">
+                       {trip.title}
+                     </h3>
+                     {trip.price_range && (
+                       <p className="mt-0.5 text-[11px] font-bold text-amber-300 sm:text-xs">
+                         {trip.price_range.replace(/NT\$\s*/g, 'NT $ ').replace(/\s*[~～]\s*/g, ' ~ ')}
+                       </p>
+                     )}
+                   </div>
+                 </Link>
+               ))}
             </div>
             </div>
           </section>
