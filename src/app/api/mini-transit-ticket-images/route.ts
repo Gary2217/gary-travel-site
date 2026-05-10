@@ -7,6 +7,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 const FOLDER = "mini-transit-tickets";
@@ -134,6 +136,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ticket_id: ticketIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path) });
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "伺服器內部錯誤" }, { status: 500 });
   }
 }

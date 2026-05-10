@@ -7,6 +7,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 const FOLDER = "document-services";
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: "Missing server upload configuration." }, { status: 500 });
+      return NextResponse.json({ error: "伺服器上傳設定遺失" }, { status: 500 });
     }
 
     const formData = await request.formData();
@@ -112,11 +114,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid file type. Allowed: JPG, PNG, WebP" }, { status: 400 });
+      return NextResponse.json({ error: "不支援的檔案類型，僅支援 JPG、PNG、WebP" }, { status: 400 });
     }
 
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File too large. Max 5MB" }, { status: 400 });
+      return NextResponse.json({ error: "檔案過大，最大 5MB" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -158,6 +160,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ service_id: serviceIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path) });
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "伺服器內部錯誤" }, { status: 500 });
   }
 }

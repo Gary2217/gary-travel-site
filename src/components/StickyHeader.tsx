@@ -20,6 +20,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
   const [showContactForm, setShowContactForm] = useState(false);
   const [displayLogoUrl, setDisplayLogoUrl] = useState(logoUrl);
   const [logoReady, setLogoReady] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -141,10 +142,60 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
               </button>
             </div>
+
+            {/* 手機版漢堡選單按鈕 */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white sm:hidden"
+              title="選單"
+            >
+              {mobileMenuOpen ? (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+
             {devModeSlot}
           </div>
         </div>
       </header>
+
+      {/* 手機版下拉選單 */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-x-0 top-header z-header border-b border-white/[0.08] bg-[rgba(15,25,35,0.98)] backdrop-blur-[12px] sm:hidden">
+          <nav className="mx-auto flex max-w-site flex-col px-4 py-3">
+            <Link
+              href="/mini-transit-tickets"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+            >
+              小三通票卷
+            </Link>
+            <Link
+              href="/document-services"
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+            >
+              證件代辦
+            </Link>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowContactForm(true);
+              }}
+              className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+            >
+              聯絡我們
+            </button>
+          </nav>
+        </div>
+      )}
 
       <ContactFormModal isOpen={showContactForm} onClose={() => setShowContactForm(false)} />
     </>
