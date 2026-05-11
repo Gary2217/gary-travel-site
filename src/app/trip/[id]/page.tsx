@@ -437,37 +437,28 @@ export default function TripPage() {
       setDepartureEditorPrice('');
       setDepartureEditorGroupCode('');
       setDepartureEditorWaitlist('');
-      setDetailTitle('');
-      setDetailSubtitle('');
-      setDetailAdultPrice('');
-      setDetailChildWithBedPrice('');
-      setDetailChildNoBedPrice('');
-      setDetailChildExtraBedPrice('');
-      setDetailInfantPrice('');
-      setDetailPricingNote('');
-      setDetailDeposit('');
-      setDetailSingleRoom('');
-      setDetailVisaFee('');
-      setDetailSurcharge('');
-      setDetailGroupNote('');
-      setDetailQuoteNote('');
-      setDetailVisaNote('');
+      setDetailTitle(DEFAULT_PRICE_DETAIL.title);
+      setDetailSubtitle(DEFAULT_PRICE_DETAIL.subtitle);
+      setDetailAdultPrice(DEFAULT_PRICE_DETAIL.adultPrice);
+      setDetailChildWithBedPrice(DEFAULT_PRICE_DETAIL.childWithBedPrice);
+      setDetailChildNoBedPrice(DEFAULT_PRICE_DETAIL.childNoBedPrice);
+      setDetailChildExtraBedPrice(DEFAULT_PRICE_DETAIL.childExtraBedPrice);
+      setDetailInfantPrice(DEFAULT_PRICE_DETAIL.infantPrice);
+      setDetailPricingNote(DEFAULT_PRICE_DETAIL.pricingNote);
+      setDetailDeposit(String(editTripBanner.deposit_label || DEFAULT_PRICE_DETAIL.deposit));
+      setDetailSingleRoom(DEFAULT_PRICE_DETAIL.singleRoom);
+      setDetailVisaFee(DEFAULT_PRICE_DETAIL.visaFee);
+      setDetailSurcharge(DEFAULT_PRICE_DETAIL.surcharge);
+      setDetailGroupNote(DEFAULT_PRICE_DETAIL.groupNote);
+      setDetailQuoteNote(DEFAULT_PRICE_DETAIL.quoteNote);
+      setDetailVisaNote(DEFAULT_PRICE_DETAIL.visaNote);
       return;
     }
 
     setDepartureEditorDate(selectedDeparture.departure_date);
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
 
-    // 若當前梯次無資料，從其他梯次找最近一筆來預填
-    let infoSource = selectedDepartureInfo;
-    const hasOwnData = !!(selectedDepartureInfo.group_code || selectedDepartureInfo.price_detail);
-    if (!hasOwnData && banner.departure_info_map) {
-      for (const d of departureDates) {
-        if (d.id === selectedDepartureId) continue;
-        const info = banner.departure_info_map[d.id];
-        if (info?.price_detail) { infoSource = info; break; }
-      }
-    }
+    const infoSource = selectedDepartureInfo;
 
     setDepartureEditorGroupCode(selectedDepartureInfo.group_code || '');
     setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : '');
@@ -480,18 +471,40 @@ export default function TripPage() {
     setDetailChildExtraBedPrice(parsedDetail.childExtraBedPrice);
     setDetailInfantPrice(parsedDetail.infantPrice);
     setDetailPricingNote(parsedDetail.pricingNote);
-    setDetailDeposit(parsedDetail.deposit);
+    setDetailDeposit(parsedDetail.deposit || editTripBanner.deposit_label || '');
     setDetailSingleRoom(parsedDetail.singleRoom);
     setDetailVisaFee(parsedDetail.visaFee || '免簽證');
     setDetailSurcharge(parsedDetail.surcharge || '售價已內含');
     setDetailGroupNote(parsedDetail.groupNote);
     setDetailQuoteNote(parsedDetail.quoteNote);
     setDetailVisaNote(parsedDetail.visaNote);
-  }, [selectedDepartureId, selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail]);
+  }, [selectedDepartureId, selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail, editTripBanner.deposit_label]);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
   }, []);
+
+  const buildDepartureInfoPayload = (): DepartureBannerInfo => ({
+    group_code: departureEditorGroupCode.trim(),
+    waitlist_count: departureEditorWaitlist ? Number(departureEditorWaitlist) : 0,
+    price_detail: stringifyPriceDetail({
+      title: detailTitle.trim(),
+      subtitle: detailSubtitle.trim(),
+      adultPrice: detailAdultPrice.trim(),
+      childWithBedPrice: detailChildWithBedPrice.trim(),
+      childNoBedPrice: detailChildNoBedPrice.trim(),
+      childExtraBedPrice: detailChildExtraBedPrice.trim(),
+      infantPrice: detailInfantPrice.trim(),
+      pricingNote: detailPricingNote.trim(),
+      deposit: (detailDeposit.trim() || String(editTripBanner.deposit_label || '').trim()),
+      singleRoom: detailSingleRoom.trim(),
+      visaFee: detailVisaFee.trim(),
+      surcharge: detailSurcharge.trim(),
+      groupNote: detailGroupNote.trim(),
+      quoteNote: detailQuoteNote.trim(),
+      visaNote: detailVisaNote.trim(),
+    }),
+  });
 
   const saveSelectedDepartureInfo = async () => {
     if (!selectedDepartureId || !selectedDeparture) {
@@ -508,27 +521,7 @@ export default function TripPage() {
       duration_label: previewNightText,
       departure_info_map: {
         ...getDepartureBannerInfoMap(editTripBanner),
-        [selectedDepartureId]: {
-          group_code: departureEditorGroupCode.trim(),
-          waitlist_count: departureEditorWaitlist ? Number(departureEditorWaitlist) : 0,
-          price_detail: stringifyPriceDetail({
-            title: detailTitle.trim(),
-            subtitle: detailSubtitle.trim(),
-            adultPrice: detailAdultPrice.trim(),
-            childWithBedPrice: detailChildWithBedPrice.trim(),
-            childNoBedPrice: detailChildNoBedPrice.trim(),
-            childExtraBedPrice: detailChildExtraBedPrice.trim(),
-            infantPrice: detailInfantPrice.trim(),
-            pricingNote: detailPricingNote.trim(),
-            deposit: detailDeposit.trim(),
-            singleRoom: detailSingleRoom.trim(),
-            visaFee: detailVisaFee.trim(),
-            surcharge: detailSurcharge.trim(),
-            groupNote: detailGroupNote.trim(),
-            quoteNote: detailQuoteNote.trim(),
-            visaNote: detailVisaNote.trim(),
-          }),
-        },
+        [selectedDepartureId]: buildDepartureInfoPayload(),
       },
     };
 
@@ -596,6 +589,69 @@ export default function TripPage() {
       const updatedTrip = await res.json();
       setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
       alert('出團資訊已更新');
+    } catch {
+      alert('儲存失敗，請再試一次');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveDepartureInfoAsFirstDeparture = async () => {
+    if (!departureEditorDate) {
+      alert('請先填寫出團日期');
+      return;
+    }
+
+    setSaving(true);
+
+    const departureCreatePayload = {
+      departure_date: departureEditorDate,
+      price: departureEditorPrice ? Number(departureEditorPrice.replace(/\D/g, '')) : null,
+      seats_total: editTripBanner.seats_total,
+      seats_available: editTripBanner.seats_available,
+    };
+
+    try {
+      const createRes = await fetch(`/api/trips/${tripId}/departure-dates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(departureCreatePayload),
+      });
+
+      if (!createRes.ok) {
+        alert('建立出團梯次失敗，請再試一次');
+        return;
+      }
+
+      const createdDeparture = await createRes.json();
+
+      const bannerPayload: TripBanner = {
+        ...EMPTY_TRIP_BANNER,
+        ...editTripBanner,
+        code_label: previewDayText,
+        duration_label: previewNightText,
+        departure_info_map: {
+          ...getDepartureBannerInfoMap(editTripBanner),
+          [createdDeparture.id]: buildDepartureInfoPayload(),
+        },
+      };
+
+      const tripRes = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_banner: bannerPayload }),
+      });
+
+      if (!tripRes.ok) {
+        alert('儲存出團資訊失敗，請再試一次');
+        return;
+      }
+
+      const updatedTrip = await tripRes.json();
+      setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
+      setDepartureDates((prev) => [...prev, createdDeparture].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
+      setSelectedDepartureId(createdDeparture.id);
+      alert('已建立第一個出團梯次並儲存出團資訊');
     } catch {
       alert('儲存失敗，請再試一次');
     } finally {
@@ -782,8 +838,7 @@ export default function TripPage() {
                           <input
                             value={departureEditorGroupCode}
                             onChange={(e) => setDepartureEditorGroupCode(e.target.value)}
-                            disabled={!selectedDeparture}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                           />
                         </div>
                         <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
@@ -792,8 +847,7 @@ export default function TripPage() {
                             type="date"
                             value={departureEditorDate}
                             onChange={(e) => setDepartureEditorDate(e.target.value)}
-                            disabled={!selectedDeparture}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400 [color-scheme:dark]"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400 [color-scheme:dark]"
                           />
                         </div>
                         <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
@@ -801,8 +855,7 @@ export default function TripPage() {
                           <input
                             value={departureEditorPrice}
                             onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
-                            disabled={!selectedDeparture}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                           />
                         </div>
                         <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
@@ -810,8 +863,7 @@ export default function TripPage() {
                           <button
                             type="button"
                             onClick={() => setShowPriceDetailModal(true)}
-                            disabled={!selectedDeparture}
-                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/80 transition hover:border-sky-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/80 transition hover:border-sky-400/40 hover:text-white"
                           >
                             編輯售價明細
                           </button>
@@ -864,8 +916,7 @@ export default function TripPage() {
                             min="0"
                             value={departureEditorWaitlist}
                             onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))}
-                            disabled={!selectedDeparture}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
                           />
                         </div>
                       </div>
@@ -910,11 +961,11 @@ export default function TripPage() {
 
                       <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={selectedDeparture ? saveSelectedDepartureInfo : saveTripBannerOnly}
+                          onClick={selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture}
                           disabled={saving}
                           className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
                         >
-                          {saving ? '儲存中...' : selectedDeparture ? '儲存目前梯次' : '儲存出團資訊'}
+                          {saving ? '儲存中...' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
                         </button>
                         <button
                           type="button"
@@ -1186,7 +1237,7 @@ export default function TripPage() {
                         if (selectedDeparture) {
                           await saveSelectedDepartureInfo();
                         } else {
-                          await saveTripBannerOnly();
+                          await saveDepartureInfoAsFirstDeparture();
                         }
                         setShowPriceDetailModal(false);
                       }}
@@ -1234,7 +1285,7 @@ export default function TripPage() {
                   <div className="grid gap-6 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr] md:gap-8">
                     <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">每席</span></div>
                     <div className="grid gap-x-10 gap-y-4 sm:grid-cols-2 text-sm md:pl-2">
-                       <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatDepositText(priceDetailPreview.deposit)}</span></div>
+                       <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatDepositText(priceDetailPreview.deposit || String(editTripBanner.deposit_label || ''))}</span></div>
                          <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">單人房</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
                          <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{displayVisaFeeText(priceDetailPreview.visaFee)}</span></div>
                          <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">附加費</span><span className="font-semibold text-sky-600">{displaySurchargeText(priceDetailPreview.surcharge)}</span></div>
