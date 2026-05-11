@@ -298,6 +298,7 @@ export default function TripPage() {
     const normalized = formatPriceText(text).replace(/^\+/, '').replace(/^訂金\s*/,'').trim();
     if (!normalized) return '—';
     const amount = normalized.replace(/^NT\$\s*/i, '').replace(/^\$\s*/, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
+    if (!/^[0-9,]+$/.test(amount)) return amount;
     return `$ ${amount} 元/人`;
   };
 
@@ -305,12 +306,14 @@ export default function TripPage() {
     const normalized = text.trim();
     if (!normalized) return '—';
     const stripped = normalized.replace(/^\+/, '').replace(/^NT\$\s*/i, '').replace(/^\$\s*/, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
+    if (!/^[0-9,]+$/.test(stripped)) return stripped;
     return `+ ${stripped} 元/人`;
   };
 
   const formatPerPersonPrice = (text: string, fallback = '—') => {
     const normalized = text.trim().replace(/^NT\$\s*/i, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
     if (!normalized) return fallback;
+    if (!/^[0-9,]+$/.test(normalized)) return normalized;
     return `$ ${normalized} 元/人`;
   };
 
