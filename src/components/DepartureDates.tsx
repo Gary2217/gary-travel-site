@@ -662,38 +662,88 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                     {d.flight_segments && d.flight_segments.length > 0 ? (
                       // 新格式：多航段表格
                       <>
-                        <div className="mb-1 hidden grid-cols-[32px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
-                          <span></span><span>班機日期・航空公司及航班</span><span>起飛時間及機場</span><span>抵達時間及機場</span>
+                        <div className="hidden overflow-hidden rounded-lg border border-white/10 sm:block">
+                          <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-white/[0.02]">
+                            <div className="border-b border-r border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">航段</div>
+                            <div className="border-b border-r border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">班機日期・航空公司及航班</div>
+                            <div className="border-b border-r border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">起飛時間及機場</div>
+                            <div className="border-b border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">抵達時間及機場</div>
+                          </div>
+
+                          {d.flight_segments.map((seg, i) => {
+                            const total = d.flight_segments!.length;
+                            const isFirst = i === 0;
+                            const isLast = i === total - 1 && total > 1;
+                            const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
+                            const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
+                            const segDate = seg.date ? formatDate(seg.date) : null;
+                            const rowBorderClass = "border-b border-white/10";
+
+                            return (
+                              <div key={i} className="grid grid-cols-[84px_1.4fr_1fr_1fr] items-stretch">
+                                <div className={`border-r border-white/10 px-3 py-3 ${rowBorderClass}`}>
+                                  <div className="flex h-full items-center justify-center gap-2">
+                                    <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                                    </svg>
+                                    <span className={`text-sm font-bold ${isFirst ? "text-sky-300" : isLast ? "text-amber-300" : "text-violet-300"}`}>{segmentLabel}</span>
+                                  </div>
+                                </div>
+
+                                <div className={`border-r border-white/10 px-3 py-3 ${rowBorderClass}`}>
+                                  <div className="flex h-full flex-col items-center justify-center leading-tight text-center">
+                                    {segDate && <div className="text-xs text-white/75">{segDate.full}</div>}
+                                    <div className="text-base font-bold text-white">
+                                    {seg.airline}
+                                    {seg.flight_number && <span className="ml-1.5 text-white/80">{seg.flight_number}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className={`border-r border-white/10 px-3 py-3 text-sm ${rowBorderClass}`}>
+                                  <div className="flex h-full items-center justify-center leading-tight text-center">
+                                    {seg.dep_time && <span className="text-base font-bold text-white">{seg.dep_time}</span>}
+                                    {seg.dep_airport && <span className="text-white/85"> {seg.dep_airport}</span>}
+                                  </div>
+                                </div>
+
+                                <div className={`px-3 py-3 text-sm ${rowBorderClass}`}>
+                                  <div className="flex h-full items-center justify-center leading-tight text-center">
+                                    {seg.arr_time && <span className="text-base font-bold text-white">{seg.arr_time}</span>}
+                                    {seg.arr_airport && <span className="text-white/85"> {seg.arr_airport}</span>}
+                                    {seg.next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        {d.flight_segments.map((seg, i) => {
-                          const total = d.flight_segments!.length;
-                          const isFirst = i === 0;
-                          const isLast = i === total - 1 && total > 1;
-                          const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
-                          const segDate = seg.date ? formatDate(seg.date) : null;
-                          return (
-                            <div key={i} className={`grid grid-cols-1 gap-1 py-2 sm:grid-cols-[32px_1fr_1fr_1fr] sm:gap-2 ${i > 0 ? "border-t border-white/5" : ""}`}>
-                              <div className="flex items-start pt-0.5">
-                                <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                                </svg>
+
+                        <div className="space-y-2 sm:hidden">
+                          {d.flight_segments.map((seg, i) => {
+                            const total = d.flight_segments!.length;
+                            const isFirst = i === 0;
+                            const isLast = i === total - 1 && total > 1;
+                            const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
+                            const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
+                            const segDate = seg.date ? formatDate(seg.date) : null;
+
+                            return (
+                              <div key={`m-${i}`} className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
+                                <div className="mb-1 flex items-center gap-2">
+                                  <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                                  </svg>
+                                  <span className={`text-xs font-bold ${isFirst ? "text-sky-300" : isLast ? "text-amber-300" : "text-violet-300"}`}>{segmentLabel}</span>
+                                </div>
+                                {segDate && <div className="text-[11px] text-white/55">{segDate.full}</div>}
+                                <div className="text-xs text-white/90">{seg.airline}{seg.flight_number && <span className="ml-1 text-white/65">{seg.flight_number}</span>}</div>
+                                <div className="mt-1 text-xs text-white/80">起飛：{seg.dep_time || '—'} {seg.dep_airport || ''}</div>
+                                <div className="text-xs text-white/80">抵達：{seg.arr_time || '—'} {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
                               </div>
-                              <div>
-                                {segDate && <div className="text-[10px] text-white/50">{segDate.full}</div>}
-                                <div className="text-xs text-white/90">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-white/55">{seg.flight_number}</span>}</div>
-                              </div>
-                              <div className="text-xs">
-                                {seg.dep_time && <span className="font-semibold text-white/90">{seg.dep_time}</span>}
-                                {seg.dep_airport && <span className="text-white/55"> {seg.dep_airport}</span>}
-                              </div>
-                              <div className="text-xs">
-                                {seg.arr_time && <span className="font-semibold text-white/90">{seg.arr_time}</span>}
-                                {seg.arr_airport && <span className="text-white/55"> {seg.arr_airport}</span>}
-                                {seg.next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </>
                     ) : (
                       // 舊格式：去程 / 回程

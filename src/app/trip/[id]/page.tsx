@@ -141,6 +141,7 @@ export default function TripPage() {
   const [showBannerEditor, setShowBannerEditor] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -186,6 +187,13 @@ export default function TripPage() {
     setTimeout(() => {
       setShowShareGate(false);
       triggerNativeShare();
+    }, 1500);
+  };
+
+  const showSaveSuccess = (message = '儲存成功') => {
+    setSaveSuccessMessage(message);
+    window.setTimeout(() => {
+      setSaveSuccessMessage(null);
     }, 1500);
   };
 
@@ -261,6 +269,13 @@ export default function TripPage() {
     const digits = value.replace(/\D/g, '');
     if (!digits) return '';
     return Number(digits).toLocaleString('zh-TW');
+  };
+
+  const parseDeparturePrice = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return null;
+    const parsed = Number(digits);
+    return Number.isFinite(parsed) ? parsed : null;
   };
 
   const toBannerDaysNights = (days: string, nights: string) => {
@@ -509,10 +524,10 @@ export default function TripPage() {
     }),
   });
 
-  const saveSelectedDepartureInfo = async () => {
+  const saveSelectedDepartureInfo = async (): Promise<boolean> => {
     if (!selectedDepartureId || !selectedDeparture) {
       alert('請先選擇一個出團日期');
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -530,7 +545,7 @@ export default function TripPage() {
 
     const departurePayload = {
       departure_date: departureEditorDate,
-      price: departureEditorPrice ? Number(departureEditorPrice.replace(/\D/g, '')) : null,
+      price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
     };
@@ -551,26 +566,36 @@ export default function TripPage() {
 
       if (!tripRes.ok || !departureRes.ok) {
         alert('儲存失敗，請再試一次');
-        return;
+        return false;
       }
 
       const [updatedTrip, updatedDeparture] = await Promise.all([tripRes.json(), departureRes.json()]);
+      const fallbackPrice = parseDeparturePrice(departureEditorPrice);
+      const normalizedDeparture = {
+        ...selectedDeparture,
+        ...updatedDeparture,
+        departure_date: updatedDeparture?.departure_date || departureEditorDate || selectedDeparture.departure_date,
+        price: typeof updatedDeparture?.price === 'number' ? updatedDeparture.price : fallbackPrice,
+      };
 
       setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
       setDepartureDates((prev) =>
         prev
-          .map((date) => (date.id === selectedDepartureId ? { ...date, ...updatedDeparture } : date))
+          .map((date) => (date.id === selectedDepartureId ? { ...date, ...normalizedDeparture } : date))
           .sort((a, b) => a.departure_date.localeCompare(b.departure_date))
       );
-      alert('出團資訊已更新');
+      setDepartureEditorPrice(typeof normalizedDeparture.price === 'number' ? String(normalizedDeparture.price) : '');
+      showSaveSuccess('儲存成功');
+      return true;
     } catch {
       alert('儲存失敗，請再試一次');
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const saveTripBannerOnly = async () => {
+  const saveTripBannerOnly = async (): Promise<boolean> => {
     setSaving(true);
     const bannerPayload: TripBanner = {
       ...EMPTY_TRIP_BANNER,
@@ -587,29 +612,31 @@ export default function TripPage() {
       });
       if (!res.ok) {
         alert('儲存失敗，請再試一次');
-        return;
+        return false;
       }
       const updatedTrip = await res.json();
       setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
-      alert('出團資訊已更新');
+      showSaveSuccess('儲存成功');
+      return true;
     } catch {
       alert('儲存失敗，請再試一次');
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const saveDepartureInfoAsFirstDeparture = async () => {
+  const saveDepartureInfoAsFirstDeparture = async (): Promise<boolean> => {
     if (!departureEditorDate) {
       alert('請先填寫出團日期');
-      return;
+      return false;
     }
 
     setSaving(true);
 
     const departureCreatePayload = {
       departure_date: departureEditorDate,
-      price: departureEditorPrice ? Number(departureEditorPrice.replace(/\D/g, '')) : null,
+      price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
     };
@@ -623,7 +650,7 @@ export default function TripPage() {
 
       if (!createRes.ok) {
         alert('建立出團梯次失敗，請再試一次');
-        return;
+        return false;
       }
 
       const createdDeparture = await createRes.json();
@@ -647,16 +674,19 @@ export default function TripPage() {
 
       if (!tripRes.ok) {
         alert('儲存出團資訊失敗，請再試一次');
-        return;
+        return false;
       }
 
       const updatedTrip = await tripRes.json();
       setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
       setDepartureDates((prev) => [...prev, createdDeparture].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
       setSelectedDepartureId(createdDeparture.id);
-      alert('已建立第一個出團梯次並儲存出團資訊');
+      setDepartureEditorPrice(typeof createdDeparture.price === 'number' ? String(createdDeparture.price) : '');
+      showSaveSuccess('儲存成功');
+      return true;
     } catch {
       alert('儲存失敗，請再試一次');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -1237,12 +1267,15 @@ export default function TripPage() {
                     <button
                       type="button"
                       onClick={async () => {
+                        let saved = false;
                         if (selectedDeparture) {
-                          await saveSelectedDepartureInfo();
+                          saved = await saveSelectedDepartureInfo();
                         } else {
-                          await saveDepartureInfoAsFirstDeparture();
+                          saved = await saveDepartureInfoAsFirstDeparture();
                         }
-                        setShowPriceDetailModal(false);
+                        if (saved) {
+                          setShowPriceDetailModal(false);
+                        }
                       }}
                       disabled={saving}
                       className="rounded-full bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
@@ -1474,6 +1507,7 @@ export default function TripPage() {
                   const updated = await res.json();
                   setTrip(prev => prev ? { ...prev, ...updated } : prev);
                   setShowEditPanel(false);
+                  showSaveSuccess('儲存成功');
                 } else {
                   alert('儲存失敗，請再試一次');
                 }
@@ -1574,6 +1608,7 @@ export default function TripPage() {
                 if (res.ok) {
                   setTrip(prev => prev ? { ...prev, document_text: combinedText } : prev);
                   setShowTextEditor(false);
+                  showSaveSuccess('儲存成功');
                 } else {
                   alert('儲存失敗，請再試一次');
                 }
@@ -1863,6 +1898,19 @@ export default function TripPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {saveSuccessMessage && (
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div className="rounded-2xl border border-emerald-400/30 bg-[rgba(16,30,28,0.92)] px-5 py-4 text-center shadow-2xl backdrop-blur-xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-base font-bold text-emerald-200">{saveSuccessMessage}</p>
+          </div>
+        </div>
       )}
     </main>
   );

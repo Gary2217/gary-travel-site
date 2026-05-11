@@ -215,7 +215,7 @@ export default function MiniTransitTicketDetailPage() {
   const [loadingContent, setLoadingContent] = useState(false);
   const [savingContent, setSavingContent] = useState(false);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
-  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [editingRequirementSection, setEditingRequirementSection] = useState<RequirementSectionKey | null>(null);
   const [editingInquirySection, setEditingInquirySection] = useState(false);
 
@@ -296,11 +296,12 @@ export default function MiniTransitTicketDetailPage() {
       });
   }, [ticket, defaultContent]);
 
-  useEffect(() => {
-    if (!showSaveSuccessModal) return;
-    const timer = setTimeout(() => setShowSaveSuccessModal(false), 1300);
-    return () => clearTimeout(timer);
-  }, [showSaveSuccessModal]);
+  const showSaveSuccess = (message = "儲存成功") => {
+    setSaveSuccessMessage(message);
+    window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+    }, 1500);
+  };
 
   const requirementSections = useMemo(
     () => parseRequirementSections(content?.requirements || []),
@@ -359,7 +360,7 @@ export default function MiniTransitTicketDetailPage() {
 
       setContent(normalizeEditableContent(normalized, data?.content || normalized));
       setSavingMessage("內容已儲存");
-      setShowSaveSuccessModal(true);
+      showSaveSuccess("儲存成功");
     } catch (error) {
       const message = error instanceof Error ? error.message : "儲存失敗";
       setSavingMessage(`儲存失敗：${message}`);
@@ -581,10 +582,15 @@ export default function MiniTransitTicketDetailPage() {
       <FloatingContact />
       <ScrollToTop />
 
-      {showSaveSuccessModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4">
-          <div className="rounded-2xl border border-sky-300/50 bg-[rgba(20,20,30,0.92)] px-8 py-6 text-center shadow-[0_0_30px_rgba(56,189,248,0.25)]">
-            <p className="text-xl font-black text-sky-200">儲存成功</p>
+      {saveSuccessMessage && (
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div className="rounded-2xl border border-emerald-400/30 bg-[rgba(16,30,28,0.92)] px-5 py-4 text-center shadow-2xl backdrop-blur-xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-base font-bold text-emerald-200">{saveSuccessMessage}</p>
           </div>
         </div>
       )}
