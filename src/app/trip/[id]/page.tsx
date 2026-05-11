@@ -78,10 +78,10 @@ const DEFAULT_PRICE_DETAIL: PriceDetailContent = {
   childWithBedPrice: '洽詢',
   childNoBedPrice: '洽詢',
   childExtraBedPrice: '洽詢',
-  infantPrice: '6,000元',
+  infantPrice: '洽詢',
   pricingNote: '＊ 年齡以「團體回國日」計算',
-  deposit: '20,000元/人',
-  singleRoom: '18,000元/人',
+  deposit: '洽詢',
+  singleRoom: '洽詢',
   visaFee: '免簽證',
   surcharge: '售價已內含',
   groupNote: '特惠團因為此行程為季節性促銷商品，恕無法包團及變更任何規格，敬請見諒(欲包團或增減需求煩請另洽業務單位)',
@@ -311,7 +311,7 @@ export default function TripPage() {
 
   const formatDepositText = (text: string) => {
     const normalized = formatPriceText(text).replace(/^\+/, '').replace(/^訂金\s*/,'').trim();
-    if (!normalized) return '—';
+    if (!normalized) return '洽詢';
     const amount = normalized.replace(/^NT\$\s*/i, '').replace(/^\$\s*/, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
     if (!/^[0-9,]+$/.test(amount)) return amount;
     return `$ ${amount} 元/人`;
@@ -319,13 +319,13 @@ export default function TripPage() {
 
   const formatSingleRoomText = (text: string) => {
     const normalized = text.trim();
-    if (!normalized) return '—';
+    if (!normalized) return '洽詢';
     const stripped = normalized.replace(/^\+/, '').replace(/^NT\$\s*/i, '').replace(/^\$\s*/, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
     if (!/^[0-9,]+$/.test(stripped)) return stripped;
     return `+ ${stripped} 元/人`;
   };
 
-  const formatPerPersonPrice = (text: string, fallback = '—') => {
+  const formatPerPersonPrice = (text: string, fallback = '洽詢') => {
     const normalized = text.trim().replace(/^NT\$\s*/i, '').replace(/元\/?人$/i, '').replace(/元$/i, '').trim();
     if (!normalized) return fallback;
     if (!/^[0-9,]+$/.test(normalized)) return normalized;
@@ -333,7 +333,7 @@ export default function TripPage() {
   };
 
   const displayAdultUnit = (text: string) => formatPerPersonPrice(text);
-  const displayChildPrice = (text: string) => formatPerPersonPrice(text, '—');
+  const displayChildPrice = (text: string) => formatPerPersonPrice(text, '洽詢');
   const displayInfantUnit = (text: string) => formatPerPersonPrice(text);
   const displaySurchargeText = (text: string) => text.trim() || '售價已內含';
   const displayVisaFeeText = (text: string) => text.trim() || '簽證費';
@@ -463,7 +463,7 @@ export default function TripPage() {
       setDetailChildExtraBedPrice(DEFAULT_PRICE_DETAIL.childExtraBedPrice);
       setDetailInfantPrice(DEFAULT_PRICE_DETAIL.infantPrice);
       setDetailPricingNote(DEFAULT_PRICE_DETAIL.pricingNote);
-      setDetailDeposit(String(editTripBanner.deposit_label || DEFAULT_PRICE_DETAIL.deposit));
+      setDetailDeposit(DEFAULT_PRICE_DETAIL.deposit);
       setDetailSingleRoom(DEFAULT_PRICE_DETAIL.singleRoom);
       setDetailVisaFee(DEFAULT_PRICE_DETAIL.visaFee);
       setDetailSurcharge(DEFAULT_PRICE_DETAIL.surcharge);
@@ -489,7 +489,7 @@ export default function TripPage() {
     setDetailChildExtraBedPrice(parsedDetail.childExtraBedPrice);
     setDetailInfantPrice(parsedDetail.infantPrice);
     setDetailPricingNote(parsedDetail.pricingNote);
-    setDetailDeposit(parsedDetail.deposit || editTripBanner.deposit_label || '');
+    setDetailDeposit(parsedDetail.deposit || String(editTripBanner.deposit_label || '').trim() || DEFAULT_PRICE_DETAIL.deposit);
     setDetailSingleRoom(parsedDetail.singleRoom);
     setDetailVisaFee(parsedDetail.visaFee || '免簽證');
     setDetailSurcharge(parsedDetail.surcharge || '售價已內含');
@@ -514,7 +514,7 @@ export default function TripPage() {
       childExtraBedPrice: detailChildExtraBedPrice.trim(),
       infantPrice: detailInfantPrice.trim(),
       pricingNote: detailPricingNote.trim(),
-      deposit: (detailDeposit.trim() || String(editTripBanner.deposit_label || '').trim()),
+      deposit: (detailDeposit.trim() || String(editTripBanner.deposit_label || '').trim() || DEFAULT_PRICE_DETAIL.deposit),
       singleRoom: detailSingleRoom.trim(),
       visaFee: detailVisaFee.trim(),
       surcharge: detailSurcharge.trim(),
@@ -1221,7 +1221,7 @@ export default function TripPage() {
                           <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
                             <div className="text-xs font-semibold text-white/80">嬰兒</div>
                             <div>
-                                <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：6,000元" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                                <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：洽詢" className="w-full max-w-[135px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                             </div>
                           </div>
                           <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
@@ -1253,11 +1253,11 @@ export default function TripPage() {
                           <div className="grid gap-2 sm:grid-cols-2">
                             <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                               <div className="text-xs font-semibold text-white/75">訂金</div>
-                              <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="20,000元/人" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="例如：洽詢" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                             </div>
                             <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                               <div className="text-xs font-semibold text-white/75">單人房</div>
-                              <input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} placeholder="18,000元/人" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+                              <input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} placeholder="例如：洽詢" className="w-full max-w-[180px] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
                             </div>
                           </div>
                           <div className="grid gap-2 sm:grid-cols-2">
