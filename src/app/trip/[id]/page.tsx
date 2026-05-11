@@ -138,7 +138,6 @@ export default function TripPage() {
   const [detailQuoteNote, setDetailQuoteNote] = useState('');
   const [detailVisaNote, setDetailVisaNote] = useState('');
   const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
-  const [showPriceDetailEditor, setShowPriceDetailEditor] = useState(false);
   const [showBannerEditor, setShowBannerEditor] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
@@ -196,21 +195,6 @@ export default function TripPage() {
     window.setTimeout(() => {
       setSaveSuccessMessage(null);
     }, 1500);
-  };
-
-  const closePriceDetailModal = () => {
-    setShowPriceDetailModal(false);
-    setShowPriceDetailEditor(false);
-  };
-
-  const openPriceDetailPreview = () => {
-    setShowPriceDetailEditor(false);
-    setShowPriceDetailModal(true);
-  };
-
-  const openPriceDetailEditor = () => {
-    setShowPriceDetailEditor(true);
-    setShowPriceDetailModal(true);
   };
 
   const openBannerEditor = () => {
@@ -594,7 +578,24 @@ export default function TripPage() {
         price: typeof updatedDeparture?.price === 'number' ? updatedDeparture.price : fallbackPrice,
       };
 
-      setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
+      setTrip((prev) => {
+        if (!prev) return prev;
+        const remoteBanner = updatedTrip?.trip_banner;
+        return {
+          ...prev,
+          ...updatedTrip,
+          trip_banner: remoteBanner
+            ? {
+                ...bannerPayload,
+                ...remoteBanner,
+                departure_info_map: {
+                  ...bannerPayload.departure_info_map,
+                  ...(remoteBanner.departure_info_map || {}),
+                },
+              }
+            : bannerPayload,
+        };
+      });
       setDepartureDates((prev) =>
         prev
           .map((date) => (date.id === selectedDepartureId ? { ...date, ...normalizedDeparture } : date))
@@ -631,7 +632,7 @@ export default function TripPage() {
         return false;
       }
       const updatedTrip = await res.json();
-      setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
+      setTrip((prev) => (prev ? { ...prev, ...updatedTrip, trip_banner: updatedTrip?.trip_banner || bannerPayload } : prev));
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -694,7 +695,24 @@ export default function TripPage() {
       }
 
       const updatedTrip = await tripRes.json();
-      setTrip((prev) => (prev ? { ...prev, ...updatedTrip } : prev));
+      setTrip((prev) => {
+        if (!prev) return prev;
+        const remoteBanner = updatedTrip?.trip_banner;
+        return {
+          ...prev,
+          ...updatedTrip,
+          trip_banner: remoteBanner
+            ? {
+                ...bannerPayload,
+                ...remoteBanner,
+                departure_info_map: {
+                  ...bannerPayload.departure_info_map,
+                  ...(remoteBanner.departure_info_map || {}),
+                },
+              }
+            : bannerPayload,
+        };
+      });
       setDepartureDates((prev) => [...prev, createdDeparture].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
       setSelectedDepartureId(createdDeparture.id);
       setDepartureEditorPrice(typeof createdDeparture.price === 'number' ? String(createdDeparture.price) : '');
@@ -866,7 +884,7 @@ export default function TripPage() {
                       </span>
                       <button
                         type="button"
-                        onClick={openPriceDetailPreview}
+                        onClick={() => setShowPriceDetailModal(true)}
                         className="inline-flex min-h-9 items-center px-1 text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
                       >
                         看詳細內容
@@ -911,7 +929,7 @@ export default function TripPage() {
                           <div className="text-xs font-semibold text-white/70">明細</div>
                           <button
                             type="button"
-                            onClick={openPriceDetailEditor}
+                            onClick={() => setShowPriceDetailModal(true)}
                             className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/80 transition hover:border-sky-400/40 hover:text-white"
                           >
                             編輯售價明細
@@ -1149,7 +1167,7 @@ export default function TripPage() {
       {showPriceDetailModal && createPortal(
         <div
           className="fixed inset-0 z-modal-top flex items-start justify-center overflow-y-auto bg-black/70 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-[calc(env(safe-area-inset-top)+10px)] backdrop-blur-sm sm:items-center sm:p-4"
-          onClick={closePriceDetailModal}
+          onClick={() => setShowPriceDetailModal(false)}
         >
           <div
             className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[1.25rem] border border-white/10 bg-[rgba(12,16,28,0.98)] shadow-2xl backdrop-blur-xl sm:rounded-[1.9rem]"
@@ -1164,31 +1182,20 @@ export default function TripPage() {
                   <p className="mt-1.5 text-xs text-white/60 sm:text-sm">
                     {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
                   </p>
-                  {((isDevMode && showPriceDetailEditor) ? detailSubtitle : priceDetailPreview.subtitle) && (
-                    <p className="mt-2 max-w-2xl text-xs leading-6 text-white/75 sm:text-sm">{(isDevMode && showPriceDetailEditor) ? detailSubtitle : priceDetailPreview.subtitle}</p>
+                  {(isDevMode ? detailSubtitle : priceDetailPreview.subtitle) && (
+                    <p className="mt-2 max-w-2xl text-xs leading-6 text-white/75 sm:text-sm">{isDevMode ? detailSubtitle : priceDetailPreview.subtitle}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  {isDevMode && (
-                    <button
-                      type="button"
-                      onClick={() => setShowPriceDetailEditor((prev) => !prev)}
-                      className="rounded-full border border-white/15 bg-white/8 px-3 py-1 text-xs font-semibold text-white/75 transition hover:bg-white/12 hover:text-white"
-                    >
-                      {showPriceDetailEditor ? '切換展示' : '切換編輯'}
-                    </button>
-                  )}
-                  <button onClick={closePriceDetailModal} className="text-white/45 transition hover:text-white">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                <button onClick={() => setShowPriceDetailModal(false)} className="text-white/45 transition hover:text-white">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
 
             <div className="max-h-[calc(100dvh-170px)] space-y-4 overflow-y-auto p-4 sm:max-h-[calc(100dvh-220px)] sm:p-6">
-              {isDevMode && showPriceDetailEditor ? (
+              {isDevMode ? (
                 <div className="space-y-4">
                   <div className="grid gap-4 xl:grid-cols-[0.82fr_1.38fr]">
                     <div className="space-y-4">
@@ -1290,7 +1297,7 @@ export default function TripPage() {
                   </div>
 
                   <div className="flex flex-wrap justify-end gap-2 pt-1">
-                    <button type="button" onClick={closePriceDetailModal} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/75 transition hover:bg-white/10 hover:text-white">取消</button>
+                    <button type="button" onClick={() => setShowPriceDetailModal(false)} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/75 transition hover:bg-white/10 hover:text-white">取消</button>
                     <button
                       type="button"
                       onClick={async () => {
@@ -1301,7 +1308,7 @@ export default function TripPage() {
                           saved = await saveDepartureInfoAsFirstDeparture();
                         }
                         if (saved) {
-                          closePriceDetailModal();
+                          setShowPriceDetailModal(false);
                         }
                       }}
                       disabled={saving}
