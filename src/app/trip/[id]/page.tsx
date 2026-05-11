@@ -759,64 +759,64 @@ export default function TripPage() {
                           ? formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
                           : (trip.price_range || '尚未設定')}
                       </span>
-                      {selectedDeparture && (
-                        <button
-                          type="button"
-                          onClick={() => setShowPriceDetailModal(true)}
-                          className="inline-flex min-h-9 items-center px-1 text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
-                        >
-                          看詳細內容
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowPriceDetailModal(true)}
+                        className="inline-flex min-h-9 items-center px-1 text-sm font-medium text-sky-300 underline underline-offset-4 transition hover:text-sky-200"
+                      >
+                        看詳細內容
+                      </button>
                     </div>
                   </div>
 
                   {isDevMode && showBannerEditor && (
                     <div className="space-y-3 rounded-[1.25rem] border border-sky-400/15 bg-sky-400/5 p-4">
                       <div>
-                        <p className="text-[10px] font-semibold tracking-[0.2em] text-sky-200/70">{selectedDeparture ? '目前編輯梯次' : '出團基本資訊'}</p>
-                        <p className="mt-1 text-xs text-white/75">{selectedDeparture ? '點下方出團日期卡片可切換這裡的內容' : '設定基本出團資訊，新增出團日期後可個別調整'}</p>
+                        <p className="text-[10px] font-semibold tracking-[0.2em] text-sky-200/70">目前編輯梯次</p>
+                        <p className="mt-1 text-xs text-white/75">點下方出團日期卡片可切換這裡的內容{!selectedDeparture ? '（尚未選擇梯次，先新增或點選梯次）' : ''}</p>
                       </div>
 
-                      {selectedDeparture && (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                            <div className="text-xs font-semibold text-white/70">團號</div>
-                            <input
-                              value={departureEditorGroupCode}
-                              onChange={(e) => setDepartureEditorGroupCode(e.target.value)}
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
-                            />
-                          </div>
-                          <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                            <div className="text-xs font-semibold text-white/70">日期</div>
-                            <input
-                              type="date"
-                              value={departureEditorDate}
-                              onChange={(e) => setDepartureEditorDate(e.target.value)}
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400 [color-scheme:dark]"
-                            />
-                          </div>
-                          <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                            <div className="text-xs font-semibold text-white/70">團費</div>
-                            <input
-                              value={departureEditorPrice}
-                              onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
-                            />
-                          </div>
-                          <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                            <div className="text-xs font-semibold text-white/70">明細</div>
-                            <button
-                              type="button"
-                              onClick={() => setShowPriceDetailModal(true)}
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/80 transition hover:border-sky-400/40 hover:text-white"
-                            >
-                              編輯售價明細
-                            </button>
-                          </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                          <div className="text-xs font-semibold text-white/70">團號</div>
+                          <input
+                            value={departureEditorGroupCode}
+                            onChange={(e) => setDepartureEditorGroupCode(e.target.value)}
+                            disabled={!selectedDeparture}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400"
+                          />
                         </div>
-                      )}
+                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                          <div className="text-xs font-semibold text-white/70">日期</div>
+                          <input
+                            type="date"
+                            value={departureEditorDate}
+                            onChange={(e) => setDepartureEditorDate(e.target.value)}
+                            disabled={!selectedDeparture}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400 [color-scheme:dark]"
+                          />
+                        </div>
+                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                          <div className="text-xs font-semibold text-white/70">團費</div>
+                          <input
+                            value={departureEditorPrice}
+                            onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
+                            disabled={!selectedDeparture}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400"
+                          />
+                        </div>
+                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                          <div className="text-xs font-semibold text-white/70">明細</div>
+                          <button
+                            type="button"
+                            onClick={() => setShowPriceDetailModal(true)}
+                            disabled={!selectedDeparture}
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/80 transition hover:border-sky-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            編輯售價明細
+                          </button>
+                        </div>
+                      </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
@@ -856,20 +856,19 @@ export default function TripPage() {
                         </div>
                       </div>
 
-                      {selectedDeparture && (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                            <div className="text-xs font-semibold text-white/70">候補</div>
-                            <input
-                              type="number"
-                              min="0"
-                              value={departureEditorWaitlist}
-                              onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))}
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-sky-400"
-                            />
-                          </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                          <div className="text-xs font-semibold text-white/70">候補</div>
+                          <input
+                            type="number"
+                            min="0"
+                            value={departureEditorWaitlist}
+                            onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))}
+                            disabled={!selectedDeparture}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-sky-400"
+                          />
                         </div>
-                      )}
+                      </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
@@ -952,7 +951,7 @@ export default function TripPage() {
                 </div>
             </div>
 
-            {trip.document_url && (
+            {(
               <div className="mt-2 min-h-[240px] rounded-xl border border-white/[0.08] bg-[#1a3347] p-2.5">
                 <div className="mb-1.5 flex items-start justify-between gap-3">
                   <h3 className="text-sm font-bold text-sky-300">行程概要</h3>
@@ -986,9 +985,22 @@ export default function TripPage() {
                     </button>
                   )}
                 </div>
-                {!trip.document_text && (
-                  <p className="py-1.5 text-center text-[11px] text-white/40">尚未填寫行程概要，請於開發者模式編輯</p>
-                )}
+                {!trip.document_text && (() => {
+                  const durationMatch = trip.duration?.match(/(\d+)/);
+                  const dayCount = durationMatch ? Math.min(parseInt(durationMatch[1], 10), 15) : 5;
+
+                  return (
+                    <div className="space-y-1">
+                      <p className="py-1.5 text-center text-[11px] text-white/40">尚未填寫行程概要，先顯示預設天數</p>
+                      {Array.from({ length: dayCount }, (_, i) => (
+                        <div key={`placeholder-day-${i + 1}`} className="flex items-start gap-2 rounded-xl bg-white/5 px-2.5 py-1">
+                          <span className="shrink-0 rounded-full bg-sky-400/20 px-2 py-0.5 text-[10px] font-semibold text-sky-200">第{i + 1}天</span>
+                          <span className="text-[13.5px] leading-[1.35] text-white/65">行程內容待更新</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
                 {trip.document_text && (() => {
                   const fullText = trip.document_text!;
                   const dayPattern = /第\s*(\d+)\s*天/g;
@@ -1048,7 +1060,7 @@ export default function TripPage() {
                 <div>
                   <p className="text-[10px] font-semibold tracking-[0.22em] text-sky-200/75">TOUR PRICE DETAIL</p>
                   <h3 className="mt-1.5 text-xl font-bold text-white sm:text-2xl">{detailTitle || '團費與售價說明'}</h3>
-                  <p className="mt-1.5 text-sm font-semibold text-amber-300 sm:text-base">{formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture?.price ?? null)}</p>
+                  <p className="mt-1.5 text-sm font-semibold text-amber-300 sm:text-base">{selectedDeparture ? formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price) : (trip.price_range || '尚未設定')}</p>
                   <p className="mt-1.5 text-xs text-white/60 sm:text-sm">
                     {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
                   </p>
@@ -1171,7 +1183,11 @@ export default function TripPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        await saveSelectedDepartureInfo();
+                        if (selectedDeparture) {
+                          await saveSelectedDepartureInfo();
+                        } else {
+                          await saveTripBannerOnly();
+                        }
                         setShowPriceDetailModal(false);
                       }}
                       disabled={saving}
