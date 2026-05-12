@@ -11,6 +11,18 @@ interface StatsPlatform { line: number; facebook: number; instagram: number }
 interface StatsFlight   { flight_id: string; flight_route: string; views: number; inquiries: number; line: number; fb: number; ig: number }
 interface StatsRecent   { created_at: string; event_type: string; platform: string | null; trip_title: string | null; flight_route: string | null }
 interface Stats { overview: StatsOverview; trend: StatsTrend[]; trips: StatsTrip[]; platform: StatsPlatform; flights: StatsFlight[]; recent: StatsRecent[] }
+interface CleanupResult {
+  dry_run: boolean;
+  max_delete: number;
+  summary: {
+    scanned_files: number;
+    referenced_files: number;
+    orphan_files: number;
+    deleted_files: number;
+  };
+  orphan_paths: string[];
+  deleted_paths: string[];
+}
 
 // ── Helpers ──────────────────────────────────────────────
 function relativeTime(iso: string) {
@@ -161,6 +173,33 @@ export default function AdminPage() {
   const [statsLoading,   setStatsLoading]   = useState(false);
   const [selectedTrip,   setSelectedTrip]   = useState<string | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupError, setCleanupError] = useState<string | null>(null);
+  const [cleanupResult, setCleanupResult] = useState<CleanupResult | null>(null);
+
+  async function runOrphanCleanup(dryRun: boolean) {
+    setCleanupLoading(true);
+    setCleanupError(null);
+
+    try {
+      const res = await fetch("/api/admin/cleanup-orphan-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dry_run: dryRun, max_delete: 200 }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "清理失敗");
+      }
+
+      setCleanupResult(data as CleanupResult);
+    } catch (error) {
+      setCleanupError(error instanceof Error ? error.message : "清理失敗");
+    } finally {
+      setCleanupLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/dev-auth/status", { cache: "no-store" })
@@ -241,6 +280,75 @@ export default function AdminPage() {
         {/* ── Overview Tab ── */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-sm font-bold text-white">圖片殘留清理</h2>
+                  <p className="mt-1 text-xs text-white/50">先預覽 orphan 檔案，再決定是否正式刪除。正式刪除預設安全上限為 200 筆。</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => runOrphanCleanup(true)}
+                    disabled={cleanupLoading}
+                    className="rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/20 disabled:opacity-50"
+                  >
+                    {cleanupLoading ? "處理中..." : "先預覽 orphan"}
+                  </button>
+                  <button
+                    onClick={() => runOrphanCleanup(false)}
+                    disabled={cleanupLoading}
+                    className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-50"
+                  >
+                    正式刪除 orphan
+                  </button>
+                </div>
+              </div>
+
+              {cleanupError && (
+                <div className="mt-3 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                  {cleanupError}
+                </div>
+              )}
+
+              {cleanupResult && (
+                <div className="mt-4 space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-4">
+                    <div className="rounded-xl bg-white/5 p-3">
+                      <p className="text-[10px] text-white/40">掃描檔案</p>
+                      <p className="mt-1 text-lg font-bold text-white">{cleanupResult.summary.scanned_files}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/5 p-3">
+                      <p className="text-[10px] text-white/40">有效參照</p>
+                      <p className="mt-1 text-lg font-bold text-white">{cleanupResult.summary.referenced_files}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/5 p-3">
+                      <p className="text-[10px] text-white/40">orphan 檔案</p>
+                      <p className="mt-1 text-lg font-bold text-amber-300">{cleanupResult.summary.orphan_files}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/5 p-3">
+                      <p className="text-[10px] text-white/40">已刪除</p>
+                      <p className="mt-1 text-lg font-bold text-emerald-300">{cleanupResult.summary.deleted_files}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-[11px] text-white/50">
+                      {cleanupResult.dry_run ? "目前為預覽模式，尚未刪除任何檔案。" : "已執行正式刪除。"}
+                    </p>
+                    {(cleanupResult.orphan_paths.length > 0 || cleanupResult.deleted_paths.length > 0) && (
+                      <div className="mt-3 max-h-48 overflow-y-auto rounded-lg bg-black/20 p-2 text-[11px] text-white/70">
+                        {(cleanupResult.dry_run ? cleanupResult.orphan_paths : cleanupResult.deleted_paths).map((path) => (
+                          <div key={path} className="border-b border-white/5 px-1.5 py-1 last:border-b-0">
+                            {path}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {overviewCards.map(item => (
                 <div key={item.label} className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
