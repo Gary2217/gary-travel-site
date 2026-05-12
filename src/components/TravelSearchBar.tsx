@@ -21,6 +21,26 @@ interface TravelSearchBarProps {
   flightOnly?: boolean;
 }
 
+const REGION_DISPLAY_ORDER = [
+  "日本",
+  "韓國",
+  "中港澳旅遊",
+  "東南亞",
+  "歐洲",
+  "美國加拿大",
+  "澳洲紐西蘭",
+  "中東非洲",
+  "南亞",
+  "郵輪旅遊",
+  "高爾夫",
+  "奢華旅遊",
+  "蜜月旅遊",
+  "自由行",
+  "台灣旅遊",
+  "客製旅遊",
+  "海島度假",
+] as const;
+
 const DEPARTURE_CITIES = [
   { id: "", label: "不限" },
   { id: "桃園", label: "台北（桃園機場）" },
@@ -115,6 +135,15 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
     region: string;
   } | null>(null);
 
+  const orderedRegions = [...regions].sort((a, b) => {
+    const aIndex = REGION_DISPLAY_ORDER.indexOf(a.categoryLabel as (typeof REGION_DISPLAY_ORDER)[number]);
+    const bIndex = REGION_DISPLAY_ORDER.indexOf(b.categoryLabel as (typeof REGION_DISPLAY_ORDER)[number]);
+    const safeA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+    const safeB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+    if (safeA !== safeB) return safeA - safeB;
+    return a.categoryLabel.localeCompare(b.categoryLabel, "zh-Hant");
+  });
+
   // 行程 dropdown 外點關閉
   useEffect(() => {
     if (!departureOpen && !destOpen) return;
@@ -172,7 +201,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   const handleSelectRegion = (regionId: string, label: string) => {
     setSelectedRegionId(regionId);
     setSelectedDestId(null);
-    setSelectedLabel(`${label}（全部）`);
+    setSelectedLabel(label);
     setDestOpen(false);
   };
 
@@ -440,7 +469,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                   >
                     全部地區
                   </button>
-                  {regions.map((r) => (
+                  {orderedRegions.map((r) => (
                     <button
                       key={r.id}
                       onClick={() => setActiveTab(r.id)}
@@ -465,7 +494,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                       <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
                       不限目的地
                     </button>
-                    {regions.map((r) => (
+                    {orderedRegions.map((r) => (
                       <button
                         key={r.id}
                         onClick={() => handleSelectRegion(r.id, r.categoryLabel)}
@@ -479,7 +508,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                 ) : (
                   <>
                     {(() => {
-                      const region = regions.find((r) => r.id === activeTab);
+                      const region = orderedRegions.find((r) => r.id === activeTab);
                       if (!region) return null;
                       return (
                         <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
