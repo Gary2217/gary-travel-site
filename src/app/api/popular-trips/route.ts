@@ -13,94 +13,71 @@ function getFeaturedPriority(destinationName: string) {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-function pickDestinationTitle(destinations: unknown): string {
-  if (Array.isArray(destinations)) {
-    const first = destinations[0];
-    if (first && typeof first === 'object') {
-      const title = (first as { title?: unknown }).title;
-      return typeof title === 'string' ? title : '';
-    }
-    return '';
-  }
-
-  if (destinations && typeof destinations === 'object') {
-    const title = (destinations as { title?: unknown }).title;
-    return typeof title === 'string' ? title : '';
-  }
-
-  return '';
-}
-
-// GET - 取得熱門推薦行程（依近 6 個月瀏覽次數排序）
+// GET - 取得熱門推薦目的地（依近 6 個月點擊次數排序）
 export async function GET() {
   try {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // 只統計近 6 個月的瀏覽事件
+    // 只統計近 6 個月的目的地點擊事件
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const { data: trips, error: tripsError } = await supabase
-      .from('trips')
-      .select('id, title, subtitle, duration, price_range, cover_image_url, display_order, destinations(title)')
+    const { data: destinations, error: destinationsError } = await supabase
+      .from('destinations')
+      .select('id, title, subtitle, image_url, display_order')
       .eq('is_active', true)
-      .not('cover_image_url', 'is', null)
-      .neq('cover_image_url', '');
+      .not('image_url', 'is', null)
+      .neq('image_url', '');
 
-    if (tripsError) {
-      console.error('popular-trips query error:', tripsError.message);
+    if (destinationsError) {
+      console.error('popular destinations query error:', destinationsError.message);
       return NextResponse.json({ error: '載入失敗' }, { status: 500 });
     }
 
-    if (!trips || trips.length === 0) {
+    if (!destinations || destinations.length === 0) {
       return NextResponse.json([], {
         headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
       });
     }
 
-    // 由資料庫執行聚合（count），避免載入大量 analytics 到記憶體
-    const viewCountResults = await Promise.all(
-      trips.map((trip) =>
+    const clickCountResults = await Promise.all(
+      destinations.map((destination) =>
         supabase
-          .from('analytics_events')
+          .from('click_analytics')
           .select('*', { count: 'exact', head: true })
-          .eq('event_type', 'trip_view')
-          .eq('trip_id', trip.id)
-          .gte('created_at', sixMonthsAgo.toISOString())
+          .eq('destination_id', destination.id)
+          .gte('clicked_at', sixMonthsAgo.toISOString())
       )
     );
 
-    const rankedTrips = trips
-      .map((t, index) => ({
-        id: t.id,
-        title: t.title,
-        subtitle: t.subtitle || '',
-        duration: t.duration,
-        price_range: t.price_range || '',
-        cover_image_url: t.cover_image_url,
-        destination_name: pickDestinationTitle(t.destinations),
-        display_order: t.display_order ?? 0,
-        view_count: viewCountResults[index]?.count ?? 0,
+    const rankedDestinations = destinations
+      .map((destination, index) => ({
+        id: destination.id,
+        title: destination.title,
+        subtitle: destination.subtitle || '',
+        image_url: destination.image_url,
+        display_order: destination.display_order ?? 0,
+        click_count: clickCountResults[index]?.count ?? 0,
       }))
-      .sort((a: any, b: any) => {
-        const featuredDiff = getFeaturedPriority(a.destination_name) - getFeaturedPriority(b.destination_name);
+      .sort((a, b) => {
+        const featuredDiff = getFeaturedPriority(a.title) - getFeaturedPriority(b.title);
         if (featuredDiff !== 0) return featuredDiff;
 
-        const viewDiff = b.view_count - a.view_count;
-        if (viewDiff !== 0) return viewDiff;
+        const clickDiff = b.click_count - a.click_count;
+        if (clickDiff !== 0) return clickDiff;
 
         return a.display_order - b.display_order;
       });
 
-    const featuredTrips = FEATURED_DESTINATION_ORDER
-      .map((destinationName) => rankedTrips.find((trip) => trip.destination_name === destinationName))
-      .filter((trip): trip is (typeof rankedTrips)[number] => Boolean(trip));
+    const featuredDestinations = FEATURED_DESTINATION_ORDER
+      .map((destinationName) => rankedDestinations.find((destination) => destination.title === destinationName))
+      .filter((destination): destination is (typeof rankedDestinations)[number] => Boolean(destination));
 
-    const featuredIds = new Set(featuredTrips.map((trip) => trip.id));
+    const featuredIds = new Set(featuredDestinations.map((destination) => destination.id));
 
     const ranked = [
-      ...featuredTrips,
-      ...rankedTrips.filter((trip) => !featuredIds.has(trip.id)),
+      ...featuredDestinations,
+      ...rankedDestinations.filter((destination) => !featuredIds.has(destination.id)),
     ].slice(0, 8);
 
     return NextResponse.json(ranked, {
