@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
+import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // GET - 取得行程的側邊媒體
 export async function GET(request: NextRequest) {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL 長度不得超過 2048 字元' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // 檢查數量限制
     const { count } = await supabase
@@ -106,7 +108,18 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: '缺少 id' }, { status: 400 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+  const { data: targetMedia, error: targetError } = await supabase
+    .from('trip_side_media')
+    .select('id,media_type,url')
+    .eq('id', id)
+    .single();
+
+  if (targetError || !targetMedia) {
+    return NextResponse.json({ error: '找不到指定媒體' }, { status: 404 });
+  }
+
   const { error } = await supabase
     .from('trip_side_media')
     .delete()
@@ -114,6 +127,16 @@ export async function DELETE(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (targetMedia.media_type === 'image') {
+    const oldStoragePath = getStoragePathFromPublicUrl(targetMedia.url || '');
+    if (oldStoragePath) {
+      const { error: removeError } = await supabase.storage.from('images').remove([oldStoragePath]);
+      if (removeError) {
+        console.error('Failed to remove trip side media image:', removeError.message);
+      }
+    }
   }
 
   return NextResponse.json({ success: true });

@@ -170,11 +170,15 @@ export default function SideMediaCarousel({
     if (!confirm("確定要刪除這個媒體嗎？")) return;
 
     try {
-      await fetch(`/api/trip-side-media?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/trip-side-media?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "刪除失敗");
+      }
       setMediaList((prev) => prev.filter((m) => m.id !== id));
       setCurrentIndex(0);
-    } catch {
-      alert("刪除失敗");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "刪除失敗");
     }
   };
 
