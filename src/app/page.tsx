@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getRegionsWithDestinations, getSiteLogo, trackClick, uploadTripImage } from "@/lib/supabase";
@@ -39,38 +39,11 @@ interface HomeDestinationCardProps {
 }
 
 function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate }: HomeDestinationCardProps) {
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [editingSubtitle, setEditingSubtitle] = useState(false);
-  const [titleValue, setTitleValue] = useState(destination.title);
-  const [subtitleValue, setSubtitleValue] = useState(destination.subtitle);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const subtitleInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setTitleValue(destination.title);
-  }, [destination.title]);
-
-  useEffect(() => {
-    setSubtitleValue(destination.subtitle);
-  }, [destination.subtitle]);
-
-  const saveField = async (field: 'title' | 'subtitle', value: string) => {
-    const nextValue = field === 'title' ? value.trim() : value.trim();
-    const prevValue = field === 'title' ? destination.title : destination.subtitle;
-
-    if (field === 'title' && !nextValue) {
-      setTitleValue(destination.title);
-      return;
-    }
-
-    if (nextValue === prevValue) {
-      return;
-    }
-
+  const updateField = async (field: 'title' | 'subtitle', value: string) => {
     const res = await fetch(`/api/destinations/${destination.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: nextValue }),
+      body: JSON.stringify({ [field]: value.trim() }),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -78,7 +51,7 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
       throw new Error(data?.error || '更新失敗');
     }
 
-    onTextUpdate(destination.id, { [field]: nextValue });
+    onTextUpdate(destination.id, { [field]: value.trim() });
   };
 
   return (
@@ -93,6 +66,10 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
           currentImageUrl={destination.image_url}
           title={destination.title}
           onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
+          editableTitle={destination.title}
+          editableSubtitle={destination.subtitle}
+          onEditableTitleUpdate={(newTitle) => updateField('title', newTitle)}
+          onEditableSubtitleUpdate={(newSubtitle) => updateField('subtitle', newSubtitle)}
         />
       )}
       <Image
@@ -104,85 +81,10 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-3">
-        {isDevMode ? (
-          <div className="space-y-1">
-            {editingTitle ? (
-              <input
-                ref={titleInputRef}
-                value={titleValue}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                onChange={(e) => setTitleValue(e.target.value)}
-                onBlur={async () => {
-                  setEditingTitle(false);
-                  try {
-                    await saveField('title', titleValue);
-                  } catch (error) {
-                    alert(error instanceof Error ? error.message : '更新失敗');
-                    setTitleValue(destination.title);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') titleInputRef.current?.blur();
-                }}
-                className="w-full border-b border-sky-400 bg-transparent text-sm font-bold text-white outline-none sm:text-base"
-                autoFocus
-              />
-            ) : (
-              <h3
-                className="cursor-pointer border-b border-dashed border-white/30 text-sm font-bold text-white hover:border-sky-400 hover:text-sky-300 sm:text-base"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditingTitle(true);
-                }}
-                title="點擊編輯標題"
-              >
-                {titleValue}
-              </h3>
-            )}
-
-            {editingSubtitle ? (
-              <input
-                ref={subtitleInputRef}
-                value={subtitleValue}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                onChange={(e) => setSubtitleValue(e.target.value)}
-                onBlur={async () => {
-                  setEditingSubtitle(false);
-                  try {
-                    await saveField('subtitle', subtitleValue);
-                  } catch (error) {
-                    alert(error instanceof Error ? error.message : '更新失敗');
-                    setSubtitleValue(destination.subtitle);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') subtitleInputRef.current?.blur();
-                }}
-                className="w-full border-b border-dashed border-white/30 bg-transparent text-[11px] text-white/80 outline-none"
-                autoFocus
-                placeholder="請輸入副標"
-              />
-            ) : (
-              <p
-                className="cursor-pointer text-[11px] text-white/80 hover:text-sky-200"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditingSubtitle(true);
-                }}
-                title="點擊編輯副標"
-              >
-                {subtitleValue || '（點擊編輯副標）'}
-              </p>
-            )}
-          </div>
-        ) : (
-          <>
-            <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
-            <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
-          </>
-        )}
+        <>
+          <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
+          <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
+        </>
       </div>
     </Link>
   );

@@ -17,9 +17,13 @@ interface ImageEditorProps {
   onDocumentAvailabilityUpdate?: (available: boolean) => void;
   duration?: string;
   onDurationUpdate?: (newDuration: string) => void;
+  editableTitle?: string;
+  editableSubtitle?: string;
+  onEditableTitleUpdate?: (newTitle: string) => Promise<void>;
+  onEditableSubtitleUpdate?: (newSubtitle: string) => Promise<void>;
 }
 
-export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate, editableTitle, editableSubtitle, onEditableTitleUpdate, onEditableSubtitleUpdate }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -31,6 +35,9 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
   const [deletingDoc, setDeletingDoc] = useState(false);
   const [durationValue, setDurationValue] = useState(duration || "");
   const [savingDuration, setSavingDuration] = useState(false);
+  const [editableTitleValue, setEditableTitleValue] = useState(editableTitle || "");
+  const [editableSubtitleValue, setEditableSubtitleValue] = useState(editableSubtitle || "");
+  const [savingEditableText, setSavingEditableText] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (!selectedFile) {
@@ -47,6 +54,14 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
   useEffect(() => {
     onOpenChange?.(isOpen);
   }, [isOpen, onOpenChange]);
+
+  useEffect(() => {
+    setEditableTitleValue(editableTitle || "");
+  }, [editableTitle]);
+
+  useEffect(() => {
+    setEditableSubtitleValue(editableSubtitle || "");
+  }, [editableSubtitle]);
 
   useEffect(() => {
     return () => {
@@ -250,6 +265,87 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                   <p className="mt-2 text-sm text-sky-300">圖片儲存中，請稍候...</p>
                 )}
               </div>
+
+              {(onEditableTitleUpdate || onEditableSubtitleUpdate) && (
+                <div className="border-t border-white/10 pt-2.5">
+                  <label className="mb-2 block text-sm font-medium text-white">
+                    文字內容
+                  </label>
+                  <div className="space-y-2.5">
+                    {onEditableTitleUpdate && (
+                      <div>
+                        <p className="mb-1 text-xs text-white/60">主標題</p>
+                        <input
+                          type="text"
+                          value={editableTitleValue}
+                          onChange={(e) => setEditableTitleValue(e.target.value)}
+                          onClick={stopMouseEvent}
+                          onMouseDown={stopMouseEvent}
+                          onMouseUp={stopMouseEvent}
+                          placeholder="請輸入主標題"
+                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-sky-500 focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {onEditableSubtitleUpdate && (
+                      <div>
+                        <p className="mb-1 text-xs text-white/60">副標題</p>
+                        <input
+                          type="text"
+                          value={editableSubtitleValue}
+                          onChange={(e) => setEditableSubtitleValue(e.target.value)}
+                          onClick={stopMouseEvent}
+                          onMouseDown={stopMouseEvent}
+                          onMouseUp={stopMouseEvent}
+                          placeholder="請輸入副標題"
+                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-sky-500 focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        disabled={savingEditableText}
+                        onClick={async () => {
+                          setSavingEditableText(true);
+                          try {
+                            if (onEditableTitleUpdate) {
+                              const nextTitle = editableTitleValue.trim();
+                              if (!nextTitle) {
+                                throw new Error("主標題不可為空白");
+                              }
+                              if (nextTitle !== (editableTitle || "")) {
+                                await onEditableTitleUpdate(nextTitle);
+                              }
+                            }
+
+                            if (onEditableSubtitleUpdate) {
+                              const nextSubtitle = editableSubtitleValue.trim();
+                              if (nextSubtitle !== (editableSubtitle || "")) {
+                                await onEditableSubtitleUpdate(nextSubtitle);
+                              }
+                            }
+
+                            alert("文字已更新！");
+                          } catch (err) {
+                            const msg = err instanceof Error ? err.message : "更新失敗";
+                            alert(`更新失敗：${msg}`);
+                            setEditableTitleValue(editableTitle || "");
+                            setEditableSubtitleValue(editableSubtitle || "");
+                          } finally {
+                            setSavingEditableText(false);
+                          }
+                        }}
+                        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {savingEditableText ? "儲存中..." : "儲存文字"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 天數編輯區塊 */}
               {onDurationUpdate && (
