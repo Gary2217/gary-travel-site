@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
 import { requireDevAuth } from '@/lib/api-auth';
+import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +90,126 @@ export async function PATCH(
     }
 
     return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
+  try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    const { data: destination, error: destinationError } = await supabase
+      .from('destinations')
+      .select('id, image_url')
+      .eq('id', params.id)
+      .single();
+
+    if (destinationError || !destination) {
+      return NextResponse.json({ error: '找不到目的地' }, { status: 404 });
+    }
+
+    const { data: trips, error: tripsError } = await supabase
+      .from('trips')
+      .select('id, cover_image_url, document_url, trip_banner')
+      .eq('destination_id', params.id);
+
+    if (tripsError) {
+      return NextResponse.json({ error: tripsError.message }, { status: 500 });
+    }
+
+    const tripIds = (trips || []).map((trip) => trip.id);
+
+    const storagePaths = new Set<string>();
+    const destinationImagePath = getStoragePathFromPublicUrl(destination.image_url || '');
+    if (destinationImagePath) {
+      storagePaths.add(destinationImagePath);
+    }
+
+    for (const trip of trips || []) {
+      const coverPath = getStoragePathFromPublicUrl(trip.cover_image_url || '');
+      if (coverPath) {
+        storagePaths.add(coverPath);
+      }
+
+      const documentPath = getStoragePathFromPublicUrl(trip.document_url || '');
+      if (documentPath) {
+        storagePaths.add(documentPath);
+      }
+
+      const banner = trip.trip_banner as Record<string, unknown> | null;
+      const sideImagePath = getStoragePathFromPublicUrl(String(banner?.side_image_url || ''));
+      if (sideImagePath) {
+        storagePaths.add(sideImagePath);
+      }
+    }
+
+    if (tripIds.length > 0) {
+      const { data: sideMedia, error: sideMediaError } = await supabase
+        .from('trip_side_media')
+        .select('url, media_type')
+        .in('trip_id', tripIds)
+        .eq('media_type', 'image');
+
+      if (sideMediaError) {
+        return NextResponse.json({ error: sideMediaError.message }, { status: 500 });
+      }
+
+      for (const media of sideMedia || []) {
+        const mediaPath = getStoragePathFromPublicUrl(media.url || '');
+        if (mediaPath) {
+          storagePaths.add(mediaPath);
+        }
+      }
+    }
+
+    if (tripIds.length > 0) {
+      await Promise.all([
+        supabase.from('trip_days').delete().in('trip_id', tripIds),
+        supabase.from('trip_departure_dates').delete().in('trip_id', tripIds),
+        supabase.from('trip_side_media').delete().in('trip_id', tripIds),
+      ]);
+
+      const { error: deleteTripsError } = await supabase
+        .from('trips')
+        .delete()
+        .eq('destination_id', params.id);
+
+      if (deleteTripsError) {
+        return NextResponse.json({ error: deleteTripsError.message }, { status: 500 });
+      }
+    }
+
+    const { error: deleteDestinationError } = await supabase
+      .from('destinations')
+      .delete()
+      .eq('id', params.id);
+
+    if (deleteDestinationError) {
+      return NextResponse.json({ error: deleteDestinationError.message }, { status: 500 });
+    }
+
+    if (storagePaths.size > 0) {
+      const { error: removeError } = await supabase.storage
+        .from('images')
+        .remove([...storagePaths]);
+
+      if (removeError) {
+        console.error('Failed to remove destination-related storage files:', removeError.message);
+      }
+    }
+
+    return NextResponse.json({ success: true, deleted_trip_count: tripIds.length });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -36,9 +36,36 @@ interface HomeDestinationCardProps {
   isDevMode: boolean;
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
   onTextUpdate: (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => void;
+  onDelete?: (destinationId: string) => Promise<void>;
 }
 
-function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate }: HomeDestinationCardProps) {
+function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate, onDelete }: HomeDestinationCardProps) {
+  const [tripCount, setTripCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isDevMode) return;
+
+    let active = true;
+
+    async function loadTripCount() {
+      try {
+        const res = await fetch(`/api/destinations/${destination.id}/trips`, { cache: 'no-store' });
+        const data = res.ok ? await res.json() : [];
+        if (!active) return;
+        setTripCount(Array.isArray(data) ? data.length : 0);
+      } catch {
+        if (!active) return;
+        setTripCount(0);
+      }
+    }
+
+    loadTripCount();
+
+    return () => {
+      active = false;
+    };
+  }, [destination.id, isDevMode]);
+
   const updateField = async (field: 'title' | 'subtitle', value: string) => {
     const res = await fetch(`/api/destinations/${destination.id}`, {
       method: 'PATCH',
@@ -61,16 +88,56 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
       onClick={() => { if (!isDevMode) trackClick(destination.id); }}
     >
       {isDevMode && (
-        <ImageEditor
-          entityId={destination.id}
-          currentImageUrl={destination.image_url}
-          title={destination.title}
-          onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
-          editableTitle={destination.title}
-          editableSubtitle={destination.subtitle}
-          onEditableTitleUpdate={(newTitle) => updateField('title', newTitle)}
-          onEditableSubtitleUpdate={(newSubtitle) => updateField('subtitle', newSubtitle)}
-        />
+        <>
+          <ImageEditor
+            entityId={destination.id}
+            currentImageUrl={destination.image_url}
+            title={destination.title}
+            onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
+            editableTitle={destination.title}
+            editableSubtitle={destination.subtitle}
+            onEditableTitleUpdate={(newTitle) => updateField('title', newTitle)}
+            onEditableSubtitleUpdate={(newSubtitle) => updateField('subtitle', newSubtitle)}
+          />
+          {onDelete && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (!confirm(`確定要刪除「${destination.title}」嗎？`)) return;
+
+                try {
+                  const tripsRes = await fetch(`/api/destinations/${destination.id}/trips`, { cache: 'no-store' });
+                  const tripsData = tripsRes.ok ? await tripsRes.json() : [];
+                  const tripCount = Array.isArray(tripsData) ? tripsData.length : 0;
+                  setTripCount(tripCount);
+
+                  const shouldDelete = confirm(
+                    tripCount > 0
+                      ? `此目的地底下目前有 ${tripCount} 個行程卡片。\n刪除目的地後，裡面的行程卡片也會一起刪除。\n\n請再次確認是否刪除？`
+                      : '此目的地下目前沒有行程卡片。\n\n請再次確認是否刪除？'
+                  );
+                  if (!shouldDelete) return;
+
+                  await onDelete(destination.id);
+                } catch (error) {
+                  alert(error instanceof Error ? error.message : '刪除失敗');
+                }
+              }}
+              className="absolute right-12 top-2 z-10 rounded-full bg-red-600/90 p-2 text-white shadow-lg transition hover:bg-red-500"
+              title="刪除此卡片"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
+          <div className="absolute left-2 top-2 z-10 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold text-white/90 backdrop-blur-sm">
+            {tripCount === null ? '讀取行程中...' : tripCount > 0 ? `已有行程（${tripCount}）` : '尚無行程'}
+          </div>
+        </>
       )}
       <Image
         src={destination.image_url}
@@ -101,6 +168,10 @@ export default function HomePage() {
   const [filterDate, setFilterDate] = useState('');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [popularDestinations, setPopularDestinations] = useState<Destination[]>([]);
+  const [addingRegionId, setAddingRegionId] = useState<string | null>(null);
+  const [newDestinationTitle, setNewDestinationTitle] = useState('');
+  const [newDestinationSubtitle, setNewDestinationSubtitle] = useState('');
+  const [newDestinationSubRegion, setNewDestinationSubRegion] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -251,6 +322,64 @@ export default function HomePage() {
     );
   };
 
+  const handleDeleteDestination = async (destinationId: string) => {
+    const res = await fetch(`/api/destinations/${destinationId}`, {
+      method: 'DELETE',
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || '刪除失敗');
+    }
+
+    setSections((prevSections) =>
+      prevSections.map((section) => ({
+        ...section,
+        destinations: section.destinations.filter((dest) => dest.id !== destinationId),
+      }))
+    );
+
+    setPopularDestinations((prev) => prev.filter((dest) => dest.id !== destinationId));
+  };
+
+  const handleCreateDestination = async (regionId: string) => {
+    const title = newDestinationTitle.trim();
+    if (!title) {
+      alert('請先輸入卡片名稱');
+      return;
+    }
+
+    const res = await fetch('/api/destinations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        region_id: regionId,
+        title,
+        subtitle: newDestinationSubtitle.trim(),
+        sub_region: newDestinationSubRegion.trim(),
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || '新增失敗');
+    }
+
+    const createdDestination = data as Destination;
+    setSections((prevSections) =>
+      prevSections.map((section) =>
+        section.id === regionId
+          ? { ...section, destinations: [...section.destinations, createdDestination] }
+          : section
+      )
+    );
+
+    setAddingRegionId(null);
+    setNewDestinationTitle('');
+    setNewDestinationSubtitle('');
+    setNewDestinationSubRegion('');
+  };
+
   return (
     <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
       <StickyHeader
@@ -375,7 +504,64 @@ export default function HomePage() {
                   <h2 className="text-lg font-bold text-white">{section.title}</h2>
                   <p className="text-xs text-white/50">{section.description}</p>
                 </div>
+                {isDevMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddingRegionId((prev) => prev === section.id ? null : section.id);
+                      setNewDestinationTitle('');
+                      setNewDestinationSubtitle('');
+                      setNewDestinationSubRegion('');
+                    }}
+                    className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                  >
+                    {addingRegionId === section.id ? '取消新增' : '新增卡片'}
+                  </button>
+                )}
               </div>
+
+              {isDevMode && addingRegionId === section.id && (
+                <div className="mb-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-4 backdrop-blur-[12px]">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <input
+                      type="text"
+                      value={newDestinationTitle}
+                      onChange={(e) => setNewDestinationTitle(e.target.value)}
+                      placeholder="卡片主標題"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                    />
+                    <input
+                      type="text"
+                      value={newDestinationSubtitle}
+                      onChange={(e) => setNewDestinationSubtitle(e.target.value)}
+                      placeholder="卡片副標題"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                    />
+                    <input
+                      type="text"
+                      value={newDestinationSubRegion}
+                      onChange={(e) => setNewDestinationSubRegion(e.target.value)}
+                      placeholder="子區域（可留空）"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="mt-3 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await handleCreateDestination(section.id);
+                        } catch (error) {
+                          alert(error instanceof Error ? error.message : '新增失敗');
+                        }
+                      }}
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                    >
+                      建立卡片
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {section.destinations.length === 0 ? (
                 <div className="rounded-xl border border-white/[0.08] bg-[#1a3347] px-5 py-6 text-sm text-white/50">
@@ -411,6 +597,7 @@ export default function HomePage() {
                     isDevMode={isDevMode}
                     onImageUpdate={handleImageUpdate}
                     onTextUpdate={handleDestinationTextUpdate}
+                    onDelete={handleDeleteDestination}
                   />
                 );
 
