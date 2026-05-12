@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getRegionsWithDestinations, getSiteLogo, trackClick, uploadTripImage } from "@/lib/supabase";
@@ -30,6 +30,163 @@ type RouteSection = {
   description: string;
   destinations: Destination[];
 };
+
+interface HomeDestinationCardProps {
+  destination: Destination;
+  isDevMode: boolean;
+  onImageUpdate: (destinationId: string, newImageUrl: string) => void;
+  onTextUpdate: (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => void;
+}
+
+function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate }: HomeDestinationCardProps) {
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingSubtitle, setEditingSubtitle] = useState(false);
+  const [titleValue, setTitleValue] = useState(destination.title);
+  const [subtitleValue, setSubtitleValue] = useState(destination.subtitle);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const subtitleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTitleValue(destination.title);
+  }, [destination.title]);
+
+  useEffect(() => {
+    setSubtitleValue(destination.subtitle);
+  }, [destination.subtitle]);
+
+  const saveField = async (field: 'title' | 'subtitle', value: string) => {
+    const nextValue = field === 'title' ? value.trim() : value.trim();
+    const prevValue = field === 'title' ? destination.title : destination.subtitle;
+
+    if (field === 'title' && !nextValue) {
+      setTitleValue(destination.title);
+      return;
+    }
+
+    if (nextValue === prevValue) {
+      return;
+    }
+
+    const res = await fetch(`/api/destinations/${destination.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: nextValue }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || '更新失敗');
+    }
+
+    onTextUpdate(destination.id, { [field]: nextValue });
+  };
+
+  return (
+    <Link
+      href={`/destination/${destination.id}`}
+      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+      onClick={() => { if (!isDevMode) trackClick(destination.id); }}
+    >
+      {isDevMode && (
+        <ImageEditor
+          entityId={destination.id}
+          currentImageUrl={destination.image_url}
+          title={destination.title}
+          onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
+        />
+      )}
+      <Image
+        src={destination.image_url}
+        alt={destination.title}
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+        className="object-cover transition duration-300 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 p-3">
+        {isDevMode ? (
+          <div className="space-y-1">
+            {editingTitle ? (
+              <input
+                ref={titleInputRef}
+                value={titleValue}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={async () => {
+                  setEditingTitle(false);
+                  try {
+                    await saveField('title', titleValue);
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : '更新失敗');
+                    setTitleValue(destination.title);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') titleInputRef.current?.blur();
+                }}
+                className="w-full border-b border-sky-400 bg-transparent text-sm font-bold text-white outline-none sm:text-base"
+                autoFocus
+              />
+            ) : (
+              <h3
+                className="cursor-pointer border-b border-dashed border-white/30 text-sm font-bold text-white hover:border-sky-400 hover:text-sky-300 sm:text-base"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingTitle(true);
+                }}
+                title="點擊編輯標題"
+              >
+                {titleValue}
+              </h3>
+            )}
+
+            {editingSubtitle ? (
+              <input
+                ref={subtitleInputRef}
+                value={subtitleValue}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onChange={(e) => setSubtitleValue(e.target.value)}
+                onBlur={async () => {
+                  setEditingSubtitle(false);
+                  try {
+                    await saveField('subtitle', subtitleValue);
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : '更新失敗');
+                    setSubtitleValue(destination.subtitle);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') subtitleInputRef.current?.blur();
+                }}
+                className="w-full border-b border-dashed border-white/30 bg-transparent text-[11px] text-white/80 outline-none"
+                autoFocus
+                placeholder="請輸入副標"
+              />
+            ) : (
+              <p
+                className="cursor-pointer text-[11px] text-white/80 hover:text-sky-200"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingSubtitle(true);
+                }}
+                title="點擊編輯副標"
+              >
+                {subtitleValue || '（點擊編輯副標）'}
+              </p>
+            )}
+          </div>
+        ) : (
+          <>
+            <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
+            <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
+          </>
+        )}
+      </div>
+    </Link>
+  );
+}
 
 export default function HomePage() {
   const [sections, setSections] = useState<RouteSection[]>([]);
@@ -169,6 +326,17 @@ export default function HomePage() {
         destinations: section.destinations.map(dest =>
           dest.id === destinationId ? { ...dest, image_url: newImageUrl } : dest
         )
+      }))
+    );
+  };
+
+  const handleDestinationTextUpdate = (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => {
+    setSections((prevSections) =>
+      prevSections.map((section) => ({
+        ...section,
+        destinations: section.destinations.map((dest) =>
+          dest.id === destinationId ? { ...dest, ...fields } : dest
+        ),
       }))
     );
   };
@@ -361,33 +529,13 @@ export default function HomePage() {
                 const visibleDestinations = !hasSubRegions ? (isExpanded ? section.destinations : section.destinations.slice(0, 5)) : [];
 
                 const renderCard = (destination: Destination) => (
-                  <Link
+                  <HomeDestinationCard
                     key={destination.id}
-                    href={`/destination/${destination.id}`}
-                    className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
-                    onClick={() => { if (!isDevMode) trackClick(destination.id); }}
-                  >
-                    {isDevMode && (
-                      <ImageEditor
-                        entityId={destination.id}
-                        currentImageUrl={destination.image_url}
-                        title={destination.title}
-                        onUpdate={(newUrl) => handleImageUpdate(destination.id, newUrl)}
-                      />
-                    )}
-                    <Image
-                      src={destination.image_url}
-                      alt={destination.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                      className="object-cover transition duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 p-3">
-                      <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
-                      <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
-                    </div>
-                  </Link>
+                    destination={destination}
+                    isDevMode={isDevMode}
+                    onImageUpdate={handleImageUpdate}
+                    onTextUpdate={handleDestinationTextUpdate}
+                  />
                 );
 
                 return (
