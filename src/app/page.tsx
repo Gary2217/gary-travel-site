@@ -79,7 +79,7 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
         className="object-cover transition duration-300 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-3">
         <>
           <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
