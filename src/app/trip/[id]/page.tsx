@@ -386,19 +386,24 @@ export default function TripPage() {
   const stringifyPriceDetail = (detail: PriceDetailContent) => JSON.stringify(detail);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadData() {
       try {
         const data = await getTripWithDays(tripId);
+        if (!isMounted) return;
         setTrip(data);
         setDepartureDates(data.departure_dates || []);
         track({ event_type: "trip_view", trip_id: tripId, trip_title: data.title });
       } catch {
-        setError("無法載入行程資料");
+        if (isMounted) setError("無法載入行程資料");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
+
     loadData();
+    return () => { isMounted = false; };
   }, [tripId]);
 
   // 測量右欄高度，讓 IG 影片底部對齊行程概要底部
