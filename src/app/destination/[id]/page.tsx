@@ -36,12 +36,15 @@ export default function DestinationPage() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadData() {
       try {
         const [destData, tripsData] = await Promise.all([
           getDestination(destinationId),
           getDestinationTrips(destinationId),
         ]);
+        if (!isMounted) return;
         setDestination(destData);
         setTrips(tripsData);
 
@@ -53,20 +56,23 @@ export default function DestinationPage() {
               destData.regions.category_label,
               destinationId
             );
+            if (!isMounted) return;
             setRelatedTrips(related);
           } catch {
             // 靜默失敗，不影響主頁面
           } finally {
-            setRelatedLoading(false);
+            if (isMounted) setRelatedLoading(false);
           }
         }
       } catch {
-        setError("無法載入資料，請重新整理頁面");
+        if (isMounted) setError("無法載入資料，請重新整理頁面");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
+
     loadData();
+    return () => { isMounted = false; };
   }, [destinationId]);
 
   useEffect(() => {

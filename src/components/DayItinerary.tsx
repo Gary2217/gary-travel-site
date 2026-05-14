@@ -54,8 +54,8 @@ export default function DayItinerary({
             <div>
               <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-white/50">景點活動</p>
               <div className="flex flex-wrap gap-1.5">
-                {activities.map((activity) => (
-                  <span key={activity} className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-xs text-sky-300">
+                {activities.map((activity, i) => (
+                  <span key={`${i}-${activity}`} className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-xs text-sky-300">
                     {activity}
                   </span>
                 ))}

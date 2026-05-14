@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { lineHref, fbHref, igHref } from "@/lib/supabase";
@@ -21,6 +21,18 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
   const [displayLogoUrl, setDisplayLogoUrl] = useState(logoUrl);
   const [logoReady, setLogoReady] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -168,7 +180,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
       {/* 手機版下拉選單 */}
       {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-header z-header border-b border-white/[0.08] bg-[rgba(15,25,35,0.98)] backdrop-blur-[12px] sm:hidden">
+        <div ref={menuRef} className="fixed inset-x-0 top-header z-header border-b border-white/[0.08] bg-[rgba(15,25,35,0.98)] backdrop-blur-[12px] sm:hidden">
           <nav className="mx-auto flex max-w-site flex-col px-4 py-3">
             <Link
               href="/mini-transit-tickets"

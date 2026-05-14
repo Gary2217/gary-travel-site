@@ -56,12 +56,13 @@ export default function TripCard({
 
   const handleFollowAndDownload = (socialUrl: string) => {
     openExternalLink(socialUrl);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (document_url) {
         openExternalLink(document_url);
       }
       setShowDownloadGate(false);
     }, 1500);
+    return () => clearTimeout(timer);
   };
 
   const displayPriceRange = price_range
