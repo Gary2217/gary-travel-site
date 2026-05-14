@@ -184,12 +184,29 @@ export default function TripPage() {
     }
   };
 
-  const handleFollowAndShare = (socialUrl: string) => {
-    window.open(socialUrl, '_blank');
-    setTimeout(() => {
-      setShowShareGate(false);
-      triggerNativeShare();
-    }, 1500);
+  const handleFollowAndShare = async (socialUrl: string) => {
+    setShowShareGate(false);
+    const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+
+    // 先觸發原生分享（必須在用戶手勢的同步 context 內呼叫，iOS 才允許）
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: trip?.title || "",
+          text: `看看這個行程：${trip?.title || ""}`,
+          url: pageUrl,
+        });
+      } catch {
+        // 用戶取消或不支援，繼續執行
+      }
+    } else {
+      navigator.clipboard?.writeText(pageUrl)
+        .then(() => alert("已複製行程連結！可以貼到 LINE、FB、IG 分享給好友"))
+        .catch(() => alert(`請複製此連結分享給好友：${pageUrl}`));
+    }
+
+    // 分享後帶用戶前往 Gary 社群頁面追蹤（openExternalLink 正確處理手機與桌機）
+    openExternalLink(socialUrl);
   };
 
   const showSaveSuccess = (message = '儲存成功') => {
