@@ -585,10 +585,7 @@ export default function HomePage() {
                   });
                 }
 
-                const VISIBLE_GROUPS = 3;
-                const hasMore = hasSubRegions ? subGroups.length > VISIBLE_GROUPS : section.destinations.length > 5;
-                const visibleGroups = hasSubRegions && !isExpanded ? subGroups.slice(0, VISIBLE_GROUPS) : subGroups;
-                const visibleDestinations = !hasSubRegions ? (isExpanded ? section.destinations : section.destinations.slice(0, 5)) : [];
+                const hasMore = section.destinations.length > 5;
 
                 const renderCard = (destination: Destination) => (
                   <HomeDestinationCard
@@ -603,20 +600,28 @@ export default function HomePage() {
 
                 return (
                   <>
-                    {hasSubRegions ? (
-                      visibleGroups.map((group) => (
-                        <div key={group.label || 'ungrouped'} className="mb-5">
-                          {group.label && (
-                            <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{group.label}</h3>
-                          )}
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                            {group.destinations.map(renderCard)}
+                    {isExpanded ? (
+                      // 展開：顯示全部，有子地區則分組顯示
+                      hasSubRegions ? (
+                        subGroups.map((group) => (
+                          <div key={group.label || 'ungrouped'} className="mb-5">
+                            {group.label && (
+                              <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{group.label}</h3>
+                            )}
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                              {group.destinations.map(renderCard)}
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                          {section.destinations.map(renderCard)}
                         </div>
-                      ))
+                      )
                     ) : (
+                      // 收合：固定只顯示前 5 張，不分組
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                        {visibleDestinations.map(renderCard)}
+                        {section.destinations.slice(0, 5).map(renderCard)}
                       </div>
                     )}
                     {hasMore && (
@@ -633,7 +638,7 @@ export default function HomePage() {
                         })}
                         className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 text-sm font-medium text-sky-300 transition hover:bg-white/[0.06] hover:text-sky-200"
                       >
-                        {isExpanded ? '收合' : `查看全部 ${hasSubRegions ? subGroups.length + ' 個區域' : section.destinations.length + ' 個目的地'}`}
+                        {isExpanded ? '收合' : `查看全部 ${section.destinations.length} 個目的地`}
                         <svg className={`h-4 w-4 transition ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
