@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getSiteLogo, uploadTripBannerImage, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getSiteLogo, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import StickyHeader from "@/components/StickyHeader";
 import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
@@ -103,6 +103,8 @@ export default function TripPage() {
   const [showShareGate, setShowShareGate] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
   const [isDevMode, setIsDevMode] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const [videoMatchHeight, setVideoMatchHeight] = useState<number | undefined>(undefined);
@@ -794,6 +796,62 @@ export default function TripPage() {
                 >
                   編輯資訊
                 </button>
+                {/* PDF 上傳按鈕 */}
+                <button
+                  type="button"
+                  disabled={uploadingDoc}
+                  onClick={() => docInputRef.current?.click()}
+                  className="rounded-full bg-emerald-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {uploadingDoc ? "上傳中..." : trip.document_url ? "更換 PDF 行程檔" : "上傳 PDF 行程檔"}
+                </button>
+                <input
+                  ref={docInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    if (file.name.split('.').pop()?.toLowerCase() !== 'pdf') {
+                      alert("僅支援 PDF 檔案格式");
+                      return;
+                    }
+                    if (file.size > 50 * 1024 * 1024) {
+                      alert("檔案不能超過 50MB");
+                      return;
+                    }
+                    setUploadingDoc(true);
+                    try {
+                      const result = await uploadTripDocument(tripId, file);
+                      setTrip((prev) => prev ? { ...prev, document_url: result.url, document_is_available: result.document_is_available } : prev);
+                      alert("PDF 行程檔已上傳成功！");
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : "上傳失敗，請再試");
+                    } finally {
+                      setUploadingDoc(false);
+                    }
+                  }}
+                />
+                {trip.document_url && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm("確定要刪除此 PDF 行程檔嗎？")) return;
+                      try {
+                        await deleteTripDocument(tripId);
+                        setTrip((prev) => prev ? { ...prev, document_url: undefined, document_is_available: false } : prev);
+                        alert("PDF 已刪除");
+                      } catch (err) {
+                        alert(err instanceof Error ? err.message : "刪除失敗");
+                      }
+                    }}
+                    className="rounded-full border border-red-500/40 bg-red-600/20 px-3 py-1 text-xs font-semibold text-red-300 transition hover:bg-red-600/30"
+                  >
+                    刪除 PDF
+                  </button>
+                )}
                 <button
                   onClick={async () => {
                     if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
