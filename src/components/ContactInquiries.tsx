@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 
 interface ContactForm {
@@ -22,7 +23,10 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
   const [loading, setLoading] = useState(true);
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
   const [filterMonth, setFilterMonth] = useState("");
-  const [collapsed, setCollapsed] = useState(!defaultOpen);
+  const [open, setOpen] = useState(defaultOpen);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const fetchRecords = async (year: string, month: string) => {
     setLoading(true);
@@ -69,15 +73,13 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
-
-    // 設定欄寬
     ws["!cols"] = [
-      { wch: 18 }, // 發送日期
-      { wch: 14 }, // 姓名
-      { wch: 14 }, // 電話
-      { wch: 16 }, // LINE ID
-      { wch: 24 }, // 信箱
-      { wch: 30 }, // 詢問內容
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 24 },
+      { wch: 30 },
     ];
 
     const wb = XLSX.utils.book_new();
@@ -86,7 +88,6 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
     const monthLabel = filterMonth ? `${filterYear}-${filterMonth.padStart(2, "0")}` : filterYear;
     const fileName = `聯絡表單_${monthLabel}.xlsx`;
 
-    // 使用 File System Access API 讓用戶選擇儲存位置
     if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
       try {
         const handle = await (window as any).showSaveFilePicker({
@@ -113,66 +114,66 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
   const years = Array.from({ length: 3 }, (_, i) => String(currentYear - i));
   const months = Array.from({ length: 12 }, (_, i) => String(i + 1));
 
-  return (
-    <section className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex w-full items-center justify-between"
-      >
-        <h3 className="text-sm font-bold text-amber-300">
-          聯絡表單記錄 ({records.length})
-        </h3>
-        <svg
-          className={`h-4 w-4 text-amber-400 transition ${collapsed ? "" : "rotate-180"}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+  const panel = open && mounted ? createPortal(
+    <div className="fixed inset-x-0 top-14 z-[200] flex justify-center px-3 pt-2 sm:px-4">
+      <div className="w-full max-w-2xl rounded-2xl border border-amber-500/20 bg-[#0f1923]/98 shadow-2xl backdrop-blur-xl">
+        {/* 標題列 */}
+        <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
+          <h3 className="text-sm font-bold text-amber-300">
+            聯絡表單記錄（{records.length}）
+          </h3>
+          <button
+            onClick={() => setOpen(false)}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-      {!collapsed && (
-        <div className="mt-4">
-          {/* 篩選列 */}
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none"
-            >
-              {years.map((y) => (
-                <option key={y} value={y} className="bg-[#1a3347]">{y} 年</option>
-              ))}
-            </select>
-            <select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none"
-            >
-              <option value="" className="bg-[#1a3347]">全部月份</option>
-              {months.map((m) => (
-                <option key={m} value={m} className="bg-[#1a3347]">{m} 月</option>
-              ))}
-            </select>
-            <button
-              onClick={downloadXlsx}
-              disabled={records.length === 0}
-              className="ml-auto inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-40"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
-              </svg>
-              下載 Excel
-            </button>
-          </div>
+        {/* 篩選列 */}
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+          <select
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none"
+          >
+            {years.map((y) => (
+              <option key={y} value={y} className="bg-[#1a3347]">{y} 年</option>
+            ))}
+          </select>
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none"
+          >
+            <option value="" className="bg-[#1a3347]">全部月份</option>
+            {months.map((m) => (
+              <option key={m} value={m} className="bg-[#1a3347]">{m} 月</option>
+            ))}
+          </select>
+          <button
+            onClick={downloadXlsx}
+            disabled={records.length === 0}
+            className="ml-auto inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-40"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+            </svg>
+            下載 Excel
+          </button>
+        </div>
 
-          {/* 記錄列表 */}
-          <div className="mt-3 space-y-2">
-            {loading ? (
-              <p className="py-4 text-center text-xs text-white/40">載入中...</p>
-            ) : records.length === 0 ? (
-              <p className="py-4 text-center text-xs text-white/40">目前沒有記錄</p>
-            ) : (
-              records.map((r) => (
+        {/* 記錄列表（可捲動） */}
+        <div className="max-h-[55vh] overflow-y-auto px-4 pb-4">
+          {loading ? (
+            <p className="py-6 text-center text-xs text-white/40">載入中...</p>
+          ) : records.length === 0 ? (
+            <p className="py-6 text-center text-xs text-white/40">目前沒有記錄</p>
+          ) : (
+            <div className="space-y-2">
+              {records.map((r) => (
                 <div
                   key={r.id}
                   className="rounded-xl border border-white/[0.08] bg-white/5 px-4 py-3"
@@ -190,11 +191,29 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
                     <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-white/70">{r.message}</p>
                   )}
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </section>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-6 flex w-full items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 transition hover:bg-amber-500/10"
+      >
+        <h3 className="text-sm font-bold text-amber-300">
+          聯絡表單記錄（{records.length}）
+        </h3>
+        <svg className="h-4 w-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {panel}
+    </>
   );
 }
