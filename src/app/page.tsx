@@ -441,7 +441,7 @@ export default function HomePage() {
               </div>
               <p className="mt-1 text-xs text-white/50">首頁熱門目的地精選，直接帶你進入對應目的地列表</p>
              </div>
-             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
                {popularDestinations.slice(0, 4).map((destination, i) => (
                   <div
                     key={destination.id}
@@ -607,19 +607,19 @@ export default function HomePage() {
                             {group.label && (
                               <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{group.label}</h3>
                             )}
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
                               {group.destinations.map(renderCard)}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
                           {section.destinations.map(renderCard)}
                         </div>
                       )
                     ) : (
                       // 收合：固定只顯示前 5 張，不分組
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
                         {section.destinations.slice(0, 5).map(renderCard)}
                       </div>
                     )}
