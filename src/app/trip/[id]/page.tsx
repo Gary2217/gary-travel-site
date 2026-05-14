@@ -205,8 +205,6 @@ export default function TripPage() {
         .catch(() => alert(`請複製此連結分享給好友：${pageUrl}`));
     }
 
-    // 分享後帶用戶前往 Gary 社群頁面追蹤（openExternalLink 正確處理手機與桌機）
-    openExternalLink(socialUrl);
   };
 
   const showSaveSuccess = (message = '儲存成功') => {
