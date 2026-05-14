@@ -1,11 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
 import FloatingContact from "@/components/FloatingContact";
-import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import { getSiteLogo } from "@/lib/supabase";
 import { MINI_TRANSIT_TICKET_ITEMS } from "@/lib/mini-transit-tickets";
@@ -180,7 +179,6 @@ export default function MiniTransitTicketsPage() {
       )}
 
       <FloatingContact />
-      <ScrollToTop />
     </main>
   );
 }

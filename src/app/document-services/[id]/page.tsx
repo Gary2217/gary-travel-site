@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
 import FloatingContact from "@/components/FloatingContact";
-import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import { getSiteLogo, lineDmHref } from "@/lib/supabase";
 import { getDocumentServiceById } from "@/lib/document-services";
@@ -822,7 +821,6 @@ export default function DocumentServiceDetailPage() {
       )}
 
       <FloatingContact />
-      <ScrollToTop />
 
       {saveSuccessMessage && (
         <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">

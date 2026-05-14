@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -6,7 +6,6 @@ import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
 import FlightDepartureDates from "@/components/FlightDepartureDates";
 import FloatingContact from "@/components/FloatingContact";
-import ScrollToTop from "@/components/ScrollToTop";
 import LegalNotice from "@/components/LegalNotice";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
@@ -147,7 +146,6 @@ export default function FlightDetailPage() {
       </div>
 
       <FloatingContact />
-      <ScrollToTop />
     </main>
   );
 }

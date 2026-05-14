@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
 import FloatingContact from "@/components/FloatingContact";
-import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import { getSiteLogo, lineDmHref } from "@/lib/supabase";
 import { getMiniTransitTicketById } from "@/lib/mini-transit-tickets";
@@ -580,7 +579,6 @@ export default function MiniTransitTicketDetailPage() {
       {isDevMode && <div className="mx-auto max-w-site px-4 pb-2 text-right text-xs text-white/40 md:px-5">開發者模式已啟用</div>}
 
       <FloatingContact />
-      <ScrollToTop />
 
       {saveSuccessMessage && (
         <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">

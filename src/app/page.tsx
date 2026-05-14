@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -8,7 +8,6 @@ import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import LogoUploader from "@/components/LogoUploader";
 import FloatingContact from "@/components/FloatingContact";
-import ScrollToTop from "@/components/ScrollToTop";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
@@ -662,7 +661,6 @@ export default function HomePage() {
       </div>
 
       <FloatingContact />
-      <ScrollToTop />
     </main>
   );
 }
