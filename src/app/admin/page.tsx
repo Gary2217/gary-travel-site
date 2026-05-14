@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // ── Types ────────────────────────────────────────────────
@@ -430,8 +430,8 @@ export default function AdminPage() {
                     {trips.map((t, i) => {
                       const isOpen = selectedTrip === t.trip_id;
                       return (
-                        <>
-                          <tr key={t.trip_id} onClick={() => setSelectedTrip(isOpen ? null : t.trip_id)}
+                        <Fragment key={t.trip_id}>
+                          <tr onClick={() => setSelectedTrip(isOpen ? null : t.trip_id)}
                             className={`cursor-pointer border-b border-white/5 text-sm transition hover:bg-white/5 ${i === 0 ? "bg-sky-500/5" : ""} ${isOpen ? "bg-white/5" : ""}`}>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
@@ -447,7 +447,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3 text-center font-semibold text-violet-300">{t.shares}</td>
                           </tr>
                           {isOpen && (
-                            <tr key={`${t.trip_id}-detail`} className="border-b border-white/5 bg-white/[0.03]">
+                            <tr className="border-b border-white/5 bg-white/[0.03]">
                               <td colSpan={4} className="px-4 py-4">
                                 <div className="grid gap-4 sm:grid-cols-2">
                                   <PlatformBars line={t.dl_line} fb={t.dl_fb} ig={t.dl_ig} label="📥 下載來源" />
@@ -460,7 +460,7 @@ export default function AdminPage() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -547,8 +547,8 @@ export default function AdminPage() {
                     {flights.map((f, i) => {
                       const isOpen = selectedFlight === f.flight_id;
                       return (
-                        <>
-                          <tr key={f.flight_id} onClick={() => setSelectedFlight(isOpen ? null : f.flight_id)}
+                        <Fragment key={f.flight_id}>
+                          <tr onClick={() => setSelectedFlight(isOpen ? null : f.flight_id)}
                             className={`cursor-pointer border-b border-white/5 text-sm transition hover:bg-white/5 ${isOpen ? "bg-white/5" : ""}`}>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
@@ -564,14 +564,14 @@ export default function AdminPage() {
                             <td className="px-4 py-3 text-center text-white/60">{f.views > 0 ? Math.round((f.inquiries / f.views) * 100) : 0}%</td>
                           </tr>
                           {isOpen && (
-                            <tr key={`${f.flight_id}-detail`} className="border-b border-white/5 bg-white/[0.03]">
+                            <tr className="border-b border-white/5 bg-white/[0.03]">
                               <td colSpan={4} className="px-4 py-4">
                                 <PlatformBars line={f.line} fb={f.fb} ig={f.ig} label="💬 詢問來源（LINE / FB / IG）" />
                                 <p className="mt-2 text-[11px] text-white/30">詢問合計：<span className="text-amber-400">{f.line + f.fb + f.ig}</span></p>
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       );
                     })}
                   </tbody>

@@ -83,7 +83,7 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
   return (
     <Link
       href={`/destination/${destination.id}`}
-      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] bg-[#182838] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
       onClick={() => { if (!isDevMode) trackClick(destination.id); }}
     >
       {isDevMode && (
@@ -145,11 +145,11 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
         className="object-cover transition duration-300 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-3">
         <>
-          <h3 className="text-sm font-bold text-white sm:text-base">{destination.title}</h3>
-          <p className="mt-0.5 text-[11px] text-white/80">{destination.subtitle}</p>
+          <h3 className="text-sm font-bold text-white [text-shadow:_0_1px_6px_rgba(0,0,0,0.9)] sm:text-base">{destination.title}</h3>
+          <p className="mt-0.5 text-[11px] text-white/90 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">{destination.subtitle}</p>
         </>
       </div>
     </Link>
@@ -445,7 +445,7 @@ export default function HomePage() {
                {popularDestinations.slice(0, 4).map((destination, i) => (
                   <div
                     key={destination.id}
-                    className="group relative overflow-hidden rounded-lg border border-white/10 bg-[#182838] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                    className="group relative overflow-hidden rounded-xl border border-white/10 bg-[#182838] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
                   >
                     {i < 3 && (
                       <div className={`absolute -left-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-br-xl text-xs font-black shadow-lg ${
