@@ -416,12 +416,12 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                 <button
                   type="button"
                   onClick={handleClear}
-                  title="清除篩選"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 sm:hidden"
+                  className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm font-semibold text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 sm:hidden"
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
+                  取消篩選
                 </button>
               )}
             </div>
@@ -569,9 +569,9 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
           )}
           <button
             onClick={handleClear}
-            className="hidden text-xs text-gray-400 underline underline-offset-2 transition hover:text-gray-600 sm:inline"
+            className="text-xs text-gray-400 underline underline-offset-2 transition hover:text-gray-600"
           >
-            清除篩選
+            清除全部
           </button>
         </div>
       )}
