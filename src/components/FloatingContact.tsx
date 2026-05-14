@@ -5,7 +5,7 @@ import { openExternalLink } from "@/lib/external-link";
 
 export default function FloatingContact() {
   return (
-    <div className="fixed bottom-20 right-3 z-floating flex flex-col items-end gap-1.5 sm:bottom-8 sm:right-4 sm:gap-2">
+    <div className="fixed bottom-[5.5rem] right-3 z-floating flex flex-col items-end gap-1.5 sm:bottom-8 sm:right-4 sm:gap-2">
       <p className="mb-0.5 rounded-lg border border-white/10 bg-[rgba(15,25,35,0.95)] px-2.5 py-1 text-center text-xs font-medium text-white/90 shadow-lg backdrop-blur-xl sm:mb-1 sm:px-3 sm:py-1.5">
         私訊
       </p>

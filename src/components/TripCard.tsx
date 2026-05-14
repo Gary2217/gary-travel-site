@@ -74,7 +74,7 @@ export default function TripCard({
       <div className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30">
         {/* 封面圖 */}
         <div
-          className={`relative h-28 overflow-hidden sm:h-36 md:h-44${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative h-32 overflow-hidden sm:h-36 md:h-44${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
           {cover_image_url ? (

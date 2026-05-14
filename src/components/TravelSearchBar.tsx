@@ -458,7 +458,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
           {destOpen && (
             <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
               <div className="border-b border-gray-100">
-                <div className="flex flex-wrap">
+                <div className="flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <button
                     onClick={() => setActiveTab("all")}
                     className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${

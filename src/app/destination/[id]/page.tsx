@@ -442,7 +442,7 @@ export default function DestinationPage() {
                       onClick={handleAddTrip}
                       className="group/add flex flex-col overflow-hidden rounded-xl border-2 border-dashed border-[#00b4d8]/30 bg-[#1a3347]/50 transition hover:border-[#00b4d8]/50 hover:bg-[#00b4d8]/10"
                     >
-                      <div className="flex h-28 items-center justify-center sm:h-36 md:h-44">
+                      <div className="flex h-32 items-center justify-center sm:h-36 md:h-44">
                         <svg className="h-10 w-10 text-sky-500/50 transition group-hover/add:text-sky-400/70 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
