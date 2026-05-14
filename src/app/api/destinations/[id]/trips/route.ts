@@ -24,9 +24,11 @@ export async function GET(
       },
     });
 
+    const today = new Date().toISOString().slice(0, 10);
+
     const { data, error } = await supabase
       .from('trips')
-      .select('*')
+      .select('*, trip_departure_dates(*)')
       .eq('destination_id', params.id)
       .eq('is_active', true)
       .order('display_order', { ascending: true });
@@ -36,41 +38,18 @@ export async function GET(
       return NextResponse.json({ error: '載入失敗' }, { status: 500 });
     }
 
-    const trips = (data || []).map((trip: any) => ({
-      ...trip,
-      document_is_available: Boolean(trip.document_url),
-    }));
-
-    if (trips.length === 0) {
-      return NextResponse.json([], {
-        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
-      });
-    }
-
-    const tripIds = trips.map((trip: { id: string }) => trip.id);
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: departureDates } = await supabase
-      .from('trip_departure_dates')
-      .select('*')
-      .in('trip_id', tripIds)
-      .eq('is_active', true)
-      .gte('departure_date', today)
-      .order('departure_date', { ascending: true });
-
-    const departureDatesMap = new Map<string, any[]>();
-
-    (departureDates || []).forEach((date: any) => {
-      const existing = departureDatesMap.get(date.trip_id) || [];
-      existing.push(date);
-      departureDatesMap.set(date.trip_id, existing);
+    const trips = (data || []).map((trip: any) => {
+      const { trip_departure_dates: rawDates, ...tripData } = trip;
+      return {
+        ...tripData,
+        document_is_available: Boolean(trip.document_url),
+        departure_dates: (rawDates || [])
+          .filter((d: any) => d.is_active && d.departure_date >= today)
+          .sort((a: any, b: any) => a.departure_date.localeCompare(b.departure_date)),
+      };
     });
 
-    const tripsWithDepartureDates = trips.map((trip: any) => ({
-      ...trip,
-      departure_dates: departureDatesMap.get(trip.id) || [],
-    }));
-
-    return NextResponse.json(tripsWithDepartureDates, {
+    return NextResponse.json(trips, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch {

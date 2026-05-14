@@ -40,24 +40,26 @@ export async function GET() {
       });
     }
 
-    const clickCountResults = await Promise.all(
-      destinations.map((destination) =>
-        supabase
-          .from('click_analytics')
-          .select('*', { count: 'exact', head: true })
-          .eq('destination_id', destination.id)
-          .gte('clicked_at', sixMonthsAgo.toISOString())
-      )
-    );
+    const ids = destinations.map((d) => d.id);
+    const { data: clickRows } = await supabase
+      .from('click_analytics')
+      .select('destination_id')
+      .in('destination_id', ids)
+      .gte('clicked_at', sixMonthsAgo.toISOString());
+
+    const clickCountMap = new Map<string, number>();
+    (clickRows || []).forEach((row: any) => {
+      clickCountMap.set(row.destination_id, (clickCountMap.get(row.destination_id) || 0) + 1);
+    });
 
     const rankedDestinations = destinations
-      .map((destination, index) => ({
+      .map((destination) => ({
         id: destination.id,
         title: destination.title,
         subtitle: destination.subtitle || '',
         image_url: destination.image_url,
         display_order: destination.display_order ?? 0,
-        click_count: clickCountResults[index]?.count ?? 0,
+        click_count: clickCountMap.get(destination.id) ?? 0,
       }))
       .sort((a, b) => {
         const featuredDiff = getFeaturedPriority(a.title) - getFeaturedPriority(b.title);
