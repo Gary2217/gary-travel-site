@@ -254,6 +254,25 @@ export async function submitInquiry(data: {
   return res.json();
 }
 
+// 取得同地區 + 同類別相關行程（目的地無行程時使用）
+export async function getRelatedTrips(
+  regionId: string,
+  categoryLabel: string,
+  excludeDestinationId: string
+): Promise<{ regionTrips: Trip[]; categoryTrips: Trip[] }> {
+  const qs = new URLSearchParams({
+    category_label: categoryLabel,
+    exclude_destination_id: excludeDestinationId,
+  });
+  const res = await fetch(`/api/regions/${regionId}/related-trips?${qs}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch related trips');
+  }
+  return res.json();
+}
+
 // 記錄點擊事件（使用 sendBeacon 避免阻塞頁面跳轉）
 export function trackClick(destinationId: string) {
   try {
