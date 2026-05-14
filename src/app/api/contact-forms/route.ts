@@ -95,9 +95,13 @@ export async function GET(request: NextRequest) {
 
     // 篩選年月
     if (year && month) {
-      const startDate = `${year}-${month.padStart(2, '0')}-01T00:00:00.000Z`;
-      const endMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
-      const endYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+      const monthNum = parseInt(month, 10);
+      if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+        return NextResponse.json({ error: '無效的月份參數' }, { status: 400 });
+      }
+      const startDate = `${year}-${String(monthNum).padStart(2, '0')}-01T00:00:00.000Z`;
+      const endMonth = monthNum === 12 ? 1 : monthNum + 1;
+      const endYear = monthNum === 12 ? parseInt(year, 10) + 1 : parseInt(year, 10);
       const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01T00:00:00.000Z`;
       query = query.gte('created_at', startDate).lt('created_at', endDate);
     } else if (year) {

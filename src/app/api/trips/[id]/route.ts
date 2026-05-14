@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
 import { requireDevAuth } from '@/lib/api-auth';
+import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,7 +127,7 @@ export async function PATCH(
 
 // DELETE: 刪除行程
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const authErr = requireDevAuth();
@@ -138,7 +139,43 @@ export async function DELETE(
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // 先刪除所有關聯資料
+    // 取得行程資料以收集 Storage 路徑
+    const { data: trip, error: tripFetchError } = await supabase
+      .from('trips')
+      .select('cover_image_url, document_url, trip_banner')
+      .eq('id', params.id)
+      .single();
+
+    if (tripFetchError || !trip) {
+      return NextResponse.json({ error: '找不到行程' }, { status: 404 });
+    }
+
+    // 收集需清理的 Storage 路徑
+    const storagePaths = new Set<string>();
+
+    const coverPath = getStoragePathFromPublicUrl(trip.cover_image_url || '');
+    if (coverPath) storagePaths.add(coverPath);
+
+    const documentPath = getStoragePathFromPublicUrl(trip.document_url || '');
+    if (documentPath) storagePaths.add(documentPath);
+
+    const banner = trip.trip_banner as Record<string, unknown> | null;
+    const sideImagePath = getStoragePathFromPublicUrl(String(banner?.side_image_url || ''));
+    if (sideImagePath) storagePaths.add(sideImagePath);
+
+    // 取得 trip_side_media 圖片路徑
+    const { data: sideMedia } = await supabase
+      .from('trip_side_media')
+      .select('url, media_type')
+      .eq('trip_id', params.id)
+      .eq('media_type', 'image');
+
+    for (const media of sideMedia || []) {
+      const mediaPath = getStoragePathFromPublicUrl((media as any).url || '');
+      if (mediaPath) storagePaths.add(mediaPath);
+    }
+
+    // 刪除所有關聯資料
     await Promise.all([
       supabase.from('trip_days').delete().eq('trip_id', params.id),
       supabase.from('trip_departure_dates').delete().eq('trip_id', params.id),
@@ -153,6 +190,16 @@ export async function DELETE(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // 清理 Storage 檔案
+    if (storagePaths.size > 0) {
+      const { error: removeError } = await supabase.storage
+        .from('images')
+        .remove([...storagePaths]);
+      if (removeError) {
+        console.error('Failed to remove trip storage files:', removeError.message);
+      }
     }
 
     return NextResponse.json({ success: true });
