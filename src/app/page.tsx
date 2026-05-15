@@ -83,7 +83,7 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
   return (
     <Link
       href={`/destination/${destination.id}`}
-      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-white/[0.08] bg-[#182838] transition hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-gray-200 bg-gray-100 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-gray-300/50"
       onClick={() => { if (!isDevMode) trackClick(destination.id); }}
     >
       {isDevMode && (
@@ -247,7 +247,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-brand-bg pt-14 text-white">
+      <main className="min-h-screen bg-white pt-14 text-gray-900">
         <div className="mx-auto max-w-site px-4 py-6 md:px-5">
           <div className="mb-8">
             <Skeleton className="mb-2 h-5 w-32" />
@@ -270,7 +270,7 @@ export default function HomePage() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0f1923] text-white">
+      <main className="flex min-h-screen items-center justify-center bg-white text-gray-900">
         <div className="text-center px-4">
           <p className="text-lg text-red-400">{error}</p>
           <button
@@ -380,7 +380,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+    <main className="min-h-screen bg-white pt-14 text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} /> : null}
@@ -388,7 +388,7 @@ export default function HomePage() {
       />
 
       {/* Search Section */}
-      <section className="bg-gradient-to-b from-[#162a3a] to-[#0f1923] px-4 pb-6 pt-3">
+      <section className="bg-gray-50 px-4 pb-6 pt-3">
         <TravelSearchBar
           regions={sections.map((s) => ({
             id: s.id,
@@ -400,7 +400,7 @@ export default function HomePage() {
       </section>
 
       {/* Region Tabs */}
-      <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
+      <div className="sticky top-14 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]">
         <div className="mx-auto max-w-site overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex min-w-max justify-start gap-2 md:min-w-0 md:flex-wrap md:justify-center">
             {sections.map((section) => (
@@ -408,14 +408,14 @@ export default function HomePage() {
                 key={section.id}
                 type="button"
                 onClick={() => scrollToSection(section.id)}
-                className="rounded-full border border-white/[0.08] bg-transparent px-4 py-2.5 text-sm font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
+                className="rounded-full border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
               >
                 {section.categoryLabel}
               </button>
             ))}
             <Link
               href="/flights"
-              className="rounded-full border border-white/[0.08] bg-transparent px-4 py-2.5 text-sm font-medium text-white/75 transition hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
+              className="rounded-full border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
             >
               機票
             </Link>
@@ -428,24 +428,24 @@ export default function HomePage() {
         {/* 熱門推薦 */}
         {popularDestinations.length > 0 && !filterRegionId && (
           <section className="mx-auto mb-10 max-w-[1180px] rounded-[1.45rem] bg-[linear-gradient(135deg,rgba(251,146,60,0.55)_0%,rgba(250,204,21,0.45)_34%,rgba(244,63,94,0.4)_68%,rgba(56,189,248,0.35)_100%)] p-[1px] shadow-[0_16px_34px_rgba(245,158,11,0.18)]">
-            <div className="rounded-[calc(1.45rem-1px)] bg-[#13263a] p-2.5 sm:p-3">
+            <div className="rounded-[calc(1.45rem-1px)] bg-white p-2.5 sm:p-3">
             <div className="mb-3 px-1">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">&#x1F525;</span>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-lg font-bold text-gray-900">
                   熱門推薦
                 </h2>
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600">
                   2025–2026
                 </span>
               </div>
-              <p className="mt-1 text-xs text-white/50">首頁熱門目的地精選，直接帶你進入對應目的地列表</p>
+              <p className="mt-1 text-xs text-gray-500">首頁熱門目的地精選，直接帶你進入對應目的地列表</p>
              </div>
              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
                {popularDestinations.slice(0, 4).map((destination, i) => (
                   <div
                     key={destination.id}
-                    className="group relative overflow-hidden rounded-xl border border-white/10 bg-[#182838] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                    className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-gray-300/50"
                   >
                     {i < 3 && (
                       <div className={`absolute -left-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-br-xl text-xs font-black shadow-lg ${
@@ -485,7 +485,7 @@ export default function HomePage() {
           if ((filterRegionId || filterDate) && filtered.length === 0) {
             return (
               <div className="py-16 text-center">
-                <p className="text-base text-white/50">找不到符合條件的目的地</p>
+                <p className="text-base text-gray-500">找不到符合條件的目的地</p>
                 <button
                   onClick={() => handleSearch({ departureCity: '', regionId: null, destinationId: null, date: '' })}
                   className="mt-4 rounded-lg bg-[#00b4d8] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#0096c7]"
@@ -500,8 +500,8 @@ export default function HomePage() {
             <section key={section.id} id={section.id} className="mb-8 scroll-mt-[120px]">
               <div className="mb-3 flex items-baseline justify-between px-1">
                 <div>
-                  <h2 className="text-lg font-bold text-white">{section.title}</h2>
-                  <p className="text-xs text-white/50">{section.description}</p>
+                  <h2 className="text-lg font-bold text-gray-900">{section.title}</h2>
+                  <p className="text-xs text-gray-500">{section.description}</p>
                 </div>
                 {isDevMode && (
                   <button
@@ -563,7 +563,7 @@ export default function HomePage() {
               )}
 
               {section.destinations.length === 0 ? (
-                <div className="rounded-xl border border-white/[0.08] bg-[#1a3347] px-5 py-6 text-sm text-white/50">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 px-5 py-6 text-sm text-gray-500">
                   尚無目的地
                 </div>
               ) : (() => {
@@ -605,7 +605,7 @@ export default function HomePage() {
                         subGroups.map((group) => (
                           <div key={group.label || 'ungrouped'} className="mb-5">
                             {group.label && (
-                              <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{group.label}</h3>
+                              <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{group.label}</h3>
                             )}
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
                               {group.destinations.map(renderCard)}
@@ -635,7 +635,7 @@ export default function HomePage() {
                           }
                           return next;
                         })}
-                        className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 text-sm font-medium text-sky-300 transition hover:bg-white/[0.06] hover:text-sky-200"
+                        className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-sky-600 transition hover:bg-gray-100 hover:text-sky-500"
                       >
                         {isExpanded ? '收合' : `查看全部 ${section.destinations.length} 個目的地`}
                         <svg className={`h-4 w-4 transition ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
