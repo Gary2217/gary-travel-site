@@ -111,7 +111,7 @@ function AirlineLogo({ code, name }: { code: string; name: string }) {
   const [failed, setFailed] = useState(false);
   if (!code || failed) {
     return (
-      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white/60 sm:h-14 sm:w-14 sm:text-sm">
+      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-500 sm:h-14 sm:w-14 sm:text-sm">
         {code || "✈"}
       </div>
     );
@@ -126,8 +126,8 @@ function AirlineLogo({ code, name }: { code: string; name: string }) {
   );
 }
 
-const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400";
-const labelClass = "mb-1 block text-[10px] text-white/50";
+const inputClass = "w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none focus:border-sky-500";
+const labelClass = "mb-1 block text-[10px] text-gray-500";
 
 function getWeekdayFromDate(dateStr: string) {
   if (!dateStr) return "";
@@ -203,12 +203,12 @@ function AirportInput({ value, onChange, placeholder, preferTw = false }: {
         onFocus={() => setOpen(true)}
         placeholder={placeholder} className={inputClass} autoComplete="off" />
       {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-52 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
-          {!q && <div className="border-b border-white/8 px-2.5 py-1.5 text-[10px] text-white/30">{preferTw ? "台灣出發機場" : "常用機場"}</div>}
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-52 w-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
+          {!q && <div className="border-b border-gray-100 px-2.5 py-1.5 text-[10px] text-gray-400">{preferTw ? "台灣出發機場" : "常用機場"}</div>}
           {filtered.map((a, i) => (
             <button key={i} type="button" onClick={() => { onChange(a.name); setOpen(false); }}
-              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
-              <span>{a.name}</span><span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-gray-900 transition hover:bg-gray-100">
+              <span>{a.name}</span><span className="ml-2 shrink-0 text-[10px] text-gray-400">{a.code}</span>
             </button>
           ))}
         </div>
@@ -240,11 +240,11 @@ function AirlineInput({ value, onChange }: { value: string; onChange: (v: string
         onFocus={() => setOpen(true)}
         placeholder="如：長榮航空" className={inputClass} autoComplete="off" />
       {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
           {filtered.map((a, i) => (
             <button key={i} type="button" onClick={() => { onChange(`${a.name}（${a.code}）`); setOpen(false); }}
-              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
-              <span>{a.name}</span><span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-gray-900 transition hover:bg-gray-100">
+              <span>{a.name}</span><span className="ml-2 shrink-0 text-[10px] text-gray-400">{a.code}</span>
             </button>
           ))}
         </div>
@@ -260,14 +260,14 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
   onChange: (field: keyof FlightSegment, value: string | boolean) => void; onDelete: () => void;
 }) {
   const label = index === 0 ? "去程" : total > 1 && index === total - 1 ? "回程" : "轉機";
-  const labelColor = index === 0 ? "bg-sky-500/20 text-sky-300" : total > 1 && index === total - 1 ? "bg-amber-500/20 text-amber-300" : "bg-violet-500/20 text-violet-300";
+  const labelColor = index === 0 ? "bg-sky-50 text-sky-600" : total > 1 && index === total - 1 ? "bg-amber-50 text-amber-600" : "bg-violet-50 text-violet-600";
   const dayLabel = segment.date ? getWeekdayFromDate(segment.date) : "";
 
   return (
-    <div className="mb-2 rounded-lg border border-white/8 bg-white/[0.03] p-3">
+    <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-white/30">第 {index + 1} 段</span>
+          <span className="text-[10px] text-gray-400">第 {index + 1} 段</span>
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${labelColor}`}>{label}</span>
         </div>
         <button type="button" onClick={onDelete} className="text-[10px] text-red-400/50 transition hover:text-red-400">✕ 刪除</button>
@@ -276,8 +276,8 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         <div>
           <label className={labelClass}>日期</label>
           <div className="flex gap-1.5">
-            <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)} className={`${inputClass} min-w-0 flex-1 [color-scheme:dark]`} />
-            {dayLabel && <span className="flex shrink-0 items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{dayLabel}</span>}
+            <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)} className={`${inputClass} min-w-0 flex-1`} />
+            {dayLabel && <span className="flex shrink-0 items-center rounded-lg border border-amber-200 bg-amber-50 px-2 text-xs font-bold text-amber-600">{dayLabel}</span>}
           </div>
         </div>
         <div>
@@ -293,7 +293,7 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_2fr_1fr_2fr_auto]">
         <div>
           <label className={labelClass}>起飛時間</label>
-          <input type="time" value={segment.dep_time} onChange={(e) => onChange("dep_time", e.target.value)} className={`${inputClass} [color-scheme:dark]`} />
+          <input type="time" value={segment.dep_time} onChange={(e) => onChange("dep_time", e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>起飛機場</label>
@@ -301,15 +301,15 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         </div>
         <div>
           <label className={labelClass}>抵達時間</label>
-          <input type="time" value={segment.arr_time} onChange={(e) => onChange("arr_time", e.target.value)} className={`${inputClass} [color-scheme:dark]`} />
+          <input type="time" value={segment.arr_time} onChange={(e) => onChange("arr_time", e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>抵達機場</label>
           <AirportInput value={segment.arr_airport} onChange={(v) => onChange("arr_airport", v)} placeholder="目的地" preferTw={total > 1 && index === total - 1} />
         </div>
         <div className="col-span-2 flex items-end sm:col-span-1">
-          <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
-            <input type="checkbox" checked={segment.next_day} onChange={(e) => onChange("next_day", e.target.checked)} className="rounded border-white/20 bg-white/5" />
+          <label className="flex items-center gap-1.5 py-1.5 text-xs text-gray-600">
+            <input type="checkbox" checked={segment.next_day} onChange={(e) => onChange("next_day", e.target.checked)} className="rounded border-gray-300 bg-gray-50" />
             跨日+1
           </label>
         </div>
@@ -330,17 +330,17 @@ function SegmentRow_Display({ segment, label, transferType }: { segment: FlightS
     <div className="py-2 first:pt-0 last:pb-0">
       {/* 表頭：出發機場 / 抵達機場 / 飛行時數 */}
       <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:grid-cols-[1fr_auto_1fr_auto]">
-        <div className="text-center text-xs text-white/50">
-          {depCode && <span className="font-bold text-white/70">{depCode}</span>}{" "}
+        <div className="text-center text-xs text-gray-500">
+          {depCode && <span className="font-bold text-gray-600">{depCode}</span>}{" "}
           {depShort}
         </div>
         {/* 飛機圖示佔位（表頭） */}
         <div />
-        <div className="text-center text-xs text-white/50">
-          {arrCode && <span className="font-bold text-white/70">{arrCode}</span>}{" "}
+        <div className="text-center text-xs text-gray-500">
+          {arrCode && <span className="font-bold text-gray-600">{arrCode}</span>}{" "}
           {arrShort}
         </div>
-        <div className="hidden text-center text-xs text-white/50 sm:block">飛行時數</div>
+        <div className="hidden text-center text-xs text-gray-500 sm:block">飛行時數</div>
       </div>
 
       {/* 時間列 */}
@@ -348,26 +348,26 @@ function SegmentRow_Display({ segment, label, transferType }: { segment: FlightS
         {/* 出發時間 */}
         <div className="flex items-center justify-center gap-2">
           <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-[#00b4d8]" />
-          <span className="text-xl font-bold tabular-nums text-white">{segment.dep_time || "--:--"}</span>
+          <span className="text-xl font-bold tabular-nums text-gray-900">{segment.dep_time || "--:--"}</span>
         </div>
 
         {/* 飛機圖示 + 連接線 */}
         <div className="flex items-center gap-1.5">
-          <div className="h-[2px] w-8 bg-white/20 sm:w-12" />
-          <svg className="h-5 w-5 shrink-0 text-white/40" fill="currentColor" viewBox="0 0 24 24">
+          <div className="h-[2px] w-8 bg-gray-200 sm:w-12" />
+          <svg className="h-5 w-5 shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
           </svg>
-          <div className="h-[2px] w-8 bg-white/20 sm:w-12" />
+          <div className="h-[2px] w-8 bg-gray-200 sm:w-12" />
         </div>
 
         {/* 抵達時間 */}
         <div className="flex items-center justify-center gap-2">
-          <span className="text-xl font-bold tabular-nums text-white">{segment.arr_time || "--:--"}</span>
-          {segment.next_day && <span className="text-xs font-bold text-amber-400">+1</span>}
+          <span className="text-xl font-bold tabular-nums text-gray-900">{segment.arr_time || "--:--"}</span>
+          {segment.next_day && <span className="text-xs font-bold text-amber-600">+1</span>}
         </div>
 
         {/* 飛行時數（桌機版） */}
-        <div className="hidden min-w-[130px] flex-col items-center justify-center text-sm text-white/50 sm:flex">
+        <div className="hidden min-w-[130px] flex-col items-center justify-center text-sm text-gray-500 sm:flex">
           <span>
             {segment.dep_time && segment.arr_time ? (() => {
               const [dh, dm] = segment.dep_time.split(":").map(Number);
@@ -380,7 +380,7 @@ function SegmentRow_Display({ segment, label, transferType }: { segment: FlightS
             })() : ""}
           </span>
           {transferType && (
-            <span className={`mt-0.5 text-xs font-semibold ${transferType === "direct" ? "text-[#00b4d8]" : "text-amber-400"}`}>
+            <span className={`mt-0.5 text-xs font-semibold ${transferType === "direct" ? "text-[#00b4d8]" : "text-amber-600"}`}>
               {transferType === "direct" ? "直飛" : "轉機"}
             </span>
           )}
@@ -511,16 +511,16 @@ export default function FlightDepartureDates({
     <section>
       {/* 標題列 + 月份篩選 + 新增按鈕 */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <h2 className="mr-auto text-sm font-bold text-white">可訂購航班</h2>
+        <h2 className="mr-auto text-sm font-bold text-gray-900">可訂購航班</h2>
         {monthLabels.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => setActiveMonth("all")}
-              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-gray-200 text-gray-500 hover:border-[#00b4d8] hover:text-[#00b4d8]"}`}>
               全部
             </button>
             {monthLabels.map((m) => (
               <button key={m.key} onClick={() => setActiveMonth(m.key)}
-              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === m.key ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === m.key ? "bg-[#00b4d8] text-white" : "border border-gray-200 text-gray-500 hover:border-[#00b4d8] hover:text-[#00b4d8]"}`}>
                 {m.label}
               </button>
             ))}
@@ -538,24 +538,24 @@ export default function FlightDepartureDates({
       {isDevMode && showAddForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddForm(false); resetForm(); } }}>
-          <div className="w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] p-6 shadow-2xl sm:p-8" style={{ maxHeight: "90dvh" }}>
+          <div className="w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-2xl sm:p-8" style={{ maxHeight: "90dvh" }}>
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">{editingId ? "編輯航班" : "新增航班"}</h2>
+              <h2 className="text-lg font-bold text-gray-900">{editingId ? "編輯航班" : "新增航班"}</h2>
               <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
-                className="rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white">
+                className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-900">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
+            <p className="mb-2 text-[10px] font-semibold text-gray-400">基本資訊</p>
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>
                 <label className={labelClass}>出發日期 *</label>
                 <div className="flex gap-1.5">
-                  <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className={`${inputClass} min-w-0 flex-1 [color-scheme:dark]`} />
-                  {departureDayLabel && <span className="flex shrink-0 items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">{departureDayLabel}</span>}
+                  <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className={`${inputClass} min-w-0 flex-1`} />
+                  {departureDayLabel && <span className="flex shrink-0 items-center rounded-lg border border-sky-200 bg-sky-50 px-2 text-xs font-bold text-sky-600">{departureDayLabel}</span>}
                 </div>
               </div>
               <div>
@@ -570,11 +570,11 @@ export default function FlightDepartureDates({
                 <label className={labelClass}>航班類型</label>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={() => setFormTransferType("direct")}
-                    className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${formTransferType === "direct" ? "bg-[#00b4d8] text-white" : "border border-white/10 bg-white/5 text-white/50 hover:border-white/20"}`}>
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${formTransferType === "direct" ? "bg-[#00b4d8] text-white" : "border border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"}`}>
                     直飛
                   </button>
                   <button type="button" onClick={() => setFormTransferType("transfer")}
-                    className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${formTransferType === "transfer" ? "bg-amber-500 text-white" : "border border-white/10 bg-white/5 text-white/50 hover:border-white/20"}`}>
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${formTransferType === "transfer" ? "bg-amber-500 text-white" : "border border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"}`}>
                     轉機
                   </button>
                 </div>
@@ -582,14 +582,14 @@ export default function FlightDepartureDates({
             </div>
 
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-[10px] font-semibold text-sky-400/70">航班明細（選填）</p>
-              <button type="button" onClick={addSegment} className="text-[10px] font-semibold text-sky-400/70 transition hover:text-sky-400">+ 新增航段</button>
+              <p className="text-[10px] font-semibold text-sky-600">航班明細（選填）</p>
+              <button type="button" onClick={addSegment} className="text-[10px] font-semibold text-sky-600 transition hover:text-sky-500">+ 新增航段</button>
             </div>
             {formSegments.length === 0 ? (
-              <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-5">
-                <p className="text-[11px] text-white/30">尚未新增航班，可直接儲存或點擊新增航段</p>
+              <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-5">
+                <p className="text-[11px] text-gray-400">尚未新增航班，可直接儲存或點擊新增航段</p>
                 <button type="button" onClick={addSegment}
-                  className="mt-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] text-sky-400/80 transition hover:bg-sky-500/20">
+                  className="mt-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] text-sky-600 transition hover:bg-sky-100">
                   + 新增去程
                 </button>
               </div>
@@ -599,7 +599,7 @@ export default function FlightDepartureDates({
                   <SegmentRow key={i} index={i} total={formSegments.length} segment={seg}
                     onChange={(field, val) => updateSegment(i, field, val)} onDelete={() => removeSegment(i)} />
                 ))}
-                <button type="button" onClick={addSegment} className="mb-4 mt-1 text-[11px] text-sky-400/60 transition hover:text-sky-400">
+                <button type="button" onClick={addSegment} className="mb-4 mt-1 text-[11px] text-sky-600 transition hover:text-sky-500">
                   + 新增航段（轉機或回程）
                 </button>
               </div>
@@ -611,7 +611,7 @@ export default function FlightDepartureDates({
                 {saving ? "儲存中..." : editingId ? "更新航班" : "新增航班"}
               </button>
               <button type="button" onClick={() => { setShowAddForm(false); resetForm(); }}
-                className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15">
+                className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-200">
                 取消
               </button>
             </div>
@@ -632,16 +632,16 @@ export default function FlightDepartureDates({
             const transferType = (d as FlightDepartureDate & { transfer_type?: string }).transfer_type;
 
             return (
-              <div key={d.id} className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition hover:border-white/15">
+              <div key={d.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:border-gray-300">
                 <div className="flex flex-col sm:flex-row sm:items-center">
 
                   {/* 左欄：航空公司 */}
-                  <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-2.5 sm:w-[160px] sm:shrink-0 sm:flex-col sm:justify-center sm:border-b-0 sm:border-r sm:py-3">
+                  <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5 sm:w-[160px] sm:shrink-0 sm:flex-col sm:justify-center sm:border-b-0 sm:border-r sm:border-gray-100 sm:py-3">
                     <AirlineLogo code={airlineCode} name={airlineName} />
                     <div className="sm:text-center">
-                      <p className="text-sm font-semibold text-white/80">
+                      <p className="text-sm font-semibold text-gray-700">
                         {airlineName}
-                        {airlineCode && <span className="ml-1 text-xs font-semibold text-white/45">{airlineCode}</span>}
+                        {airlineCode && <span className="ml-1 text-xs font-semibold text-gray-400">{airlineCode}</span>}
                       </p>
                     </div>
                   </div>
@@ -649,7 +649,7 @@ export default function FlightDepartureDates({
                   {/* 中欄：航段資訊 */}
                   <div className="flex flex-1 flex-col justify-center px-4 py-2 sm:px-5 sm:py-2">
                     {hasSegments ? (
-                      <div className="divide-y divide-white/[0.06]">
+                      <div className="divide-y divide-gray-100">
                         {d.flight_segments!.map((seg, i) => {
                           const total = d.flight_segments!.length;
                           const segLabel = i === 0 ? "去程" : (total > 1 && i === total - 1) ? "回程" : "轉機";
@@ -658,20 +658,20 @@ export default function FlightDepartureDates({
                       </div>
                     ) : (
                       <div className="flex items-center gap-3 py-2">
-                        <svg className="h-4 w-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-4 w-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                         </svg>
-                        <span className="text-sm text-white/60">{fromCity} → {toCity}</span>
-                        <span className="text-[11px] text-white/35">{info.short}</span>
-                        <span className="text-xs text-white/40">航班時間待確認</span>
+                        <span className="text-sm text-gray-500">{fromCity} → {toCity}</span>
+                        <span className="text-[11px] text-gray-400">{info.short}</span>
+                        <span className="text-xs text-gray-400">航班時間待確認</span>
                       </div>
                     )}
                   </div>
 
                   {/* 右欄：價格 */}
-                  <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5 sm:w-[190px] sm:shrink-0 sm:flex-col sm:items-end sm:justify-center sm:gap-2 sm:border-l sm:border-t-0 sm:px-5 sm:py-3">
+                  <div className="flex items-center justify-between border-t border-gray-100 px-4 py-2.5 sm:w-[190px] sm:shrink-0 sm:flex-col sm:items-end sm:justify-center sm:gap-2 sm:border-l sm:border-gray-100 sm:border-t-0 sm:px-5 sm:py-3">
                     <div className="sm:text-right">
-                      <p className="text-xs text-white/45">每人(含稅)</p>
+                      <p className="text-xs text-gray-400">每人(含稅)</p>
                       {d.price ? (
                         <p className="text-2xl font-bold text-[#ff6b35]">
                           ${d.price.toLocaleString()}
@@ -680,15 +680,15 @@ export default function FlightDepartureDates({
                         <p className="text-2xl font-bold text-[#ff6b35]">洽詢報價</p>
                       )}
                       {d.label && (
-                        <span className="mt-1 inline-block rounded border border-[#00b4d8]/25 bg-[#00b4d8]/10 px-2 py-0.5 text-[11px] font-semibold text-[#48cae4]">{d.label}</span>
+                        <span className="mt-1 inline-block rounded border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-600">{d.label}</span>
                       )}
                     </div>
                     {isDevMode && (
                       <div className="flex items-center gap-2">
                         <button onClick={() => openEditForm(d)}
-                          className="rounded bg-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
+                          className="rounded bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-600 transition hover:bg-amber-100">編輯</button>
                         <button onClick={() => handleDelete(d.id)}
-                          className="rounded bg-red-500/20 px-2.5 py-1 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
+                          className="rounded bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-100">刪除</button>
                       </div>
                     )}
                   </div>
@@ -698,11 +698,11 @@ export default function FlightDepartureDates({
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.08] bg-[#1a3347] py-10 text-center">
-          <svg className="mx-auto mb-3 h-10 w-10 text-white/15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 py-10 text-center">
+          <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-gray-500">
             {dates.length > 0
               ? "此月份無航班票價"
               : isDevMode

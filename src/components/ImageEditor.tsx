@@ -164,13 +164,13 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
           }}
         >
           <div
-            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl bg-[rgba(20,20,30,0.98)] p-3 shadow-2xl backdrop-blur-xl sm:p-4"
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-3 shadow-2xl sm:p-4"
             onClick={handleModalClick}
             onMouseDown={stopMouseEvent}
             onMouseUp={stopMouseEvent}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-bold text-white sm:text-lg">編輯圖片 - {title}</h3>
+              <h3 className="text-base font-bold text-gray-900 sm:text-lg">編輯圖片 - {title}</h3>
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -178,7 +178,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                   resetSelection();
                   setIsOpen(false);
                 }}
-                className="text-white/70 transition hover:text-white"
+                className="text-gray-500 transition hover:text-gray-900"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -188,8 +188,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
             <div className="space-y-3">
               <div>
-                <p className="mb-1.5 text-sm text-white/70">當前圖片：</p>
-                <div className="h-20 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-28">
+                <p className="mb-1.5 text-sm text-gray-600">當前圖片：</p>
+                <div className="h-20 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 sm:h-28">
                   {currentImageUrl ? (
                     <img
                       src={currentImageUrl}
@@ -197,7 +197,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-white/50">
+                    <div className="flex h-full items-center justify-center text-sm text-gray-500">
                       目前尚未設定圖片
                     </div>
                   )}
@@ -205,8 +205,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
               </div>
 
               <div>
-                <p className="mb-1.5 text-sm text-white/70">預覽圖片：</p>
-                <div className="h-20 w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-28">
+                <p className="mb-1.5 text-sm text-gray-600">預覽圖片：</p>
+                <div className="h-20 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 sm:h-28">
                   {previewUrl ? (
                     <img
                       src={previewUrl}
@@ -214,7 +214,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-white/50">
+                    <div className="flex h-full items-center justify-center text-sm text-gray-500">
                       選擇新圖片後，這裡會顯示預覽
                     </div>
                   )}
@@ -222,7 +222,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white">
+                <label className="mb-2 block text-sm font-medium text-gray-900">
                   上傳新圖片
                 </label>
                 <input
@@ -233,15 +233,15 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                   onMouseDown={stopMouseEvent}
                   onMouseUp={stopMouseEvent}
                   disabled={uploading}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-full file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 file:mr-3 file:rounded-full file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700 disabled:opacity-50"
                 />
                 {selectedFileName && (
-                  <p className="mt-2 text-sm text-white/70">已選擇：{selectedFileName}</p>
+                  <p className="mt-2 text-sm text-gray-600">已選擇：{selectedFileName}</p>
                 )}
-                  <p className="mt-1.5 text-xs text-white/50">
+                  <p className="mt-1.5 text-xs text-gray-500">
                     支援 JPG、PNG、WebP，大小限制 5MB。
                   </p>
-                <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-[rgba(20,20,30,0.98)] pb-1 pt-1.5">
+                <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-white pb-1 pt-1.5">
                   <button
                     type="button"
                     onClick={handleSave}
@@ -256,25 +256,25 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                       resetSelection();
                     }}
                     disabled={!selectedFile || uploading}
-                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     清除選擇
                   </button>
                 </div>
                 {uploading && (
-                  <p className="mt-2 text-sm text-sky-300">圖片儲存中，請稍候...</p>
+                  <p className="mt-2 text-sm text-sky-600">圖片儲存中，請稍候...</p>
                 )}
               </div>
 
               {(onEditableTitleUpdate || onEditableSubtitleUpdate) && (
-                <div className="border-t border-white/10 pt-2.5">
-                  <label className="mb-2 block text-sm font-medium text-white">
+                <div className="border-t border-gray-200 pt-2.5">
+                  <label className="mb-2 block text-sm font-medium text-gray-900">
                     文字內容
                   </label>
                   <div className="space-y-2.5">
                     {onEditableTitleUpdate && (
                       <div>
-                        <p className="mb-1 text-xs text-white/60">主標題</p>
+                        <p className="mb-1 text-xs text-gray-500">主標題</p>
                         <input
                           type="text"
                           value={editableTitleValue}
@@ -283,14 +283,14 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                           onMouseDown={stopMouseEvent}
                           onMouseUp={stopMouseEvent}
                           placeholder="請輸入主標題"
-                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-sky-500 focus:outline-none"
+                          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:outline-none"
                         />
                       </div>
                     )}
 
                     {onEditableSubtitleUpdate && (
                       <div>
-                        <p className="mb-1 text-xs text-white/60">副標題</p>
+                        <p className="mb-1 text-xs text-gray-500">副標題</p>
                         <input
                           type="text"
                           value={editableSubtitleValue}
@@ -299,7 +299,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                           onMouseDown={stopMouseEvent}
                           onMouseUp={stopMouseEvent}
                           placeholder="請輸入副標題"
-                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-sky-500 focus:outline-none"
+                          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:outline-none"
                         />
                       </div>
                     )}
@@ -349,8 +349,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
               {/* 天數編輯區塊 */}
               {onDurationUpdate && (
-                <div className="border-t border-white/10 pt-2.5">
-                  <label className="mb-2 block text-sm font-medium text-white">
+                <div className="border-t border-gray-200 pt-2.5">
+                  <label className="mb-2 block text-sm font-medium text-gray-900">
                     行程天數
                   </label>
                   <div className="flex gap-2">
@@ -361,7 +361,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                       onClick={stopMouseEvent}
                       onMouseDown={stopMouseEvent}
                       placeholder="例：5天4夜"
-                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-sky-500 focus:outline-none"
+                      className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:outline-none"
                     />
                     <button
                       type="button"
@@ -390,13 +390,13 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
               {/* 行程檔案上傳區塊 */}
               {documentUploadFn && onDocumentUpdate && (
-                <div className="border-t border-white/10 pt-2.5">
-                  <label className="mb-2 block text-sm font-medium text-white">
+                <div className="border-t border-gray-200 pt-2.5">
+                  <label className="mb-2 block text-sm font-medium text-gray-900">
                     上傳行程檔案
                   </label>
 
                   {documentUrl && (
-                    <div className="mb-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                    <div className="mb-3 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
                       <svg className="h-5 w-5 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
@@ -404,7 +404,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                         href={documentUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="min-w-0 flex-1 truncate text-sm text-sky-300 underline hover:text-sky-200"
+                        className="min-w-0 flex-1 truncate text-sm text-sky-600 underline hover:text-sky-500"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {documentUrl.split('/').pop() || '查看檔案'}
@@ -469,15 +469,15 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                     onMouseDown={stopMouseEvent}
                     onMouseUp={stopMouseEvent}
                     disabled={uploadingDoc}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50"
                   />
                   {selectedDocFileName && (
-                    <p className="mt-2 text-sm text-white/70">已選擇：{selectedDocFileName}</p>
+                    <p className="mt-2 text-sm text-gray-600">已選擇：{selectedDocFileName}</p>
                   )}
-                  <p className="mt-1.5 text-xs text-white/50">
+                  <p className="mt-1.5 text-xs text-gray-500">
                     僅支援 PDF 檔案，大小限制 50MB。
                   </p>
-                  <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-[rgba(20,20,30,0.98)] pb-1 pt-1.5">
+                  <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-white pb-1 pt-1.5">
                     <button
                       type="button"
                       onClick={async () => {
@@ -510,13 +510,13 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                         setSelectedDocFileName("");
                       }}
                       disabled={!selectedDocFile || uploadingDoc}
-                      className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       清除選擇
                     </button>
                   </div>
                   {uploadingDoc && (
-                    <p className="mt-2 text-sm text-emerald-300">檔案上傳中，請稍候...</p>
+                    <p className="mt-2 text-sm text-emerald-600">檔案上傳中，請稍候...</p>
                   )}
                 </div>
               )}

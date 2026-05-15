@@ -388,7 +388,18 @@ export default function HomePage() {
       />
 
       {/* Search Section */}
-      <section className="bg-gray-50 px-4 pb-6 pt-3">
+      <section className="relative overflow-hidden bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)] px-4 pb-8 pt-4">
+        {/* 裝飾性飛機 icon */}
+        <div className="pointer-events-none absolute -right-4 -top-2 text-sky-200/40">
+          <svg className="h-28 w-28 rotate-12" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+          </svg>
+        </div>
+        <div className="pointer-events-none absolute -bottom-3 -left-6 text-emerald-200/30">
+          <svg className="h-24 w-24 -rotate-12" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+          </svg>
+        </div>
         <TravelSearchBar
           regions={sections.map((s) => ({
             id: s.id,
@@ -520,28 +531,28 @@ export default function HomePage() {
               </div>
 
               {isDevMode && addingRegionId === section.id && (
-                <div className="mb-4 rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-4 backdrop-blur-[12px]">
+                <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                   <div className="grid gap-3 md:grid-cols-3">
                     <input
                       type="text"
                       value={newDestinationTitle}
                       onChange={(e) => setNewDestinationTitle(e.target.value)}
                       placeholder="卡片主標題"
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                      className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-emerald-500"
                     />
                     <input
                       type="text"
                       value={newDestinationSubtitle}
                       onChange={(e) => setNewDestinationSubtitle(e.target.value)}
                       placeholder="卡片副標題"
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                      className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-emerald-500"
                     />
                     <input
                       type="text"
                       value={newDestinationSubRegion}
                       onChange={(e) => setNewDestinationSubRegion(e.target.value)}
                       placeholder="子區域（可留空）"
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500"
+                      className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="mt-3 flex gap-3">

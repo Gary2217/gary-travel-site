@@ -72,10 +72,10 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
 
       {isOpen && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setIsOpen(false)}>
-          <div className="w-full max-w-lg rounded-xl bg-[rgba(20,20,30,0.98)] p-4 shadow-2xl backdrop-blur-xl sm:p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-lg rounded-xl bg-white p-4 shadow-2xl sm:p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-bold text-white sm:text-lg">編輯網站 LOGO</h3>
-              <button onClick={() => setIsOpen(false)} className="text-white/70 transition hover:text-white">
+              <h3 className="text-base font-bold text-gray-900 sm:text-lg">編輯網站 LOGO</h3>
+              <button onClick={() => setIsOpen(false)} className="text-gray-500 transition hover:text-gray-900">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -84,19 +84,19 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
 
             <div className="space-y-4">
               <div>
-                <p className="mb-2 text-sm text-white/70">目前 LOGO：</p>
-                <div className="flex h-28 items-center justify-center rounded-lg border border-white/10 bg-white/5 sm:h-32">
+                <p className="mb-2 text-sm text-gray-600">目前 LOGO：</p>
+                <div className="flex h-28 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 sm:h-32">
                   <img src={currentLogoUrl} alt="目前 LOGO" className="h-20 w-20 object-contain sm:h-24 sm:w-24" />
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 text-sm text-white/70">預覽：</p>
-                <div className="flex h-28 items-center justify-center rounded-lg border border-white/10 bg-white/5 sm:h-32">
+                <p className="mb-2 text-sm text-gray-600">預覽：</p>
+                <div className="flex h-28 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 sm:h-32">
                   {previewUrl ? (
                     <img src={previewUrl} alt="LOGO 預覽" className="h-20 w-20 object-contain sm:h-24 sm:w-24" />
                   ) : (
-                    <span className="text-sm text-white/50">選擇新圖片後顯示</span>
+                    <span className="text-sm text-gray-500">選擇新圖片後顯示</span>
                   )}
                 </div>
               </div>
@@ -107,10 +107,10 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
                   onChange={handleFileSelect}
                   disabled={uploading}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-full file:border-0 file:bg-sky-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-sky-500 disabled:opacity-50"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 file:mr-3 file:rounded-full file:border-0 file:bg-sky-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-sky-500 disabled:opacity-50"
                 />
-                {selectedFileName && <p className="mt-2 text-sm text-white/70">已選擇：{selectedFileName}</p>}
-                <p className="mt-2 text-xs text-white/50">支援 PNG、JPG、WebP、SVG，大小限制 5MB。</p>
+                {selectedFileName && <p className="mt-2 text-sm text-gray-600">已選擇：{selectedFileName}</p>}
+                <p className="mt-2 text-xs text-gray-500">支援 PNG、JPG、WebP、SVG，大小限制 5MB。</p>
               </div>
 
               <div className="flex gap-3">
@@ -129,7 +129,7 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
                     setSelectedFileName("");
                   }}
                   disabled={!selectedFile || uploading}
-                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   清除選擇
                 </button>

@@ -281,22 +281,22 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       {/* 標題 */}
       {!flightOnly && (
         <div className="mb-4 text-center">
-          <h2 className="text-lg font-bold text-white sm:text-xl">探索你的下一趟旅程</h2>
-          <p className="mt-1 text-xs text-white/50">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
+          <h2 className="text-lg font-bold text-gray-900 sm:text-xl">探索你的下一趟旅程</h2>
+          <p className="mt-1 text-xs text-gray-500">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
         </div>
       )}
 
       {/* 模式 Tab */}
       {!flightOnly && (
       <div className="mb-3 flex justify-center">
-        <div className="inline-flex rounded-full bg-white/10 p-1 backdrop-blur-sm">
+        <div className="inline-flex rounded-full bg-gray-100 p-1">
           <button
             type="button"
             onClick={() => setActiveMode("trip")}
             className={`flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition ${
               activeMode === "trip"
                 ? "bg-white text-gray-900 shadow"
-                : "text-white/70 hover:text-white"
+                : "text-gray-500 hover:text-gray-900"
             }`}
           >
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -594,7 +594,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                   }}
                   className="h-4 w-4 accent-sky-500"
                 />
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold text-gray-900">
                   {type === "roundtrip" ? "來回" : "單程"}
                 </span>
               </label>
@@ -804,9 +804,9 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
           )}
 
           {/* 說明文字 */}
-          <p className="mt-2 text-center text-xs text-white/40">
+          <p className="mt-2 text-center text-xs text-gray-400">
             搜尋蓋瑞提供的機票諮詢航線｜需要協助請
-            <a href={lineHref} onClick={(e) => { e.preventDefault(); openExternalLink(lineHref); }} className="text-sky-400 underline underline-offset-2 transition hover:text-sky-300">
+            <a href={lineHref} onClick={(e) => { e.preventDefault(); openExternalLink(lineHref); }} className="text-sky-600 underline underline-offset-2 transition hover:text-sky-500">
               LINE 詢問蓋瑞
             </a>
           </p>
@@ -817,22 +817,22 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
               onClick={(e) => { if (e.target === e.currentTarget) setFlightResult(null); }}
             >
-              <div className="w-full max-w-md overflow-hidden rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] shadow-2xl">
+              <div className="w-full max-w-md overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-2xl">
                 <div className="p-6">
                   {/* 提示標題 */}
                   <div className="mb-4 flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-white">
+                      <h3 className="text-lg font-bold text-gray-900">
                         找不到「{flightResult.searchLabel}」的航線
                       </h3>
-                      <p className="mt-1 text-sm text-white/50">
+                      <p className="mt-1 text-sm text-gray-500">
                         目前尚未提供此目的地的機票諮詢服務
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setFlightResult(null)}
-                      className="shrink-0 rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white"
+                      className="shrink-0 rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -843,7 +843,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                   {/* 同地區航線列表 */}
                   {flightResult.sameRegion.length > 0 ? (
                     <>
-                      <p className="mb-3 text-sm font-semibold text-sky-300">
+                      <p className="mb-3 text-sm font-semibold text-sky-600">
                         {flightResult.region}地區其他可諮詢航線：
                       </p>
                       <div className="max-h-60 space-y-2 overflow-y-auto">
@@ -852,7 +852,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                             key={route.id}
                             href={`/flights/${route.id}`}
                             onClick={() => setFlightResult(null)}
-                            className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition hover:border-sky-500/30 hover:bg-white/10"
+                            className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 transition hover:border-sky-500/30 hover:bg-sky-50"
                           >
                             {route.image_url && (
                               <img
@@ -863,17 +863,17 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                             )}
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-white/70">{route.from_city}</span>
-                                <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
+                                <span className="text-sm text-gray-600">{route.from_city}</span>
+                                <svg className="h-3 w-3 shrink-0 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                                 </svg>
-                                <span className="font-bold text-white">{route.to_city}</span>
+                                <span className="font-bold text-gray-900">{route.to_city}</span>
                               </div>
-                              <p className="mt-0.5 truncate text-xs text-white/50">
+                              <p className="mt-0.5 truncate text-xs text-gray-500">
                                 {route.airlines}・{route.price_range}
                               </p>
                             </div>
-                            <svg className="h-4 w-4 shrink-0 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-4 w-4 shrink-0 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </Link>
@@ -881,13 +881,13 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-white/50">
+                    <p className="text-sm text-gray-500">
                       {flightResult.region}地區目前暫無可諮詢的航線
                     </p>
                   )}
 
                   {/* LINE 聯繫 */}
-                  <div className="mt-4 border-t border-white/10 pt-4">
+                  <div className="mt-4 border-t border-gray-200 pt-4">
                     <a
                       href={lineHref}
                       onClick={(e) => { e.preventDefault(); openExternalLink(lineHref); }}

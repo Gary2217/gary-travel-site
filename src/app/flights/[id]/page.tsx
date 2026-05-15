@@ -43,8 +43,8 @@ export default function FlightDetailPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0f1923]">
-        <div className="flex items-center gap-2 text-white/50">
+      <main className="flex min-h-screen items-center justify-center bg-white">
+        <div className="flex items-center gap-2 text-gray-500">
           <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
@@ -57,8 +57,8 @@ export default function FlightDetailPage() {
 
   if (notFound || !route) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0f1923] text-white">
-        <p className="text-white/50">找不到此航線</p>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white text-gray-900">
+        <p className="text-gray-500">找不到此航線</p>
         <button onClick={() => router.push("/flights")} className="rounded-lg bg-[#00b4d8] px-5 py-2 text-sm font-semibold text-white">
           返回機票列表
         </button>
@@ -69,7 +69,7 @@ export default function FlightDetailPage() {
   const metaEntries = Object.entries(route.metadata || {});
 
   return (
-    <main className="min-h-screen bg-[#0f1923] text-white">
+    <main className="min-h-screen bg-white text-gray-900">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       <div className="mx-auto max-w-site px-4 pt-16 md:px-5">
@@ -90,13 +90,13 @@ export default function FlightDetailPage() {
 
         {/* ── 自定義欄位 ── */}
         {metaEntries.length > 0 && (
-          <section className="mt-6 rounded-2xl border border-white/[0.08] bg-[#1a3347] p-5">
-            <h2 className="mb-3 text-sm font-bold text-white">更多資訊</h2>
+          <section className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <h2 className="mb-3 text-sm font-bold text-gray-900">更多資訊</h2>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {metaEntries.map(([k, v]) => (
-                <div key={k} className="rounded-xl border border-white/[0.08] bg-white/5 px-3 py-2.5">
-                  <p className="mb-0.5 text-[11px] text-white/40">{k}</p>
-                  <p className="text-sm font-semibold text-white/90">{String(v)}</p>
+                <div key={k} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                  <p className="mb-0.5 text-[11px] text-gray-400">{k}</p>
+                  <p className="text-sm font-semibold text-gray-800">{String(v)}</p>
                 </div>
               ))}
             </div>
@@ -104,11 +104,11 @@ export default function FlightDetailPage() {
         )}
 
         {/* ── 底部 CTA ── */}
-        <div className="my-8 rounded-2xl border border-white/[0.08] bg-[#1a3347] p-5">
+        <div className="my-8 rounded-2xl border border-gray-200 bg-gray-50 p-5">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-white">需要協助？聯繫旅遊規劃師蓋瑞</p>
-              <p className="mt-0.5 text-xs text-white/50">免費諮詢 · 不收服務費 · 即時回覆</p>
+              <p className="text-sm font-semibold text-gray-900">需要協助？聯繫旅遊規劃師蓋瑞</p>
+              <p className="mt-0.5 text-xs text-gray-500">免費諮詢 · 不收服務費 · 即時回覆</p>
             </div>
             <div className="flex gap-2">
               <a href={lineDmHref}

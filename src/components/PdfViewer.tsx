@@ -150,7 +150,7 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
 
   if (error) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4 bg-[#1a3347]">
+      <div className="flex h-64 flex-col items-center justify-center gap-4 bg-gray-50">
         <a
           href={url}
           target="_blank"
@@ -166,10 +166,10 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
   return (
     <div className="relative">
       {loading && (
-        <div className="flex h-64 items-center justify-center bg-[rgba(20,20,30,0.4)]">
+        <div className="flex h-64 items-center justify-center bg-gray-50">
           <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
-            <p className="mt-3 text-sm text-white/70">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-500 border-r-transparent" />
+            <p className="mt-3 text-sm text-gray-600">
               行程表載入中...{pageCount > 0 ? `（共 ${pageCount} 頁）` : ""}
             </p>
           </div>

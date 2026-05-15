@@ -189,10 +189,10 @@ export default function SideMediaCarousel({
 
   return (
     <div>
-      <div className={`relative w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] ${isVideo ? "" : "aspect-[4/3]"}`}>
+      <div className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 ${isVideo ? "" : "aspect-[4/3]"}`}>
         {loading ? (
           <div className="flex aspect-[4/3] items-center justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
           </div>
         ) : hasMedia && currentMedia ? (
           <>
@@ -281,10 +281,10 @@ export default function SideMediaCarousel({
         ) : fallbackImageUrl ? (
           <img src={fallbackImageUrl} alt={tripTitle} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(255,255,255,0.04),rgba(251,191,36,0.08))] px-8 text-center">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-50 via-gray-50 to-amber-50 px-8 text-center">
             <div>
-              <p className="text-sm font-semibold tracking-[0.22em] text-white/55">行程形象圖</p>
-              <p className="mt-3 text-base text-white/45">開發者模式可在這裡上傳圖片</p>
+              <p className="text-sm font-semibold tracking-[0.22em] text-gray-400">行程形象圖</p>
+              <p className="mt-3 text-base text-gray-400">開發者模式可在這裡上傳圖片</p>
             </div>
           </div>
         )}
@@ -295,7 +295,7 @@ export default function SideMediaCarousel({
         <div className="mt-2">
           <button
             onClick={() => setShowAddPanel(!showAddPanel)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-sky-500/30 bg-sky-500/5 py-2 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-sky-300 bg-sky-50 py-2 text-xs font-medium text-sky-600 transition hover:bg-sky-100"
           >
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -304,30 +304,30 @@ export default function SideMediaCarousel({
           </button>
 
           {showAddPanel && (
-            <div className="mt-2 space-y-2 rounded-xl border border-white/[0.08] bg-[#1a3347] p-3">
+            <div className="mt-2 space-y-2 rounded-xl border border-gray-200 bg-white p-3">
               {/* 上傳圖片 */}
               <div>
-                <p className="mb-1.5 text-[11px] font-medium text-white/50">上傳圖片</p>
+                <p className="mb-1.5 text-[11px] font-medium text-gray-500">上傳圖片</p>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleUploadImage}
-                  className="w-full text-xs text-white/60 file:mr-2 file:rounded-lg file:border-0 file:bg-sky-500/20 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-sky-300 file:cursor-pointer hover:file:bg-sky-500/30"
+                  className="w-full text-xs text-gray-500 file:mr-2 file:rounded-lg file:border-0 file:bg-sky-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-sky-600 file:cursor-pointer hover:file:bg-sky-200"
                 />
-                {uploading && <p className="mt-1 text-[11px] text-sky-400">上傳中...</p>}
+                {uploading && <p className="mt-1 text-[11px] text-sky-600">上傳中...</p>}
               </div>
 
               {/* IG 影片連結 */}
               <div>
-                <p className="mb-1.5 text-[11px] font-medium text-white/50">Instagram 影片連結</p>
+                <p className="mb-1.5 text-[11px] font-medium text-gray-500">Instagram 影片連結</p>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={igUrl}
                     onChange={(e) => setIgUrl(e.target.value)}
                     placeholder="https://www.instagram.com/p/xxx/ 或 /reel/xxx/"
-                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-sky-500"
+                    className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder-gray-400 outline-none focus:border-sky-500"
                   />
                   <button
                     onClick={handleAddIg}
@@ -342,13 +342,13 @@ export default function SideMediaCarousel({
               {/* 媒體列表 */}
               {mediaList.length > 0 && (
                 <div>
-                  <p className="mb-1.5 text-[11px] font-medium text-white/50">已新增媒體</p>
+                  <p className="mb-1.5 text-[11px] font-medium text-gray-500">已新增媒體</p>
                   <div className="grid grid-cols-4 gap-1.5">
                     {mediaList.map((m, i) => (
                       <div
                         key={m.id}
                         className={`relative cursor-pointer overflow-hidden rounded-lg border transition ${
-                          i === currentIndex ? "border-sky-400" : "border-white/10"
+                          i === currentIndex ? "border-sky-500" : "border-gray-200"
                         }`}
                         onClick={() => goTo(i)}
                       >

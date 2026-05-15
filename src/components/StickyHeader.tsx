@@ -79,14 +79,14 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-white/[0.08] bg-[rgba(15,25,35,0.95)] backdrop-blur-[12px]">
+      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-gray-200 bg-white/95 backdrop-blur-[12px]">
         <div className="mx-auto flex h-full max-w-site items-center justify-between px-4 md:px-6">
           {/* 左側：返回 + Logo + 品牌 */}
           <div className="flex items-center gap-2">
             {showBackButton && (
               <button
                 onClick={handleBackClick}
-                className="mr-1 flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+                className="mr-1 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
                 title="返回"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,9 +98,9 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
               {logoReady ? (
                 <img src={displayLogoUrl} alt="旅行沒有終點" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
               ) : (
-                <div className="h-9 w-9 shrink-0 rounded-lg bg-white/10" />
+                <div className="h-9 w-9 shrink-0 rounded-lg bg-gray-100" />
               )}
-              <span className="text-sm font-bold text-white">旅行沒有終點</span>
+              <span className="text-sm font-bold text-gray-900">旅行沒有終點</span>
             </Link>
             {logoEditorSlot}
           </div>
@@ -110,19 +110,19 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             <nav className="hidden items-center gap-4 sm:flex">
               <Link
                 href="/mini-transit-tickets"
-                className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]"
+                className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
               >
                 小三通票卷
               </Link>
               <Link
                 href="/document-services"
-                className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]"
+                className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
               >
                 證件代辦
               </Link>
               <button
                 onClick={() => setShowContactForm(true)}
-                className="text-[13px] font-medium text-white/75 transition hover:text-[#48cae4]"
+                className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
               >
                 聯絡我們
               </button>
@@ -159,7 +159,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white sm:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 sm:hidden"
               title="選單"
             >
               {mobileMenuOpen ? (
@@ -180,19 +180,19 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
       {/* 手機版下拉選單 */}
       {mobileMenuOpen && (
-        <div ref={menuRef} className="fixed inset-x-0 top-header z-header border-b border-white/[0.08] bg-[rgba(15,25,35,0.98)] backdrop-blur-[12px] sm:hidden">
+        <div ref={menuRef} className="fixed inset-x-0 top-header z-header border-b border-gray-200 bg-white/98 backdrop-blur-[12px] sm:hidden">
           <nav className="mx-auto flex max-w-site flex-col px-4 py-3">
             <Link
               href="/mini-transit-tickets"
               onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
             >
               小三通票卷
             </Link>
             <Link
               href="/document-services"
               onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
             >
               證件代辦
             </Link>
@@ -201,12 +201,12 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                 setMobileMenuOpen(false);
                 setShowContactForm(true);
               }}
-              className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
             >
               聯絡我們
             </button>
-            <div className="mt-2 border-t border-white/[0.08] px-3 pb-1 pt-3">
-              <p className="mb-2.5 text-[11px] font-medium text-white/35">追蹤我們</p>
+            <div className="mt-2 border-t border-gray-200 px-3 pb-1 pt-3">
+              <p className="mb-2.5 text-[11px] font-medium text-gray-400">追蹤我們</p>
               <div className="flex gap-2">
                 <button
                   type="button"

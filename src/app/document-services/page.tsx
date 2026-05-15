@@ -104,7 +104,7 @@ export default function DocumentServicesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+    <main className="min-h-screen bg-white pt-14 text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         showBackButton
@@ -113,9 +113,9 @@ export default function DocumentServicesPage() {
       />
 
       <section className="mx-auto max-w-[1520px] px-3 py-8 md:px-4">
-        <div className="mb-5 rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] p-5 backdrop-blur-[12px]">
-          <h1 className="text-2xl font-black text-white">證件代辦</h1>
-          <p className="mt-2 text-sm text-white/70">
+        <div className="mb-5 rounded-[1.5rem] border border-gray-200 bg-white p-5 shadow-sm">
+          <h1 className="text-2xl font-black text-gray-900">證件代辦</h1>
+          <p className="mt-2 text-sm text-gray-600">
             以下服務項目為站內整理內容，實際申辦條件與所需文件請以顧問最新說明為準。
           </p>
         </div>
@@ -124,7 +124,7 @@ export default function DocumentServicesPage() {
           {DOCUMENT_SERVICE_ITEMS.map((item) => (
             <article
               key={item.id}
-              className="group overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]"
+              className="group overflow-hidden rounded-[1.5rem] border border-gray-200 bg-white shadow-sm"
             >
               <div className="relative aspect-[4/2.7] overflow-hidden">
                 <Link href={`/document-services/${item.id}`} className="block h-full w-full">
@@ -135,7 +135,7 @@ export default function DocumentServicesPage() {
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="h-full w-full animate-pulse bg-white/10" />
+                    <div className="h-full w-full animate-pulse bg-gray-100" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/38 via-black/8 to-transparent" />
                 </Link>
@@ -160,10 +160,10 @@ export default function DocumentServicesPage() {
               </div>
 
               <div className="flex h-full flex-col p-4">
-                <h2 className="text-xl font-bold leading-tight text-white sm:text-2xl">{item.title}</h2>
+                <h2 className="text-xl font-bold leading-tight text-gray-900 sm:text-2xl">{item.title}</h2>
                 <Link
                   href={`/document-services/${item.id}`}
-                  className="mt-5 inline-flex self-end items-center gap-1 text-sm font-semibold text-sky-300 transition hover:text-sky-200"
+                  className="mt-5 inline-flex self-end items-center gap-1 text-sm font-semibold text-sky-600 transition hover:text-sky-500"
                 >
                   查看詳細內容
                   <span aria-hidden>→</span>
@@ -182,7 +182,7 @@ export default function DocumentServicesPage() {
       </section>
 
       {isDevMode && (
-        <div className="mx-auto max-w-[1520px] px-3 pb-2 text-right text-xs text-white/40 md:px-4">
+        <div className="mx-auto max-w-[1520px] px-3 pb-2 text-right text-xs text-gray-400 md:px-4">
           開發者模式已啟用
         </div>
       )}

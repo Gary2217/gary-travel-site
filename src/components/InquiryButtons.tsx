@@ -34,7 +34,7 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
       <>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
         <div className="fixed bottom-20 right-3 z-floating flex flex-col items-end gap-1.5 sm:bottom-8 sm:right-4 sm:gap-2">
-          <p className="mb-0.5 rounded-lg border border-white/10 bg-[rgba(15,25,35,0.95)] px-2.5 py-1 text-center text-xs font-medium text-white/90 shadow-lg backdrop-blur-xl sm:mb-1 sm:px-3 sm:py-1.5">
+          <p className="mb-0.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-center text-xs font-medium text-gray-700 shadow-lg sm:mb-1 sm:px-3 sm:py-1.5">
             私訊
           </p>
           <button
@@ -70,11 +70,11 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
   return (
     <>
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-      <div className="rounded-xl border border-white/10 bg-brand-card px-2 py-1 backdrop-blur-[12px] md:px-3 md:py-1.5">
-        <h3 className="mb-0 text-center text-xs font-bold text-white md:text-sm">
+      <div className="rounded-xl border border-gray-200 bg-white px-2 py-1 shadow-sm md:px-3 md:py-1.5">
+        <h3 className="mb-0 text-center text-xs font-bold text-gray-900 md:text-sm">
           對此行程有興趣？
         </h3>
-        <p className="mb-0.5 text-center text-[9px] text-white/50 md:mb-1 md:text-[10px]">
+        <p className="mb-0.5 text-center text-[9px] text-gray-500 md:mb-1 md:text-[10px]">
           點擊下方按鈕後，行程名稱會自動複製，請在訊息中貼上
         </p>
         <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:justify-center md:gap-1">

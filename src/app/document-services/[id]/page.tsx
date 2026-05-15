@@ -242,7 +242,7 @@ export default function DocumentServiceDetailPage() {
 
   if (!service || !content) {
     return (
-      <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+      <main className="min-h-screen bg-white pt-14 text-gray-900">
         <StickyHeader
           logoUrl={siteLogoUrl}
           showBackButton
@@ -250,11 +250,11 @@ export default function DocumentServiceDetailPage() {
           devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
         />
         <section className="mx-auto max-w-site px-4 py-10 md:px-5">
-          <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-6 text-center">
-            <p className="text-white/75">找不到此證件服務項目</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-gray-600">找不到此證件服務項目</p>
             <Link
               href="/document-services"
-              className="mt-4 inline-flex items-center gap-1 text-sm text-sky-300 transition hover:text-sky-200"
+              className="mt-4 inline-flex items-center gap-1 text-sm text-sky-600 transition hover:text-sky-500"
             >
               返回證件代辦列表
             </Link>
@@ -434,7 +434,7 @@ export default function DocumentServiceDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+    <main className="min-h-screen bg-white pt-14 text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         showBackButton
@@ -445,19 +445,19 @@ export default function DocumentServiceDetailPage() {
       <section className="mx-auto max-w-site px-4 py-8 md:px-5">
         <Link
           href="/document-services"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-white/70 transition hover:text-white"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 transition hover:text-gray-900"
         >
           ← 返回證件代辦列表
         </Link>
 
         {isDevMode && savingMessage && (
-          <div className="mb-4 rounded-lg border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-100">
+          <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-700">
             {savingMessage}
           </div>
         )}
 
-        <article className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
-          <div className={`relative overflow-hidden ${isEnhancedDocumentPage ? "bg-[#0b1020]" : "aspect-[16/8]"}`}>
+        <article className="overflow-hidden rounded-[1.5rem] border border-gray-200 bg-white shadow-sm">
+          <div className={`relative overflow-hidden ${isEnhancedDocumentPage ? "bg-gray-50" : "aspect-[16/8]"}`}>
             {imagesLoaded ? (
               <img
                 src={displayImage}
@@ -465,7 +465,7 @@ export default function DocumentServiceDetailPage() {
                 className={isEnhancedDocumentPage ? "h-auto w-full object-contain" : "h-full w-full object-cover"}
               />
             ) : (
-              <div className={`h-full w-full animate-pulse bg-white/10 ${isEnhancedDocumentPage ? "min-h-[360px]" : ""}`} />
+              <div className={`h-full w-full animate-pulse bg-gray-100 ${isEnhancedDocumentPage ? "min-h-[360px]" : ""}`} />
             )}
 
             {!isEnhancedDocumentPage && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />}
@@ -491,17 +491,17 @@ export default function DocumentServiceDetailPage() {
           </div>
 
           <div className="p-5 sm:p-6">
-            <h1 className="text-xl font-black text-white sm:text-2xl">{content.title}</h1>
-            {!isEnhancedDocumentPage && <p className="mt-2 text-sm leading-6 text-white/75">{content.summary}</p>}
+            <h1 className="text-xl font-black text-gray-900 sm:text-2xl">{content.title}</h1>
+            {!isEnhancedDocumentPage && <p className="mt-2 text-sm leading-6 text-gray-600">{content.summary}</p>}
 
-            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-sm font-bold text-sky-300">{content.requirementsTitle}</h2>
+                <h2 className="text-sm font-bold text-sky-600">{content.requirementsTitle}</h2>
                 {isDevMode && (
                   <button
                     type="button"
                     onClick={() => toggleSectionEdit("requirements")}
-                    className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                    className="rounded-md border border-sky-500 px-3 py-1 text-xs font-semibold text-sky-600 hover:bg-sky-50"
                   >
                     {editingSections.requirements ? "關閉編輯" : "編輯"}
                   </button>
@@ -509,20 +509,20 @@ export default function DocumentServiceDetailPage() {
               </div>
 
               {isDevMode && editingSections.requirements && (
-                <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
+                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <label className="mb-2 block text-sm">
-                    <span className="mb-1 block text-white/80">區塊標題</span>
+                    <span className="mb-1 block text-gray-600">區塊標題</span>
                     <input
-                      className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                       value={content.requirementsTitle}
                       onChange={(e) => setContent((prev) => (prev ? { ...prev, requirementsTitle: e.target.value } : prev))}
                     />
                   </label>
                   <label className="block text-sm">
-                    <span className="mb-1 block text-white/80">清單內容（每行一條）</span>
+                    <span className="mb-1 block text-gray-600">清單內容（每行一條）</span>
                     <textarea
                       rows={8}
-                      className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                       value={content.requirements.join("\n")}
                       onChange={(e) =>
                         setContent((prev) =>
@@ -550,10 +550,10 @@ export default function DocumentServiceDetailPage() {
                 </div>
               )}
 
-              <ul className="space-y-2 text-base leading-7 text-white/95">
+              <ul className="space-y-2 text-base leading-7 text-gray-800">
                 {content.requirements.map((row) => (
                   <li key={row} className="flex items-start gap-2">
-                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-sky-300" />
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
                     <span>{row}</span>
                   </li>
                 ))}
@@ -562,13 +562,13 @@ export default function DocumentServiceDetailPage() {
 
             {isEnhancedDocumentPage && (
               <>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-base text-white/95">
+                <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-base text-gray-800">
                   <div className="mb-3 flex items-center justify-end">
                     {isDevMode && (
                       <button
                         type="button"
                         onClick={() => toggleSectionEdit("contracts")}
-                        className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                        className="rounded-md border border-sky-500 px-3 py-1 text-xs font-semibold text-sky-600 hover:bg-sky-50"
                       >
                         {editingSections.contracts ? "關閉編輯" : "編輯"}
                       </button>
@@ -576,24 +576,24 @@ export default function DocumentServiceDetailPage() {
                   </div>
 
                   {isDevMode && editingSections.contracts && (
-                    <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
-                      <p className="mb-2 text-sm font-bold text-white">下載合約檔案設定</p>
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="mb-2 text-sm font-bold text-gray-900">下載合約檔案設定</p>
                       <div className="space-y-3">
                         {content.contracts.map((contract) => (
-                          <div key={contract.key} className="rounded-lg border border-white/15 p-3">
+                          <div key={contract.key} className="rounded-lg border border-gray-200 p-3">
                             <label className="mb-2 block text-sm">
-                              <span className="mb-1 block text-white/80">顯示文字</span>
+                              <span className="mb-1 block text-gray-600">顯示文字</span>
                               <input
-                                className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                                 value={contract.label}
                                 onChange={(e) => setContractField(contract.key, "label", e.target.value)}
                               />
                             </label>
 
                             <label className="mb-2 block text-sm">
-                              <span className="mb-1 block text-white/80">下載連結（可手動貼 URL）</span>
+                              <span className="mb-1 block text-gray-600">下載連結（可手動貼 URL）</span>
                               <input
-                                className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                                 value={contract.url}
                                 onChange={(e) => setContractField(contract.key, "url", e.target.value)}
                               />
@@ -627,7 +627,7 @@ export default function DocumentServiceDetailPage() {
                               </button>
 
                               {contract.url && (
-                                <a href={contract.url} target="_blank" rel="noreferrer" className="text-xs text-sky-200 underline">
+                                <a href={contract.url} target="_blank" rel="noreferrer" className="text-xs text-sky-600 underline">
                                   測試下載
                                 </a>
                               )}
@@ -651,25 +651,25 @@ export default function DocumentServiceDetailPage() {
                       <p key={contract.key} className="font-semibold">
                         {contract.label}
                         {contract.url ? (
-                          <a href={contract.url} target="_blank" rel="noreferrer" className="ml-2 text-sky-300 hover:text-sky-200">
+                          <a href={contract.url} target="_blank" rel="noreferrer" className="ml-2 text-sky-600 hover:text-sky-500">
                             (按此下載)
                           </a>
                         ) : (
-                          <span className="ml-2 text-white/70">(尚未上傳檔案)</span>
+                          <span className="ml-2 text-gray-500">(尚未上傳檔案)</span>
                         )}
                       </p>
                     ))}
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
-                    <h2 className="text-xl font-black text-sky-300">{content.optionSectionTitle}</h2>
+                    <h2 className="text-xl font-black text-sky-600">{content.optionSectionTitle}</h2>
                     {isDevMode && (
                       <button
                         type="button"
                         onClick={() => toggleSectionEdit("options")}
-                        className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                        className="rounded-md border border-sky-500 px-3 py-1 text-xs font-semibold text-sky-600 hover:bg-sky-50"
                       >
                         {editingSections.options ? "關閉編輯" : "編輯"}
                       </button>
@@ -677,32 +677,32 @@ export default function DocumentServiceDetailPage() {
                   </div>
 
                   {isDevMode && editingSections.options && (
-                    <div className="mb-4 rounded-lg border border-white/15 bg-black/15 p-3">
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <label className="mb-2 block text-sm">
-                        <span className="mb-1 block text-white/80">方案區塊標題</span>
+                        <span className="mb-1 block text-gray-600">方案區塊標題</span>
                         <input
-                          className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                           value={content.optionSectionTitle}
                           onChange={(e) => setContent((prev) => (prev ? { ...prev, optionSectionTitle: e.target.value } : prev))}
                         />
                       </label>
 
                       <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-lg border border-white/15 p-3">
-                          <p className="mb-2 text-sm font-bold text-white">一般普件</p>
+                        <div className="rounded-lg border border-gray-200 p-3">
+                          <p className="mb-2 text-sm font-bold text-gray-900">一般普件</p>
                           <label className="mb-2 block text-sm">
-                            <span className="mb-1 block text-white/80">標題文字</span>
+                            <span className="mb-1 block text-gray-600">標題文字</span>
                             <input
-                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                               value={content.regularTitle}
                               onChange={(e) => setContent((prev) => (prev ? { ...prev, regularTitle: e.target.value } : prev))}
                             />
                           </label>
                           <label className="mb-2 block text-sm">
-                            <span className="mb-1 block text-white/80">價格（數字）</span>
+                            <span className="mb-1 block text-gray-600">價格（數字）</span>
                             <input
                               type="number"
-                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                               value={content.regularPrice}
                               onChange={(e) =>
                                 setContent((prev) => (prev ? { ...prev, regularPrice: Number(e.target.value || 0) } : prev))
@@ -710,9 +710,9 @@ export default function DocumentServiceDetailPage() {
                             />
                           </label>
                           <label className="block text-sm">
-                            <span className="mb-1 block text-white/80">選項文字</span>
+                            <span className="mb-1 block text-gray-600">選項文字</span>
                             <input
-                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                               value={content.regularOptionLabel}
                               onChange={(e) =>
                                 setContent((prev) => (prev ? { ...prev, regularOptionLabel: e.target.value } : prev))
@@ -721,21 +721,21 @@ export default function DocumentServiceDetailPage() {
                           </label>
                         </div>
 
-                        <div className="rounded-lg border border-white/15 p-3">
-                          <p className="mb-2 text-sm font-bold text-white">加急送件</p>
+                        <div className="rounded-lg border border-gray-200 p-3">
+                          <p className="mb-2 text-sm font-bold text-gray-900">加急送件</p>
                           <label className="mb-2 block text-sm">
-                            <span className="mb-1 block text-white/80">標題文字</span>
+                            <span className="mb-1 block text-gray-600">標題文字</span>
                             <input
-                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                               value={content.urgentTitle}
                               onChange={(e) => setContent((prev) => (prev ? { ...prev, urgentTitle: e.target.value } : prev))}
                             />
                           </label>
                           <label className="mb-2 block text-sm">
-                            <span className="mb-1 block text-white/80">價格（數字）</span>
+                            <span className="mb-1 block text-gray-600">價格（數字）</span>
                             <input
                               type="number"
-                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                               value={content.urgentPrice}
                               onChange={(e) =>
                                 setContent((prev) => (prev ? { ...prev, urgentPrice: Number(e.target.value || 0) } : prev))
@@ -743,9 +743,9 @@ export default function DocumentServiceDetailPage() {
                             />
                           </label>
                           <label className="block text-sm">
-                            <span className="mb-1 block text-white/80">選項文字</span>
+                            <span className="mb-1 block text-gray-600">選項文字</span>
                             <input
-                              className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                               value={content.urgentOptionLabel}
                               onChange={(e) =>
                                 setContent((prev) => (prev ? { ...prev, urgentOptionLabel: e.target.value } : prev))
@@ -766,16 +766,16 @@ export default function DocumentServiceDetailPage() {
                   )}
 
                   <div className="space-y-4">
-                    <div className="rounded-xl border border-sky-400/50 bg-white/[0.02] p-4">
+                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xl font-bold text-white">{content.regularTitle}</p>
+                        <p className="text-xl font-bold text-gray-900">{content.regularTitle}</p>
                         <div className="flex items-center gap-3">
-                          <span className="text-xl font-black text-white">NT${regularPrice.toLocaleString()} /人</span>
+                          <span className="text-xl font-black text-gray-900">NT${regularPrice.toLocaleString()} /人</span>
                           <a
                             href={lineDmHref}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-md border border-[#06C755] bg-[#06C755]/20 px-5 py-1.5 text-sm font-semibold text-[#b9ffd4] transition hover:bg-[#06C755]/30"
+                            className="rounded-md border border-[#06C755] bg-[#06C755]/10 px-5 py-1.5 text-sm font-semibold text-[#06C755] transition hover:bg-[#06C755]/20"
                           >
                             LINE 洽詢
                           </a>
@@ -783,16 +783,16 @@ export default function DocumentServiceDetailPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-white/20 bg-white/[0.02] p-4">
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xl font-bold text-white">{content.urgentTitle}</p>
+                        <p className="text-xl font-bold text-gray-900">{content.urgentTitle}</p>
                         <div className="flex items-center gap-3">
-                          <span className="text-xl font-black text-white">NT${urgentPrice.toLocaleString()} /人</span>
+                          <span className="text-xl font-black text-gray-900">NT${urgentPrice.toLocaleString()} /人</span>
                           <a
                             href={lineDmHref}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-md border border-[#06C755] bg-[#06C755]/20 px-5 py-1.5 text-sm font-semibold text-[#b9ffd4] transition hover:bg-[#06C755]/30"
+                            className="rounded-md border border-[#06C755] bg-[#06C755]/10 px-5 py-1.5 text-sm font-semibold text-[#06C755] transition hover:bg-[#06C755]/20"
                           >
                             LINE 洽詢
                           </a>
@@ -815,7 +815,7 @@ export default function DocumentServiceDetailPage() {
       </section>
 
       {isDevMode && (
-        <div className="mx-auto max-w-site px-4 pb-2 text-right text-xs text-white/40 md:px-5">
+        <div className="mx-auto max-w-site px-4 pb-2 text-right text-xs text-gray-400 md:px-5">
           開發者模式已啟用
         </div>
       )}
@@ -824,13 +824,13 @@ export default function DocumentServiceDetailPage() {
 
       {saveSuccessMessage && (
         <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
-          <div className="rounded-2xl border border-emerald-400/30 bg-[rgba(16,30,28,0.92)] px-5 py-4 text-center shadow-2xl backdrop-blur-xl sm:px-6">
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+          <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-center shadow-2xl backdrop-blur-xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-base font-bold text-emerald-200">{saveSuccessMessage}</p>
+            <p className="text-base font-bold text-emerald-600">{saveSuccessMessage}</p>
           </div>
         </div>
       )}

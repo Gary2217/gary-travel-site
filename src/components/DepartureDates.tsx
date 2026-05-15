@@ -130,8 +130,8 @@ function getWeekdayFromDate(dateStr: string) {
   return ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
 }
 
-const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-sky-400";
-const labelClass = "mb-1 block text-[10px] text-white/50";
+const inputClass = "w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none focus:border-sky-400";
+const labelClass = "mb-1 block text-[10px] text-gray-500";
 
 function AirportInput({ value, onChange, placeholder, preferTw = false }: {
   value: string;
@@ -172,9 +172,9 @@ function AirportInput({ value, onChange, placeholder, preferTw = false }: {
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-52 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-52 w-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
           {!q && (
-            <div className="border-b border-white/8 px-2.5 py-1.5 text-[10px] text-white/30">
+            <div className="border-b border-gray-100 px-2.5 py-1.5 text-[10px] text-gray-400">
               {preferTw ? "台灣出發機場" : "常用機場"}
             </div>
           )}
@@ -183,10 +183,10 @@ function AirportInput({ value, onChange, placeholder, preferTw = false }: {
               key={i}
               type="button"
               onClick={() => { onChange(a.name); setOpen(false); }}
-              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10"
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-gray-900 transition hover:bg-gray-100"
             >
               <span>{a.name}</span>
-              <span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+              <span className="ml-2 shrink-0 text-[10px] text-gray-400">{a.code}</span>
             </button>
           ))}
         </div>
@@ -225,13 +225,13 @@ function AirlineInput({ value, onChange }: { value: string; onChange: (v: string
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-52 overflow-y-auto rounded-lg border border-white/10 bg-[rgba(15,15,25,0.98)] shadow-xl backdrop-blur-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
           {filtered.map((a, i) => (
             <button key={i} type="button"
               onClick={() => { onChange(`${a.name}（${a.code}）`); setOpen(false); }}
-              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-white transition hover:bg-white/10">
+              className="flex w-full items-center justify-between px-2.5 py-2 text-left text-xs text-gray-900 transition hover:bg-gray-100">
               <span>{a.name}</span>
-              <span className="ml-2 shrink-0 text-[10px] text-white/35">{a.code}</span>
+              <span className="ml-2 shrink-0 text-[10px] text-gray-400">{a.code}</span>
             </button>
           ))}
         </div>
@@ -249,16 +249,16 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
 }) {
   const label = index === 0 ? "去程" : total > 1 && index === total - 1 ? "回程" : "轉機";
   const labelColor =
-    index === 0 ? "bg-sky-500/20 text-sky-300" :
-    total > 1 && index === total - 1 ? "bg-amber-500/20 text-amber-300" :
-    "bg-violet-500/20 text-violet-300";
+    index === 0 ? "bg-sky-100 text-sky-600" :
+    total > 1 && index === total - 1 ? "bg-amber-100 text-amber-600" :
+    "bg-violet-100 text-violet-600";
   const dayLabel = segment.date ? getWeekdayFromDate(segment.date) : "";
 
   return (
-    <div className="mb-2 rounded-lg border border-white/8 bg-white/[0.03] p-3">
+    <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-white/30">第 {index + 1} 段</span>
+          <span className="text-[10px] text-gray-400">第 {index + 1} 段</span>
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${labelColor}`}>{label}</span>
         </div>
         <button type="button" onClick={onDelete} className="text-[10px] text-red-400/50 transition hover:text-red-400">✕ 刪除</button>
@@ -269,8 +269,8 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
           <label className={labelClass}>日期</label>
           <div className="flex gap-1 overflow-hidden">
             <input type="date" value={segment.date} onChange={(e) => onChange("date", e.target.value)}
-              className={`${inputClass} flex-1 [color-scheme:dark]`} />
-            {dayLabel && <span className="flex items-center rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 text-xs font-bold text-amber-300">{dayLabel}</span>}
+              className={`${inputClass} flex-1`} />
+            {dayLabel && <span className="flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2 text-xs font-bold text-amber-600">{dayLabel}</span>}
           </div>
         </div>
         <div>
@@ -288,7 +288,7 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         <div>
           <label className={labelClass}>起飛時間</label>
           <input type="time" value={segment.dep_time} onChange={(e) => onChange("dep_time", e.target.value)}
-            className={`${inputClass} [color-scheme:dark]`} />
+            className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>起飛機場</label>
@@ -297,15 +297,15 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         <div>
           <label className={labelClass}>抵達時間</label>
           <input type="time" value={segment.arr_time} onChange={(e) => onChange("arr_time", e.target.value)}
-            className={`${inputClass} [color-scheme:dark]`} />
+            className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>抵達機場</label>
           <AirportInput value={segment.arr_airport} onChange={(v) => onChange("arr_airport", v)} placeholder="目的地" preferTw={total > 1 && index === total - 1} />
         </div>
         <div className="col-span-2 flex items-end sm:col-span-1">
-          <label className="flex items-center gap-1.5 py-1.5 text-xs text-white/70">
-            <input type="checkbox" checked={segment.next_day} onChange={(e) => onChange("next_day", e.target.checked)} className="rounded border-white/20 bg-white/5" />
+          <label className="flex items-center gap-1.5 py-1.5 text-xs text-gray-600">
+            <input type="checkbox" checked={segment.next_day} onChange={(e) => onChange("next_day", e.target.checked)} className="rounded border-gray-300 bg-white" />
             跨日+1
           </label>
         </div>
@@ -494,7 +494,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   return (
     <div className="mb-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-medium uppercase tracking-wider text-white/50">出團日期</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wider text-gray-500">出團日期</h2>
         {isDevMode && (
           <button
             onClick={() => {
@@ -510,18 +510,18 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
       {/* Dev mode 新增/編輯表單 */}
       {isDevMode && showAddForm && (
-        <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <p className="mb-3 text-xs font-bold text-amber-400">{editingId ? "編輯梯次" : "新增梯次"}</p>
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="mb-3 text-xs font-bold text-amber-600">{editingId ? "編輯梯次" : "新增梯次"}</p>
 
-          <p className="mb-2 text-[10px] font-semibold text-white/40">基本資訊</p>
+          <p className="mb-2 text-[10px] font-semibold text-gray-400">基本資訊</p>
           <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
               <label className={labelClass}>出發日期 *</label>
               <div className="flex gap-1">
                 <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
-                  className={`${inputClass} flex-1 [color-scheme:dark]`} />
+                  className={`${inputClass} flex-1`} />
                 {departureDayLabel && (
-                  <span className="flex items-center rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 text-xs font-bold text-sky-300">
+                  <span className="flex items-center rounded-lg border border-sky-200 bg-sky-50 px-2 text-xs font-bold text-sky-600">
                     {departureDayLabel}
                   </span>
                 )}
@@ -531,19 +531,19 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
           {/* 航班明細 */}
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-sky-400/70">✈ 航班明細（選填）</p>
+            <p className="text-[10px] font-semibold text-sky-600">✈ 航班明細（選填）</p>
             <button type="button" onClick={addSegment}
-              className="text-[10px] font-semibold text-sky-400/70 transition hover:text-sky-400">
+              className="text-[10px] font-semibold text-sky-600 transition hover:text-sky-500">
               + 新增航段
             </button>
           </div>
 
           {formSegments.length === 0 ? (
-            <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-5">
-              <p className="text-[11px] text-white/30">尚未新增航班，可直接儲存或點擊新增航段</p>
+            <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-5">
+              <p className="text-[11px] text-gray-400">尚未新增航班，可直接儲存或點擊新增航段</p>
               <div className="mt-2 flex gap-2">
                 <button type="button" onClick={() => { addSegment(); }}
-                  className="rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] text-sky-400/80 transition hover:bg-sky-500/20">
+                  className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] text-sky-600 transition hover:bg-sky-100">
                   + 新增去程
                 </button>
               </div>
@@ -561,7 +561,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 />
               ))}
               <button type="button" onClick={addSegment}
-                className="mb-4 mt-1 text-[11px] text-sky-400/60 transition hover:text-sky-400">
+                className="mb-4 mt-1 text-[11px] text-sky-600 transition hover:text-sky-500">
                 + 新增航段（轉機或回程）
               </button>
             </div>
@@ -578,14 +578,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {monthKeys.length > 1 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           <button onClick={() => setActiveMonth("all")}
-              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === "all" ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === "all" ? "bg-sky-500 text-white" : "border border-gray-200 text-gray-600 hover:border-sky-400 hover:text-sky-600"}`}>
             全部
           </button>
           {monthKeys.map((m) => {
             const [, mo] = m.split("-");
             return (
               <button key={m} onClick={() => setActiveMonth(m)}
-              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === m ? "bg-[#00b4d8] text-white" : "border border-white/[0.08] text-white/60 hover:border-[#00b4d8] hover:text-[#48cae4]"}`}>
+              className={`rounded-full px-3 py-2 text-sm font-medium transition ${activeMonth === m ? "bg-sky-500 text-white" : "border border-gray-200 text-gray-600 hover:border-sky-400 hover:text-sky-600"}`}>
                 {mo}月
               </button>
             );
@@ -601,8 +601,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             {Array.from(filteredGrouped.entries()).map(([monthLabel, monthDates]) => (
               <div key={monthLabel} className="contents">
                 {/* 月份分隔標籤 */}
-                <div className="flex items-center rounded-lg bg-white/5 px-3 py-2">
-                  <span className="text-xs font-bold text-white/50">{monthLabel}</span>
+                <div className="flex items-center rounded-lg bg-gray-50 px-3 py-2">
+                  <span className="text-xs font-bold text-gray-500">{monthLabel}</span>
                 </div>
                 {monthDates.map((d) => {
                   const info = formatDate(d.departure_date);
@@ -614,20 +614,20 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                        onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
                       className={`rounded-lg border px-3 py-2 text-center transition ${
                         isSelected
-                          ? "border-[#00b4d8]/50 bg-[#00b4d8]/15"
-                          : "border-white/[0.08] bg-[#1a3347] hover:border-white/15"
+                          ? "border-sky-400 bg-sky-50"
+                          : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                     >
-                      <div className="text-sm font-bold text-white">{info.short}（{info.weekday}）</div>
+                      <div className="text-sm font-bold text-gray-900">{info.short}（{info.weekday}）</div>
                       <div className="mt-0.5">
                         {d.price ? (
-                          <span className="text-xs font-bold text-amber-300">${d.price.toLocaleString()}</span>
+                          <span className="text-xs font-bold text-amber-600">${d.price.toLocaleString()}</span>
                         ) : (
-                          <span className="text-[10px] text-white/40">洽詢</span>
+                          <span className="text-[10px] text-gray-400">洽詢</span>
                         )}
                       </div>
                       {(d.seats_available > 0 || d.seats_total > 0) && (
-                        <div className="mt-0.5 text-[10px] text-white/50">
+                        <div className="mt-0.5 text-[10px] text-gray-500">
                           可售{d.seats_available}
                         </div>
                       )}
@@ -646,13 +646,13 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             const showFlight = hasFlightInfo(d);
 
             return (
-              <div className="mt-3 rounded-xl border border-[#00b4d8]/20 bg-[#1a3347] p-4">
+              <div className="mt-3 rounded-xl border border-sky-200 bg-white p-4 shadow-sm">
                 {isDevMode && (
                   <div className="mb-3 flex items-center gap-2">
                     <button onClick={() => openEditForm(d)}
-                      className="rounded-full bg-amber-500/20 px-3 py-1.5 text-[11px] font-semibold text-amber-300 transition hover:bg-amber-500/30">編輯</button>
+                      className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-600 transition hover:bg-amber-100">編輯</button>
                     <button onClick={() => handleDelete(d.id)}
-                      className="rounded-full bg-red-500/20 px-3 py-1.5 text-[11px] font-semibold text-red-300 transition hover:bg-red-500/30">刪除</button>
+                      className="rounded-full bg-red-50 px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-100">刪除</button>
                   </div>
                 )}
 
@@ -662,56 +662,56 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                     {d.flight_segments && d.flight_segments.length > 0 ? (
                       // 新格式：多航段表格
                       <>
-                        <div className="hidden overflow-hidden rounded-lg border border-white/10 sm:block">
-                          <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-white/[0.02]">
-                            <div className="border-b border-r border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">航段</div>
-                            <div className="border-b border-r border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">班機日期・航空公司及航班</div>
-                            <div className="border-b border-r border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">起飛時間及機場</div>
-                            <div className="border-b border-white/10 px-3 py-2 text-center text-xs font-semibold text-white/55">抵達時間及機場</div>
+                        <div className="hidden overflow-hidden rounded-lg border border-gray-200 sm:block">
+                          <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-gray-50">
+                            <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">航段</div>
+                            <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">班機日期・航空公司及航班</div>
+                            <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">起飛時間及機場</div>
+                            <div className="border-b border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">抵達時間及機場</div>
                           </div>
 
                           {d.flight_segments.map((seg, i) => {
                             const total = d.flight_segments!.length;
                             const isFirst = i === 0;
                             const isLast = i === total - 1 && total > 1;
-                            const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
+                            const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
                             const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                             const segDate = seg.date ? formatDate(seg.date) : null;
-                            const rowBorderClass = "border-b border-white/10";
+                            const rowBorderClass = "border-b border-gray-200";
 
                             return (
                               <div key={i} className="grid grid-cols-[84px_1.4fr_1fr_1fr] items-stretch">
-                                <div className={`border-r border-white/10 px-3 py-3 ${rowBorderClass}`}>
+                                <div className={`border-r border-gray-200 px-3 py-3 ${rowBorderClass}`}>
                                   <div className="flex h-full items-center justify-center gap-2">
                                     <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
                                       <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                                     </svg>
-                                    <span className={`text-sm font-bold ${isFirst ? "text-sky-300" : isLast ? "text-amber-300" : "text-violet-300"}`}>{segmentLabel}</span>
+                                    <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
                                   </div>
                                 </div>
 
-                                <div className={`border-r border-white/10 px-3 py-3 ${rowBorderClass}`}>
+                                <div className={`border-r border-gray-200 px-3 py-3 ${rowBorderClass}`}>
                                   <div className="flex h-full flex-col items-center justify-center leading-tight text-center">
-                                    {segDate && <div className="text-xs text-white/75">{segDate.full}</div>}
-                                    <div className="text-base font-bold text-white">
+                                    {segDate && <div className="text-xs text-gray-500">{segDate.full}</div>}
+                                    <div className="text-base font-bold text-gray-900">
                                     {seg.airline}
-                                    {seg.flight_number && <span className="ml-1.5 text-white/80">{seg.flight_number}</span>}
+                                    {seg.flight_number && <span className="ml-1.5 text-gray-600">{seg.flight_number}</span>}
                                     </div>
                                   </div>
                                 </div>
 
-                                <div className={`border-r border-white/10 px-3 py-3 text-sm ${rowBorderClass}`}>
+                                <div className={`border-r border-gray-200 px-3 py-3 text-sm ${rowBorderClass}`}>
                                   <div className="flex h-full items-center justify-center leading-tight text-center">
-                                    {seg.dep_time && <span className="text-base font-bold text-white">{seg.dep_time}</span>}
-                                    {seg.dep_airport && <span className="text-white/85"> {seg.dep_airport}</span>}
+                                    {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
+                                    {seg.dep_airport && <span className="text-gray-600"> {seg.dep_airport}</span>}
                                   </div>
                                 </div>
 
                                 <div className={`px-3 py-3 text-sm ${rowBorderClass}`}>
                                   <div className="flex h-full items-center justify-center leading-tight text-center">
-                                    {seg.arr_time && <span className="text-base font-bold text-white">{seg.arr_time}</span>}
-                                    {seg.arr_airport && <span className="text-white/85"> {seg.arr_airport}</span>}
-                                    {seg.next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}
+                                    {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
+                                    {seg.arr_airport && <span className="text-gray-600"> {seg.arr_airport}</span>}
+                                    {seg.next_day && <span className="ml-1 text-[10px] text-amber-600">+1</span>}
                                   </div>
                                 </div>
                               </div>
@@ -724,22 +724,22 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                             const total = d.flight_segments!.length;
                             const isFirst = i === 0;
                             const isLast = i === total - 1 && total > 1;
-                            const iconColor = isFirst ? "text-sky-400" : isLast ? "text-amber-400" : "text-violet-400";
+                            const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
                             const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                             const segDate = seg.date ? formatDate(seg.date) : null;
 
                             return (
-                              <div key={`m-${i}`} className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
+                              <div key={`m-${i}`} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
                                 <div className="mb-1 flex items-center gap-2">
                                   <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                                   </svg>
-                                  <span className={`text-xs font-bold ${isFirst ? "text-sky-300" : isLast ? "text-amber-300" : "text-violet-300"}`}>{segmentLabel}</span>
+                                  <span className={`text-xs font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
                                 </div>
-                                {segDate && <div className="text-[11px] text-white/55">{segDate.full}</div>}
-                                <div className="text-xs text-white/90">{seg.airline}{seg.flight_number && <span className="ml-1 text-white/65">{seg.flight_number}</span>}</div>
-                                <div className="mt-1 text-xs text-white/80">起飛：{seg.dep_time || '—'} {seg.dep_airport || ''}</div>
-                                <div className="text-xs text-white/80">抵達：{seg.arr_time || '—'} {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
+                                {segDate && <div className="text-[11px] text-gray-500">{segDate.full}</div>}
+                                <div className="text-xs text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1 text-gray-500">{seg.flight_number}</span>}</div>
+                                <div className="mt-1 text-xs text-gray-600">起飛：{seg.dep_time || '—'} {seg.dep_airport || ''}</div>
+                                <div className="text-xs text-gray-600">抵達：{seg.arr_time || '—'} {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
                               </div>
                             );
                           })}
@@ -748,7 +748,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                     ) : (
                       // 舊格式：去程 / 回程
                       <>
-                        <div className="mb-1 hidden grid-cols-[60px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-white/40 sm:grid">
+                        <div className="mb-1 hidden grid-cols-[60px_1fr_1fr_1fr_1fr] gap-2 text-[10px] font-semibold text-gray-400 sm:grid">
                           <span></span><span>班機日期</span><span>航空公司及航班</span><span>起飛時間及機場</span><span>抵達時間及機場</span>
                         </div>
                         {(d.outbound_flight || d.outbound_time) && (
@@ -756,23 +756,23 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                             <span className="text-xs font-bold text-sky-400">去程</span>
                             <div className="flex items-center gap-1">
                               <svg className="h-3 w-3 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                              <span className="text-xs text-white/90">{info.full}</span>
+                              <span className="text-xs text-gray-700">{info.full}</span>
                             </div>
-                            <div className="text-xs text-white/90">{d.airline} {d.outbound_flight && <span className="text-white/60">{d.outbound_flight}</span>}</div>
-                            <div className="text-xs">{d.outbound_time && <span className="font-semibold text-white/90">{d.outbound_time}</span>}{d.outbound_from && <span className="text-white/60"> {d.outbound_from}</span>}</div>
-                            <div className="text-xs">{d.outbound_arrival_time && <span className="font-semibold text-white/90">{d.outbound_arrival_time}</span>}{d.outbound_to && <span className="text-white/60"> {d.outbound_to}</span>}{d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
+                            <div className="text-xs text-gray-700">{d.airline} {d.outbound_flight && <span className="text-gray-500">{d.outbound_flight}</span>}</div>
+                            <div className="text-xs">{d.outbound_time && <span className="font-semibold text-gray-700">{d.outbound_time}</span>}{d.outbound_from && <span className="text-gray-500"> {d.outbound_from}</span>}</div>
+                            <div className="text-xs">{d.outbound_arrival_time && <span className="font-semibold text-gray-700">{d.outbound_arrival_time}</span>}{d.outbound_to && <span className="text-gray-500"> {d.outbound_to}</span>}{d.outbound_next_day && <span className="ml-1 text-[10px] text-amber-600">+1</span>}</div>
                           </div>
                         )}
                         {(d.return_flight || d.return_time) && (
-                          <div className="grid grid-cols-1 gap-1 border-t border-white/5 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
-                            <span className="text-xs font-bold text-amber-400">回程</span>
+                          <div className="grid grid-cols-1 gap-1 border-t border-gray-100 py-2 sm:grid-cols-[60px_1fr_1fr_1fr_1fr] sm:gap-2">
+                            <span className="text-xs font-bold text-amber-500">回程</span>
                             <div className="flex items-center gap-1">
                               <svg className="h-3 w-3 shrink-0 rotate-180 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                              <span className="text-xs text-white/90">{d.return_date ? formatDate(d.return_date).full : "—"}</span>
+                              <span className="text-xs text-gray-700">{d.return_date ? formatDate(d.return_date).full : "—"}</span>
                             </div>
-                            <div className="text-xs text-white/90">{d.airline} {d.return_flight && <span className="text-white/60">{d.return_flight}</span>}</div>
-                            <div className="text-xs">{d.return_time && <span className="font-semibold text-white/90">{d.return_time}</span>}{d.return_from && <span className="text-white/60"> {d.return_from}</span>}</div>
-                            <div className="text-xs">{d.return_arrival_time && <span className="font-semibold text-white/90">{d.return_arrival_time}</span>}{d.return_to && <span className="text-white/60"> {d.return_to}</span>}{d.return_next_day && <span className="ml-1 text-[10px] text-amber-300">+1</span>}</div>
+                            <div className="text-xs text-gray-700">{d.airline} {d.return_flight && <span className="text-gray-500">{d.return_flight}</span>}</div>
+                            <div className="text-xs">{d.return_time && <span className="font-semibold text-gray-700">{d.return_time}</span>}{d.return_from && <span className="text-gray-500"> {d.return_from}</span>}</div>
+                            <div className="text-xs">{d.return_arrival_time && <span className="font-semibold text-gray-700">{d.return_arrival_time}</span>}{d.return_to && <span className="text-gray-500"> {d.return_to}</span>}{d.return_next_day && <span className="ml-1 text-[10px] text-amber-600">+1</span>}</div>
                           </div>
                         )}
                       </>
@@ -785,7 +785,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
           })()}
         </div>
       ) : (
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-gray-500">
           {dates.length > 0 ? "此月份無出團梯次" : "尚未設定出團日期"}
         </p>
       )}

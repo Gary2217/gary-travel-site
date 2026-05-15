@@ -71,7 +71,7 @@ export default function TripCard({
 
   return (
     <>
-      <div className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a3347] transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30">
+      <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
         {/* 封面圖 */}
         <div
           className={`relative h-32 overflow-hidden sm:h-36 md:h-44${!isDevMode ? ' cursor-pointer' : ''}`}
@@ -83,8 +83,8 @@ export default function TripCard({
               style={{ backgroundImage: `url(${cover_image_url})` }}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[#162a3a]">
-              <svg className="h-10 w-10 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-full w-full items-center justify-center bg-gray-100">
+              <svg className="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
@@ -152,12 +152,12 @@ export default function TripCard({
                   }
                 }}
                 onKeyDown={e => { if (e.key === 'Enter') titleInputRef.current?.blur(); }}
-                className="mb-1 w-full border-b border-sky-400 bg-transparent text-xs font-bold text-white outline-none sm:text-sm md:text-base"
+                className="mb-1 w-full border-b border-sky-400 bg-transparent text-xs font-bold text-gray-900 outline-none sm:text-sm md:text-base"
                 autoFocus
               />
             ) : (
               <h3
-                className="line-clamp-2 min-h-[2rem] cursor-pointer border-b border-dashed border-white/30 text-xs font-bold leading-tight text-white hover:border-sky-400 hover:text-sky-300 sm:min-h-[2.5rem] sm:text-sm md:text-base"
+                className="line-clamp-2 min-h-[2rem] cursor-pointer border-b border-dashed border-gray-300 text-xs font-bold leading-tight text-gray-900 hover:border-sky-400 hover:text-sky-600 sm:min-h-[2.5rem] sm:text-sm md:text-base"
                 onClick={() => setEditingTitle(true)}
                 title="點擊編輯名稱"
               >
@@ -167,19 +167,19 @@ export default function TripCard({
           ) : (
               <div className="flex items-start justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 min-h-[2.1rem] text-sm font-bold leading-snug tracking-[0.08em] text-white sm:min-h-[2.45rem] sm:text-base md:text-[1.1rem]">
+                  <h3 className="line-clamp-2 min-h-[2.1rem] text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:min-h-[2.45rem] sm:text-base md:text-[1.1rem]">
                     {title}
                   </h3>
                   {price_range && (
                     <div className="mt-0.5 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] font-medium tracking-[0.12em] text-amber-300 sm:text-[11px]">
+                        <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
                           團費價格
                         </p>
                         <ShareButton title={title} url={`/trip/${id}`} small />
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-300 sm:text-base">
+                        <p className="text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base">
                           {displayPriceRange}
                         </p>
                       </div>
@@ -211,7 +211,7 @@ export default function TripCard({
                   onDelete(id);
                 }
               }}
-              className="mt-1.5 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-red-500/30 bg-red-600/20 px-3 py-1.5 text-xs font-semibold text-red-300 shadow transition hover:bg-red-600/30 active:scale-95 sm:mt-2 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
+              className="mt-1.5 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 shadow transition hover:bg-red-100 active:scale-95 sm:mt-2 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
             >
               <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -224,7 +224,7 @@ export default function TripCard({
           {!isDevMode && document_url && document_is_available && (
             <button
               onClick={() => setShowDownloadGate(true)}
-              className="mt-1.5 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-600/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 shadow transition hover:bg-emerald-600/30 active:scale-95 sm:mt-2 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
+              className="mt-1.5 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow transition hover:bg-emerald-100 active:scale-95 sm:mt-2 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
             >
               <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -245,14 +245,14 @@ export default function TripCard({
           }}
         >
           <div
-            className="w-full max-w-sm rounded-xl border border-white/[0.08] bg-[#0f1923] p-5 shadow-2xl sm:p-6"
+            className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-bold text-white sm:text-lg">下載行程檔</h3>
+              <h3 className="text-base font-bold text-gray-900 sm:text-lg">下載行程檔</h3>
               <button
                 onClick={() => setShowDownloadGate(false)}
-                className="text-white/50 transition hover:text-white"
+                className="text-gray-400 transition hover:text-gray-700"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -260,10 +260,10 @@ export default function TripCard({
               </button>
             </div>
 
-            <p className="mb-2 text-sm text-white/80">
+            <p className="mb-2 text-sm text-gray-600">
               想下載「{title}」的行程檔嗎？
             </p>
-            <p className="mb-4 text-xs leading-5 text-white/60">
+            <p className="mb-4 text-xs leading-5 text-gray-500">
               請先加入我們的 LINE、Facebook 或 Instagram 任一帳號，即可立即下載完整行程檔！
             </p>
 
@@ -296,7 +296,7 @@ export default function TripCard({
               </button>
             </div>
 
-            <p className="mt-3 text-center text-[10px] text-white/40 sm:text-[11px]">
+            <p className="mt-3 text-center text-[10px] text-gray-400 sm:text-[11px]">
               加入後將自動開始下載行程檔
             </p>
           </div>

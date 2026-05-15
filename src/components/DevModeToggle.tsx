@@ -141,7 +141,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
         className={`inline-flex h-7 w-7 items-center justify-center rounded-full transition active:scale-90 sm:h-8 sm:w-8 ${
           isDevMode
             ? "bg-sky-500/80 text-white"
-            : "bg-transparent text-white/20 hover:text-white/40"
+            : "bg-transparent text-gray-300 hover:text-gray-500"
         }`}
         title={isDevMode ? "關閉開發者模式" : isAuthorized ? "啟用開發者模式" : "LINE 登入驗證"}
       >
@@ -158,12 +158,12 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
       <div className="fixed inset-0 z-modal flex items-start justify-center pt-16 px-4" onClick={() => setShowInquiries(false)}>
         <div className="absolute inset-0 bg-black/50" />
         <div
-          className="relative w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0f1923] p-4 shadow-2xl"
+          className="relative w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={() => setShowInquiries(false)}
-            className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-900"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

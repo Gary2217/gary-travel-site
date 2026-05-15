@@ -309,11 +309,11 @@ export default function MiniTransitTicketDetailPage() {
 
   if (!ticket || !content || !defaultContent) {
     return (
-      <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+      <main className="min-h-screen bg-white pt-14 text-gray-900">
         <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/mini-transit-tickets" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
         <section className="mx-auto max-w-site px-4 py-10 md:px-5">
-          <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.38)] p-6 text-center">
-            <p className="text-white/75">找不到此小三通票卷項目</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-gray-600">找不到此小三通票卷項目</p>
           </div>
         </section>
       </main>
@@ -409,24 +409,24 @@ export default function MiniTransitTicketDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+    <main className="min-h-screen bg-white pt-14 text-gray-900">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/mini-transit-tickets" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       <section className="mx-auto max-w-site px-4 py-8 md:px-5">
-        <Link href="/mini-transit-tickets" className="mb-4 inline-flex items-center gap-1 text-sm text-white/70 transition hover:text-white">
+        <Link href="/mini-transit-tickets" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 transition hover:text-gray-900">
           ← 返回小三通票卷列表
         </Link>
 
         {isDevMode && savingMessage && (
-          <div className="mb-4 rounded-lg border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-100">{savingMessage}</div>
+          <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-700">{savingMessage}</div>
         )}
 
-        <article className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]">
-          <div className="relative overflow-hidden bg-[#0b1020]">
+        <article className="overflow-hidden rounded-[1.5rem] border border-gray-200 bg-white shadow-sm">
+          <div className="relative overflow-hidden bg-gray-50">
             {imagesLoaded ? (
               <img src={displayImage} alt={content.title} className="h-auto w-full object-contain" />
             ) : (
-              <div className="h-full min-h-[360px] w-full animate-pulse bg-white/10" />
+              <div className="h-full min-h-[360px] w-full animate-pulse bg-gray-100" />
             )}
             {isDevMode && (
               <label className="absolute right-3 top-3 inline-flex cursor-pointer items-center rounded-full bg-sky-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">
@@ -447,10 +447,10 @@ export default function MiniTransitTicketDetailPage() {
           </div>
 
           <div className="p-5 sm:p-6">
-            <h1 className="text-xl font-black text-white sm:text-2xl">{content.title}</h1>
+            <h1 className="text-xl font-black text-gray-900 sm:text-2xl">{content.title}</h1>
 
-            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <h2 className="mb-4 text-xl font-black text-sky-300 sm:text-2xl">{content.requirementsTitle}</h2>
+            <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <h2 className="mb-4 text-xl font-black text-sky-600 sm:text-2xl">{content.requirementsTitle}</h2>
 
               <div className="space-y-4">
                 {REQUIREMENT_SECTION_ORDER.map((sectionKey) => {
@@ -458,14 +458,14 @@ export default function MiniTransitTicketDetailPage() {
                   const isEditingThisSection = isDevMode && editingRequirementSection === sectionKey;
 
                   return (
-                    <section key={sectionKey} className="rounded-xl border border-white/10 bg-black/10 p-3 sm:p-4">
+                    <section key={sectionKey} className="rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
                       <div className="mb-3 flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-black text-sky-300 sm:text-xl">{REQUIREMENT_SECTION_TITLES[sectionKey]}</h3>
+                        <h3 className="text-lg font-black text-sky-600 sm:text-xl">{REQUIREMENT_SECTION_TITLES[sectionKey]}</h3>
                         {isDevMode && (
                           <button
                             type="button"
                             onClick={() => setEditingRequirementSection((prev) => (prev === sectionKey ? null : sectionKey))}
-                            className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                            className="rounded-md border border-sky-500 px-3 py-1 text-xs font-semibold text-sky-600 hover:bg-sky-50"
                           >
                             {editingRequirementSection === sectionKey ? "關閉編輯" : "編輯"}
                           </button>
@@ -473,10 +473,10 @@ export default function MiniTransitTicketDetailPage() {
                       </div>
 
                       {isEditingThisSection && (
-                        <div className="mb-3 rounded-lg border border-white/15 bg-black/20 p-3">
+                        <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                           <textarea
                             rows={14}
-                            className="min-h-[340px] w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                            className="min-h-[340px] w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                             value={lines.join("\n")}
                             onChange={(e) => updateRequirementSection(sectionKey, e.target.value)}
                           />
@@ -491,11 +491,11 @@ export default function MiniTransitTicketDetailPage() {
                         </div>
                       )}
 
-                      <div className="space-y-2 text-base leading-7 text-white/95">
+                      <div className="space-y-2 text-base leading-7 text-gray-800">
                         {lines.length > 0 ? (
                           lines.map((row, idx) => <p key={`${sectionKey}-${idx}-${row}`}>{row}</p>)
                         ) : (
-                          <p className="text-sm text-white/60">（尚未填寫）</p>
+                          <p className="text-sm text-gray-500">（尚未填寫）</p>
                         )}
                       </div>
                     </section>
@@ -504,13 +504,13 @@ export default function MiniTransitTicketDetailPage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
               <div className="mb-3 flex items-center justify-end">
                 {isDevMode && (
                   <button
                     type="button"
                     onClick={() => setEditingInquirySection((prev) => !prev)}
-                    className="rounded-md border border-sky-300 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/10"
+                    className="rounded-md border border-sky-500 px-3 py-1 text-xs font-semibold text-sky-600 hover:bg-sky-50"
                   >
                     {editingInquirySection ? "關閉編輯" : "編輯"}
                   </button>
@@ -518,22 +518,22 @@ export default function MiniTransitTicketDetailPage() {
               </div>
 
               {isDevMode && editingInquirySection && (
-                <div className="mb-3 rounded-lg border border-white/15 bg-black/20 p-3">
+                <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <div className="space-y-3">
                     <div>
-                      <p className="mb-1 text-xs font-semibold text-white/70">區塊標題</p>
+                      <p className="mb-1 text-xs font-semibold text-gray-600">區塊標題</p>
                       <input
                         type="text"
-                        className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                         value={content.inquiryTitle}
                         onChange={(e) => setContent((prev) => (prev ? { ...prev, inquiryTitle: e.target.value } : prev))}
                       />
                     </div>
                     <div>
-                      <p className="mb-1 text-xs font-semibold text-white/70">出發地文字</p>
+                      <p className="mb-1 text-xs font-semibold text-gray-600">出發地文字</p>
                       <input
                         type="text"
-                        className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900"
                         value={content.departureLabel}
                         onChange={(e) => setContent((prev) => (prev ? { ...prev, departureLabel: e.target.value } : prev))}
                       />
@@ -550,16 +550,16 @@ export default function MiniTransitTicketDetailPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#06C755]/40 bg-white/[0.02] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#06C755]/30 bg-emerald-50 p-4">
                 <div>
-                  <p className="text-base font-bold text-white sm:text-lg">{content.inquiryTitle || "購買詢問"}</p>
-                  <p className="mt-1 text-sm text-white/80">出發地：{content.departureLabel || ticket.departureLabel}</p>
+                  <p className="text-base font-bold text-gray-900 sm:text-lg">{content.inquiryTitle || "購買詢問"}</p>
+                  <p className="mt-1 text-sm text-gray-600">出發地：{content.departureLabel || ticket.departureLabel}</p>
                 </div>
                 <a
                   href={lineDmHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-md border border-[#06C755] bg-[#06C755]/20 px-5 py-1.5 text-sm font-semibold text-[#b9ffd4] transition hover:bg-[#06C755]/30"
+                  className="rounded-md border border-[#06C755] bg-[#06C755]/10 px-5 py-1.5 text-sm font-semibold text-[#06C755] transition hover:bg-[#06C755]/20"
                 >
                   LINE 洽詢
                 </a>
@@ -576,19 +576,19 @@ export default function MiniTransitTicketDetailPage() {
         />
       </section>
 
-      {isDevMode && <div className="mx-auto max-w-site px-4 pb-2 text-right text-xs text-white/40 md:px-5">開發者模式已啟用</div>}
+      {isDevMode && <div className="mx-auto max-w-site px-4 pb-2 text-right text-xs text-gray-400 md:px-5">開發者模式已啟用</div>}
 
       <FloatingContact />
 
       {saveSuccessMessage && (
         <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
-          <div className="rounded-2xl border border-emerald-400/30 bg-[rgba(16,30,28,0.92)] px-5 py-4 text-center shadow-2xl backdrop-blur-xl sm:px-6">
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+          <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-center shadow-2xl backdrop-blur-xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-base font-bold text-emerald-200">{saveSuccessMessage}</p>
+            <p className="text-base font-bold text-emerald-600">{saveSuccessMessage}</p>
           </div>
         </div>
       )}

@@ -171,12 +171,12 @@ export default function DestinationPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#0f1923] text-white">
+      <main className="min-h-screen bg-white text-gray-900">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
-            <p className="mt-4 text-white/70">載入中...</p>
+            <p className="mt-4 text-gray-600">載入中...</p>
           </div>
         </div>
       </main>
@@ -185,7 +185,7 @@ export default function DestinationPage() {
 
   if (error || !destination) {
     return (
-      <main className="min-h-screen bg-[#0f1923] text-white">
+      <main className="min-h-screen bg-white text-gray-900">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
@@ -203,7 +203,7 @@ export default function DestinationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0f1923] pt-14 text-white">
+    <main className="min-h-screen bg-white pt-14 text-gray-900">
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
@@ -212,7 +212,7 @@ export default function DestinationPage() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${destination.image_url})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1923] via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-black/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
           <div className="mx-auto max-w-site">
             {destination.regions && (
@@ -236,12 +236,12 @@ export default function DestinationPage() {
         {trips.length === 0 && !isDevMode ? (
           <>
             {/* 客製洽詢區塊（緊湊橫排） */}
-            <div className="mb-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-[#06C755]/20 bg-[rgba(6,199,85,0.05)] px-4 py-3.5 sm:flex-row sm:px-5">
+            <div className="mb-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 sm:flex-row sm:px-5">
               <div className="text-center sm:text-left">
-                <p className="text-sm font-bold text-white">
+                <p className="text-sm font-bold text-gray-900">
                   {destination.title}目前暫無現成行程，可客製行程
                 </p>
-                <p className="mt-0.5 text-xs text-white/50">
+                <p className="mt-0.5 text-xs text-gray-500">
                   免費諮詢 · 不收服務費 · 讓蓋瑞為您量身打造專屬行程
                 </p>
               </div>
@@ -261,7 +261,7 @@ export default function DestinationPage() {
             {relatedLoading ? (
               <div className="flex items-center justify-center py-10">
                 <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
-                <span className="ml-3 text-sm text-white/50">載入相關行程...</span>
+                <span className="ml-3 text-sm text-gray-500">載入相關行程...</span>
               </div>
             ) : (
               <>
@@ -282,12 +282,12 @@ export default function DestinationPage() {
                   }
                   return (
                     <section className="mb-10">
-                      <h2 className="mb-3 text-base font-bold text-white sm:mb-4 sm:text-lg md:text-xl">
+                      <h2 className="mb-3 text-base font-bold text-gray-900 sm:mb-4 sm:text-lg md:text-xl">
                         {destination.regions?.title} 其他行程（{trips.length}）
                       </h2>
                       {hasSubRegions ? groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
-                          {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{g.label}</h3>}
+                          {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
                           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
                             {g.trips.map((trip) => (
                               <TripCard key={trip.id} id={trip.id} title={trip.title} duration={trip.duration}
@@ -323,12 +323,12 @@ export default function DestinationPage() {
                   });
                   return (
                     <section className="mb-10">
-                      <h2 className="mb-3 text-base font-bold text-white sm:mb-4 sm:text-lg md:text-xl">
+                      <h2 className="mb-3 text-base font-bold text-gray-900 sm:mb-4 sm:text-lg md:text-xl">
                         推薦{destination.regions?.category_label}熱門團（{trips.length}）
                       </h2>
                       {groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
-                          {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-400">{g.label}</h3>}
+                          {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
                           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
                             {g.trips.map((trip) => (
                               <TripCard key={trip.id} id={trip.id} title={trip.title} duration={trip.duration}
@@ -348,24 +348,24 @@ export default function DestinationPage() {
           <>
             {/* 搜尋條件 banner */}
             {(dateFilter || cityFilter) && (
-              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-sky-500/20 bg-sky-500/10 px-4 py-2.5">
-                <svg className="h-4 w-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5">
+                <svg className="h-4 w-4 shrink-0 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
                 </svg>
-                <span className="text-sm text-sky-200">搜尋條件：</span>
+                <span className="text-sm text-sky-700">搜尋條件：</span>
                 {cityFilter && (
-                  <span className="rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-semibold text-violet-300">
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
                     出發地：{cityFilter}
                   </span>
                 )}
                 {dateFilter && (
-                  <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300">
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                     出發日：{formatDate(dateFilter)}
                   </span>
                 )}
                 <button
                   onClick={clearFilters}
-                  className="ml-auto text-xs text-white/40 transition hover:text-white"
+                  className="ml-auto text-xs text-gray-400 transition hover:text-gray-700"
                 >
                   清除篩選
                 </button>
@@ -374,16 +374,16 @@ export default function DestinationPage() {
 
             {/* 無符合梯次提示 */}
             {dateFilter && trips.length > 0 && !trips.some((t) => t.departure_dates?.some((d) => d.departure_date === dateFilter)) && (
-              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5">
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
                 <div className="flex items-start gap-3">
-                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                   </svg>
                   <div>
-                    <p className="text-sm font-semibold text-amber-300">
+                    <p className="text-sm font-semibold text-amber-700">
                       {formatDate(dateFilter)} 目前暫無出發梯次
                     </p>
-                    <p className="mt-0.5 text-xs text-amber-200/70">
+                    <p className="mt-0.5 text-xs text-amber-600">
                       以下為其他可選行程，歡迎諮詢旅遊規劃師蓋瑞，為您安排客製出發日期
                     </p>
                   </div>
@@ -391,7 +391,7 @@ export default function DestinationPage() {
               </div>
             )}
 
-            <h2 className="mb-4 text-lg font-bold text-white sm:mb-6 sm:text-xl md:text-2xl">
+            <h2 className="mb-4 text-lg font-bold text-gray-900 sm:mb-6 sm:text-xl md:text-2xl">
               可選行程（{trips.length}）
             </h2>
 
@@ -439,16 +439,16 @@ export default function DestinationPage() {
                   {isDevMode && (
                     <button
                       onClick={handleAddTrip}
-                      className="group/add flex flex-col overflow-hidden rounded-xl border-2 border-dashed border-[#00b4d8]/30 bg-[#1a3347]/50 transition hover:border-[#00b4d8]/50 hover:bg-[#00b4d8]/10"
+                      className="group/add flex flex-col overflow-hidden rounded-xl border-2 border-dashed border-sky-200 bg-gray-50 transition hover:border-sky-300 hover:bg-sky-50"
                     >
                       <div className="flex h-32 items-center justify-center sm:h-36 md:h-44">
-                        <svg className="h-10 w-10 text-sky-500/50 transition group-hover/add:text-sky-400/70 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-10 w-10 text-sky-400 transition group-hover/add:text-sky-500 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                       </div>
                       <div className="p-2 sm:p-3 md:p-4">
-                        <p className="min-h-[2rem] text-xs font-semibold text-sky-400/70 sm:min-h-[2.5rem] sm:text-sm">新增行程</p>
-                        <div className="mt-2 flex w-full items-center justify-center rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-[11px] font-semibold text-sky-400/80 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
+                        <p className="min-h-[2rem] text-xs font-semibold text-sky-600 sm:min-h-[2.5rem] sm:text-sm">新增行程</p>
+                        <div className="mt-2 flex w-full items-center justify-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold text-sky-600 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
                           點擊新增
                         </div>
                       </div>

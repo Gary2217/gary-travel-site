@@ -203,7 +203,7 @@ export default function FlightsPage() {
   // ── Render ───────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-[#0f1923] text-white">
+    <main className="min-h-screen bg-white text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         showBackButton
@@ -215,16 +215,16 @@ export default function FlightsPage() {
 
         {/* Hero */}
         <div className="mx-auto max-w-3xl py-8 text-center">
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
             機票諮詢服務
           </h1>
-          <p className="mt-2 text-sm text-white/50">
+          <p className="mt-2 text-sm text-gray-500">
             台北出發，飛往各地熱門航線・由蓋瑞為您比價
           </p>
         </div>
 
         {/* Region filter tabs */}
-        <div className="sticky top-14 z-40 border-b border-white/[0.08] bg-[rgba(15,25,35,0.92)] backdrop-blur-[8px]">
+        <div className="sticky top-14 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]">
           <div className="mx-auto max-w-site overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex min-w-max justify-start gap-2 md:min-w-0 md:flex-wrap md:justify-center">
               {REGIONS.map((region) => (
@@ -234,8 +234,8 @@ export default function FlightsPage() {
                   onClick={() => setActiveRegion(region)}
                   className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${
                     activeRegion === region
-                      ? "border-[#00b4d8] bg-[rgba(0,180,216,0.15)] text-[#48cae4]"
-                      : "border-white/[0.08] text-white/75 hover:border-[#00b4d8] hover:bg-[rgba(0,180,216,0.15)] hover:text-[#48cae4]"
+                      ? "border-sky-500 bg-sky-50 text-sky-600"
+                      : "border-gray-200 text-gray-600 hover:border-sky-500 hover:bg-sky-50 hover:text-sky-600"
                   }`}
                 >
                   {region}
@@ -248,7 +248,7 @@ export default function FlightsPage() {
         {/* Cards grid */}
         <div className="mx-auto max-w-site py-6">
           {loading ? (
-            <div className="flex items-center justify-center py-20 text-white/50">
+            <div className="flex items-center justify-center py-20 text-gray-500">
               <svg className="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
@@ -261,7 +261,7 @@ export default function FlightsPage() {
                 <Link
                   key={route.id}
                   href={`/flights/${route.id}`}
-                  className="group relative block overflow-hidden rounded-[1.5rem] border border-white/10 shadow-lg shadow-black/20"
+                  className="group relative block overflow-hidden rounded-[1.5rem] border border-gray-200 shadow-lg shadow-gray-200/50"
                 >
                   {/* Background image */}
                   <div
@@ -337,7 +337,7 @@ export default function FlightsPage() {
                 <button
                   type="button"
                   onClick={openNew}
-                  className="flex h-[210px] items-center justify-center gap-2 rounded-[1.5rem] border border-dashed border-white/20 bg-white/5 text-white/50 transition hover:border-sky-500/50 hover:bg-white/10 hover:text-white sm:h-[228px]"
+                  className="flex h-[210px] items-center justify-center gap-2 rounded-[1.5rem] border border-dashed border-gray-300 bg-gray-50 text-gray-500 transition hover:border-sky-500/50 hover:bg-gray-100 hover:text-gray-900 sm:h-[228px]"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -349,7 +349,7 @@ export default function FlightsPage() {
           )}
 
           {!loading && filtered.length === 0 && !isDevMode && (
-            <div className="py-16 text-center text-white/50">
+            <div className="py-16 text-center text-gray-500">
               此地區暫無航線資料
             </div>
           )}
@@ -370,14 +370,14 @@ export default function FlightsPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) closeEditor(); }}
         >
-          <div className="w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[rgba(18,18,28,0.97)] p-6 shadow-2xl" style={{ maxHeight: "90dvh" }}>
-            <h2 className="mb-5 text-lg font-bold text-white">
+          <div className="w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-2xl" style={{ maxHeight: "90dvh" }}>
+            <h2 className="mb-5 text-lg font-bold text-gray-900">
               {editingRoute._isNew ? "新增航線" : "編輯航線"}
             </h2>
 
             {/* Image upload */}
             <div
-              className="relative mb-4 h-40 cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/5"
+              className="relative mb-4 h-40 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
               onClick={() => imageInputRef.current?.click()}
             >
               {(imagePreview || editingRoute.image_url) ? (
@@ -387,7 +387,7 @@ export default function FlightsPage() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-white/30">
+                <div className="flex h-full items-center justify-center text-gray-400">
                   <svg className="mr-2 h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M7.5 8.25h.008v.008H7.5V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                   </svg>
@@ -405,31 +405,31 @@ export default function FlightsPage() {
               <div className="grid grid-cols-2 gap-3">
                 {/* 地區 */}
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">地區</label>
+                  <label className="mb-1 block text-xs text-gray-500">地區</label>
                   <select
                     value={editingRoute.region ?? "日本"}
                     onChange={(e) => updateField("region", e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   >
                     {REGIONS.filter((r) => r !== "全部").map((r) => (
-                      <option key={r} value={r} className="bg-[#0f0f1a]">{r}</option>
+                      <option key={r} value={r} className="bg-white">{r}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* 直飛/轉機 */}
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">飛行方式</label>
-                  <div className="flex h-[38px] items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3">
-                    <span className="text-sm text-white/70">轉機</span>
+                  <label className="mb-1 block text-xs text-gray-500">飛行方式</label>
+                  <div className="flex h-[38px] items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3">
+                    <span className="text-sm text-gray-600">轉機</span>
                     <button
                       type="button"
                       onClick={() => updateField("direct", !editingRoute.direct)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${editingRoute.direct ? "bg-sky-600" : "bg-white/20"}`}
+                      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${editingRoute.direct ? "bg-sky-600" : "bg-gray-300"}`}
                     >
                       <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${editingRoute.direct ? "translate-x-4" : "translate-x-0.5"}`} />
                     </button>
-                    <span className="text-sm text-white/70">直飛</span>
+                    <span className="text-sm text-gray-600">直飛</span>
                   </div>
                 </div>
               </div>
@@ -437,76 +437,76 @@ export default function FlightsPage() {
               <div className="grid grid-cols-2 gap-3">
                 {/* 出發地 */}
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">出發地</label>
+                  <label className="mb-1 block text-xs text-gray-500">出發地</label>
                   <input
                     type="text"
                     value={editingRoute.from_city ?? "台北"}
                     onChange={(e) => updateField("from_city", e.target.value)}
                     placeholder="台北"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   />
                 </div>
 
                 {/* 目的地 */}
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">目的地 *</label>
+                  <label className="mb-1 block text-xs text-gray-500">目的地 *</label>
                   <input
                     type="text"
                     value={editingRoute.to_city ?? ""}
                     onChange={(e) => updateField("to_city", e.target.value)}
                     placeholder="東京"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   />
                 </div>
               </div>
 
               {/* 航空公司 */}
               <div>
-                <label className="mb-1 block text-xs text-white/50">航空公司 *</label>
+                <label className="mb-1 block text-xs text-gray-500">航空公司 *</label>
                 <input
                   type="text"
                   value={editingRoute.airlines ?? ""}
                   onChange={(e) => updateField("airlines", e.target.value)}
                   placeholder="長榮 / 華航 / ANA"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {/* 飛行時間 */}
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">飛行時間 *</label>
+                  <label className="mb-1 block text-xs text-gray-500">飛行時間 *</label>
                   <input
                     type="text"
                     value={editingRoute.duration ?? ""}
                     onChange={(e) => updateField("duration", e.target.value)}
                     placeholder="約 3.5 小時"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   />
                 </div>
 
                 {/* 參考票價 */}
                 <div>
-                  <label className="mb-1 block text-xs text-white/50">參考票價 *</label>
+                  <label className="mb-1 block text-xs text-gray-500">參考票價 *</label>
                   <input
                     type="text"
                     value={editingRoute.price_range ?? ""}
                     onChange={(e) => updateField("price_range", e.target.value)}
                     placeholder="NT$ 5,000 起"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   />
                 </div>
               </div>
             </div>
 
             {/* Custom fields */}
-            <div className="mt-4 border-t border-white/10 pt-4">
+            <div className="mt-4 border-t border-gray-200 pt-4">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs text-white/50">自定義欄位</span>
+                <span className="text-xs text-gray-500">自定義欄位</span>
                 <button
                   type="button"
                   onClick={addCustomField}
-                  className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300"
+                  className="flex items-center gap-1 text-xs text-sky-600 hover:text-sky-500"
                 >
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -515,7 +515,7 @@ export default function FlightsPage() {
                 </button>
               </div>
               {customFields.length === 0 && (
-                <p className="text-center text-[11px] text-white/25">點擊「新增欄位」加入自訂資訊</p>
+                <p className="text-center text-[11px] text-gray-400">點擊「新增欄位」加入自訂資訊</p>
               )}
               <div className="space-y-2">
                 {customFields.map((f, i) => (
@@ -525,19 +525,19 @@ export default function FlightsPage() {
                       value={f.key}
                       onChange={(e) => updateCustomField(i, "key", e.target.value)}
                       placeholder="欄位名稱"
-                      className="w-28 shrink-0 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                      className="w-28 shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                     />
                     <input
                       type="text"
                       value={f.value}
                       onChange={(e) => updateCustomField(i, "value", e.target.value)}
                       placeholder="內容"
-                      className="flex-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                     />
                     <button
                       type="button"
                       onClick={() => removeCustomField(i)}
-                      className="shrink-0 rounded-xl bg-white/5 px-2 text-white/40 hover:bg-red-500/20 hover:text-red-400"
+                      className="shrink-0 rounded-xl bg-gray-50 px-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
                     >
                       ✕
                     </button>
@@ -548,7 +548,7 @@ export default function FlightsPage() {
 
             {/* Error */}
             {saveError && (
-              <p className="mt-3 rounded-xl bg-red-500/15 px-3 py-2 text-sm text-red-400">{saveError}</p>
+              <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{saveError}</p>
             )}
 
             {/* Action buttons */}
@@ -575,7 +575,7 @@ export default function FlightsPage() {
                 type="button"
                 onClick={closeEditor}
                 disabled={isSaving}
-                className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 disabled:opacity-50"
+                className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-900 transition hover:bg-gray-200 disabled:opacity-50"
               >
                 取消
               </button>
