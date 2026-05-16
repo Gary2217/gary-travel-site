@@ -288,8 +288,8 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
 
       {/* 模式 Tab */}
       {!flightOnly && (
-      <div className="mb-3 flex justify-center">
-        <div className="inline-flex min-w-0 items-center gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mx-auto flex w-max items-center gap-1 rounded-full bg-gray-100 p-1">
           <button
             type="button"
             onClick={() => setActiveMode("trip")}
