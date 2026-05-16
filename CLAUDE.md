@@ -50,31 +50,61 @@
 ```
 src/
 ├── app/
-│   ├── page.tsx                         # 首頁（目的地總覽）
-│   ├── layout.tsx                       # Root layout
-│   ├── globals.css                      # 全域樣式（深色主題）
-│   ├── destination/[id]/page.tsx        # 目的地詳情 → 行程列表
-│   ├── trip/[id]/page.tsx               # 行程詳情 → 每日行程 + 諮詢
-│   └── api/                             # API Routes
+│   ├── page.tsx                              # 首頁（目的地總覽）
+│   ├── layout.tsx                            # Root layout
+│   ├── loading.tsx                           # 全域 loading 頁
+│   ├── not-found.tsx                         # 404 頁
+│   ├── globals.css                           # 全域樣式（亮色主題）
+│   ├── destination/[id]/page.tsx             # 目的地詳情 → 行程列表
+│   ├── destination/[id]/layout.tsx           # 目的地 layout
+│   ├── trip/[id]/page.tsx                    # 行程詳情 → 每日行程 + 諮詢
+│   ├── flights/page.tsx                      # 機票頁
+│   ├── flights/[id]/page.tsx                 # 機票詳情
+│   ├── flights/layout.tsx                    # 機票 layout
+│   ├── document-services/page.tsx            # 文件服務頁
+│   ├── document-services/[id]/page.tsx       # 文件服務詳情
+│   ├── mini-transit-tickets/page.tsx         # 迷你轉機票頁
+│   ├── mini-transit-tickets/[id]/page.tsx    # 迷你轉機票詳情
+│   ├── admin/page.tsx                        # 後台管理頁
+│   └── api/                                  # API Routes
 │       ├── regions/route.ts
+│       ├── destinations/route.ts
 │       ├── destinations/[id]/route.ts
 │       ├── destinations/[id]/trips/route.ts
 │       ├── trips/[id]/route.ts
 │       ├── inquiries/route.ts
 │       ├── track-click/route.ts
-│       └── upload-image/route.ts
+│       ├── upload-image/route.ts
+│       ├── popular-trips/route.ts
+│       └── og/route.tsx
 ├── components/
-│   ├── StickyHeader.tsx                 # 頂部固定導航（含社群按鈕）
-│   ├── SocialCta.tsx                    # 社群 CTA 區塊
-│   ├── InquiryButtons.tsx               # 諮詢按鈕（floating / inline）
-│   ├── InquiryForm.tsx                  # 線上諮詢表單
-│   ├── TripCard.tsx                     # 行程卡片
-│   ├── DayItinerary.tsx                 # 每日行程摺疊面板
-│   ├── ImageEditor.tsx                  # 開發者模式圖片編輯器
-│   ├── DevModeToggle.tsx                # 開發者模式切換
-│   └── Toast.tsx                        # Toast 通知
+│   ├── StickyHeader.tsx                      # 頂部固定導航（含社群按鈕）
+│   ├── SocialCta.tsx                         # 社群 CTA + 聯絡區塊
+│   ├── FloatingContact.tsx                   # 浮動聯絡按鈕
+│   ├── ContactFormModal.tsx                  # 聯絡表單 Modal
+│   ├── ContactInquiries.tsx                  # 諮詢管理（Dev mode）
+│   ├── InquiryButtons.tsx                    # 諮詢按鈕（floating / inline）
+│   ├── InquiryForm.tsx                       # 線上諮詢表單
+│   ├── TripCard.tsx                          # 行程卡片
+│   ├── DayItinerary.tsx                      # 每日行程摺疊面板
+│   ├── DepartureDates.tsx                    # 出發日期選擇
+│   ├── FlightDepartureDates.tsx              # 機票出發日期
+│   ├── SideMediaCarousel.tsx                 # 側邊媒體輪播
+│   ├── TravelSearchBar.tsx                   # 旅遊搜尋列
+│   ├── Skeleton.tsx                          # 骨架屏元件
+│   ├── PdfViewer.tsx                         # PDF 檢視器
+│   ├── FavoriteButton.tsx                    # 收藏按鈕
+│   ├── ShareButton.tsx                       # 分享按鈕
+│   ├── ScrollToTop.tsx                       # 回到頂部按鈕
+│   ├── LegalNotice.tsx                       # 免責聲明
+│   ├── MaintenanceGuard.tsx                  # 維護中守衛
+│   ├── ImageEditor.tsx                       # 開發者模式圖片編輯器
+│   ├── LogoUploader.tsx                      # Logo 上傳器
+│   ├── DevModeToggle.tsx                     # 開發者模式切換
+│   └── Toast.tsx                             # Toast 通知
 └── lib/
-    └── supabase.ts                      # 型別定義 + fetch 輔助函式 + 社群連結常數
+    ├── supabase.ts                           # 型別定義 + fetch 輔助函式 + 社群連結常數
+    └── external-link.ts                      # 外部連結安全開啟工具
 ```
 
 ---
@@ -96,23 +126,48 @@ src/
 
 ## 5. 樣式規則
 
-### 深色毛玻璃主題（照抄，不要自創）
+### 亮色白底主題（照抄，不要自創）
 
 ```
-背景漸層：bg-[linear-gradient(135deg,#0b0f2a_0%,#0a0a0a_50%,#1a0d0d_100%)]
-毛玻璃底：bg-[rgba(20,20,30,0.38)] backdrop-blur-[12px]
-卡片邊框：border border-white/10
-圓角：    rounded-[1.5rem] 或 rounded-[1.75rem]
+全域背景漸層（globals.css）：
+  linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 30%, #fffbeb 60%, #fdf2f8 100%) fixed
+  → 淡藍 → 淡綠 → 淡黃 → 淡粉，明亮柔和
+
+搜尋區塊背景：
+  bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)]
+
+Header / Region Tabs：
+  bg-white/95 backdrop-blur-[12px] border-b border-gray-200
+
+白底卡片：
+  rounded-xl border border-gray-200 bg-white shadow-sm
+
+灰底卡片（目的地縮圖卡）：
+  rounded-xl border border-gray-200 bg-gray-100
+
+通用圓角：rounded-xl 或 rounded-2xl
+CTA 區塊圓角：rounded-2xl border border-gray-200 bg-white shadow-sm
 ```
 
 ### 文字色彩
 
 ```
-主要文字：text-white
-次要文字：text-white/70
-副標文字：text-white/85
-提示文字：text-white/50
+主要文字：text-gray-900
+次要文字：text-gray-600
+提示文字：text-gray-500
+極細提示：text-gray-400
+子標籤色：text-sky-600
 錯誤文字：text-red-400
+圖片疊加文字：text-white（搭配 text-shadow 或 bg-gradient-to-t from-black/70）
+```
+
+### 按鈕
+
+```
+主要按鈕：bg-sky-600 hover:bg-sky-500 text-white rounded-full
+連結 hover：hover:text-[#0096c7] hover:border-[#00b4d8] hover:bg-sky-50
+CTA 橘色按鈕：bg-[#ff6b35] hover:bg-[#e55a2b] text-white rounded-lg
+重新載入 / 清除：bg-[#00b4d8] hover:bg-[#0096c7] text-white rounded-lg
 ```
 
 ### 品牌色
@@ -121,7 +176,8 @@ src/
 LINE：      #06C755（hover: #05b64d）
 Facebook：  #1877F2（hover: #1565d8）
 Instagram： #E4405F（hover: #d62d4a）
-強調色：    sky-400 / sky-300 / sky-600
+主要強調色：sky-600 / sky-500 / [#00b4d8] / [#0096c7]
+CTA 橘色：  #ff6b35 / #e55a2b
 ```
 
 ### 響應式
@@ -265,7 +321,7 @@ export async function GET(
 - [ ] 有 error 狀態（繁體中文訊息）
 - [ ] 資料透過 `src/lib/supabase.ts` fetch 函式取得
 - [ ] 若需要新 API route，每個 handler 內獨立建立 Supabase client
-- [ ] 樣式使用現有的深色毛玻璃主題 class
+- [ ] 樣式使用現有的亮色白底主題 class（白底卡片、gray-200 邊框、sky-600 強調色）
 - [ ] 社群連結從 `src/lib/supabase.ts` import
 - [ ] 支援手機與桌面顯示
 
@@ -274,7 +330,7 @@ export async function GET(
 - [ ] 檔案頂部有 `"use client"`
 - [ ] Props 用 `interface` 定義
 - [ ] 放在 `src/components/` 下
-- [ ] 樣式跟現有元件一致（圓角、邊框、毛玻璃）
+- [ ] 樣式跟現有元件一致（圓角 rounded-xl / rounded-2xl、border-gray-200、bg-white）
 
 ---
 

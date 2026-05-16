@@ -177,7 +177,6 @@ export default function DocumentServicesPage() {
           className="mt-10"
           title="想確認你的證件條件嗎？"
           description="聯繫旅遊規劃師 蓋瑞 GARY，先幫你確認可辦理項目與時程"
-          logoUrl={siteLogoUrl}
         />
       </section>
 

@@ -4,11 +4,11 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0f1923] px-4 text-white">
+    <main className="flex min-h-screen items-center justify-center px-4 text-gray-900">
       <div className="text-center">
         <p className="text-7xl font-bold text-sky-400 sm:text-8xl">404</p>
         <h1 className="mt-4 text-2xl font-bold sm:text-3xl">找不到此頁面</h1>
-        <p className="mt-3 text-base text-white/70">
+        <p className="mt-3 text-base text-gray-500">
           您要找的頁面不存在或已被移除
         </p>
         <Link

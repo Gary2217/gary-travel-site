@@ -359,7 +359,6 @@ export default function FlightsPage() {
           className="mb-8 mt-2"
           title="找到理想的航線了嗎？"
           description="聯繫旅遊規劃師蓋瑞 GARY，為您比較票價、規劃完整旅遊行程"
-          logoUrl={siteLogoUrl}
           lineLabel="LINE 詢問機票"
         />
       </div>

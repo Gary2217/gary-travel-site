@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 
 interface DayItineraryProps {
   dayNumber: number;
@@ -11,7 +11,7 @@ interface DayItineraryProps {
   activities: string[];
 }
 
-export default function DayItinerary({
+function DayItinerary({
   dayNumber,
   title,
   description,
@@ -81,3 +81,5 @@ export default function DayItinerary({
     </div>
   );
 }
+
+export default memo(DayItinerary);

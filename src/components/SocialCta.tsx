@@ -9,7 +9,6 @@ import LegalNotice from "./LegalNotice";
 interface SocialCtaProps {
   title: string;
   description: string;
-  logoUrl?: string;
   lineLabel?: string;
   facebookLabel?: string;
   instagramLabel?: string;
@@ -19,7 +18,6 @@ interface SocialCtaProps {
 export default function SocialCta({
   title,
   description,
-  logoUrl,
   lineLabel = "LINE 諮詢",
   facebookLabel = "FB 私訊",
   instagramLabel = "IG 私訊",

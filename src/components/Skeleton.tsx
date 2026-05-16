@@ -26,7 +26,7 @@ export function GridSkeleton({ count = 5, cols = "grid-cols-2 sm:grid-cols-3 md:
   return (
     <div className={`grid gap-3 ${cols}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <CardSkeleton key={i} />
+        <CardSkeleton key={`skeleton-${i}`} />
       ))}
     </div>
   );

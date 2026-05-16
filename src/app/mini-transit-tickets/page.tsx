@@ -170,7 +170,6 @@ export default function MiniTransitTicketsPage() {
           className="mt-10"
           title="想確認小三通票券資訊嗎？"
           description="聯繫旅遊規劃師 蓋瑞 GARY，先幫你確認時段、票價與辦理流程"
-          logoUrl={siteLogoUrl}
         />
       </section>
 
