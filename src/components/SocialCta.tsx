@@ -4,7 +4,6 @@ import { useState } from "react";
 import { lineDmHref, fbDmHref, igDmHref, fbHref, igHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 import ContactFormModal from "./ContactFormModal";
-import LegalNotice from "./LegalNotice";
 
 interface SocialCtaProps {
   title: string;
@@ -28,20 +27,15 @@ export default function SocialCta({
   const [showContactForm, setShowContactForm] = useState(false);
   return (
     <div className={`rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 ${className}`.trim()}>
-      <div className="grid gap-3 lg:grid-cols-[1fr_1.12fr] lg:items-center">
-        <div className="lg:flex lg:justify-end">
-          <LegalNotice className="mt-1 w-full max-w-[620px] lg:mt-0" />
-        </div>
-
-        <div className="text-center lg:flex lg:justify-start lg:pl-12">
-          <div className="w-full max-w-[620px] text-center lg:text-left">
+      <div className="flex justify-center">
+          <div className="w-full max-w-[620px] text-center">
           <h3 className="text-base font-bold text-gray-900">{title}</h3>
           <p className="mt-1 text-xs text-gray-500">{description}</p>
           <p className="mt-2 text-[11px] leading-5 text-gray-500">
             免費諮詢 · 不收服務費 · 即時回覆
           </p>
 
-          <div className="mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <button
               type="button"
               onClick={() => openExternalLink(lineDmHref)}
@@ -100,7 +94,6 @@ export default function SocialCta({
           </div>
 
           </div>
-        </div>
       </div>
       <ContactFormModal isOpen={showContactForm} onClose={() => setShowContactForm(false)} />
     </div>

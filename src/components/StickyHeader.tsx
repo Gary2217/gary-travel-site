@@ -108,18 +108,6 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
           {/* 右側：導航 + 社群 */}
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="hidden items-center gap-4 sm:flex">
-              <Link
-                href="/mini-transit-tickets"
-                className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
-              >
-                小三通票卷
-              </Link>
-              <Link
-                href="/document-services"
-                className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
-              >
-                證件代辦
-              </Link>
               <button
                 onClick={() => setShowContactForm(true)}
                 className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
@@ -182,20 +170,6 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
       {mobileMenuOpen && (
         <div ref={menuRef} className="fixed inset-x-0 top-header z-header border-b border-gray-200 bg-white/98 backdrop-blur-[12px] sm:hidden">
           <nav className="mx-auto flex max-w-site flex-col px-4 py-3">
-            <Link
-              href="/mini-transit-tickets"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
-            >
-              小三通票卷
-            </Link>
-            <Link
-              href="/document-services"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
-            >
-              證件代辦
-            </Link>
             <button
               onClick={() => {
                 setMobileMenuOpen(false);

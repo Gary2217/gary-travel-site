@@ -289,20 +289,47 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       {/* 模式 Tab */}
       {!flightOnly && (
       <div className="mb-3 flex justify-center">
-        <div className="inline-flex rounded-full bg-gray-100 p-1">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="inline-flex shrink-0 rounded-full bg-gray-100 p-1">
+            <button
+              type="button"
+              onClick={() => setActiveMode("trip")}
+              className={`flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition ${
+                activeMode === "trip"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              團體旅遊
+            </button>
+          </div>
+          <Link
+            href="/mini-transit-tickets"
+            className="flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold text-gray-500 transition hover:text-gray-900"
+          >
+            小三通票卷
+          </Link>
+          <Link
+            href="/document-services"
+            className="flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold text-gray-500 transition hover:text-gray-900"
+          >
+            證件代辦
+          </Link>
           <button
             type="button"
-            onClick={() => setActiveMode("trip")}
-            className={`flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition ${
-              activeMode === "trip"
-                ? "bg-white text-gray-900 shadow"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
+            onClick={() => {
+              const el = document.getElementById('social-community');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            className="flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold text-sky-600 transition hover:text-sky-700"
           >
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            團體旅遊
+            加入社群
           </button>
         </div>
       </div>
