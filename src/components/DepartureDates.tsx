@@ -123,6 +123,30 @@ function formatDate(dateStr: string) {
   };
 }
 
+function daysUntil(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr + "T00:00:00");
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+}
+
+function CountdownBadge({ days }: { days: number }) {
+  if (days < 0) return null;
+  if (days === 0) return <span className="mt-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">今日出發</span>;
+  if (days <= 3) return <span className="mt-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">還有 {days} 天</span>;
+  if (days <= 14) return <span className="mt-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">還有 {days} 天</span>;
+  if (days <= 60) return <span className="mt-0.5 rounded-full bg-sky-100 px-1.5 py-0.5 text-[9px] font-bold text-sky-600">還有 {days} 天</span>;
+  return null;
+}
+
+function SeatsBadge({ available, total }: { available: number; total: number }) {
+  if (total === 0 && available === 0) return null;
+  if (available === 0 && total > 0) return <span className="mt-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-500">已售罄</span>;
+  if (available <= 3) return <span className="mt-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">僅剩 {available} 位</span>;
+  if (available <= 10) return <span className="mt-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">剩 {available} 位</span>;
+  return <span className="mt-0.5 text-[9px] text-gray-400">可售 {available}</span>;
+}
+
 function getWeekdayFromDate(dateStr: string) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
@@ -606,13 +630,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 </div>
                 {monthDates.map((d) => {
                   const info = formatDate(d.departure_date);
-                   const isSelected = selectedDateId === d.id;
-                   return (
-                     <button
-                       key={d.id}
-                       type="button"
-                       onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
-                      className={`rounded-lg border px-3 py-2 text-center transition ${
+                  const days = daysUntil(d.departure_date);
+                  const isSelected = selectedDateId === d.id;
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
+                      className={`flex flex-col items-center rounded-lg border px-3 py-2 text-center transition ${
                         isSelected
                           ? "border-sky-400 bg-sky-50"
                           : "border-gray-200 bg-white hover:border-gray-300"
@@ -626,11 +651,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                           <span className="text-[10px] text-gray-400">洽詢</span>
                         )}
                       </div>
-                      {(d.seats_available > 0 || d.seats_total > 0) && (
-                        <div className="mt-0.5 text-[10px] text-gray-500">
-                          可售{d.seats_available}
-                        </div>
-                      )}
+                      <CountdownBadge days={days} />
+                      <SeatsBadge available={d.seats_available} total={d.seats_total} />
                     </button>
                   );
                 })}

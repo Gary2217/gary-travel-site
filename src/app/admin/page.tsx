@@ -23,6 +23,20 @@ interface CleanupResult {
   orphan_paths: string[];
   deleted_paths: string[];
 }
+interface EndpointCheck {
+  name: string;
+  url: string;
+  status: "ok" | "error";
+  statusCode?: number;
+  latency_ms?: number;
+  error?: string;
+}
+interface HealthResult {
+  db: "connected" | "error";
+  db_latency_ms: number;
+  endpoints: EndpointCheck[];
+  checked_at: string;
+}
 
 // ── Helpers ──────────────────────────────────────────────
 function relativeTime(iso: string) {
@@ -168,7 +182,7 @@ const PLATFORM_BADGE: Record<string, string> = {
 export default function AdminPage() {
   const router = useRouter();
   const [checking,       setChecking]       = useState(true);
-  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events">("overview");
+  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events" | "health">("overview");
   const [stats,          setStats]          = useState<Stats | null>(null);
   const [statsLoading,   setStatsLoading]   = useState(false);
   const [selectedTrip,   setSelectedTrip]   = useState<string | null>(null);
@@ -176,6 +190,8 @@ export default function AdminPage() {
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [cleanupError, setCleanupError] = useState<string | null>(null);
   const [cleanupResult, setCleanupResult] = useState<CleanupResult | null>(null);
+  const [healthLoading,  setHealthLoading]  = useState(false);
+  const [healthResult,   setHealthResult]   = useState<HealthResult | null>(null);
 
   async function runOrphanCleanup(dryRun: boolean) {
     setCleanupLoading(true);
@@ -200,6 +216,45 @@ export default function AdminPage() {
       setCleanupLoading(false);
     }
   }
+
+  async function checkHealth() {
+    setHealthLoading(true);
+    let dbStatus: "connected" | "error" = "error";
+    let dbLatency = 0;
+    try {
+      const start = performance.now();
+      const res = await fetch("/api/health", { cache: "no-store" });
+      const data = await res.json();
+      dbStatus = data.db === "connected" ? "connected" : "error";
+      dbLatency = data.latency_ms ?? Math.round(performance.now() - start);
+    } catch { /* keep error */ }
+
+    const eps = [
+      { name: "地區 API", url: "/api/regions" },
+      { name: "目的地 API", url: "/api/destinations" },
+      { name: "熱門行程 API", url: "/api/popular-trips" },
+      { name: "搜尋 API", url: "/api/search?q=test" },
+    ];
+    const endpoints: EndpointCheck[] = [];
+    for (const ep of eps) {
+      try {
+        const start = performance.now();
+        const res = await fetch(ep.url, { cache: "no-store" });
+        endpoints.push({ name: ep.name, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
+      } catch {
+        endpoints.push({ name: ep.name, url: ep.url, status: "error", error: "無法連線" });
+      }
+    }
+    setHealthResult({ db: dbStatus, db_latency_ms: dbLatency, endpoints, checked_at: new Date().toISOString() });
+    setHealthLoading(false);
+  }
+
+  useEffect(() => {
+    if (activeTab === "health" && !healthResult && !healthLoading) {
+      checkHealth();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   useEffect(() => {
     fetch("/api/dev-auth/status", { cache: "no-store" })
@@ -266,7 +321,7 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-6">
-          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"]] as const).map(([tab, label]) => (
+          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"]] as const).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeTab === tab ? "bg-sky-600 text-white" : "text-white/50 hover:text-white/80"}`}>
               {label}
@@ -625,6 +680,119 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── Health Tab ── */}
+        {activeTab === "health" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-white">系統健康狀態</h2>
+                {healthResult && (
+                  <p className="mt-0.5 text-[11px] text-white/40">最後檢查：{new Date(healthResult.checked_at).toLocaleString("zh-TW")}</p>
+                )}
+              </div>
+              <button
+                onClick={checkHealth}
+                disabled={healthLoading}
+                className="rounded-full bg-sky-600/20 px-3 py-1.5 text-xs font-semibold text-sky-400 transition hover:bg-sky-600/30 disabled:opacity-50"
+              >
+                {healthLoading ? "檢查中..." : "↻ 重新檢查"}
+              </button>
+            </div>
+
+            {healthLoading && !healthResult && (
+              <div className="flex items-center justify-center rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-12 backdrop-blur-[12px]">
+                <div className="flex items-center gap-2 text-white/40">
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <span className="text-sm">系統健康檢查中...</span>
+                </div>
+              </div>
+            )}
+
+            {!healthLoading && !healthResult && (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-12 text-center backdrop-blur-[12px]">
+                <p className="text-sm text-white/40">點擊「↻ 重新檢查」開始健康檢查</p>
+                <p className="mt-1 text-[11px] text-white/25">將依序檢查資料庫連線與各 API 端點狀態</p>
+              </div>
+            )}
+
+            {healthResult && (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className={`rounded-2xl border p-5 backdrop-blur-[12px] ${healthResult.db === "connected" ? "border-emerald-500/30 bg-emerald-500/10" : "border-red-500/30 bg-red-500/10"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${healthResult.db === "connected" ? "bg-emerald-500/20" : "bg-red-500/20"}`}>
+                        <span className={`h-3 w-3 rounded-full ${healthResult.db === "connected" ? "animate-pulse bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-red-400 shadow-[0_0_8px_#f87171]"}`} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/50">資料庫連線（Supabase）</p>
+                        <p className={`mt-0.5 text-base font-bold ${healthResult.db === "connected" ? "text-emerald-400" : "text-red-400"}`}>
+                          {healthResult.db === "connected" ? "正常連線" : "連線失敗"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-5 backdrop-blur-[12px]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/20">
+                        <svg className="h-5 w-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/50">資料庫查詢延遲</p>
+                        <p className={`mt-0.5 text-base font-bold ${healthResult.db_latency_ms < 200 ? "text-emerald-400" : healthResult.db_latency_ms < 500 ? "text-amber-400" : "text-red-400"}`}>
+                          {healthResult.db_latency_ms} ms
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+                  <div className="border-b border-white/10 px-4 py-3">
+                    <h2 className="text-sm font-bold text-white">API 端點狀態</h2>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {healthResult.endpoints.map((ep, i) => (
+                      <div key={i} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${ep.status === "ok" ? "bg-emerald-400" : "bg-red-400"}`} />
+                        <span className="w-28 shrink-0 text-sm text-white/80">{ep.name}</span>
+                        <span className="flex-1 text-[11px] text-white/30">{ep.url}</span>
+                        {ep.latency_ms !== undefined && (
+                          <span className={`text-xs font-semibold ${ep.latency_ms < 300 ? "text-emerald-400" : ep.latency_ms < 800 ? "text-amber-400" : "text-red-400"}`}>
+                            {ep.latency_ms} ms
+                          </span>
+                        )}
+                        {ep.statusCode !== undefined && (
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ep.status === "ok" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                            {ep.statusCode}
+                          </span>
+                        )}
+                        {ep.status === "error" && ep.error && (
+                          <span className="text-[11px] text-red-400">{ep.error}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
+                  <p className="text-[11px] text-white/30">
+                    延遲標準：
+                    <span className="ml-2 text-emerald-400">● 優良 &lt;200ms（DB）/ &lt;300ms（API）</span>
+                    <span className="ml-2 text-amber-400">● 一般 &lt;500ms（DB）/ &lt;800ms（API）</span>
+                    <span className="ml-2 text-red-400">● 較慢 超過以上標準</span>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         )}
 

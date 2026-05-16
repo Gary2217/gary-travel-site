@@ -1,10 +1,20 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { lineHref, type FlightRoute } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
+
+type TripSearchResult = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  duration: string;
+  cover_image_url: string | null;
+  destinations: { title: string } | null;
+};
 
 type Destination = { id: string; title: string };
 type RegionOption = { id: string; categoryLabel: string; destinations: Destination[] };
@@ -110,6 +120,69 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   const dateInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
+
+  // === 關鍵字搜尋 state ===
+  const [keyword, setKeyword] = useState("");
+  const [keywordResults, setKeywordResults] = useState<TripSearchResult[]>([]);
+  const [keywordLoading, setKeywordLoading] = useState(false);
+  const [keywordOpen, setKeywordOpen] = useState(false);
+  const keywordRef = useRef<HTMLDivElement>(null);
+  const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const updateDropdownRect = useCallback(() => {
+    if (keywordRef.current) {
+      const rect = keywordRef.current.getBoundingClientRect();
+      setDropdownRect({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  const searchTrips = useCallback(async (q: string) => {
+    if (q.trim().length < 1) {
+      setKeywordResults([]);
+      setKeywordOpen(false);
+      return;
+    }
+    setKeywordLoading(true);
+    updateDropdownRect();
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
+      const data = res.ok ? await res.json() : [];
+      setKeywordResults(Array.isArray(data) ? data : []);
+      setKeywordOpen(true);
+    } catch {
+      setKeywordResults([]);
+    }
+    setKeywordLoading(false);
+  }, [updateDropdownRect]);
+
+  useEffect(() => {
+    if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current);
+    if (!keyword.trim()) {
+      setKeywordResults([]);
+      setKeywordOpen(false);
+      return;
+    }
+    keywordTimerRef.current = setTimeout(() => searchTrips(keyword), 300);
+    return () => {
+      if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current);
+    };
+  }, [keyword, searchTrips]);
+
+  useEffect(() => {
+    if (!keywordOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (keywordRef.current && !keywordRef.current.contains(e.target as Node)) {
+        setKeywordOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [keywordOpen]);
 
   // === 機票搜尋 state ===
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
@@ -336,6 +409,83 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       {/* ── 行程搜尋 ── */}
       {activeMode === "trip" && (
         <div ref={containerRef} className="relative">
+
+          {/* 關鍵字快速搜尋 */}
+          <div ref={keywordRef} className="relative mb-3">
+            <div className="flex items-center overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center text-gray-400">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onFocus={() => { if (keywordResults.length > 0) { updateDropdownRect(); setKeywordOpen(true); } }}
+                placeholder="輸入行程名稱搜尋，例如：北海道、九州..."
+                className="flex-1 py-2.5 pr-3 text-sm text-gray-700 outline-none placeholder:text-gray-400"
+              />
+              {keyword && (
+                <button type="button" onClick={() => { setKeyword(""); setKeywordResults([]); setKeywordOpen(false); }}
+                  className="px-3 text-gray-300 transition hover:text-gray-500">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              {keywordLoading && (
+                <span className="px-3 text-gray-400">
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </span>
+              )}
+            </div>
+
+            {/* 搜尋結果下拉（Portal 渲染到 body，避免被 sticky 元素的 stacking context 蓋住） */}
+            {keywordOpen && dropdownRect && typeof document !== "undefined" && createPortal(
+              <div
+                className="fixed z-modal overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20"
+                style={{ top: dropdownRect.top + 4, left: dropdownRect.left, width: dropdownRect.width }}
+              >
+                {keywordResults.length === 0 ? (
+                  <p className="px-4 py-5 text-center text-sm text-gray-400">找不到符合「{keyword}」的行程</p>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto py-1.5">
+                    {keywordResults.map((trip) => (
+                      <Link
+                        key={trip.id}
+                        href={`/trip/${trip.id}`}
+                        onClick={() => setKeywordOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 transition hover:bg-sky-50"
+                      >
+                        {trip.cover_image_url ? (
+                          <img src={trip.cover_image_url} alt={trip.title}
+                            className="h-10 w-14 shrink-0 rounded-lg object-cover" />
+                        ) : (
+                          <div className="h-10 w-14 shrink-0 rounded-lg bg-gray-100" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-gray-900">{trip.title}</p>
+                          <p className="truncate text-xs text-gray-500">
+                            {trip.destinations?.title && <span>{trip.destinations.title}・</span>}
+                            {trip.duration}
+                          </p>
+                        </div>
+                        <svg className="h-4 w-4 shrink-0 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>,
+              document.body
+            )}
+          </div>
+
           <div className="flex flex-col overflow-visible rounded-2xl bg-white shadow-2xl shadow-black/40 sm:flex-row sm:rounded-full">
 
             {/* 出發地 */}

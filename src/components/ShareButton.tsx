@@ -26,12 +26,20 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const fullUrl = `https://gary-travel-site.vercel.app${url}`;
+  const baseUrl = `https://gary-travel-site.vercel.app${url}`;
   const shareText = `${title} - 旅行沒有終點`;
+
+  function withUtm(source: string) {
+    const u = new URL(baseUrl);
+    u.searchParams.set("utm_source", source);
+    u.searchParams.set("utm_medium", "social");
+    u.searchParams.set("utm_campaign", "share");
+    return u.toString();
+  }
 
   const shareLine = () => {
     window.open(
-      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(fullUrl)}&text=${encodeURIComponent(shareText)}`,
+      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(withUtm("line"))}&text=${encodeURIComponent(shareText)}`,
       "_blank",
     );
     setOpen(false);
@@ -39,7 +47,7 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
 
   const shareFb = () => {
     window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fullUrl)}`,
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(withUtm("facebook"))}`,
       "_blank",
     );
     setOpen(false);
@@ -47,7 +55,7 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(fullUrl);
+      await navigator.clipboard.writeText(withUtm("copy"));
       setCopied(true);
       setTimeout(() => {
         setCopied(false);

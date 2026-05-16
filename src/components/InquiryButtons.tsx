@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Toast from "@/components/Toast";
-import { lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
+import { lineDmHref, lineMessageHref, fbDmHref, igDmHref } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
 
@@ -10,10 +10,21 @@ interface InquiryButtonsProps {
   tripTitle: string;
   tripId?: string;
   variant: "floating" | "inline";
+  selectedDate?: string; // ISO date string (YYYY-MM-DD)
 }
 
-export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryButtonsProps) {
+function formatDate(dateStr: string) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export default function InquiryButtons({ tripTitle, tripId, variant, selectedDate }: InquiryButtonsProps) {
   const [toast, setToast] = useState<string | null>(null);
+
+  const lineUrl = selectedDate
+    ? lineMessageHref(`您好，我想詢問【${tripTitle}】${formatDate(selectedDate)} 出發的報價`)
+    : lineDmHref;
 
   const copyAndOpen = useCallback(async (url: string, platform: string, platformCode: string) => {
     track({ event_type: "trip_inquiry", platform: platformCode, trip_id: tripId, trip_title: tripTitle });
@@ -29,6 +40,11 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
     }, 400);
   }, [tripTitle, tripId]);
 
+  const openLine = useCallback(() => {
+    track({ event_type: "trip_inquiry", platform: "LINE", trip_id: tripId, trip_title: tripTitle });
+    openExternalLink(lineUrl);
+  }, [lineUrl, tripId, tripTitle]);
+
   if (variant === "floating") {
     return (
       <>
@@ -38,7 +54,7 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
             私訊
           </p>
           <button
-            onClick={() => copyAndOpen(lineDmHref, "LINE", "LINE")}
+            onClick={openLine}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-platform-line text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:h-11 sm:w-11 sm:hover:scale-110"
             title="LINE 詢問"
             aria-label="透過 LINE 詢問行程"
@@ -79,7 +95,7 @@ export default function InquiryButtons({ tripTitle, tripId, variant }: InquiryBu
         </p>
         <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:justify-center md:gap-1">
           <button
-            onClick={() => copyAndOpen(lineDmHref, "LINE", "LINE")}
+            onClick={openLine}
             className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-[#06C755] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#05b64d] sm:w-auto md:h-10 md:min-w-[128px] md:px-4"
           >
             <span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white">

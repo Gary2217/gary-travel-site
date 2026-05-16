@@ -4,15 +4,17 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { getTripWithDays, getSiteLogo, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
-import PdfViewer from "@/components/PdfViewer";
 import DayItinerary from "@/components/DayItinerary";
 import DepartureDates from "@/components/DepartureDates";
 import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
-import ImageEditor from "@/components/ImageEditor";
-import SideMediaCarousel from "@/components/SideMediaCarousel";
 import SocialCta from "@/components/SocialCta";
+
+const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
+const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
+const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel"), { ssr: false });
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
 
@@ -790,7 +792,7 @@ export default function TripPage() {
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* 浮動詢問按鈕 */}
-      <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="floating" />
+      <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="floating" selectedDate={selectedDeparture?.departure_date} />
 
       <div id="trip-content" />
 
@@ -1834,10 +1836,10 @@ export default function TripPage() {
 
         {/* 索取行程 / 詢問報價 CTA */}
         <div className="mb-8 mt-6">
-          <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="inline" />
+          <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="inline" selectedDate={selectedDeparture?.departure_date} />
         </div>
 
-        <SocialCta className="mt-10" title="喜歡這個行程嗎？" description="聯繫旅遊規劃師蓋瑞 GARY，為您量身打造專屬行程" logoUrl={siteLogoUrl} />
+        <SocialCta className="mt-10" title="喜歡這個行程嗎？" description="聯繫旅遊規劃師蓋瑞 GARY，為您量身打造專屬行程" />
 
       </div>
 
