@@ -43,7 +43,7 @@ export default function FlightDetailPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white">
+      <main className="flex min-h-screen items-center justify-center bg-transparent">
         <div className="flex items-center gap-2 text-gray-500">
           <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -57,7 +57,7 @@ export default function FlightDetailPage() {
 
   if (notFound || !route) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white text-gray-900">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-transparent text-gray-900">
         <p className="text-gray-500">找不到此航線</p>
         <button onClick={() => router.push("/flights")} className="rounded-lg bg-[#00b4d8] px-5 py-2 text-sm font-semibold text-white">
           返回機票列表
@@ -69,7 +69,7 @@ export default function FlightDetailPage() {
   const metaEntries = Object.entries(route.metadata || {});
 
   return (
-    <main className="min-h-screen bg-white text-gray-900">
+    <main className="min-h-screen bg-transparent text-gray-900">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/flights" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       <div className="mx-auto max-w-site px-4 pt-16 md:px-5">

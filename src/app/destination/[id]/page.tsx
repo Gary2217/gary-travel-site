@@ -171,7 +171,7 @@ export default function DestinationPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white text-gray-900">
+      <main className="min-h-screen bg-transparent text-gray-900">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
@@ -185,7 +185,7 @@ export default function DestinationPage() {
 
   if (error || !destination) {
     return (
-      <main className="min-h-screen bg-white text-gray-900">
+      <main className="min-h-screen bg-transparent text-gray-900">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
@@ -203,7 +203,7 @@ export default function DestinationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}

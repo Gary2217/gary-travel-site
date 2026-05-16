@@ -103,7 +103,7 @@ export default function MiniTransitTicketsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       <section className="mx-auto max-w-[1520px] px-3 py-8 md:px-4">

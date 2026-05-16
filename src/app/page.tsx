@@ -247,7 +247,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white pt-14 text-gray-900">
+      <main className="min-h-screen bg-transparent pt-14 text-gray-900">
         <div className="mx-auto max-w-site px-4 py-6 md:px-5">
           <div className="mb-8">
             <Skeleton className="mb-2 h-5 w-32" />
@@ -270,7 +270,7 @@ export default function HomePage() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white text-gray-900">
+      <main className="flex min-h-screen items-center justify-center bg-transparent text-gray-900">
         <div className="text-center px-4">
           <p className="text-lg text-red-400">{error}</p>
           <button
@@ -380,7 +380,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-white pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} /> : null}

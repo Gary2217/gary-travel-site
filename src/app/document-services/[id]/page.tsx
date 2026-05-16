@@ -242,7 +242,7 @@ export default function DocumentServiceDetailPage() {
 
   if (!service || !content) {
     return (
-      <main className="min-h-screen bg-white pt-14 text-gray-900">
+      <main className="min-h-screen bg-transparent pt-14 text-gray-900">
         <StickyHeader
           logoUrl={siteLogoUrl}
           showBackButton
@@ -434,7 +434,7 @@ export default function DocumentServiceDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         showBackButton

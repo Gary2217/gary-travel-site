@@ -309,7 +309,7 @@ export default function MiniTransitTicketDetailPage() {
 
   if (!ticket || !content || !defaultContent) {
     return (
-      <main className="min-h-screen bg-white pt-14 text-gray-900">
+      <main className="min-h-screen bg-transparent pt-14 text-gray-900">
         <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/mini-transit-tickets" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
         <section className="mx-auto max-w-site px-4 py-10 md:px-5">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
@@ -409,7 +409,7 @@ export default function MiniTransitTicketDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader logoUrl={siteLogoUrl} showBackButton backHref="/mini-transit-tickets" devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       <section className="mx-auto max-w-site px-4 py-8 md:px-5">

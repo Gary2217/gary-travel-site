@@ -750,7 +750,7 @@ export default function TripPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white text-gray-900">
+      <main className="min-h-screen bg-transparent text-gray-900">
         <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
@@ -764,7 +764,7 @@ export default function TripPage() {
 
   if (error || !trip) {
     return (
-      <main className="min-h-screen bg-white text-gray-900">
+      <main className="min-h-screen bg-transparent text-gray-900">
         <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
@@ -786,7 +786,7 @@ export default function TripPage() {
   const priceDetailPreview = parsePriceDetail(selectedDepartureInfo.price_detail || '');
 
   return (
-    <main className="min-h-screen bg-white text-gray-900">
+    <main className="min-h-screen bg-transparent text-gray-900">
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* 浮動詢問按鈕 */}
