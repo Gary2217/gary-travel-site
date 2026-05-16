@@ -59,8 +59,8 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
   };
 
   const buttonClassName = small
-    ? "flex h-10 w-10 items-center justify-center rounded-xl border border-sky-400/30 bg-gradient-to-br from-sky-500/30 via-cyan-400/20 to-indigo-500/25 text-sky-200 shadow-[0_6px_18px_rgba(56,189,248,0.16)] transition hover:scale-[1.03] hover:border-sky-300/60 hover:from-sky-400/40 hover:to-indigo-400/35 hover:text-white active:scale-95"
-    : "flex h-9 w-9 items-center justify-center rounded-2xl border border-sky-400/30 bg-gradient-to-br from-sky-500/30 via-cyan-400/20 to-indigo-500/25 text-sky-200 shadow-[0_8px_24px_rgba(56,189,248,0.18)] transition hover:scale-[1.03] hover:border-sky-300/60 hover:from-sky-400/40 hover:to-indigo-400/35 hover:text-white active:scale-95";
+    ? "flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 text-sky-600 shadow-sm transition hover:scale-[1.03] hover:border-sky-300 hover:from-sky-100 hover:to-indigo-100 hover:text-sky-700 active:scale-95"
+    : "flex h-9 w-9 items-center justify-center rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 text-sky-600 shadow-sm transition hover:scale-[1.03] hover:border-sky-300 hover:from-sky-100 hover:to-indigo-100 hover:text-sky-700 active:scale-95";
 
   const iconClassName = small ? "h-4 w-4" : "h-[18px] w-[18px]";
 
