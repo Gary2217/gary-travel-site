@@ -438,8 +438,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-        </div>
-      </div>
 
       {/* Content */}
       <div className="mx-auto max-w-site px-4 py-6 md:px-5">
