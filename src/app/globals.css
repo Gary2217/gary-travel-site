@@ -18,7 +18,7 @@ body {
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 30%, #fffbeb 60%, #fdf2f8 100%) fixed;
+  background: linear-gradient(135deg, #f8fbff 0%, #f9fffe 30%, #fffef8 60%, #fef9fc 100%) fixed;
   color: #111827;
   font-family: Arial, Helvetica, sans-serif;
 }
