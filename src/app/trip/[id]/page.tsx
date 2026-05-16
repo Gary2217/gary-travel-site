@@ -12,7 +12,7 @@ import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
 import ImageEditor from "@/components/ImageEditor";
 import SideMediaCarousel from "@/components/SideMediaCarousel";
-import LegalNotice from "@/components/LegalNotice";
+import SocialCta from "@/components/SocialCta";
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
 
@@ -1837,7 +1837,7 @@ export default function TripPage() {
           <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="inline" />
         </div>
 
-        <LegalNotice className="mb-4" />
+        <SocialCta className="mt-10" title="喜歡這個行程嗎？" description="聯繫旅遊規劃師蓋瑞 GARY，為您量身打造專屬行程" logoUrl={siteLogoUrl} />
 
       </div>
 

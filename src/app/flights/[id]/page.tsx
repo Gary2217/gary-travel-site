@@ -6,7 +6,7 @@ import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
 import FlightDepartureDates from "@/components/FlightDepartureDates";
 import FloatingContact from "@/components/FloatingContact";
-import LegalNotice from "@/components/LegalNotice";
+import SocialCta from "@/components/SocialCta";
 import { getSiteLogo, lineDmHref, fbDmHref, igDmHref, type FlightRoute, type FlightDepartureDate } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
@@ -142,7 +142,7 @@ export default function FlightDetailPage() {
           </div>
         </div>
 
-        <LegalNotice className="mb-6" />
+        <SocialCta className="mt-10" title="需要機票協助嗎？" description="聯繫旅遊規劃師蓋瑞 GARY，為您找到最佳航班" />
       </div>
 
       <FloatingContact />
