@@ -29,6 +29,7 @@ export default function FavoriteButton({ tripId }: FavoriteButtonProps) {
     setToastKey(k => k + 1);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 2500);
+    window.dispatchEvent(new Event("favoritesChanged"));
     if (next) {
       setAnimate(true);
       setTimeout(() => setAnimate(false), 300);
@@ -73,7 +74,7 @@ export default function FavoriteButton({ tripId }: FavoriteButtonProps) {
           {toastLiked ? (
             <>
               <p className="text-sm font-bold">❤️ 已加入收藏</p>
-              <p className="mt-0.5 text-[11px] text-white/80">回首頁即可查看已收藏行程</p>
+              <p className="mt-0.5 text-[11px] text-white/80">點右上角 ❤️ 可查看所有收藏</p>
             </>
           ) : (
             <p className="text-sm font-medium">💔 已取消收藏</p>
