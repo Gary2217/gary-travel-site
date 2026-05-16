@@ -4,7 +4,9 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import FavoriteButton from "@/components/FavoriteButton";
-import ImageEditor from "@/components/ImageEditor";
+import dynamic from "next/dynamic";
+
+const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
 import ShareButton from "@/components/ShareButton";
 import { uploadTripImage, uploadTripDocument, lineHref, fbHref, igHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
@@ -79,7 +81,7 @@ export default function TripCard({
         >
           {cover_image_url ? (
             <div
-              className="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
+              className="h-full w-full bg-gray-200 bg-cover bg-center transition duration-500 group-hover:scale-105"
               style={{ backgroundImage: `url(${cover_image_url})` }}
             />
           ) : (

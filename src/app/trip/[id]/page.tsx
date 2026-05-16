@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { getTripWithDays, getSiteLogo, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -798,6 +799,18 @@ export default function TripPage() {
 
       {/* 標題區塊 */}
       <div className="mx-auto max-w-site px-3 pt-[72px] sm:px-4 md:px-6 lg:px-6">
+        {/* 麵包屑導覽 */}
+        {trip.destinations && (
+          <div className="mb-3 flex items-center gap-1 text-xs text-gray-400">
+            <Link href="/" className="transition hover:text-gray-600">首頁</Link>
+            <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <Link href={`/destination/${trip.destination_id}`} className="transition hover:text-gray-600">
+              {trip.destinations.title}
+            </Link>
+            <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <span className="line-clamp-1 text-gray-600">{trip.title}</span>
+          </div>
+        )}
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <div className="min-w-0 lg:col-span-1">
             <div ref={titleRef}>

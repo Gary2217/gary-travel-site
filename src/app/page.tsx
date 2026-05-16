@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { getRegionsWithDestinations, getSiteLogo, trackClick } from "@/lib/supabase";
+import { getFavorites, toggleFavorite } from "@/lib/favorites";
 import DevModeToggle from "@/components/DevModeToggle";
-import ImageEditor from "@/components/ImageEditor";
-import LogoUploader from "@/components/LogoUploader";
 import FloatingContact from "@/components/FloatingContact";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
-import ContactInquiries from "@/components/ContactInquiries";
+
+const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
+const LogoUploader = dynamic(() => import("@/components/LogoUploader"), { ssr: false });
+const ContactInquiries = dynamic(() => import("@/components/ContactInquiries"), { ssr: false });
 
 import { Skeleton, GridSkeleton } from "@/components/Skeleton";
 
@@ -31,15 +34,24 @@ type RouteSection = {
   destinations: Destination[];
 };
 
+type FavoriteTrip = {
+  id: string;
+  title: string;
+  duration: string;
+  cover_image_url?: string;
+  destinations?: { title: string };
+};
+
 interface HomeDestinationCardProps {
   destination: Destination;
   isDevMode: boolean;
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
   onTextUpdate: (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => void;
   onDelete?: (destinationId: string) => Promise<void>;
+  priority?: boolean;
 }
 
-function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate, onDelete }: HomeDestinationCardProps) {
+function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate, onDelete, priority = false }: HomeDestinationCardProps) {
   const [tripCount, setTripCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -145,6 +157,7 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
         fill
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
         className="object-cover transition duration-300 group-hover:scale-105"
+        priority={priority}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-3">
@@ -168,6 +181,7 @@ export default function HomePage() {
   const [filterDate, setFilterDate] = useState('');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [popularDestinations, setPopularDestinations] = useState<Destination[]>([]);
+  const [favoriteTrips, setFavoriteTrips] = useState<FavoriteTrip[]>([]);
   const [addingRegionId, setAddingRegionId] = useState<string | null>(null);
   const [newDestinationTitle, setNewDestinationTitle] = useState('');
   const [newDestinationSubtitle, setNewDestinationSubtitle] = useState('');
@@ -230,6 +244,19 @@ export default function HomePage() {
     }
     loadPopular();
   }, []);
+
+  useEffect(() => {
+    const ids = getFavorites();
+    if (ids.length === 0) return;
+    Promise.all(
+      ids.map(id => fetch(`/api/trips/${id}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null))
+    ).then(results => setFavoriteTrips(results.filter(Boolean) as FavoriteTrip[]));
+  }, []);
+
+  const removeFavorite = (id: string) => {
+    toggleFavorite(id);
+    setFavoriteTrips(prev => prev.filter(t => t.id !== id));
+  };
 
   const handleSearch = ({ regionId, destinationId, date }: { departureCity: string; regionId: string | null; destinationId: string | null; date: string }) => {
     setFilterRegionId(regionId);
@@ -411,6 +438,64 @@ export default function HomePage() {
         />
       </section>
 
+      {/* 已收藏行程 */}
+      {favoriteTrips.length > 0 && (
+        <section className="border-b border-gray-100 bg-white/70 px-4 py-4 backdrop-blur-sm">
+          <div className="mx-auto max-w-site">
+            <div className="mb-2.5 flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <h2 className="text-sm font-bold text-gray-700">已收藏的行程</h2>
+              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-400">{favoriteTrips.length}</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {favoriteTrips.map(trip => (
+                <div key={trip.id} className="group relative w-36 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                  <Link href={`/trip/${trip.id}`} className="block">
+                    <div className="relative h-24 overflow-hidden bg-gray-200">
+                      {trip.cover_image_url ? (
+                        <div
+                          className="h-full w-full bg-gray-200 bg-cover bg-center transition duration-300 group-hover:scale-105"
+                          style={{ backgroundImage: `url(${trip.cover_image_url})` }}
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gray-100">
+                          <svg className="h-7 w-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                      <span className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                        {trip.duration}
+                      </span>
+                    </div>
+                    <div className="p-2">
+                      <p className="line-clamp-2 text-[11px] font-bold leading-snug text-gray-800">{trip.title}</p>
+                      {trip.destinations?.title && (
+                        <p className="mt-0.5 text-[10px] text-gray-400">{trip.destinations.title}</p>
+                      )}
+                    </div>
+                  </Link>
+                  {/* 移除收藏按鈕 */}
+                  <button
+                    type="button"
+                    onClick={() => removeFavorite(trip.id)}
+                    className="absolute right-1.5 bottom-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-400 opacity-0 transition hover:bg-red-200 group-hover:opacity-100"
+                    title="取消收藏"
+                  >
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Region Tabs */}
       <div className="sticky top-14 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]">
         <div className="relative mx-auto max-w-site">
@@ -475,6 +560,7 @@ export default function HomePage() {
                       isDevMode={isDevMode}
                       onImageUpdate={handlePopularImageUpdate}
                       onTextUpdate={handleDestinationTextUpdate}
+                      priority={true}
                     />
                   </div>
                 ))}
@@ -512,7 +598,7 @@ export default function HomePage() {
             );
           }
 
-          return filtered.map((section) => (
+          return filtered.map((section, sectionIndex) => (
             <section key={section.id} id={section.id} className="mb-8 scroll-mt-[120px]">
               <div className="mb-3 flex items-baseline justify-between px-1">
                 <div>
@@ -602,7 +688,7 @@ export default function HomePage() {
 
                 const hasMore = section.destinations.length > 5;
 
-                const renderCard = (destination: Destination) => (
+                const renderCard = (destination: Destination, cardIdx: number) => (
                   <HomeDestinationCard
                     key={destination.id}
                     destination={destination}
@@ -610,6 +696,7 @@ export default function HomePage() {
                     onImageUpdate={handleImageUpdate}
                     onTextUpdate={handleDestinationTextUpdate}
                     onDelete={handleDeleteDestination}
+                    priority={sectionIndex === 0 && cardIdx < 5}
                   />
                 );
 
@@ -670,10 +757,7 @@ export default function HomePage() {
           className="mt-10"
           title="找到心儀的旅遊目的地了嗎？"
           description="立即聯繫旅遊規劃師 蓋瑞 GARY，為您量身打造專屬行程"
-          logoUrl={siteLogoUrl}
         />
-
-
 
         {isDevMode && <ContactInquiries />}
       </div>
