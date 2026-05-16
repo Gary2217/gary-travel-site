@@ -25,6 +25,7 @@ interface CleanupResult {
 }
 interface EndpointCheck {
   name: string;
+  desc: string;
   url: string;
   status: "ok" | "error";
   statusCode?: number;
@@ -230,19 +231,19 @@ export default function AdminPage() {
     } catch { /* keep error */ }
 
     const eps = [
-      { name: "地區 API", url: "/api/regions" },
-      { name: "目的地 API", url: "/api/destinations" },
-      { name: "熱門行程 API", url: "/api/popular-trips" },
-      { name: "搜尋 API", url: "/api/search?q=test" },
+      { name: "地區分類", desc: "首頁上方的地區切換（日本、歐洲等）", url: "/api/regions" },
+      { name: "目的地列表", desc: "各地區下的旅遊目的地資料", url: "/api/destinations" },
+      { name: "熱門行程", desc: "首頁推薦行程列表", url: "/api/popular-trips" },
+      { name: "行程搜尋", desc: "搜尋列關鍵字查詢功能", url: "/api/search?q=test" },
     ];
     const endpoints: EndpointCheck[] = [];
     for (const ep of eps) {
       try {
         const start = performance.now();
         const res = await fetch(ep.url, { cache: "no-store" });
-        endpoints.push({ name: ep.name, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
+        endpoints.push({ name: ep.name, desc: ep.desc, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
       } catch {
-        endpoints.push({ name: ep.name, url: ep.url, status: "error", error: "無法連線" });
+        endpoints.push({ name: ep.name, desc: ep.desc, url: ep.url, status: "error", error: "無法連線" });
       }
     }
     setHealthResult({ db: dbStatus, db_latency_ms: dbLatency, endpoints, checked_at: new Date().toISOString() });
@@ -723,6 +724,27 @@ export default function AdminPage() {
 
             {healthResult && (
               <>
+                {/* 整體狀態摘要 */}
+                {(() => {
+                  const okCount = healthResult.endpoints.filter(e => e.status === "ok").length;
+                  const total = healthResult.endpoints.length;
+                  const allOk = healthResult.db === "connected" && okCount === total;
+                  return (
+                    <div className={`rounded-2xl border p-4 ${allOk ? "border-emerald-500/20 bg-emerald-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{allOk ? "✅" : "⚠️"}</span>
+                        <div>
+                          <p className={`text-sm font-bold ${allOk ? "text-emerald-400" : "text-amber-400"}`}>
+                            {allOk ? "系統一切正常，網站運作中" : `部分功能異常，請留意（${okCount}/${total} 項正常）`}
+                          </p>
+                          <p className="text-[11px] text-white/40">資料庫連線 + 各功能整體狀況</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 資料庫狀態 */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className={`rounded-2xl border p-5 backdrop-blur-[12px] ${healthResult.db === "connected" ? "border-emerald-500/30 bg-emerald-500/10" : "border-red-500/30 bg-red-500/10"}`}>
                     <div className="flex items-center gap-3">
@@ -730,9 +752,10 @@ export default function AdminPage() {
                         <span className={`h-3 w-3 rounded-full ${healthResult.db === "connected" ? "animate-pulse bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-red-400 shadow-[0_0_8px_#f87171]"}`} />
                       </div>
                       <div>
-                        <p className="text-xs text-white/50">資料庫連線（Supabase）</p>
-                        <p className={`mt-0.5 text-base font-bold ${healthResult.db === "connected" ? "text-emerald-400" : "text-red-400"}`}>
-                          {healthResult.db === "connected" ? "正常連線" : "連線失敗"}
+                        <p className="text-xs font-semibold text-white/70">資料庫連線狀態</p>
+                        <p className="mt-0.5 text-[11px] text-white/40">行程、目的地等所有資料的儲存位置</p>
+                        <p className={`mt-1 text-base font-bold ${healthResult.db === "connected" ? "text-emerald-400" : "text-red-400"}`}>
+                          {healthResult.db === "connected" ? "✓ 連線正常" : "✗ 連線失敗"}
                         </p>
                       </div>
                     </div>
@@ -746,49 +769,55 @@ export default function AdminPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-xs text-white/50">資料庫查詢延遲</p>
-                        <p className={`mt-0.5 text-base font-bold ${healthResult.db_latency_ms < 200 ? "text-emerald-400" : healthResult.db_latency_ms < 500 ? "text-amber-400" : "text-red-400"}`}>
+                        <p className="text-xs font-semibold text-white/70">資料庫反應速度</p>
+                        <p className="mt-0.5 text-[11px] text-white/40">從資料庫取得資料需要多久（越低越好）</p>
+                        <p className={`mt-1 text-base font-bold ${healthResult.db_latency_ms < 200 ? "text-emerald-400" : healthResult.db_latency_ms < 500 ? "text-amber-400" : "text-red-400"}`}>
                           {healthResult.db_latency_ms} ms
+                          <span className="ml-2 text-[11px] font-normal opacity-60">
+                            {healthResult.db_latency_ms < 200 ? "（快速）" : healthResult.db_latency_ms < 500 ? "（一般）" : "（較慢）"}
+                          </span>
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* API 端點 */}
                 <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
                   <div className="border-b border-white/10 px-4 py-3">
-                    <h2 className="text-sm font-bold text-white">API 端點狀態</h2>
+                    <h2 className="text-sm font-bold text-white">各功能運作狀況</h2>
+                    <p className="mt-0.5 text-[11px] text-white/40">檢查網站每個功能是否正常回應，以及回應速度</p>
                   </div>
                   <div className="divide-y divide-white/5">
                     {healthResult.endpoints.map((ep, i) => (
-                      <div key={i} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${ep.status === "ok" ? "bg-emerald-400" : "bg-red-400"}`} />
-                        <span className="w-28 shrink-0 text-sm text-white/80">{ep.name}</span>
-                        <span className="flex-1 text-[11px] text-white/30">{ep.url}</span>
-                        {ep.latency_ms !== undefined && (
-                          <span className={`text-xs font-semibold ${ep.latency_ms < 300 ? "text-emerald-400" : ep.latency_ms < 800 ? "text-amber-400" : "text-red-400"}`}>
-                            {ep.latency_ms} ms
+                      <div key={i} className="flex items-center gap-4 px-4 py-4">
+                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ep.status === "ok" ? "bg-emerald-400" : "bg-red-400"}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-white/90">{ep.name}</p>
+                          <p className="mt-0.5 text-[11px] text-white/40">{ep.desc}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {ep.latency_ms !== undefined && (
+                            <span className={`text-xs font-semibold ${ep.latency_ms < 300 ? "text-emerald-400" : ep.latency_ms < 800 ? "text-amber-400" : "text-red-400"}`}>
+                              {ep.latency_ms < 300 ? "快速" : ep.latency_ms < 800 ? "一般" : "較慢"} · {ep.latency_ms}ms
+                            </span>
+                          )}
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ep.status === "ok" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                            {ep.status === "ok" ? "正常" : ep.error ?? `異常 ${ep.statusCode ?? ""}`}
                           </span>
-                        )}
-                        {ep.statusCode !== undefined && (
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ep.status === "ok" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
-                            {ep.statusCode}
-                          </span>
-                        )}
-                        {ep.status === "error" && ep.error && (
-                          <span className="text-[11px] text-red-400">{ep.error}</span>
-                        )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
-                  <p className="text-[11px] text-white/30">
-                    延遲標準：
-                    <span className="ml-2 text-emerald-400">● 優良 &lt;200ms（DB）/ &lt;300ms（API）</span>
-                    <span className="ml-2 text-amber-400">● 一般 &lt;500ms（DB）/ &lt;800ms（API）</span>
-                    <span className="ml-2 text-red-400">● 較慢 超過以上標準</span>
+                  <p className="text-[11px] font-semibold text-white/40">速度說明</p>
+                  <p className="mt-1.5 text-[11px] text-white/30">
+                    ms（毫秒）= 越小代表越快。
+                    <span className="mx-1 text-emerald-400">● 快速</span>資料庫 &lt;200ms、功能 &lt;300ms；
+                    <span className="mx-1 text-amber-400">● 一般</span>資料庫 &lt;500ms、功能 &lt;800ms；
+                    <span className="mx-1 text-red-400">● 較慢</span>超過以上標準，建議留意。
                   </p>
                 </div>
               </>
