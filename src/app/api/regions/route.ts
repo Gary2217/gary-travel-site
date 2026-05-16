@@ -23,8 +23,9 @@ export async function GET() {
 
     const { data: regionsData, error: regionsError } = await supabase
       .from('regions')
-      .select('*')
+      .select('*, destinations!destinations_region_id_fkey(*)')
       .eq('is_active', true)
+      .eq('destinations.is_active', true)
       .order('display_order', { ascending: true });
 
     if (regionsError) {
@@ -32,41 +33,16 @@ export async function GET() {
       return NextResponse.json({ error: '載入失敗' }, { status: 500 });
     }
 
-    const regionIds = (regionsData || []).map((region: any) => region.id);
-
-    let destinationsByRegion = new Map<string, any[]>();
-
-    if (regionIds.length > 0) {
-      const { data: destinationsData, error: destinationsError } = await supabase
-        .from('destinations')
-        .select('*')
-        .in('region_id', regionIds)
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (destinationsError) {
-        console.error('destinations query error:', destinationsError.message);
-        return NextResponse.json({ error: '載入失敗' }, { status: 500 });
-      }
-
-      destinationsByRegion = (destinationsData || []).reduce((map: Map<string, any[]>, destination: any) => {
-        const existing = map.get(destination.region_id) || [];
-        existing.push(destination);
-        map.set(destination.region_id, existing);
-        return map;
-      }, new Map<string, any[]>());
-    }
-
     const regions = (regionsData || [])
       .map((region: any) => ({
         ...region,
-        destinations: destinationsByRegion.get(region.id) || [],
+        destinations: (region.destinations || []).sort((a: any, b: any) => a.display_order - b.display_order),
       }))
       .filter((region: any) => region.destinations.length > 0);
 
     return NextResponse.json(regions, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       },
     });
   } catch {
