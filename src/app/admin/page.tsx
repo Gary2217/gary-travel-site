@@ -32,10 +32,36 @@ interface EndpointCheck {
   latency_ms?: number;
   error?: string;
 }
+interface EnvCheck {
+  name: string;
+  ok: boolean;
+  impact: string;
+  fix: string;
+}
+interface DataCheck {
+  name: string;
+  ok: boolean;
+  count?: number;
+  items?: string[];
+  impact: string;
+  fix: string;
+}
+interface PageCheck {
+  name: string;
+  desc: string;
+  url: string;
+  status: "ok" | "error";
+  statusCode?: number;
+  latency_ms?: number;
+  error?: string;
+}
 interface HealthResult {
   db: "connected" | "error";
   db_latency_ms: number;
   endpoints: EndpointCheck[];
+  pages: PageCheck[];
+  env_checks: EnvCheck[];
+  data_checks: DataCheck[];
   checked_at: string;
 }
 
@@ -220,15 +246,10 @@ export default function AdminPage() {
 
   async function checkHealth() {
     setHealthLoading(true);
-    let dbStatus: "connected" | "error" = "error";
-    let dbLatency = 0;
-    try {
-      const start = performance.now();
-      const res = await fetch("/api/health", { cache: "no-store" });
-      const data = await res.json();
-      dbStatus = data.db === "connected" ? "connected" : "error";
-      dbLatency = data.latency_ms ?? Math.round(performance.now() - start);
-    } catch { /* keep error */ }
+
+    const healthPromise = fetch("/api/health", { cache: "no-store" })
+      .then(r => r.json())
+      .catch(() => ({ db: "error", latency_ms: 0, env_checks: [], data_checks: [] }));
 
     const eps = [
       { name: "地區分類", desc: "首頁上方的地區切換（日本、歐洲等）", url: "/api/regions" },
@@ -236,17 +257,51 @@ export default function AdminPage() {
       { name: "熱門行程", desc: "首頁推薦行程列表", url: "/api/popular-trips" },
       { name: "行程搜尋", desc: "搜尋列關鍵字查詢功能", url: "/api/search?q=test" },
     ];
-    const endpoints: EndpointCheck[] = [];
-    for (const ep of eps) {
-      try {
-        const start = performance.now();
-        const res = await fetch(ep.url, { cache: "no-store" });
-        endpoints.push({ name: ep.name, desc: ep.desc, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
-      } catch {
-        endpoints.push({ name: ep.name, desc: ep.desc, url: ep.url, status: "error", error: "無法連線" });
+
+    const pageList = [
+      { name: "首頁", desc: "網站首頁（目的地總覽）", url: "/" },
+      { name: "機票頁", desc: "機票資訊頁面", url: "/flights" },
+      { name: "文件服務", desc: "代辦文件服務頁面", url: "/document-services" },
+      { name: "迷你轉機票", desc: "迷你轉機票頁面", url: "/mini-transit-tickets" },
+    ];
+
+    const endpointsPromise = (async () => {
+      const results: EndpointCheck[] = [];
+      for (const ep of eps) {
+        try {
+          const start = performance.now();
+          const res = await fetch(ep.url, { cache: "no-store" });
+          results.push({ name: ep.name, desc: ep.desc, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
+        } catch {
+          results.push({ name: ep.name, desc: ep.desc, url: ep.url, status: "error", error: "無法連線" });
+        }
       }
-    }
-    setHealthResult({ db: dbStatus, db_latency_ms: dbLatency, endpoints, checked_at: new Date().toISOString() });
+      return results;
+    })();
+
+    const pagesPromise = Promise.all(
+      pageList.map(async (p): Promise<PageCheck> => {
+        try {
+          const start = performance.now();
+          const res = await fetch(p.url, { cache: "no-store" });
+          return { name: p.name, desc: p.desc, url: p.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) };
+        } catch {
+          return { name: p.name, desc: p.desc, url: p.url, status: "error", error: "無法開啟" };
+        }
+      })
+    );
+
+    const [healthData, endpoints, pages] = await Promise.all([healthPromise, endpointsPromise, pagesPromise]);
+
+    setHealthResult({
+      db: healthData.db === "connected" ? "connected" : "error",
+      db_latency_ms: healthData.latency_ms ?? 0,
+      endpoints,
+      pages,
+      env_checks: healthData.env_checks || [],
+      data_checks: healthData.data_checks || [],
+      checked_at: new Date().toISOString(),
+    });
     setHealthLoading(false);
   }
 
@@ -726,18 +781,27 @@ export default function AdminPage() {
               <>
                 {/* 整體狀態摘要 */}
                 {(() => {
-                  const okCount = healthResult.endpoints.filter(e => e.status === "ok").length;
-                  const total = healthResult.endpoints.length;
-                  const allOk = healthResult.db === "connected" && okCount === total;
+                  const apiOk = healthResult.endpoints.filter(e => e.status === "ok").length;
+                  const apiTotal = healthResult.endpoints.length;
+                  const pageOk = healthResult.pages.filter(p => p.status === "ok").length;
+                  const pageTotal = healthResult.pages.length;
+                  const envIssues = healthResult.env_checks.filter(e => !e.ok).length;
+                  const dataIssues = healthResult.data_checks.filter(d => !d.ok).length;
+                  const totalIssues = (healthResult.db !== "connected" ? 1 : 0) + (apiTotal - apiOk) + (pageTotal - pageOk) + envIssues + dataIssues;
+                  const isError = healthResult.db !== "connected" || apiOk < apiTotal || pageOk < pageTotal;
+                  const isWarning = !isError && (envIssues > 0 || dataIssues > 0);
+                  const allOk = !isError && !isWarning;
                   return (
-                    <div className={`rounded-2xl border p-4 ${allOk ? "border-emerald-500/20 bg-emerald-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
+                    <div className={`rounded-2xl border p-4 ${allOk ? "border-emerald-500/20 bg-emerald-500/5" : isError ? "border-red-500/20 bg-red-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{allOk ? "✅" : "⚠️"}</span>
+                        <span className="text-lg">{allOk ? "✅" : isError ? "❌" : "⚠️"}</span>
                         <div>
-                          <p className={`text-sm font-bold ${allOk ? "text-emerald-400" : "text-amber-400"}`}>
-                            {allOk ? "系統一切正常，網站運作中" : `部分功能異常，請留意（${okCount}/${total} 項正常）`}
+                          <p className={`text-sm font-bold ${allOk ? "text-emerald-400" : isError ? "text-red-400" : "text-amber-400"}`}>
+                            {allOk ? "系統一切正常，網站運作中" : isError ? `有 ${totalIssues} 個問題需要注意` : `有 ${totalIssues} 個警告，建議處理`}
                           </p>
-                          <p className="text-[11px] text-white/40">資料庫連線 + 各功能整體狀況</p>
+                          <p className="text-[11px] text-white/40">
+                            {allOk ? "所有設定、功能、頁面、資料都正常" : "往下查看詳細問題說明與處理方式"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -782,6 +846,35 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {/* 環境設定檢查 */}
+                {healthResult.env_checks.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+                    <div className="border-b border-white/10 px-4 py-3">
+                      <h2 className="text-sm font-bold text-white">環境設定檢查</h2>
+                      <p className="mt-0.5 text-[11px] text-white/40">確認網站必要的設定是否齊全</p>
+                    </div>
+                    <div className="divide-y divide-white/5">
+                      {healthResult.env_checks.map((check, i) => (
+                        <div key={i} className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${check.ok ? "bg-emerald-400" : "bg-red-400"}`} />
+                            <span className="flex-1 text-sm text-white/90">{check.name}</span>
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${check.ok ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                              {check.ok ? "已設定" : "未設定"}
+                            </span>
+                          </div>
+                          {!check.ok && (
+                            <div className="mt-2 ml-6 space-y-1">
+                              <p className="text-[12px] text-amber-300/80">⚡ 影響：{check.impact}</p>
+                              <p className="text-[12px] text-sky-300/80">🔧 處理：{check.fix}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* API 端點 */}
                 <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
                   <div className="border-b border-white/10 px-4 py-3">
@@ -790,25 +883,107 @@ export default function AdminPage() {
                   </div>
                   <div className="divide-y divide-white/5">
                     {healthResult.endpoints.map((ep, i) => (
-                      <div key={i} className="flex items-center gap-4 px-4 py-4">
-                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ep.status === "ok" ? "bg-emerald-400" : "bg-red-400"}`} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-white/90">{ep.name}</p>
-                          <p className="mt-0.5 text-[11px] text-white/40">{ep.desc}</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {ep.latency_ms !== undefined && (
-                            <span className={`text-xs font-semibold ${ep.latency_ms < 300 ? "text-emerald-400" : ep.latency_ms < 800 ? "text-amber-400" : "text-red-400"}`}>
-                              {ep.latency_ms < 300 ? "快速" : ep.latency_ms < 800 ? "一般" : "較慢"} · {ep.latency_ms}ms
+                      <div key={i} className="px-4 py-4">
+                        <div className="flex items-center gap-4">
+                          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ep.status === "ok" ? "bg-emerald-400" : "bg-red-400"}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-white/90">{ep.name}</p>
+                            <p className="mt-0.5 text-[11px] text-white/40">{ep.desc}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {ep.latency_ms !== undefined && (
+                              <span className={`text-xs font-semibold ${ep.latency_ms < 300 ? "text-emerald-400" : ep.latency_ms < 800 ? "text-amber-400" : "text-red-400"}`}>
+                                {ep.latency_ms < 300 ? "快速" : ep.latency_ms < 800 ? "一般" : "較慢"} · {ep.latency_ms}ms
+                              </span>
+                            )}
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ep.status === "ok" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                              {ep.status === "ok" ? "正常" : ep.error ?? `異常 ${ep.statusCode ?? ""}`}
                             </span>
-                          )}
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ep.status === "ok" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
-                            {ep.status === "ok" ? "正常" : ep.error ?? `異常 ${ep.statusCode ?? ""}`}
-                          </span>
+                          </div>
                         </div>
+                        {ep.status !== "ok" && (
+                          <div className="mt-2 ml-6 space-y-1">
+                            <p className="text-[12px] text-amber-300/80">⚡ 影響：此功能目前無法使用，相關頁面可能顯示不完整</p>
+                            <p className="text-[12px] text-sky-300/80">🔧 處理：通常會自動恢復，若持續異常請聯絡工程師</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* 前端頁面狀態 */}
+                <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+                  <div className="border-b border-white/10 px-4 py-3">
+                    <h2 className="text-sm font-bold text-white">前端頁面狀態</h2>
+                    <p className="mt-0.5 text-[11px] text-white/40">確認訪客能正常開啟各個頁面</p>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {healthResult.pages.map((page, i) => (
+                      <div key={i} className="px-4 py-4">
+                        <div className="flex items-center gap-4">
+                          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${page.status === "ok" ? "bg-emerald-400" : "bg-red-400"}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-white/90">{page.name}</p>
+                            <p className="mt-0.5 text-[11px] text-white/40">{page.desc}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {page.latency_ms !== undefined && (
+                              <span className="text-xs text-white/40">{page.latency_ms}ms</span>
+                            )}
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${page.status === "ok" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                              {page.status === "ok" ? "正常" : "無法開啟"}
+                            </span>
+                          </div>
+                        </div>
+                        {page.status !== "ok" && (
+                          <div className="mt-2 ml-6 space-y-1">
+                            <p className="text-[12px] text-amber-300/80">⚡ 影響：訪客無法開啟此頁面，會看到錯誤畫面</p>
+                            <p className="text-[12px] text-sky-300/80">🔧 處理：請聯絡工程師檢查此頁面</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 資料完整性 */}
+                <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+                  <div className="border-b border-white/10 px-4 py-3">
+                    <h2 className="text-sm font-bold text-white">資料完整性</h2>
+                    <p className="mt-0.5 text-[11px] text-white/40">檢查網站內容是否完整，避免訪客看到空白或錯誤</p>
+                  </div>
+                  {healthResult.data_checks.filter(d => !d.ok).length === 0 ? (
+                    <div className="flex items-center gap-3 px-4 py-4">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" />
+                      <span className="text-sm text-emerald-400">所有資料都完整，沒有問題</span>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {healthResult.data_checks.filter(d => !d.ok).map((check, i) => (
+                        <div key={i} className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" />
+                            <span className="flex-1 text-sm font-medium text-white/90">{check.name}</span>
+                            {check.count !== undefined && (
+                              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-400">{check.count} 項</span>
+                            )}
+                          </div>
+                          {check.items && check.items.length > 0 && (
+                            <div className="mt-2 ml-6 flex flex-wrap gap-1.5">
+                              {check.items.map((item, j) => (
+                                <span key={j} className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/60">{item}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-2 ml-6 space-y-1">
+                            <p className="text-[12px] text-amber-300/80">⚡ 影響：{check.impact}</p>
+                            <p className="text-[12px] text-sky-300/80">🔧 處理：{check.fix}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
