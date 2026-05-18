@@ -247,39 +247,39 @@ export default function AdminPage() {
   async function checkHealth() {
     setHealthLoading(true);
 
-    const healthPromise = fetch("/api/health", { cache: "no-store" })
-      .then(r => r.json())
-      .catch(() => ({ db: "error", latency_ms: 0, env_checks: [], data_checks: [] }));
+    // 1. 先完成 health API（含 DB 查詢），避免與端點檢查搶資源
+    let healthData: any = { db: "error", latency_ms: 0, env_checks: [], data_checks: [] };
+    try {
+      const res = await fetch("/api/health", { cache: "no-store" });
+      healthData = await res.json();
+    } catch { /* keep defaults */ }
 
+    // 2. API 端點依序檢查（準確延遲量測）
     const eps = [
       { name: "地區分類", desc: "首頁上方的地區切換（日本、歐洲等）", url: "/api/regions" },
       { name: "目的地列表", desc: "各地區下的旅遊目的地資料", url: "/api/destinations" },
       { name: "熱門行程", desc: "首頁推薦行程列表", url: "/api/popular-trips" },
       { name: "行程搜尋", desc: "搜尋列關鍵字查詢功能", url: "/api/search?q=test" },
     ];
+    const endpoints: EndpointCheck[] = [];
+    for (const ep of eps) {
+      try {
+        const start = performance.now();
+        const res = await fetch(ep.url, { cache: "no-store" });
+        endpoints.push({ name: ep.name, desc: ep.desc, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
+      } catch {
+        endpoints.push({ name: ep.name, desc: ep.desc, url: ep.url, status: "error", error: "無法連線" });
+      }
+    }
 
+    // 3. 頁面檢查（並行，不影響端點量測）
     const pageList = [
       { name: "首頁", desc: "網站首頁（目的地總覽）", url: "/" },
       { name: "機票頁", desc: "機票資訊頁面", url: "/flights" },
       { name: "文件服務", desc: "代辦文件服務頁面", url: "/document-services" },
       { name: "迷你轉機票", desc: "迷你轉機票頁面", url: "/mini-transit-tickets" },
     ];
-
-    const endpointsPromise = (async () => {
-      const results: EndpointCheck[] = [];
-      for (const ep of eps) {
-        try {
-          const start = performance.now();
-          const res = await fetch(ep.url, { cache: "no-store" });
-          results.push({ name: ep.name, desc: ep.desc, url: ep.url, status: res.ok ? "ok" : "error", statusCode: res.status, latency_ms: Math.round(performance.now() - start) });
-        } catch {
-          results.push({ name: ep.name, desc: ep.desc, url: ep.url, status: "error", error: "無法連線" });
-        }
-      }
-      return results;
-    })();
-
-    const pagesPromise = Promise.all(
+    const pages: PageCheck[] = await Promise.all(
       pageList.map(async (p): Promise<PageCheck> => {
         try {
           const start = performance.now();
@@ -290,8 +290,6 @@ export default function AdminPage() {
         }
       })
     );
-
-    const [healthData, endpoints, pages] = await Promise.all([healthPromise, endpointsPromise, pagesPromise]);
 
     setHealthResult({
       db: healthData.db === "connected" ? "connected" : "error",
