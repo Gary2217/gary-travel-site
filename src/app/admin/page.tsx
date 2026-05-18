@@ -492,15 +492,15 @@ export default function AdminPage() {
                 <h2 className="mb-4 text-sm font-bold text-white">熱門行程 Top 5（瀏覽次數）</h2>
                 <div className="space-y-3">
                   {trips.slice(0, 5).map((t, i) => (
-                    <BarRow key={t.trip_id} label={String(i + 1)} value={t.views} max={maxViews} color={i === 0 ? "#38bdf8" : i === 1 ? "#34d399" : "rgba(255,255,255,0.3)"} />
-                  ))}
-                </div>
-                <div className="mt-3 space-y-1">
-                  {trips.slice(0, 5).map((t, i) => (
-                    <div key={t.trip_id} className="flex items-center gap-2 text-[11px] text-white/60">
-                      <span className="w-4 text-center text-white/30">{i + 1}</span>
-                      <span className="flex-1 truncate">{t.trip_title}</span>
-                      <span className="text-sky-400">{t.views} 瀏覽</span>
+                    <div key={t.trip_id} className="flex items-center gap-3">
+                      <span className="w-4 shrink-0 text-center text-xs text-white/40">{i + 1}</span>
+                      <span className="w-0 min-w-0 flex-1 truncate text-[11px] text-white/60 sm:text-xs">{t.trip_title}</span>
+                      <div className="hidden w-32 sm:block lg:w-48">
+                        <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((t.views / maxViews) * 100)}%`, background: i === 0 ? "#38bdf8" : i === 1 ? "#34d399" : "rgba(255,255,255,0.3)" }} />
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-xs font-semibold text-sky-400">{t.views} 瀏覽</span>
                     </div>
                   ))}
                 </div>
