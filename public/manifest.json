@@ -4,8 +4,8 @@
   "description": "旅遊規劃師蓋瑞 GARY，為您量身打造專屬行程",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0f2a",
-  "theme_color": "#0b0f2a",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/travel-logo.svg",
