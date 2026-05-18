@@ -235,10 +235,14 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
               <p className="mt-3 text-xs text-red-400">{error}</p>
             )}
 
+            <p className="mt-4 text-center text-[10px] leading-4 text-gray-400">
+              點擊送出即表示您同意我們的<a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-sky-500 underline hover:text-sky-400">隱私權政策</a>，您的資料僅用於回覆諮詢，不會提供給第三方。
+            </p>
+
             <button
               type="submit"
               disabled={!canSubmit}
-              className="mt-4 w-full rounded-lg bg-[#00b4d8] py-2.5 text-sm font-semibold text-white transition hover:bg-[#0096c7] disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-2 w-full rounded-lg bg-[#00b4d8] py-2.5 text-sm font-semibold text-white transition hover:bg-[#0096c7] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? "送出中..." : "送出"}
             </button>
