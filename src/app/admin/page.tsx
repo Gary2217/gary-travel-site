@@ -64,6 +64,15 @@ interface HealthResult {
   data_checks: DataCheck[];
   checked_at: string;
 }
+interface ContactFormSubmission {
+  id: string;
+  name: string;
+  phone: string | null;
+  line_id: string | null;
+  email: string | null;
+  message: string | null;
+  created_at: string;
+}
 
 // ── Helpers ──────────────────────────────────────────────
 function relativeTime(iso: string) {
@@ -209,7 +218,7 @@ const PLATFORM_BADGE: Record<string, string> = {
 export default function AdminPage() {
   const router = useRouter();
   const [checking,       setChecking]       = useState(true);
-  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events" | "health">("overview");
+  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events" | "health" | "forms">("overview");
   const [stats,          setStats]          = useState<Stats | null>(null);
   const [statsLoading,   setStatsLoading]   = useState(false);
   const [selectedTrip,   setSelectedTrip]   = useState<string | null>(null);
@@ -219,6 +228,9 @@ export default function AdminPage() {
   const [cleanupResult, setCleanupResult] = useState<CleanupResult | null>(null);
   const [healthLoading,  setHealthLoading]  = useState(false);
   const [healthResult,   setHealthResult]   = useState<HealthResult | null>(null);
+  const [forms, setForms] = useState<ContactFormSubmission[]>([]);
+  const [formsLoading, setFormsLoading] = useState(false);
+  const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
 
   async function runOrphanCleanup(dryRun: boolean) {
     setCleanupLoading(true);
@@ -303,9 +315,72 @@ export default function AdminPage() {
     setHealthLoading(false);
   }
 
+  async function loadForms() {
+    setFormsLoading(true);
+
+    try {
+      const res = await fetch("/api/contact-forms", { cache: "no-store" });
+      const data: unknown = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          typeof data === "object" && data && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "讀取諮詢表單失敗"
+        );
+      }
+
+      setForms(Array.isArray(data) ? (data as ContactFormSubmission[]) : []);
+    } catch {
+      setForms([]);
+    } finally {
+      setFormsLoading(false);
+    }
+  }
+
+  async function deleteForm(id: string) {
+    const targetForm = forms.find((form) => form.id === id);
+    if (!targetForm) return;
+
+    const confirmed = window.confirm(`確定要刪除 ${targetForm.name} 的諮詢表單嗎？`);
+    if (!confirmed) return;
+
+    setDeletingFormId(id);
+
+    try {
+      const res = await fetch("/api/contact-forms", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!res.ok) {
+        const data: unknown = await res.json();
+        throw new Error(
+          typeof data === "object" && data && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "刪除失敗"
+        );
+      }
+
+      setForms((prev) => prev.filter((form) => form.id !== id));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "刪除失敗");
+    } finally {
+      setDeletingFormId(null);
+    }
+  }
+
   useEffect(() => {
     if (activeTab === "health" && !healthResult && !healthLoading) {
       checkHealth();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "forms" && !formsLoading && forms.length === 0) {
+      loadForms();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -376,7 +451,7 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-6">
-          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"]] as const).map(([tab, label]) => (
+          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"], ["forms", "📬 諮詢表單"]] as const).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeTab === tab ? "bg-sky-600 text-white" : "text-white/50 hover:text-white/80"}`}>
               {label}
@@ -996,6 +1071,121 @@ export default function AdminPage() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* ── Forms Tab ── */}
+        {activeTab === "forms" && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+              <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-white">諮詢表單管理</h2>
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/60">{forms.length} 筆</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-white/40">查看網站訪客提交的聯絡資訊與留言</p>
+                </div>
+                <button
+                  onClick={loadForms}
+                  disabled={formsLoading}
+                  className="rounded-full bg-sky-600/20 px-3 py-1.5 text-xs font-semibold text-sky-400 transition hover:bg-sky-600/30 disabled:opacity-50"
+                >
+                  {formsLoading ? "載入中..." : "↻ 重新整理"}
+                </button>
+              </div>
+
+              {formsLoading ? (
+                <div className="flex items-center justify-center px-4 py-12">
+                  <div className="flex items-center gap-2 text-white/40">
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    <span className="text-sm">載入諮詢表單中...</span>
+                  </div>
+                </div>
+              ) : forms.length === 0 ? (
+                <div className="px-4 py-12 text-center text-sm text-white/30">目前沒有諮詢表單</div>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto lg:block">
+                    <table className="w-full min-w-[920px]">
+                      <thead>
+                        <tr className="border-b border-white/10 text-left text-[11px] text-white/35">
+                          <th className="px-4 py-3 font-medium">時間</th>
+                          <th className="px-4 py-3 font-medium">姓名</th>
+                          <th className="px-4 py-3 font-medium">聯繫方式</th>
+                          <th className="px-4 py-3 font-medium">留言</th>
+                          <th className="px-4 py-3 font-medium">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {forms.map((form) => {
+                          const messagePreview = form.message && form.message.trim().length > 0 ? form.message.trim() : "—";
+                          return (
+                            <tr key={form.id} className="border-b border-white/5 align-top text-sm text-white/70 transition hover:bg-white/5 last:border-b-0">
+                              <td className="px-4 py-3 text-[11px] text-white/35">{relativeTime(form.created_at)}</td>
+                              <td className="px-4 py-3 font-semibold text-white">{form.name}</td>
+                              <td className="px-4 py-3 text-xs text-white/55">
+                                <div className="space-y-1">
+                                  {form.phone && <p>電話：{form.phone}</p>}
+                                  {form.line_id && <p>LINE：{form.line_id}</p>}
+                                  {form.email && <p>Email：{form.email}</p>}
+                                  {!form.phone && !form.line_id && !form.email && <p>—</p>}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-white/65">
+                                <p className="max-w-[360px] whitespace-pre-wrap break-words">{messagePreview.length > 120 ? `${messagePreview.slice(0, 120)}…` : messagePreview}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => deleteForm(form.id)}
+                                  disabled={deletingFormId === form.id}
+                                  className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
+                                >
+                                  {deletingFormId === form.id ? "刪除中..." : "刪除"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="divide-y divide-white/5 lg:hidden">
+                    {forms.map((form) => {
+                      const messagePreview = form.message && form.message.trim().length > 0 ? form.message.trim() : "—";
+                      return (
+                        <div key={form.id} className="space-y-3 px-4 py-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-white">{form.name}</p>
+                              <p className="mt-1 text-[11px] text-white/35">{relativeTime(form.created_at)}</p>
+                            </div>
+                            <button
+                              onClick={() => deleteForm(form.id)}
+                              disabled={deletingFormId === form.id}
+                              className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
+                            >
+                              {deletingFormId === form.id ? "刪除中..." : "刪除"}
+                            </button>
+                          </div>
+                          <div className="space-y-1 text-xs text-white/55">
+                            {form.phone && <p>電話：{form.phone}</p>}
+                            {form.line_id && <p>LINE：{form.line_id}</p>}
+                            {form.email && <p>Email：{form.email}</p>}
+                            {!form.phone && !form.line_id && !form.email && <p>—</p>}
+                          </div>
+                          <p className="text-sm text-white/65">{messagePreview.length > 120 ? `${messagePreview.slice(0, 120)}…` : messagePreview}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 

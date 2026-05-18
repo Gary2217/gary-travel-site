@@ -132,3 +132,47 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// DELETE - 刪除單筆聯絡表單記錄（需登入）
+export async function DELETE(request: NextRequest) {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: '缺少 id' }, { status: 400 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const { data: existingForm, error: existingError } = await supabase
+      .from('contact_forms')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (existingError) {
+      return NextResponse.json({ error: existingError.message }, { status: 500 });
+    }
+
+    if (!existingForm) {
+      return NextResponse.json({ error: '找不到指定表單' }, { status: 404 });
+    }
+
+    const { error } = await supabase
+      .from('contact_forms')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
