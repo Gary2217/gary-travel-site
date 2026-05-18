@@ -369,7 +369,7 @@ export default function AdminPage() {
             <p className="text-[10px] text-white/40">Gary Travel · Admin Dashboard</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <a href="https://analytics.google.com/analytics/web/#/p475498498/reports/intelligenthome" target="_blank" rel="noopener noreferrer" className="rounded-full bg-blue-500/20 px-2.5 py-1 text-[10px] font-semibold text-blue-400 transition hover:bg-blue-500/30">📈 GA4 流量</a>
+            <a href="https://analytics.google.com/analytics/web/" target="_blank" rel="noopener noreferrer" className="rounded-full bg-blue-500/20 px-2.5 py-1 text-[10px] font-semibold text-blue-400 transition hover:bg-blue-500/30">📈 GA4 流量</a>
             <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-semibold text-amber-400">開發者模式</span>
             {statsLoading && <span className="text-[10px] text-white/30">載入中...</span>}
             {!statsLoading && stats && <button onClick={async () => { setStatsLoading(true); const r = await fetch("/api/admin/stats", { cache: "no-store" }); if (r.ok) setStats(await r.json()); setStatsLoading(false); }} className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/40 hover:text-white/70">↻ 重新整理</button>}
