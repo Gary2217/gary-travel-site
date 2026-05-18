@@ -22,6 +22,10 @@ export default function LegalNotice({ className = "" }: LegalNoticeProps) {
         我們不會以「旅行沒有終點」或本站名義要求匯款／轉帳至私人帳戶，也不會要求提供 ATM 操作、銀行密碼、驗證碼或信用卡完整資訊；如遇可疑訊息請先透過官方管道確認或撥打 165。
       </p>
 
+      <p className="mt-1.5 text-[10px] leading-4 text-gray-500 sm:text-[11px] sm:leading-5">
+        本網站透過「聯絡我們」表單蒐集之姓名、電話、LINE ID、信箱等個人資料，僅用於回覆您的旅遊諮詢，不會提供給任何第三方。您可隨時要求查閱、更正或刪除個人資料。詳見<Link href="/privacy" className="text-sky-600 underline hover:text-sky-500">隱私權政策</Link>。
+      </p>
+
     </section>
   );
 }
