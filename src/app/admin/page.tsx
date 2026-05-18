@@ -495,7 +495,7 @@ export default function AdminPage() {
                     <div key={t.trip_id} className="flex items-center gap-3">
                       <span className="w-4 shrink-0 text-center text-xs text-white/40">{i + 1}</span>
                       <span className="w-0 min-w-0 flex-1 truncate text-[11px] text-white/60 sm:text-xs">{t.trip_title}</span>
-                      <div className="hidden w-32 sm:block lg:w-48">
+                      <div className="hidden w-48 sm:block lg:w-72 xl:w-96">
                         <div className="h-2 overflow-hidden rounded-full bg-white/5">
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((t.views / maxViews) * 100)}%`, background: i === 0 ? "#38bdf8" : i === 1 ? "#34d399" : "rgba(255,255,255,0.3)" }} />
                         </div>
