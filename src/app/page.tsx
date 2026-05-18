@@ -23,6 +23,7 @@ type Destination = {
   title: string;
   subtitle: string;
   image_url: string;
+  display_order: number;
   sub_region?: string;
 };
 
@@ -48,10 +49,57 @@ interface HomeDestinationCardProps {
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
   onTextUpdate: (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => void;
   onDelete?: (destinationId: string) => Promise<void>;
+  reorderControls?: {
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
+  };
   priority?: boolean;
 }
 
-function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate, onDelete, priority = false }: HomeDestinationCardProps) {
+async function handleReorder<T extends { id: string; display_order: number }>(
+  table: 'destinations' | 'trips',
+  items: T[],
+  index: number,
+  direction: -1 | 1,
+  setItems: (items: T[]) => void
+) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= items.length) return;
+
+  const current = items[index];
+  const target = items[targetIndex];
+
+  const currentOrder = current.display_order;
+  const targetOrder = target.display_order;
+
+  const updated = [...items];
+  updated[index] = { ...current, display_order: targetOrder };
+  updated[targetIndex] = { ...target, display_order: currentOrder };
+  updated.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  setItems(updated);
+
+  const res = await fetch('/api/reorder', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      table,
+      items: [
+        { id: current.id, display_order: targetOrder },
+        { id: target.id, display_order: currentOrder },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    setItems(items);
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || '排序儲存失敗');
+  }
+}
+
+function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate, onDelete, reorderControls, priority = false }: HomeDestinationCardProps) {
   const [tripCount, setTripCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -146,6 +194,38 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
               </svg>
             </button>
           )}
+          {reorderControls && (
+            <div className="absolute right-2 top-12 z-10 flex flex-col gap-1">
+              {reorderControls.canMoveUp && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void reorderControls.onMoveUp();
+                  }}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white/80 hover:bg-black/70"
+                  title="上移"
+                >
+                  ↑
+                </button>
+              )}
+              {reorderControls.canMoveDown && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void reorderControls.onMoveDown();
+                  }}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white/80 hover:bg-black/70"
+                  title="下移"
+                >
+                  ↓
+                </button>
+              )}
+            </div>
+          )}
           <div className="absolute left-2 top-2 z-10 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold text-white/90 backdrop-blur-sm">
             {tripCount === null ? '讀取行程中...' : tripCount > 0 ? `已有行程（${tripCount}）` : '尚無行程'}
           </div>
@@ -202,6 +282,7 @@ export default function HomePage() {
             title: dest.title,
             subtitle: dest.subtitle || '',
             image_url: dest.image_url,
+            display_order: dest.display_order ?? 0,
             sub_region: dest.sub_region || ''
           }))
         }));
@@ -405,6 +486,23 @@ export default function HomePage() {
     setNewDestinationTitle('');
     setNewDestinationSubtitle('');
     setNewDestinationSubRegion('');
+  };
+
+  const handleDestinationReorder = async (sectionId: string, index: number, direction: -1 | 1) => {
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section) return;
+
+    try {
+      await handleReorder('destinations', section.destinations, index, direction, (updatedDestinations) => {
+        setSections((prevSections) =>
+          prevSections.map((item) =>
+            item.id === sectionId ? { ...item, destinations: updatedDestinations } : item
+          )
+        );
+      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '排序失敗');
+    }
   };
 
   return (
@@ -688,7 +786,10 @@ export default function HomePage() {
 
                 const hasMore = section.destinations.length > 5;
 
-                const renderCard = (destination: Destination, cardIdx: number) => (
+                const renderCard = (destination: Destination, cardIdx: number) => {
+                  const destinationIndex = section.destinations.findIndex((item) => item.id === destination.id);
+
+                  return (
                   <HomeDestinationCard
                     key={destination.id}
                     destination={destination}
@@ -696,9 +797,16 @@ export default function HomePage() {
                     onImageUpdate={handleImageUpdate}
                     onTextUpdate={handleDestinationTextUpdate}
                     onDelete={handleDeleteDestination}
+                    reorderControls={isDevMode ? {
+                      canMoveUp: destinationIndex > 0,
+                      canMoveDown: destinationIndex < section.destinations.length - 1,
+                      onMoveUp: () => handleDestinationReorder(section.id, destinationIndex, -1),
+                      onMoveDown: () => handleDestinationReorder(section.id, destinationIndex, 1),
+                    } : undefined}
                     priority={sectionIndex === 0 && cardIdx < 5}
                   />
-                );
+                  );
+                };
 
                 return (
                   <>

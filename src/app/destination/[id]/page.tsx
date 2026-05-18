@@ -10,6 +10,47 @@ import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
 import DevModeToggle from "@/components/DevModeToggle";
 
+async function handleReorder<T extends { id: string; display_order: number }>(
+  table: 'destinations' | 'trips',
+  items: T[],
+  index: number,
+  direction: -1 | 1,
+  setItems: (items: T[]) => void
+) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= items.length) return;
+
+  const current = items[index];
+  const target = items[targetIndex];
+
+  const currentOrder = current.display_order;
+  const targetOrder = target.display_order;
+
+  const updated = [...items];
+  updated[index] = { ...current, display_order: targetOrder };
+  updated[targetIndex] = { ...target, display_order: currentOrder };
+  updated.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  setItems(updated);
+
+  const res = await fetch('/api/reorder', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      table,
+      items: [
+        { id: current.id, display_order: targetOrder },
+        { id: target.id, display_order: currentOrder },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    setItems(items);
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || '排序儲存失敗');
+  }
+}
+
 export default function DestinationPage() {
   const params = useParams();
   const router = useRouter();
@@ -144,6 +185,14 @@ export default function DestinationPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "刪除失敗";
       alert(`刪除行程失敗：${msg}`);
+    }
+  };
+
+  const handleTripReorder = async (index: number, direction: -1 | 1) => {
+    try {
+      await handleReorder('trips', trips, index, direction, setTrips);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '排序失敗');
     }
   };
 
@@ -410,16 +459,42 @@ export default function DestinationPage() {
                     const hasMatchingDate = Boolean(
                       dateFilter && trip.departure_dates?.some((d) => d.departure_date === dateFilter)
                     );
+                    const tripIndex = trips.findIndex((item) => item.id === trip.id);
+
                     return (
                       <div key={trip.id} className="relative">
-                        {hasMatchingDate && (
-                          <div className="absolute -top-2 left-2 z-10 rounded-full bg-sky-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-sky-500/30">
-                            符合出發日
-                          </div>
-                        )}
-                        <TripCard
-                          id={trip.id}
-                          title={trip.title}
+                          {hasMatchingDate && (
+                            <div className="absolute -top-2 left-2 z-10 rounded-full bg-sky-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-sky-500/30">
+                              符合出發日
+                            </div>
+                          )}
+                          {isDevMode && (
+                            <div className="absolute right-2 top-12 z-10 flex flex-col gap-1">
+                              {tripIndex > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleTripReorder(tripIndex, -1)}
+                                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white/80 hover:bg-black/70"
+                                  title="上移"
+                                >
+                                  ↑
+                                </button>
+                              )}
+                              {tripIndex < trips.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleTripReorder(tripIndex, 1)}
+                                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white/80 hover:bg-black/70"
+                                  title="下移"
+                                >
+                                  ↓
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          <TripCard
+                            id={trip.id}
+                            title={trip.title}
                           duration={trip.duration}
                           price_range={getTripCardPrice(trip)}
                           cover_image_url={trip.cover_image_url}
