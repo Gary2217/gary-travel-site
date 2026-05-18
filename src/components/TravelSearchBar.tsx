@@ -355,37 +355,36 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       {!flightOnly && (
         <div className="mb-4 text-center">
           <h2 className="text-lg font-bold text-gray-900 sm:text-xl">探索你的下一趟旅程</h2>
-          <p className="mt-1 text-xs text-gray-500">精選國際行程，由旅遊規劃師蓋瑞為您量身打造</p>
         </div>
       )}
 
       {/* 模式 Tab */}
       {!flightOnly && (
-      <div className="mb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max items-center gap-1 rounded-full bg-gray-100 p-1 sm:mx-auto">
+      <div className="mb-3 flex justify-center">
+        <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
           <button
             type="button"
             onClick={() => setActiveMode("trip")}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
+            className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm ${
               activeMode === "trip"
                 ? "bg-white text-gray-900 shadow"
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="hidden h-3.5 w-3.5 sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
-            團體旅遊
+            旅遊行程
           </button>
           <Link
             href="/mini-transit-tickets"
-            className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-gray-500 transition hover:bg-white hover:text-gray-900 hover:shadow"
+            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-white hover:text-gray-900 hover:shadow sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
           >
-            小三通票卷
+            小三通
           </Link>
           <Link
             href="/document-services"
-            className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-gray-500 transition hover:bg-white hover:text-gray-900 hover:shadow"
+            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-white hover:text-gray-900 hover:shadow sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
           >
             證件代辦
           </Link>
@@ -395,12 +394,12 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
               const el = document.getElementById('social-community');
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
-            className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-sky-600 transition hover:bg-white hover:text-sky-700 hover:shadow"
+            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-white hover:text-sky-700 hover:shadow sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
           >
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="hidden h-3.5 w-3.5 sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            加入社群
+            社群
           </button>
         </div>
       </div>
