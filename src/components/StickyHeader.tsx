@@ -154,10 +154,10 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
             {/* 收藏行程按鈕 */}
             <div className="relative" ref={favPanelRef}>
-              <button
+                <button
                 type="button"
                 onClick={() => setShowFavPanel(p => !p)}
-                className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition hover:bg-red-50 hover:text-red-500"
+                className="relative flex items-center gap-1 rounded-full px-2 py-1.5 text-gray-500 transition hover:bg-red-50 hover:text-red-500"
                 title="已收藏行程"
               >
                 <svg
@@ -171,6 +171,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                   <path strokeLinecap="round" strokeLinejoin="round"
                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
+                <span className="hidden text-[13px] font-medium sm:inline">收藏行程</span>
                 {favIds.length > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
                     {favIds.length > 9 ? "9+" : favIds.length}
