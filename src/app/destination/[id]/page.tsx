@@ -13,22 +13,21 @@ import DevModeToggle from "@/components/DevModeToggle";
 async function handleReorder<T extends { id: string; display_order: number }>(
   table: 'destinations' | 'trips',
   items: T[],
-  index: number,
-  direction: -1 | 1,
+  fromIndex: number,
+  toIndex: number,
   setItems: (items: T[]) => void
 ) {
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= items.length) return;
+  if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return;
 
-  const current = items[index];
-  const target = items[targetIndex];
+  const current = items[fromIndex];
+  const target = items[toIndex];
 
   const currentOrder = current.display_order;
   const targetOrder = target.display_order;
 
   const updated = [...items];
-  updated[index] = { ...current, display_order: targetOrder };
-  updated[targetIndex] = { ...target, display_order: currentOrder };
+  updated[fromIndex] = { ...current, display_order: targetOrder };
+  updated[toIndex] = { ...target, display_order: currentOrder };
   updated.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
   setItems(updated);
 
@@ -66,6 +65,9 @@ export default function DestinationPage() {
   const [cityFilter, setCityFilter] = useState('');
   const [relatedTrips, setRelatedTrips] = useState<{ regionTrips: Trip[]; categoryTrips: Trip[] } | null>(null);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isPC, setIsPC] = useState(false);
 
   // 從 URL query params 讀取搜尋條件
   useEffect(() => {
@@ -126,6 +128,25 @@ export default function DestinationPage() {
     }
 
     loadSiteLogo();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(pointer: fine)');
+    const updateIsPC = (event?: MediaQueryListEvent) => {
+      setIsPC(event?.matches ?? mediaQuery.matches);
+    };
+
+    updateIsPC();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateIsPC);
+      return () => mediaQuery.removeEventListener('change', updateIsPC);
+    }
+
+    mediaQuery.addListener(updateIsPC);
+    return () => mediaQuery.removeListener(updateIsPC);
   }, []);
 
   const handleTripImageUpdate = (tripId: string, newImageUrl: string) => {
@@ -190,11 +211,52 @@ export default function DestinationPage() {
 
   const handleTripReorder = async (index: number, direction: -1 | 1) => {
     try {
-      await handleReorder('trips', trips, index, direction, setTrips);
+      await handleReorder('trips', trips, index, index + direction, setTrips);
     } catch (error) {
       alert(error instanceof Error ? error.message : '排序失敗');
     }
   };
+
+  function handleDragStart(index: number) {
+    return (e: React.DragEvent<HTMLDivElement>) => {
+      setDragIndex(index);
+      setDragOverIndex(index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    };
+  }
+
+  function handleDragOver(index: number) {
+    return (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverIndex(index);
+    };
+  }
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  function handleDrop(dropIndex: number) {
+    return async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+
+      if (dragIndex === null || dragIndex === dropIndex) {
+        handleDragEnd();
+        return;
+      }
+
+      try {
+        await handleReorder('trips', trips, dragIndex, dropIndex, setTrips);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : '排序失敗');
+      } finally {
+        handleDragEnd();
+      }
+    };
+  }
 
   const clearFilters = () => {
     setDateFilter('');
@@ -462,7 +524,15 @@ export default function DestinationPage() {
                     const tripIndex = trips.findIndex((item) => item.id === trip.id);
 
                     return (
-                      <div key={trip.id} className="relative">
+                      <div
+                        key={trip.id}
+                        draggable={isDevMode && isPC}
+                        onDragStart={handleDragStart(tripIndex)}
+                        onDragOver={handleDragOver(tripIndex)}
+                        onDragEnd={handleDragEnd}
+                        onDrop={handleDrop(tripIndex)}
+                        className={`relative ${isDevMode && isPC ? 'cursor-grab active:cursor-grabbing' : ''} ${dragIndex === tripIndex ? 'opacity-50' : ''} ${dragOverIndex === tripIndex ? 'ring-2 ring-sky-400 rounded-xl' : ''}`}
+                      >
                           {hasMatchingDate && (
                             <div className="absolute -top-2 left-2 z-10 rounded-full bg-sky-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-sky-500/30">
                               符合出發日

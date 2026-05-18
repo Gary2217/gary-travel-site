@@ -46,6 +46,13 @@ type FavoriteTrip = {
 interface HomeDestinationCardProps {
   destination: Destination;
   isDevMode: boolean;
+  isDraggable?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLAnchorElement>) => void;
+  onDragOver?: (e: React.DragEvent<HTMLAnchorElement>) => void;
+  onDragEnd?: () => void;
+  onDrop?: (e: React.DragEvent<HTMLAnchorElement>) => void;
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
   onTextUpdate: (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => void;
   onDelete?: (destinationId: string) => Promise<void>;
@@ -61,22 +68,21 @@ interface HomeDestinationCardProps {
 async function handleReorder<T extends { id: string; display_order: number }>(
   table: 'destinations' | 'trips',
   items: T[],
-  index: number,
-  direction: -1 | 1,
+  fromIndex: number,
+  toIndex: number,
   setItems: (items: T[]) => void
 ) {
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= items.length) return;
+  if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return;
 
-  const current = items[index];
-  const target = items[targetIndex];
+  const current = items[fromIndex];
+  const target = items[toIndex];
 
   const currentOrder = current.display_order;
   const targetOrder = target.display_order;
 
   const updated = [...items];
-  updated[index] = { ...current, display_order: targetOrder };
-  updated[targetIndex] = { ...target, display_order: currentOrder };
+  updated[fromIndex] = { ...current, display_order: targetOrder };
+  updated[toIndex] = { ...target, display_order: currentOrder };
   updated.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
   setItems(updated);
 
@@ -99,7 +105,7 @@ async function handleReorder<T extends { id: string; display_order: number }>(
   }
 }
 
-function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpdate, onDelete, reorderControls, priority = false }: HomeDestinationCardProps) {
+function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDragging = false, isDragOver = false, onDragStart, onDragOver, onDragEnd, onDrop, onImageUpdate, onTextUpdate, onDelete, reorderControls, priority = false }: HomeDestinationCardProps) {
   const [tripCount, setTripCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -144,7 +150,12 @@ function HomeDestinationCard({ destination, isDevMode, onImageUpdate, onTextUpda
   return (
     <Link
       href={`/destination/${destination.id}`}
-      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-gray-200 bg-gray-100 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-gray-300/50"
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
+      className={`group relative block aspect-[4/3] overflow-hidden rounded-xl border border-gray-200 bg-gray-100 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-gray-300/50 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'ring-2 ring-sky-400' : ''}`}
       onClick={() => { if (!isDevMode) trackClick(destination.id); }}
     >
       {isDevMode && (
@@ -266,6 +277,11 @@ export default function HomePage() {
   const [newDestinationTitle, setNewDestinationTitle] = useState('');
   const [newDestinationSubtitle, setNewDestinationSubtitle] = useState('');
   const [newDestinationSubRegion, setNewDestinationSubRegion] = useState('');
+  const [dragSectionId, setDragSectionId] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isPC, setIsPC] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -332,6 +348,25 @@ export default function HomePage() {
     Promise.all(
       ids.map(id => fetch(`/api/trips/${id}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null))
     ).then(results => setFavoriteTrips(results.filter(Boolean) as FavoriteTrip[]));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(pointer: fine)');
+    const updateIsPC = (event?: MediaQueryListEvent) => {
+      setIsPC(event?.matches ?? mediaQuery.matches);
+    };
+
+    updateIsPC();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateIsPC);
+      return () => mediaQuery.removeEventListener('change', updateIsPC);
+    }
+
+    mediaQuery.addListener(updateIsPC);
+    return () => mediaQuery.removeListener(updateIsPC);
   }, []);
 
   const removeFavorite = (id: string) => {
@@ -493,7 +528,7 @@ export default function HomePage() {
     if (!section) return;
 
     try {
-      await handleReorder('destinations', section.destinations, index, direction, (updatedDestinations) => {
+      await handleReorder('destinations', section.destinations, index, index + direction, (updatedDestinations) => {
         setSections((prevSections) =>
           prevSections.map((item) =>
             item.id === sectionId ? { ...item, destinations: updatedDestinations } : item
@@ -504,6 +539,67 @@ export default function HomePage() {
       alert(error instanceof Error ? error.message : '排序失敗');
     }
   };
+
+  function handleDragStart(sectionId: string, index: number) {
+    return (e: React.DragEvent<HTMLAnchorElement>) => {
+      setDragSectionId(sectionId);
+      setDragIndex(index);
+      setDragOverSectionId(sectionId);
+      setDragOverIndex(index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', `${sectionId}:${index}`);
+    };
+  }
+
+  function handleDragOver(sectionId: string, index: number) {
+    return (e: React.DragEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      if (dragSectionId !== sectionId) return;
+
+      setDragOverSectionId(sectionId);
+      setDragOverIndex(index);
+    };
+  }
+
+  const handleDragEnd = () => {
+    setDragSectionId(null);
+    setDragIndex(null);
+    setDragOverSectionId(null);
+    setDragOverIndex(null);
+  };
+
+  function handleDrop(sectionId: string, dropIndex: number) {
+    return async (e: React.DragEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+
+      if (dragSectionId !== sectionId || dragIndex === null || dragIndex === dropIndex) {
+        handleDragEnd();
+        return;
+      }
+
+      const section = sections.find((item) => item.id === sectionId);
+      if (!section) {
+        handleDragEnd();
+        return;
+      }
+
+      try {
+        await handleReorder('destinations', section.destinations, dragIndex, dropIndex, (updatedDestinations) => {
+          setSections((prevSections) =>
+            prevSections.map((item) =>
+              item.id === sectionId ? { ...item, destinations: updatedDestinations } : item
+            )
+          );
+        });
+      } catch (error) {
+        alert(error instanceof Error ? error.message : '排序失敗');
+      } finally {
+        handleDragEnd();
+      }
+    };
+  }
 
   return (
     <main className="min-h-screen bg-transparent pt-14 text-gray-900">
@@ -794,6 +890,13 @@ export default function HomePage() {
                     key={destination.id}
                     destination={destination}
                     isDevMode={isDevMode}
+                    isDraggable={isDevMode && isPC}
+                    isDragging={dragSectionId === section.id && dragIndex === destinationIndex}
+                    isDragOver={dragOverSectionId === section.id && dragOverIndex === destinationIndex}
+                    onDragStart={handleDragStart(section.id, destinationIndex)}
+                    onDragOver={handleDragOver(section.id, destinationIndex)}
+                    onDragEnd={handleDragEnd}
+                    onDrop={handleDrop(section.id, destinationIndex)}
                     onImageUpdate={handleImageUpdate}
                     onTextUpdate={handleDestinationTextUpdate}
                     onDelete={handleDeleteDestination}
