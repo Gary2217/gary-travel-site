@@ -180,7 +180,12 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
         </div>
       )}
       {!loading && (
-        <div className="w-full bg-white" title={title}>
+        <div
+          className="w-full select-none bg-white"
+          title={title}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+        >
           {pages.map((page, index) => (
             <div
               key={index}
@@ -191,7 +196,10 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
                 ref={(el) => setCanvasRef(el, index)}
                 data-page-index={index}
                 className="block h-auto w-full"
+                onContextMenu={(e) => e.preventDefault()}
               />
+              {/* 透明遮罩防止直接存取 canvas 內容 */}
+              <div className="absolute inset-0" onContextMenu={(e) => e.preventDefault()} />
               {!page.rendered && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                   <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
