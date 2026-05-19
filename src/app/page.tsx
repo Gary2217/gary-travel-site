@@ -604,13 +604,36 @@ export default function HomePage() {
   }
 
   const handlePopularReorder = async (index: number, direction: -1 | 1) => {
+    const newIndex = index + direction;
     const visibleItems = popularDestinations.slice(0, 4);
+    if (newIndex < 0 || newIndex >= visibleItems.length) return;
+
+    const updated = [...visibleItems];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    setPopularDestinations([...updated, ...popularDestinations.slice(4)]);
+
+    const itemA = visibleItems[index];
+    const itemB = visibleItems[newIndex];
     try {
-      await handleReorder('destinations', visibleItems, index, index + direction, (updatedItems) => {
-        setPopularDestinations([...updatedItems, ...popularDestinations.slice(4)]);
+      const res = await fetch('/api/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table: 'destinations',
+          items: [
+            { id: itemA.id, display_order: itemB.display_order },
+            { id: itemB.id, display_order: itemA.display_order },
+          ],
+        }),
       });
-    } catch (error) {
-      alert(error instanceof Error ? error.message : '排序失敗');
+      if (!res.ok) {
+        setPopularDestinations(popularDestinations);
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || '排序儲存失敗');
+      }
+    } catch {
+      setPopularDestinations(popularDestinations);
+      alert('排序失敗');
     }
   };
 
@@ -643,13 +666,34 @@ export default function HomePage() {
         handlePopularDragEnd();
         return;
       }
+      const fromIndex = dragPopularIndex;
       const visibleItems = popularDestinations.slice(0, 4);
+      const updated = [...visibleItems];
+      [updated[fromIndex], updated[dropIndex]] = [updated[dropIndex], updated[fromIndex]];
+      setPopularDestinations([...updated, ...popularDestinations.slice(4)]);
+
+      const itemA = visibleItems[fromIndex];
+      const itemB = visibleItems[dropIndex];
       try {
-        await handleReorder('destinations', visibleItems, dragPopularIndex, dropIndex, (updatedItems) => {
-          setPopularDestinations([...updatedItems, ...popularDestinations.slice(4)]);
+        const res = await fetch('/api/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            table: 'destinations',
+            items: [
+              { id: itemA.id, display_order: itemB.display_order },
+              { id: itemB.id, display_order: itemA.display_order },
+            ],
+          }),
         });
-      } catch (error) {
-        alert(error instanceof Error ? error.message : '排序失敗');
+        if (!res.ok) {
+          setPopularDestinations(popularDestinations);
+          const data = await res.json().catch(() => ({}));
+          alert(data?.error || '排序儲存失敗');
+        }
+      } catch {
+        setPopularDestinations(popularDestinations);
+        alert('排序失敗');
       } finally {
         handlePopularDragEnd();
       }
