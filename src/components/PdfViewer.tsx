@@ -33,9 +33,13 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
     async function loadPdf() {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const loadingTask = pdfjsLib.getDocument(url);
+        const loadingTask = pdfjsLib.getDocument({
+          url,
+          disableRange: true,
+          disableStream: true,
+        });
         const pdf = await loadingTask.promise;
 
         if (cancelled) return;
