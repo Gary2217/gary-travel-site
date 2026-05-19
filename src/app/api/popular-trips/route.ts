@@ -32,7 +32,7 @@ export async function GET() {
 
     if (!destinations || destinations.length === 0) {
       return NextResponse.json([], {
-        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
       });
     }
 
@@ -83,7 +83,7 @@ export async function GET() {
     const ranked = [...featuredDestinations, ...otherDestinations].slice(0, 8);
 
     return NextResponse.json(ranked, {
-      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

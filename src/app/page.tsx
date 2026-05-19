@@ -612,19 +612,12 @@ export default function HomePage() {
     [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
     setPopularDestinations([...updated, ...popularDestinations.slice(4)]);
 
-    const itemA = visibleItems[index];
-    const itemB = visibleItems[newIndex];
+    const reorderItems = updated.map((item, idx) => ({ id: item.id, display_order: idx }));
     try {
       const res = await fetch('/api/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table: 'destinations',
-          items: [
-            { id: itemA.id, display_order: itemB.display_order },
-            { id: itemB.id, display_order: itemA.display_order },
-          ],
-        }),
+        body: JSON.stringify({ table: 'destinations', items: reorderItems }),
       });
       if (!res.ok) {
         setPopularDestinations(popularDestinations);
@@ -672,19 +665,12 @@ export default function HomePage() {
       [updated[fromIndex], updated[dropIndex]] = [updated[dropIndex], updated[fromIndex]];
       setPopularDestinations([...updated, ...popularDestinations.slice(4)]);
 
-      const itemA = visibleItems[fromIndex];
-      const itemB = visibleItems[dropIndex];
+      const reorderItems = updated.map((item, idx) => ({ id: item.id, display_order: idx }));
       try {
         const res = await fetch('/api/reorder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            table: 'destinations',
-            items: [
-              { id: itemA.id, display_order: itemB.display_order },
-              { id: itemB.id, display_order: itemA.display_order },
-            ],
-          }),
+          body: JSON.stringify({ table: 'destinations', items: reorderItems }),
         });
         if (!res.ok) {
           setPopularDestinations(popularDestinations);
