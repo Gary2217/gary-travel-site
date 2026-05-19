@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
 import { requireDevAuth } from '@/lib/api-auth';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
@@ -14,7 +13,6 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  noStore();
   try {
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -89,7 +87,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

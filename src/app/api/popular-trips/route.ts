@@ -31,7 +31,7 @@ export async function GET() {
       .neq('image_url', '');
 
     if (destinationsError) {
-      console.error('popular destinations query error:', destinationsError.message);
+      console.error('popular destinations query error:', destinationsError);
       return NextResponse.json({ error: '載入失敗' }, { status: 500 });
     }
 

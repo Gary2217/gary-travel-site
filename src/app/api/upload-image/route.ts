@@ -34,6 +34,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file type. Allowed: JPG, PNG, WebP' }, { status: 400 });
     }
 
+    if (file.size === 0) {
+      return NextResponse.json({ error: '檔案不可為空' }, { status: 400 });
+    }
+
     if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: 'File too large. Max 5MB' }, { status: 400 });
     }

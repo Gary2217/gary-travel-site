@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
 import { requireDevAuth } from '@/lib/api-auth';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
 
@@ -14,7 +13,6 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  noStore();
   try {
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
@@ -27,48 +25,21 @@ export async function GET(
       },
     });
 
-    // 先查 trip + destinations（不含 trip_days，因為該表可能不存在）
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*, destinations (*)')
-      .eq('id', params.id)
-      .single();
+    const [{ data, error }, daysResult, datesResult] = await Promise.all([
+      supabase.from('trips').select('*, destinations (*)').eq('id', params.id).single(),
+      supabase.from('trip_days').select('*').eq('trip_id', params.id).order('day_number', { ascending: true }),
+      supabase.from('trip_departure_dates').select('*').eq('trip_id', params.id).order('departure_date', { ascending: true }),
+    ]);
 
     if (error) {
       console.error('trip query error:', error.message);
       return NextResponse.json({ error: '找不到行程' }, { status: 404 });
     }
 
-    // 嘗試查 trip_days（表可能尚未建立）
-    let tripDays: any[] = [];
-    try {
-      const { data: daysData } = await supabase
-        .from('trip_days')
-        .select('*')
-        .eq('trip_id', params.id)
-        .order('day_number', { ascending: true });
-      if (daysData) tripDays = daysData;
-    } catch {
-      // trip_days 表不存在，跳過
-    }
-
-    // 查詢出發日期
-    let departureDates: any[] = [];
-    try {
-      const { data: datesData } = await supabase
-        .from('trip_departure_dates')
-        .select('*')
-        .eq('trip_id', params.id)
-        .order('departure_date', { ascending: true });
-      if (datesData) departureDates = datesData;
-    } catch {
-      // trip_departure_dates 表不存在，跳過
-    }
-
     const responseData = {
       ...data,
-      trip_days: tripDays,
-      departure_dates: departureDates,
+      trip_days: daysResult.data || [],
+      departure_dates: datesResult.data || [],
       document_is_available: Boolean(data.document_url),
     };
 
@@ -119,7 +90,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

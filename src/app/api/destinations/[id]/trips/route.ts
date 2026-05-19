@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +10,6 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  noStore();
   try {
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
