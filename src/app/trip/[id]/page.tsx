@@ -147,6 +147,7 @@ export default function TripPage() {
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [isCreatingNewDeparture, setIsCreatingNewDeparture] = useState(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -209,6 +210,10 @@ export default function TripPage() {
     }
 
   };
+
+  // 用 ref 讀取 deposit_label，避免其加入 useEffect 依賴而觸發欄位重置
+  const depositLabelRef = useRef(editTripBanner.deposit_label);
+  depositLabelRef.current = editTripBanner.deposit_label;
 
   const showSaveSuccess = (message = '儲存成功') => {
     setSaveSuccessMessage(message);
@@ -361,8 +366,8 @@ export default function TripPage() {
   const formatFullDate = (dateStr: string) => {
     const d = new Date(`${dateStr}T00:00:00`);
     if (Number.isNaN(d.getTime())) return formatDateInput(dateStr);
-
-    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+    const weekday = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}（${weekday}）`;
   };
 
   const parsePriceDetail = (detail: string): PriceDetailContent => {
@@ -514,14 +519,15 @@ export default function TripPage() {
     setDetailChildExtraBedPrice(parsedDetail.childExtraBedPrice);
     setDetailInfantPrice(parsedDetail.infantPrice);
     setDetailPricingNote(parsedDetail.pricingNote);
-    setDetailDeposit(parsedDetail.deposit || String(editTripBanner.deposit_label || '').trim() || DEFAULT_PRICE_DETAIL.deposit);
+    setDetailDeposit(parsedDetail.deposit || String(depositLabelRef.current || '').trim() || DEFAULT_PRICE_DETAIL.deposit);
     setDetailSingleRoom(parsedDetail.singleRoom);
     setDetailVisaFee(parsedDetail.visaFee || '免簽證');
     setDetailSurcharge(parsedDetail.surcharge || '售價已內含');
     setDetailGroupNote(parsedDetail.groupNote);
     setDetailQuoteNote(parsedDetail.quoteNote);
     setDetailVisaNote(parsedDetail.visaNote);
-  }, [selectedDepartureId, selectedDeparture, selectedDepartureInfo.group_code, selectedDepartureInfo.price_detail, editTripBanner.deposit_label]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDepartureId, selectedDeparture]);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
@@ -741,6 +747,7 @@ export default function TripPage() {
       setDepartureDates((prev) => [...prev, createdDeparture].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
       setSelectedDepartureId(createdDeparture.id);
       setDepartureEditorPrice(typeof createdDeparture.price === 'number' ? String(createdDeparture.price) : '');
+      setIsCreatingNewDeparture(false);
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -986,10 +993,16 @@ export default function TripPage() {
                   </div>
 
                   {isDevMode && showBannerEditor && (
-                    <div className="space-y-3 rounded-[1.25rem] border border-sky-200 bg-sky-50 p-4">
+                    <div className={`space-y-3 rounded-[1.25rem] border p-4 ${isCreatingNewDeparture ? 'border-emerald-200 bg-emerald-50' : 'border-sky-200 bg-sky-50'}`}>
                       <div>
-                        <p className="text-[10px] font-semibold tracking-[0.2em] text-sky-600">目前編輯梯次</p>
-                        <p className="mt-1 text-xs text-gray-600">點下方出團日期卡片可切換這裡的內容{!selectedDeparture ? '（尚未選擇梯次，先新增或點選梯次）' : ''}</p>
+                        <p className={`text-[10px] font-semibold tracking-[0.2em] ${isCreatingNewDeparture ? 'text-emerald-600' : 'text-sky-600'}`}>
+                          {isCreatingNewDeparture ? '新增梯次' : '目前編輯梯次'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600">
+                          {isCreatingNewDeparture
+                            ? '填入新梯次日期與資訊，按「建立新梯次」儲存'
+                            : `點下方出團日期卡片可切換這裡的內容${!selectedDeparture ? '（尚未選擇梯次，先新增或點選梯次）' : ''}`}
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1121,12 +1134,37 @@ export default function TripPage() {
 
                       <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture}
+                          onClick={isCreatingNewDeparture ? saveDepartureInfoAsFirstDeparture : (selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture)}
                           disabled={saving}
                           className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
                         >
-                          {saving ? '儲存中...' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
+                          {saving ? '儲存中...' : isCreatingNewDeparture ? '建立新梯次' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
                         </button>
+                        {selectedDeparture && !isCreatingNewDeparture && (
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => {
+                              setIsCreatingNewDeparture(true);
+                              setDepartureEditorDate('');
+                              setDepartureEditorGroupCode('');
+                              setDepartureEditorPrice('');
+                              setDepartureEditorWaitlist('');
+                            }}
+                            className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60"
+                          >
+                            + 新增梯次
+                          </button>
+                        )}
+                        {isCreatingNewDeparture && (
+                          <button
+                            type="button"
+                            onClick={() => setIsCreatingNewDeparture(false)}
+                            className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-100"
+                          >
+                            取消新增
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -1762,6 +1800,7 @@ export default function TripPage() {
             onDatesChange={setDepartureDates}
             selectedDateId={selectedDepartureId}
             onSelectedDateChange={setSelectedDepartureId}
+            onSaveSuccess={() => showSaveSuccess('出團梯次已儲存')}
           />
         )}
       </div>

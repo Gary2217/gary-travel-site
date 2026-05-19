@@ -107,6 +107,7 @@ interface DepartureDatesProps {
   onDatesChange: (dates: DepartureDate[]) => void;
   selectedDateId: string | null;
   onSelectedDateChange: (dateId: string | null) => void;
+  onSaveSuccess?: () => void;
 }
 
 function formatDate(dateStr: string) {
@@ -338,7 +339,7 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
   );
 }
 
-export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange, selectedDateId, onSelectedDateChange }: DepartureDatesProps) {
+export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, onDatesChange, selectedDateId, onSelectedDateChange, onSaveSuccess }: DepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -438,6 +439,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         onSelectedDateChange(added.id);
         resetForm();
         setShowAddForm(false);
+        onSaveSuccess?.();
       }
     } catch { /* 靜默 */ }
     setSaving(false);
@@ -459,6 +461,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         );
         resetForm();
         setShowAddForm(false);
+        onSaveSuccess?.();
       }
     } catch { /* 靜默 */ }
     setSaving(false);
