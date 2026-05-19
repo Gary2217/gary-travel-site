@@ -41,6 +41,8 @@ export default function SideMediaCarousel({
   const [uploading, setUploading] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(true);
 
   // 載入媒體
   const fetchMedia = useCallback(async () => {
@@ -61,13 +63,26 @@ export default function SideMediaCarousel({
     fetchMedia();
   }, [fetchMedia]);
 
-  // 自動輪播
+  // 視口偵測：離屏時暫停輪播
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { isVisibleRef.current = entry.isIntersecting; },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // 自動輪播：3000ms，離屏時跳過
   useEffect(() => {
     if (mediaList.length <= 1) return;
 
     timerRef.current = setInterval(() => {
+      if (!isVisibleRef.current) return;
       setCurrentIndex((prev) => (prev + 1) % mediaList.length);
-    }, 1500);
+    }, 3000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -87,8 +102,9 @@ export default function SideMediaCarousel({
     if (timerRef.current) clearInterval(timerRef.current);
     if (mediaList.length > 1 && mediaList[index]?.media_type !== "instagram_video") {
       timerRef.current = setInterval(() => {
+        if (!isVisibleRef.current) return;
         setCurrentIndex((prev) => (prev + 1) % mediaList.length);
-      }, 1500);
+      }, 3000);
     }
   };
 
@@ -188,7 +204,7 @@ export default function SideMediaCarousel({
   const isVideo = currentMedia?.media_type === "instagram_video";
 
   return (
-    <div>
+    <div ref={containerRef}>
       <div className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 ${isVideo ? "" : "aspect-[4/3]"}`}>
         {loading ? (
           <div className="flex aspect-[4/3] items-center justify-center">

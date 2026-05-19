@@ -748,9 +748,12 @@ export default function HomePage() {
                   <Link href={`/trip/${trip.id}`} className="block">
                     <div className="relative h-24 overflow-hidden bg-gray-200">
                       {trip.cover_image_url ? (
-                        <div
-                          className="h-full w-full bg-gray-200 bg-cover bg-center transition duration-300 group-hover:scale-105"
-                          style={{ backgroundImage: `url(${trip.cover_image_url})` }}
+                        <Image
+                          src={trip.cover_image_url}
+                          alt={trip.title}
+                          fill
+                          sizes="160px"
+                          className="object-cover object-center transition duration-300 group-hover:scale-105"
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center bg-gray-100">

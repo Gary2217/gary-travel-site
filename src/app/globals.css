@@ -18,14 +18,22 @@ body {
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fbff 0%, #f9fffe 30%, #fffef8 60%, #fef9fc 100%) fixed;
+  background: linear-gradient(135deg, #f8fbff 0%, #f9fffe 30%, #fffef8 60%, #fef9fc 100%);
   color: #111827;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-down {
+  animation: fadeSlideDown 0.15s ease-out;
 }
 
 /* 防止圖片被拖拉 / 長按儲存 */

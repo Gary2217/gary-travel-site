@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import Image from "next/image";
 import FavoriteButton from "@/components/FavoriteButton";
 import dynamic from "next/dynamic";
 
@@ -80,9 +81,12 @@ export default function TripCard({
           onClick={handleCoverClick}
         >
           {cover_image_url ? (
-            <div
-              className="h-full w-full bg-gray-200 bg-cover bg-center transition duration-500 group-hover:scale-105"
-              style={{ backgroundImage: `url(${cover_image_url})` }}
+            <Image
+              src={cover_image_url}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover object-center transition duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gray-100">
