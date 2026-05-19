@@ -1876,12 +1876,12 @@ export default function TripPage() {
           {trip.document_url && (
             <button
               onClick={() => setShowDownloadGate(true)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-100 active:scale-[0.98] md:py-3"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-emerald-400 bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-600 active:scale-[0.98] md:py-3"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              下載 PDF 行程檔
+              下載行程檔
             </button>
           )}
         </div>
@@ -1997,12 +1997,17 @@ export default function TripPage() {
                 <a
                   href={`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || "")}&name=${encodeURIComponent(trip.title)}`}
                   onClick={() => { setShowDownloadGate(false); setDownloadReady(false); }}
-                  className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-sky-600 px-4 py-4 text-base font-bold text-white shadow-lg transition hover:bg-sky-500 active:scale-[0.98]"
+                  className="flex w-full flex-col items-center gap-1 rounded-xl bg-sky-600 px-4 py-4 text-white shadow-lg transition hover:bg-sky-500 active:scale-[0.98]"
                 >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  下載「{trip.title}」行程檔
+                  <div className="flex items-center gap-2 text-base font-bold">
+                    <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    點此下載行程檔
+                  </div>
+                  <div className="text-center text-xs font-medium text-sky-100 opacity-90">
+                    「{trip.title}」
+                  </div>
                 </a>
               </>
             )}
