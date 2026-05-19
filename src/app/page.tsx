@@ -282,6 +282,8 @@ export default function HomePage() {
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isPC, setIsPC] = useState(false);
+  const [dragPopularIndex, setDragPopularIndex] = useState<number | null>(null);
+  const [dragOverPopularIndex, setDragOverPopularIndex] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -601,6 +603,59 @@ export default function HomePage() {
     };
   }
 
+  const handlePopularReorder = async (index: number, direction: -1 | 1) => {
+    const visibleItems = popularDestinations.slice(0, 4);
+    try {
+      await handleReorder('destinations', visibleItems, index, index + direction, (updatedItems) => {
+        setPopularDestinations([...updatedItems, ...popularDestinations.slice(4)]);
+      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '排序失敗');
+    }
+  };
+
+  function handlePopularDragStart(index: number) {
+    return (e: React.DragEvent<HTMLAnchorElement>) => {
+      setDragPopularIndex(index);
+      setDragOverPopularIndex(index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    };
+  }
+
+  function handlePopularDragOver(index: number) {
+    return (e: React.DragEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverPopularIndex(index);
+    };
+  }
+
+  const handlePopularDragEnd = () => {
+    setDragPopularIndex(null);
+    setDragOverPopularIndex(null);
+  };
+
+  function handlePopularDrop(dropIndex: number) {
+    return async (e: React.DragEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      if (dragPopularIndex === null || dragPopularIndex === dropIndex) {
+        handlePopularDragEnd();
+        return;
+      }
+      const visibleItems = popularDestinations.slice(0, 4);
+      try {
+        await handleReorder('destinations', visibleItems, dragPopularIndex, dropIndex, (updatedItems) => {
+          setPopularDestinations([...updatedItems, ...popularDestinations.slice(4)]);
+        });
+      } catch (error) {
+        alert(error instanceof Error ? error.message : '排序失敗');
+      } finally {
+        handlePopularDragEnd();
+      }
+    };
+  }
+
   return (
     <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader
@@ -752,8 +807,21 @@ export default function HomePage() {
                     <HomeDestinationCard
                       destination={destination}
                       isDevMode={isDevMode}
+                      isDraggable={isDevMode && isPC}
+                      isDragging={dragPopularIndex === i}
+                      isDragOver={dragOverPopularIndex === i}
+                      onDragStart={handlePopularDragStart(i)}
+                      onDragOver={handlePopularDragOver(i)}
+                      onDragEnd={handlePopularDragEnd}
+                      onDrop={handlePopularDrop(i)}
                       onImageUpdate={handlePopularImageUpdate}
                       onTextUpdate={handleDestinationTextUpdate}
+                      reorderControls={isDevMode ? {
+                        canMoveUp: i > 0,
+                        canMoveDown: i < Math.min(popularDestinations.length, 4) - 1,
+                        onMoveUp: () => void handlePopularReorder(i, -1),
+                        onMoveDown: () => void handlePopularReorder(i, 1),
+                      } : undefined}
                       priority={true}
                     />
                   </div>
