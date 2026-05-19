@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StickyHeader from "@/components/StickyHeader";
 import DevModeToggle from "@/components/DevModeToggle";
@@ -20,6 +20,14 @@ export default function FlightDetailPage() {
   const [siteLogoUrl, setSiteLogoUrl] = useState("/travel-logo.svg");
   const [isDevMode, setIsDevMode] = useState(false);
   const [departureDates, setDepartureDates] = useState<FlightDepartureDate[]>([]);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showSaveSuccess = (message = '儲存成功') => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveSuccessMessage(message);
+    saveTimerRef.current = setTimeout(() => setSaveSuccessMessage(null), 1500);
+  };
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
@@ -86,6 +94,7 @@ export default function FlightDetailPage() {
           dates={departureDates}
           isDevMode={isDevMode}
           onDatesChange={setDepartureDates}
+          onSaveSuccess={() => showSaveSuccess('出發日期已儲存')}
         />
 
         {/* ── 自定義欄位 ── */}
@@ -146,6 +155,19 @@ export default function FlightDetailPage() {
       </div>
 
       <FloatingContact />
+
+      {saveSuccessMessage && (
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div className="rounded-2xl border border-emerald-300 bg-white px-5 py-4 text-center shadow-2xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-base font-bold text-emerald-600">{saveSuccessMessage}</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

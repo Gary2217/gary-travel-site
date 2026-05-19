@@ -403,11 +403,12 @@ interface FlightDepartureDatesProps {
   dates: FlightDepartureDate[];
   isDevMode: boolean;
   onDatesChange: (dates: FlightDepartureDate[]) => void;
+  onSaveSuccess?: () => void;
 }
 
 export default function FlightDepartureDates({
   flightRouteId, routeLabel, fromCity, toCity, duration, direct, airlines,
-  dates, isDevMode, onDatesChange,
+  dates, isDevMode, onDatesChange, onSaveSuccess,
 }: FlightDepartureDatesProps) {
   const [activeMonth, setActiveMonth] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -470,6 +471,7 @@ export default function FlightDepartureDates({
         const added = await res.json();
         onDatesChange([...dates, added].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
         resetForm(); setShowAddForm(false);
+        onSaveSuccess?.();
       }
     } catch { /* 靜默 */ }
     setSaving(false);
@@ -486,6 +488,7 @@ export default function FlightDepartureDates({
         const updated = await res.json();
         onDatesChange(dates.map((d) => d.id === editingId ? updated : d).sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
         resetForm(); setShowAddForm(false);
+        onSaveSuccess?.();
       }
     } catch { /* 靜默 */ }
     setSaving(false);
