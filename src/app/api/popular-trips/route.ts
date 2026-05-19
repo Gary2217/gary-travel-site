@@ -58,9 +58,19 @@ export async function GET() {
       isFeatured: FEATURED_DESTINATION_ORDER.includes(destination.title),
     }));
 
-    // Featured 靠 display_order 排序（尊重拖移結果），非 featured 靠點擊數再 display_order
-    const featuredDestinations = mapped
-      .filter((d) => d.isFeatured)
+    // Featured：每個標題只取一筆代表（點擊數最多；同分以 id 穩定排序），再依 display_order 決定順序
+    const featuredRepMap = new Map<string, typeof mapped[0]>();
+    for (const d of mapped) {
+      if (!d.isFeatured) continue;
+      const existing = featuredRepMap.get(d.title);
+      if (!existing ||
+          d.click_count > existing.click_count ||
+          (d.click_count === existing.click_count && d.id < existing.id)) {
+        featuredRepMap.set(d.title, d);
+      }
+    }
+
+    const featuredDestinations = Array.from(featuredRepMap.values())
       .sort((a, b) => a.display_order - b.display_order);
 
     const otherDestinations = mapped
