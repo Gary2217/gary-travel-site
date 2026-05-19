@@ -181,7 +181,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
               {/* 收藏下拉面板 */}
               {showFavPanel && (
-                <div className="absolute right-0 top-full z-dropdown mt-2 w-72 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                <div className="absolute right-0 top-full z-dropdown mt-2 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
                   <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                     <h3 className="text-sm font-bold text-gray-900">已收藏行程</h3>
                     {favIds.length > 0 && (

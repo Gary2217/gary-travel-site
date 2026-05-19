@@ -744,7 +744,7 @@ export default function HomePage() {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {favoriteTrips.map(trip => (
-                <div key={trip.id} className="group relative w-36 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div key={trip.id} className="group relative w-40 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                   <Link href={`/trip/${trip.id}`} className="block">
                     <div className="relative h-24 overflow-hidden bg-gray-200">
                       {trip.cover_image_url ? (
@@ -801,14 +801,14 @@ export default function HomePage() {
                   key={section.id}
                   type="button"
                   onClick={() => scrollToSection(section.id)}
-                  className="rounded-full border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
+                  className="rounded-full border border-gray-200 bg-transparent px-4 py-3 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
                 >
                   {section.categoryLabel}
                 </button>
               ))}
               <Link
                 href="/flights"
-                className="rounded-full border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
+                className="rounded-full border border-gray-200 bg-transparent px-4 py-3 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
               >
                 機票
               </Link>

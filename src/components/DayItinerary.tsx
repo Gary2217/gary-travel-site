@@ -28,7 +28,7 @@ function DayItinerary({
         className="flex w-full items-center justify-between p-4 text-left transition hover:bg-gray-50"
       >
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-600">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-600">
             {dayNumber}
           </span>
           <div>

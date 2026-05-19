@@ -19,7 +19,7 @@ export default function FloatingContact() {
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="回到頂部"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-lg transition hover:bg-gray-50 hover:text-gray-700 active:scale-95 sm:h-11 sm:w-11"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-lg transition hover:bg-gray-50 hover:text-gray-700 active:scale-95"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -32,7 +32,7 @@ export default function FloatingContact() {
       <button
         type="button"
         onClick={() => openExternalLink(lineDmHref)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-platform-line text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:h-11 sm:w-11 sm:hover:scale-110"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-platform-line text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:hover:scale-110"
         title="LINE 私訊"
         aria-label="透過 LINE 私訊"
       >
@@ -41,7 +41,7 @@ export default function FloatingContact() {
       <button
         type="button"
         onClick={() => openExternalLink(fbDmHref)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-platform-fb text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:h-11 sm:w-11 sm:hover:scale-110"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-platform-fb text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:hover:scale-110"
         title="FB 私訊"
         aria-label="透過 Facebook 私訊"
       >
@@ -50,7 +50,7 @@ export default function FloatingContact() {
       <button
         type="button"
         onClick={() => openExternalLink(igDmHref)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-platform-ig text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:h-11 sm:w-11 sm:hover:scale-110"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-platform-ig text-white shadow-lg transition hover:brightness-90 active:scale-95 sm:hover:scale-110"
         title="IG 私訊"
         aria-label="透過 Instagram 私訊"
       >
