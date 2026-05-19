@@ -5,8 +5,10 @@ export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') || '旅行沒有終點';
-  const subtitle = searchParams.get('subtitle') || '旅遊網站';
+  const rawTitle = searchParams.get('title') || '旅行沒有終點';
+  const rawSubtitle = searchParams.get('subtitle') || '旅遊網站';
+  const title = rawTitle.length > 40 ? rawTitle.slice(0, 40) + '…' : rawTitle;
+  const subtitle = rawSubtitle.length > 60 ? rawSubtitle.slice(0, 60) + '…' : rawSubtitle;
 
   return new ImageResponse(
     (

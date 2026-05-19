@@ -29,6 +29,9 @@ export default function Toast({ message, duration = 3000, onClose }: ToastProps)
 
   return createPortal(
     <div
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
       className={`fixed left-1/2 top-20 z-[9999] -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-900 shadow-xl transition-all duration-300 ${
         visible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
       }`}
