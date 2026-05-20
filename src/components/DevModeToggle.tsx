@@ -51,20 +51,30 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     const observer = new MutationObserver(disableOverlays);
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 2) 右鍵（電腦）/ 長按（手機）→ 找最近的圖片 URL，開新分頁顯示原圖
-    function findImageUrl(target: HTMLElement): string | null {
-      let el: HTMLElement | null = target;
-      // 往上走最多 8 層，找 background-image 或包含 <img> 的容器
-      for (let i = 0; el && i < 8; i++, el = el.parentElement) {
-        // 檢查 inline background-image
-        const bg = el.style.backgroundImage;
-        if (bg && bg !== 'none') {
-          const match = bg.match(/url\(["']?(.+?)["']?\)/);
-          if (match) return match[1];
+    // 2) 右鍵（電腦）/ 長按（手機）→ 精準偵測圖片區域，開新分頁顯示原圖
+    function findImageUrlPrecise(target: HTMLElement): string | null {
+      // A) 點到的元素本身有 background-image → 直接用
+      const bg = target.style.backgroundImage;
+      if (bg && bg !== 'none') {
+        const match = bg.match(/url\(["']?(.+?)["']?\)/);
+        if (match) return match[1];
+      }
+      // B) 點到的是 gradient 遮罩（absolute + gradient bg）→ 找同層 <img>
+      const computed = getComputedStyle(target);
+      if (computed.position === 'absolute' && computed.backgroundImage?.includes('gradient')) {
+        const parent = target.parentElement;
+        if (parent) {
+          const img = parent.querySelector('img');
+          if (img?.src) return img.src;
+          // 也檢查 parent 的 children 有沒有 background-image
+          for (const child of Array.from(parent.children)) {
+            const childBg = (child as HTMLElement).style?.backgroundImage;
+            if (childBg && childBg !== 'none') {
+              const match = childBg.match(/url\(["']?(.+?)["']?\)/);
+              if (match) return match[1];
+            }
+          }
         }
-        // 檢查容器內的 <img>（含 Next.js Image）
-        const img = el.querySelector('img');
-        if (img?.src) return img.src;
       }
       return null;
     }
@@ -72,9 +82,8 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     // 電腦右鍵
     function handleContextMenu(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      // 直接點到 <img> 且瀏覽器已顯示圖片選單 → 不攔截
-      if (target.tagName === 'IMG' && target.getAttribute('src')) return;
-      const url = findImageUrl(target);
+      if (target.tagName === 'IMG') return;
+      const url = findImageUrlPrecise(target);
       if (url) {
         e.preventDefault();
         window.open(url, '_blank');
@@ -86,7 +95,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     function handleTouchStart(e: TouchEvent) {
       const target = e.target as HTMLElement;
       if (target.tagName === 'IMG') return;
-      const url = findImageUrl(target);
+      const url = findImageUrlPrecise(target);
       if (!url) return;
       longPressTimer = setTimeout(() => {
         window.open(url, '_blank');
