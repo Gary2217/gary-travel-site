@@ -24,6 +24,91 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     }
   }, [isDevMode]);
 
+  // 開發者模式：讓圖片可右鍵存檔 / 長按儲存
+  useEffect(() => {
+    if (!isDevMode) {
+      // 還原被設定 pointer-events:none 的遮罩
+      document.querySelectorAll('[data-dev-passthrough]').forEach(el => {
+        (el as HTMLElement).style.pointerEvents = '';
+        el.removeAttribute('data-dev-passthrough');
+      });
+      return;
+    }
+
+    // 1) gradient 遮罩設為 pointer-events:none，讓右鍵/長按穿透到底下的 <img>
+    function disableOverlays() {
+      document.querySelectorAll<HTMLElement>('[class*="absolute"][class*="inset-0"]').forEach(el => {
+        if (el.getAttribute('data-dev-passthrough') !== null) return;
+        const bg = getComputedStyle(el).backgroundImage;
+        if (bg && bg.includes('gradient')) {
+          el.style.pointerEvents = 'none';
+          el.setAttribute('data-dev-passthrough', '');
+        }
+      });
+    }
+
+    disableOverlays();
+    const observer = new MutationObserver(disableOverlays);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // 2) background-image 元素：右鍵（電腦）/ 長按（手機）→ 開新分頁顯示原圖
+    function findBgUrl(target: HTMLElement): string | null {
+      let el: HTMLElement | null = target;
+      while (el) {
+        const bg = el.style.backgroundImage;
+        if (bg && bg !== 'none') {
+          const match = bg.match(/url\(["']?(.+?)["']?\)/);
+          if (match) return match[1];
+        }
+        el = el.parentElement;
+      }
+      return null;
+    }
+
+    // 電腦右鍵
+    function handleContextMenu(e: MouseEvent) {
+      if ((e.target as HTMLElement)?.tagName === 'IMG') return;
+      const url = findBgUrl(e.target as HTMLElement);
+      if (url) {
+        e.preventDefault();
+        window.open(url, '_blank');
+      }
+    }
+
+    // 手機長按
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    function handleTouchStart(e: TouchEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'IMG') return;
+      const url = findBgUrl(target);
+      if (!url) return;
+      longPressTimer = setTimeout(() => {
+        window.open(url, '_blank');
+      }, 600);
+    }
+    function handleTouchEnd() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    }
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchmove', handleTouchEnd);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchmove', handleTouchEnd);
+      if (longPressTimer) clearTimeout(longPressTimer);
+      document.querySelectorAll('[data-dev-passthrough]').forEach(el => {
+        (el as HTMLElement).style.pointerEvents = '';
+        el.removeAttribute('data-dev-passthrough');
+      });
+    };
+  }, [isDevMode]);
+
   useEffect(() => {
     async function loadAuth() {
       setMounted(true);
