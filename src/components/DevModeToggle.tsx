@@ -24,6 +24,36 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     }
   }, [isDevMode]);
 
+  // 開發者模式：右鍵圖片區域 → 開新分頁顯示原圖（獨立 useEffect 確保一定註冊）
+  useEffect(() => {
+    if (!isDevMode) return;
+    function handler(e: MouseEvent) {
+      const t = e.target as HTMLElement;
+      if (t.tagName === 'IMG') return;
+      let el: HTMLElement | null = t;
+      for (let i = 0; el && el !== document.body && i < 6; i++, el = el.parentElement) {
+        // 找同層的 <img>（大於 50px 才算內容圖片）
+        for (const child of Array.from(el.children)) {
+          if (child.tagName === 'IMG') {
+            const img = child as HTMLImageElement;
+            if (img.src && img.clientHeight > 50) {
+              e.preventDefault();
+              window.open(img.src, '_blank');
+              return;
+            }
+          }
+          const cEl = child as HTMLElement;
+          if (cEl.style?.backgroundImage && cEl.style.backgroundImage !== 'none') {
+            const m = cEl.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
+            if (m) { e.preventDefault(); window.open(m[1], '_blank'); return; }
+          }
+        }
+      }
+    }
+    document.addEventListener('contextmenu', handler);
+    return () => document.removeEventListener('contextmenu', handler);
+  }, [isDevMode]);
+
   // 開發者模式：讓圖片可右鍵存檔 / 長按儲存
   useEffect(() => {
     if (!isDevMode) {
