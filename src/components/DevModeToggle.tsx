@@ -51,51 +51,48 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     const observer = new MutationObserver(disableOverlays);
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 2) 右鍵（電腦）/ 長按（手機）→ 精準偵測圖片區域，開新分頁顯示原圖
-    function findImageUrlPrecise(target: HTMLElement): string | null {
-      // A) 點到的元素本身有 background-image → 直接用
-      const bg = target.style.backgroundImage;
-      if (bg && bg !== 'none') {
-        const match = bg.match(/url\(["']?(.+?)["']?\)/);
-        if (match) return match[1];
-      }
-      // B) 點到的是 gradient 遮罩（absolute + gradient bg）→ 找同層 <img>
-      const computed = getComputedStyle(target);
-      if (computed.position === 'absolute' && computed.backgroundImage?.includes('gradient')) {
-        const parent = target.parentElement;
-        if (parent) {
-          const img = parent.querySelector('img');
+    // 2) 右鍵時在游標位置放一個暫時透明 <img>，讓瀏覽器顯示「另存圖片」
+    function findNearestImageUrl(target: HTMLElement): string | null {
+      let el: HTMLElement | null = target;
+      for (let i = 0; el && el !== document.body && i < 5; i++, el = el.parentElement) {
+        // 檢查 background-image
+        const bg = el.style.backgroundImage;
+        if (bg && bg !== 'none') {
+          const m = bg.match(/url\(["']?(.+?)["']?\)/);
+          if (m) return m[1];
+        }
+        // 檢查定位容器內的 <img>
+        const pos = getComputedStyle(el).position;
+        if (pos === 'relative' || pos === 'absolute' || pos === 'fixed') {
+          const img = el.querySelector('img');
           if (img?.src) return img.src;
-          // 也檢查 parent 的 children 有沒有 background-image
-          for (const child of Array.from(parent.children)) {
-            const childBg = (child as HTMLElement).style?.backgroundImage;
-            if (childBg && childBg !== 'none') {
-              const match = childBg.match(/url\(["']?(.+?)["']?\)/);
-              if (match) return match[1];
-            }
-          }
         }
       }
       return null;
     }
 
-    // 電腦右鍵
-    function handleContextMenu(e: MouseEvent) {
+    // 電腦：mousedown(右鍵) → 在游標處放暫時 <img> → contextmenu 就會顯示「另存圖片」
+    function handleMouseDown(e: MouseEvent) {
+      if (e.button !== 2) return;
+      document.querySelectorAll('img[data-dev-ctx]').forEach(el => el.remove());
       const target = e.target as HTMLElement;
       if (target.tagName === 'IMG') return;
-      const url = findImageUrlPrecise(target);
-      if (url) {
-        e.preventDefault();
-        window.open(url, '_blank');
-      }
+      const url = findNearestImageUrl(target);
+      if (!url) return;
+      const tmp = document.createElement('img');
+      tmp.src = url;
+      tmp.setAttribute('data-dev-ctx', '');
+      tmp.style.cssText = `position:fixed;left:${e.clientX - 30}px;top:${e.clientY - 30}px;width:60px;height:60px;z-index:99999;opacity:0.01;pointer-events:auto;`;
+      document.body.appendChild(tmp);
+      setTimeout(() => tmp.remove(), 3000);
     }
 
-    // 手機長按
+    // 手機長按 → 開新分頁
     let longPressTimer: ReturnType<typeof setTimeout> | null = null;
     function handleTouchStart(e: TouchEvent) {
       const target = e.target as HTMLElement;
       if (target.tagName === 'IMG') return;
-      const url = findImageUrlPrecise(target);
+      const url = findNearestImageUrl(target);
       if (!url) return;
       longPressTimer = setTimeout(() => {
         window.open(url, '_blank');
@@ -105,18 +102,19 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
     }
 
-    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
     document.addEventListener('touchend', handleTouchEnd);
     document.addEventListener('touchmove', handleTouchEnd);
 
     return () => {
       observer.disconnect();
-      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('touchmove', handleTouchEnd);
       if (longPressTimer) clearTimeout(longPressTimer);
+      document.querySelectorAll('img[data-dev-ctx]').forEach(el => el.remove());
       document.querySelectorAll('[data-dev-passthrough]').forEach(el => {
         (el as HTMLElement).style.pointerEvents = '';
         el.removeAttribute('data-dev-passthrough');
