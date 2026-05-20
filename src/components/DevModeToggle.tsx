@@ -113,9 +113,36 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     const btnObserver = new MutationObserver(injectDownloadButtons);
     btnObserver.observe(document.body, { childList: true, subtree: true });
 
+    // 3) 右鍵圖片容器 → 開新分頁顯示原圖（只在有 data-dev-btn-done 的容器內觸發）
+    function handleContextMenu(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'IMG') return; // 直接點到 img → 瀏覽器原生處理
+      // 往上找最近的圖片容器（有 data-dev-btn-done 標記的）
+      const container = target.closest('[data-dev-btn-done]') as HTMLElement | null;
+      if (!container) return;
+      // 從容器取得圖片 URL
+      let url: string | null = null;
+      const bg = container.style.backgroundImage;
+      if (bg && bg !== 'none') {
+        const m = bg.match(/url\(["']?(.+?)["']?\)/);
+        if (m) url = m[1];
+      }
+      if (!url) {
+        const img = container.querySelector('img') as HTMLImageElement | null;
+        if (img?.src) url = img.src;
+      }
+      if (url) {
+        e.preventDefault();
+        window.open(url, '_blank');
+      }
+    }
+
+    document.addEventListener('contextmenu', handleContextMenu);
+
     return () => {
       observer.disconnect();
       btnObserver.disconnect();
+      document.removeEventListener('contextmenu', handleContextMenu);
       document.querySelectorAll('[data-dev-dl]').forEach(el => el.remove());
       document.querySelectorAll('[data-dev-btn-done]').forEach(el => el.removeAttribute('data-dev-btn-done'));
       document.querySelectorAll('[data-dev-passthrough]').forEach(el => {
