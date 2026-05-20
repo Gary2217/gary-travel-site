@@ -15,6 +15,15 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [showInquiries, setShowInquiries] = useState(false);
 
+  // 同步 dev mode 狀態到 body attribute（供全域 CSS 使用）
+  useEffect(() => {
+    if (isDevMode) {
+      document.body.setAttribute('data-dev-mode', 'true');
+    } else {
+      document.body.removeAttribute('data-dev-mode');
+    }
+  }, [isDevMode]);
+
   useEffect(() => {
     async function loadAuth() {
       setMounted(true);
