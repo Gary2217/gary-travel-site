@@ -51,70 +51,73 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     const observer = new MutationObserver(disableOverlays);
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 2) 右鍵時在游標位置放一個暫時透明 <img>，讓瀏覽器顯示「另存圖片」
-    function findNearestImageUrl(target: HTMLElement): string | null {
-      let el: HTMLElement | null = target;
-      for (let i = 0; el && el !== document.body && i < 5; i++, el = el.parentElement) {
-        // 檢查 background-image
+    // 2) 在圖片容器上注入下載按鈕
+    function injectDownloadButtons() {
+      // 找所有定位容器內的 <img>（含 Next.js Image）
+      document.querySelectorAll<HTMLElement>('img:not([data-dev-overlay]):not([data-dev-btn-done])').forEach(img => {
+        const src = (img as HTMLImageElement).src;
+        if (!src || src.includes('data:') || img.closest('[data-dev-btn-done]')) return;
+        // 找最近的定位父容器
+        let container = img.parentElement;
+        while (container && getComputedStyle(container).position === 'static') {
+          container = container.parentElement;
+        }
+        if (!container || container.querySelector('[data-dev-dl]')) return;
+        container.setAttribute('data-dev-btn-done', '');
+        const btn = document.createElement('button');
+        btn.setAttribute('data-dev-dl', '');
+        btn.title = '下載圖片';
+        btn.style.cssText = 'position:absolute;top:6px;right:6px;z-index:50;width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.6);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;pointer-events:auto;';
+        btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const a = document.createElement('a');
+          a.href = src;
+          a.download = src.split('/').pop()?.split('?')[0] || 'image';
+          a.click();
+        });
+        container.addEventListener('mouseenter', () => { btn.style.opacity = '1'; });
+        container.addEventListener('mouseleave', () => { btn.style.opacity = '0'; });
+        container.appendChild(btn);
+      });
+      // 找所有 background-image 元素
+      document.querySelectorAll<HTMLElement>('[style*="background-image"]:not([data-dev-btn-done])').forEach(el => {
         const bg = el.style.backgroundImage;
-        if (bg && bg !== 'none') {
-          const m = bg.match(/url\(["']?(.+?)["']?\)/);
-          if (m) return m[1];
-        }
-        // 檢查定位容器內的 <img>
+        if (!bg || bg === 'none') return;
+        const match = bg.match(/url\(["']?(.+?)["']?\)/);
+        if (!match || el.querySelector('[data-dev-dl]')) return;
+        el.setAttribute('data-dev-btn-done', '');
         const pos = getComputedStyle(el).position;
-        if (pos === 'relative' || pos === 'absolute' || pos === 'fixed') {
-          const img = el.querySelector('img');
-          if (img?.src) return img.src;
-        }
-      }
-      return null;
+        if (pos === 'static') el.style.position = 'relative';
+        const btn = document.createElement('button');
+        btn.setAttribute('data-dev-dl', '');
+        btn.title = '下載圖片';
+        btn.style.cssText = 'position:absolute;top:6px;right:6px;z-index:50;width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.6);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;pointer-events:auto;';
+        btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const a = document.createElement('a');
+          a.href = match[1];
+          a.download = match[1].split('/').pop()?.split('?')[0] || 'image';
+          a.click();
+        });
+        el.addEventListener('mouseenter', () => { btn.style.opacity = '1'; });
+        el.addEventListener('mouseleave', () => { btn.style.opacity = '0'; });
+        el.appendChild(btn);
+      });
     }
 
-    // 電腦：mousedown(右鍵) → 在游標處放暫時 <img> → contextmenu 就會顯示「另存圖片」
-    function handleMouseDown(e: MouseEvent) {
-      if (e.button !== 2) return;
-      document.querySelectorAll('img[data-dev-ctx]').forEach(el => el.remove());
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'IMG') return;
-      const url = findNearestImageUrl(target);
-      if (!url) return;
-      const tmp = document.createElement('img');
-      tmp.src = url;
-      tmp.setAttribute('data-dev-ctx', '');
-      tmp.style.cssText = `position:fixed;left:${e.clientX - 30}px;top:${e.clientY - 30}px;width:60px;height:60px;z-index:99999;opacity:0.01;pointer-events:auto;`;
-      document.body.appendChild(tmp);
-      setTimeout(() => tmp.remove(), 3000);
-    }
-
-    // 手機長按 → 開新分頁
-    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-    function handleTouchStart(e: TouchEvent) {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'IMG') return;
-      const url = findNearestImageUrl(target);
-      if (!url) return;
-      longPressTimer = setTimeout(() => {
-        window.open(url, '_blank');
-      }, 600);
-    }
-    function handleTouchEnd() {
-      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-    }
-
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('touchmove', handleTouchEnd);
+    injectDownloadButtons();
+    const btnObserver = new MutationObserver(injectDownloadButtons);
+    btnObserver.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchmove', handleTouchEnd);
-      if (longPressTimer) clearTimeout(longPressTimer);
-      document.querySelectorAll('img[data-dev-ctx]').forEach(el => el.remove());
+      btnObserver.disconnect();
+      document.querySelectorAll('[data-dev-dl]').forEach(el => el.remove());
+      document.querySelectorAll('[data-dev-btn-done]').forEach(el => el.removeAttribute('data-dev-btn-done'));
       document.querySelectorAll('[data-dev-passthrough]').forEach(el => {
         (el as HTMLElement).style.pointerEvents = '';
         el.removeAttribute('data-dev-passthrough');
