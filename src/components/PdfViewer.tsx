@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 interface PdfViewerProps {
   url: string;
   title?: string;
+  isDevMode?: boolean;
 }
 
 interface PageInfo {
@@ -13,7 +14,7 @@ interface PageInfo {
   rendered: boolean;
 }
 
-export default function PdfViewer({ url, title }: PdfViewerProps) {
+export default function PdfViewer({ url, title, isDevMode = false }: PdfViewerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(0);
@@ -22,6 +23,8 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const renderingRef = useRef<Set<number>>(new Set());
   const initRef = useRef(false);
+  const pdfjsLibRef = useRef<any>(null);
+  const textLayerRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // 載入 PDF 文件（只取得 metadata，不渲染頁面）
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
     async function loadPdf() {
       try {
         const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLibRef.current = pdfjsLib;
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
         const loadingTask = pdfjsLib.getDocument({
@@ -101,6 +105,26 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
         await page.render({ canvasContext: ctx, viewport }).promise;
       }
 
+      // 渲染文字層（讓文字可圈選複製）
+      const textLayerDiv = textLayerRefs.current.get(pageIndex);
+      const pdfjsLib = pdfjsLibRef.current;
+      if (textLayerDiv && pdfjsLib?.TextLayer) {
+        try {
+          textLayerDiv.innerHTML = '';
+          const textContent = await page.getTextContent();
+          const cssScale = containerWidth / originalViewport.width;
+          const cssViewport = page.getViewport({ scale: cssScale });
+          const textLayer = new pdfjsLib.TextLayer({
+            textContentSource: textContent,
+            container: textLayerDiv,
+            viewport: cssViewport,
+          });
+          await textLayer.render();
+        } catch {
+          // 文字層渲染失敗，靜默處理
+        }
+      }
+
       setPages((prev) => {
         const next = [...prev];
         next[pageIndex] = { ...next[pageIndex], rendered: true };
@@ -152,6 +176,25 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
     }
   }, []);
 
+  // text layer ref callback
+  const setTextLayerRef = useCallback((el: HTMLDivElement | null, index: number) => {
+    if (el) {
+      textLayerRefs.current.set(index, el);
+    } else {
+      textLayerRefs.current.delete(index);
+    }
+  }, []);
+
+  // 開發者模式：下載單頁為 PNG
+  const handleDownloadPage = useCallback((pageIndex: number) => {
+    const canvas = canvasRefs.current.get(pageIndex);
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `${title || 'page'}-${pageIndex + 1}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, [title]);
+
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4 bg-gray-50">
@@ -181,10 +224,10 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
       )}
       {!loading && (
         <div
-          className="w-full select-none bg-white"
+          className="w-full bg-white"
           title={title}
-          onContextMenu={(e) => e.preventDefault()}
-          onDragStart={(e) => e.preventDefault()}
+          onContextMenu={isDevMode ? undefined : (e) => e.preventDefault()}
+          onDragStart={isDevMode ? undefined : (e) => e.preventDefault()}
         >
           {pages.map((page, index) => (
             <div
@@ -196,10 +239,25 @@ export default function PdfViewer({ url, title }: PdfViewerProps) {
                 ref={(el) => setCanvasRef(el, index)}
                 data-page-index={index}
                 className="block h-auto w-full"
-                onContextMenu={(e) => e.preventDefault()}
+                onContextMenu={isDevMode ? undefined : (e) => e.preventDefault()}
               />
-              {/* 透明遮罩防止直接存取 canvas 內容 */}
-              <div className="absolute inset-0" onContextMenu={(e) => e.preventDefault()} />
+              {/* 文字層：讓 PDF 文字可圈選複製 */}
+              <div
+                ref={(el) => setTextLayerRef(el, index)}
+                className="textLayer"
+              />
+              {/* 開發者模式：下載頁面圖片 */}
+              {isDevMode && page.rendered && (
+                <button
+                  onClick={() => handleDownloadPage(index)}
+                  className="absolute right-2 top-2 z-10 rounded-lg bg-black/50 p-2 text-white transition hover:bg-black/70"
+                  title={`下載第 ${index + 1} 頁圖片`}
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                  </svg>
+                </button>
+              )}
               {!page.rendered && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                   <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
