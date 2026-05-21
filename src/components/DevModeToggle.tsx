@@ -14,6 +14,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const [maintenanceOn, setMaintenanceOn] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [showInquiries, setShowInquiries] = useState(false);
+  const [showReloginToast, setShowReloginToast] = useState(false);
 
   // 同步 dev mode 狀態到 body attribute（供全域 CSS 使用）
   useEffect(() => {
@@ -22,6 +23,23 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
     } else {
       document.body.removeAttribute('data-dev-mode');
     }
+  }, [isDevMode]);
+
+  // 全域攔截 fetch 401，偵測開發者登入過期
+  useEffect(() => {
+    if (!isDevMode) return;
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args);
+      if (res.status === 401) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (url.includes('/api/') && !url.includes('/api/dev-auth/')) {
+          setShowReloginToast(true);
+        }
+      }
+      return res;
+    };
+    return () => { window.fetch = originalFetch; };
   }, [isDevMode]);
 
   // 開發者模式：右鍵圖片區域 → 開新分頁顯示原圖（獨立 useEffect 確保一定註冊）
@@ -301,6 +319,16 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
             </svg>
             表單
           </button>
+          <button
+            onClick={() => { window.location.href = "/api/dev-auth/start"; }}
+            className="inline-flex h-7 items-center gap-1 rounded-full bg-gray-500/80 px-2.5 text-[11px] font-semibold text-white transition hover:bg-gray-500 sm:h-8 sm:px-3 sm:text-xs"
+            title="重新登入開發者模式"
+          >
+            <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            重登
+          </button>
         </>
       )}
       <button
@@ -319,6 +347,33 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
         </svg>
       </button>
     </div>
+
+    {/* 開發者登入過期提示 */}
+    {showReloginToast && (
+      <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" onClick={() => setShowReloginToast(false)}>
+        <div className="w-full max-w-xs rounded-2xl border border-amber-300 bg-white p-5 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-sm font-bold text-gray-900">開發者登入已過期</p>
+          <p className="mt-1 text-xs text-gray-500">儲存操作需要重新登入才能繼續</p>
+          <button
+            onClick={() => { window.location.href = "/api/dev-auth/start"; }}
+            className="mt-4 w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+          >
+            立即重新登入
+          </button>
+          <button
+            onClick={() => setShowReloginToast(false)}
+            className="mt-2 w-full rounded-full border border-gray-200 py-2 text-sm text-gray-500 transition hover:bg-gray-50"
+          >
+            稍後再說
+          </button>
+        </div>
+      </div>
+    )}
 
     {/* 聯絡表單記錄浮動面板 */}
     {showInquiries && (
