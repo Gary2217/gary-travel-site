@@ -15,6 +15,12 @@ export default function MiniTransitTicketsPage() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+
+  const showSaveSuccess = (message = "儲存成功") => {
+    setSaveSuccessMessage(message);
+    window.setTimeout(() => setSaveSuccessMessage(null), 1500);
+  };
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => setSiteLogoUrl("/travel-logo.svg"));
@@ -93,7 +99,7 @@ export default function MiniTransitTicketsPage() {
         });
       }
 
-      alert("圖片已更新");
+      showSaveSuccess("圖片已更新！");
     } catch (error) {
       const message = error instanceof Error ? error.message : "上傳失敗";
       alert(`上傳失敗：${message}`);
@@ -178,6 +184,19 @@ export default function MiniTransitTicketsPage() {
       )}
 
       <FloatingContact />
+
+      {saveSuccessMessage && (
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div className="rounded-2xl border border-emerald-300 bg-white px-5 py-4 text-center shadow-2xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-base font-bold text-emerald-600">{saveSuccessMessage}</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

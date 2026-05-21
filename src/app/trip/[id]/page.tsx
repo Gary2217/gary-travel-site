@@ -866,7 +866,7 @@ export default function TripPage() {
                     try {
                       const result = await uploadTripDocument(tripId, file);
                       setTrip((prev) => prev ? { ...prev, document_url: result.url, document_is_available: result.document_is_available } : prev);
-                      alert("PDF 行程檔已上傳成功！");
+                      showSaveSuccess("PDF 行程檔已上傳！");
                     } catch (err) {
                       alert(err instanceof Error ? err.message : "上傳失敗，請再試");
                     } finally {

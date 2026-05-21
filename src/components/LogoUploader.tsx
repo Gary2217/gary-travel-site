@@ -7,9 +7,10 @@ import { uploadSiteLogo } from "@/lib/supabase";
 interface LogoUploaderProps {
   currentLogoUrl: string;
   onUpdate: (url: string) => void;
+  onSaveSuccess?: (message: string) => void;
 }
 
-export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderProps) {
+export default function LogoUploader({ currentLogoUrl, onUpdate, onSaveSuccess }: LogoUploaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -48,7 +49,8 @@ export default function LogoUploader({ currentLogoUrl, onUpdate }: LogoUploaderP
       setIsOpen(false);
       setSelectedFile(null);
       setSelectedFileName("");
-      alert("LOGO 已儲存到後端！");
+      if (onSaveSuccess) onSaveSuccess("LOGO 已儲存！");
+      else alert("LOGO 已儲存到後端！");
     } catch (error) {
       const message = error instanceof Error ? error.message : "上傳失敗";
       alert(`上傳失敗：${message}`);

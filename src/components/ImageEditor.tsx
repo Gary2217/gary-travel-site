@@ -376,7 +376,9 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                         try {
                           await updateTrip(entityId, { duration: durationValue.trim() });
                           onDurationUpdate(durationValue.trim());
-                          alert("天數已更新！");
+                          setIsOpen(false);
+                          if (onSaveSuccess) onSaveSuccess("天數已更新！");
+                          else alert("天數已更新！");
                         } catch (err) {
                           const msg = err instanceof Error ? err.message : "更新失敗";
                           alert(`更新失敗：${msg}`);
@@ -494,7 +496,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                            setSelectedDocFile(null);
                            setSelectedDocFileName("");
                            setIsOpen(false);
-                           alert("行程檔案已儲存！");
+                           if (onSaveSuccess) onSaveSuccess("行程檔案已儲存！");
+                           else alert("行程檔案已儲存！");
                         } catch (error) {
                           const msg = error instanceof Error ? error.message : "上傳失敗";
                           alert(`上傳失敗：${msg}`);

@@ -399,7 +399,7 @@ export default function MiniTransitTicketDetailPage() {
           return next;
         });
       }
-      alert("圖片已更新");
+      showSaveSuccess("圖片已更新！");
     } catch (error) {
       const message = error instanceof Error ? error.message : "上傳失敗";
       alert(`上傳失敗：${message}`);

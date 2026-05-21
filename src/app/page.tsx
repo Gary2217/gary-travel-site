@@ -698,7 +698,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
-        logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} /> : null}
+        logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} onSaveSuccess={showSaveSuccess} /> : null}
         devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
       />
 
