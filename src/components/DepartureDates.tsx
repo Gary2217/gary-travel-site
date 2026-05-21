@@ -732,19 +732,17 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                                 </div>
 
                                 <div className={`border-r border-gray-200 px-3 py-3 text-sm ${rowBorderClass}`}>
-                                  <div className="flex h-full items-center justify-center leading-tight text-center">
+                                  <div className="flex h-full flex-col items-center justify-center gap-0.5 text-center">
                                     {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
-                                    {seg.dep_airport && <span className="text-gray-600"> {seg.dep_airport}</span>}
+                                    {seg.dep_airport && <span className="text-xs text-gray-600">{seg.dep_airport}</span>}
                                   </div>
                                 </div>
 
                                 <div className={`px-3 py-3 text-sm ${rowBorderClass}`}>
-                                  <div className="flex h-full flex-col items-center justify-center leading-tight text-center">
+                                  <div className="flex h-full flex-col items-center justify-center gap-0.5 text-center">
                                     {arrDate && <div className="text-xs text-gray-500">{arrDate.full}</div>}
-                                    <div>
-                                      {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
-                                      {seg.arr_airport && <span className="text-gray-600"> {seg.arr_airport}</span>}
-                                    </div>
+                                    {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
+                                    {seg.arr_airport && <span className="text-xs text-gray-600">{seg.arr_airport}</span>}
                                   </div>
                                 </div>
                               </div>
