@@ -134,9 +134,9 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             )}
             <Link href="/" className="flex min-h-10 shrink-0 items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
               {logoReady ? (
-                <img src={displayLogoUrl} alt="旅行沒有終點" className="h-10 w-auto max-w-[260px] shrink-0 object-contain sm:h-[52px] sm:max-w-[340px]" />
+                <img src={displayLogoUrl} alt="旅行沒有終點" className="h-12 w-auto max-w-[320px] shrink-0 object-contain sm:h-[64px] sm:max-w-[420px]" />
               ) : (
-                <div className="h-10 w-40 shrink-0 bg-gray-100 sm:h-[52px] sm:w-56" />
+                <div className="h-12 w-48 shrink-0 bg-gray-100 sm:h-[64px] sm:w-64" />
               )}
             </Link>
             {logoEditorSlot}
