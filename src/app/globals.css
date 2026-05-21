@@ -43,6 +43,11 @@ img {
   user-select: none;
 }
 
+/* pdfjs-dist 內部用的隱藏 canvas，必須隱藏 */
+.hiddenCanvasElement {
+  display: none !important;
+}
+
 /* PDF TextLayer - 文字圈選複製 */
 .textLayer {
   position: absolute;
