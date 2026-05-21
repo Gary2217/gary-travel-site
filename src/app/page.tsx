@@ -779,7 +779,7 @@ export default function HomePage() {
       )}
 
       {/* Region Tabs */}
-      <div className="sticky top-14 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]">
+      <div className="sticky top-20 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]">
         <div className="relative mx-auto max-w-site">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-white/90 to-transparent md:hidden" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-white/90 to-transparent md:hidden" />

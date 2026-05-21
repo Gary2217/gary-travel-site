@@ -67,7 +67,7 @@ export default function FavoriteButton({ tripId }: FavoriteButtonProps) {
       {toastVisible && typeof document !== "undefined" && createPortal(
         <div
           key={toastKey}
-          className={`pointer-events-none fixed left-1/2 top-[72px] z-[10001] min-w-[180px] animate-toast-in rounded-2xl px-5 py-3 text-center shadow-2xl ${
+          className={`pointer-events-none fixed left-1/2 top-[88px] z-[10001] min-w-[180px] animate-toast-in rounded-2xl px-5 py-3 text-center shadow-2xl ${
             toastLiked ? "bg-red-500" : "bg-gray-700"
           } text-white`}
         >
