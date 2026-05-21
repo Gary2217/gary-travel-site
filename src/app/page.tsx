@@ -56,6 +56,7 @@ interface HomeDestinationCardProps {
   onImageUpdate: (destinationId: string, newImageUrl: string) => void;
   onTextUpdate: (destinationId: string, fields: Partial<Pick<Destination, 'title' | 'subtitle'>>) => void;
   onDelete?: (destinationId: string) => Promise<void>;
+  onSaveSuccess?: (message: string) => void;
   reorderControls?: {
     canMoveUp: boolean;
     canMoveDown: boolean;
@@ -105,7 +106,7 @@ async function handleReorder<T extends { id: string; display_order: number }>(
   }
 }
 
-function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDragging = false, isDragOver = false, onDragStart, onDragOver, onDragEnd, onDrop, onImageUpdate, onTextUpdate, onDelete, reorderControls, priority = false }: HomeDestinationCardProps) {
+function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDragging = false, isDragOver = false, onDragStart, onDragOver, onDragEnd, onDrop, onImageUpdate, onTextUpdate, onDelete, onSaveSuccess, reorderControls, priority = false }: HomeDestinationCardProps) {
   const [tripCount, setTripCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -165,6 +166,7 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
             currentImageUrl={destination.image_url}
             title={destination.title}
             onUpdate={(newUrl) => onImageUpdate(destination.id, newUrl)}
+            onSaveSuccess={onSaveSuccess}
             editableTitle={destination.title}
             editableSubtitle={destination.subtitle}
             onEditableTitleUpdate={(newTitle) => updateField('title', newTitle)}
@@ -281,6 +283,12 @@ export default function HomePage() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+
+  const showSaveSuccess = (message = '儲存成功') => {
+    setSaveSuccessMessage(message);
+    window.setTimeout(() => setSaveSuccessMessage(null), 1500);
+  };
   const [isPC, setIsPC] = useState(false);
   const [dragPopularIndex, setDragPopularIndex] = useState<number | null>(null);
   const [dragOverPopularIndex, setDragOverPopularIndex] = useState<number | null>(null);
@@ -849,6 +857,7 @@ export default function HomePage() {
                       onDrop={handlePopularDrop(i)}
                       onImageUpdate={handlePopularImageUpdate}
                       onTextUpdate={handleDestinationTextUpdate}
+                      onSaveSuccess={showSaveSuccess}
                       reorderControls={isDevMode ? {
                         canMoveUp: i > 0,
                         canMoveDown: i < Math.min(popularDestinations.length, 4) - 1,
@@ -1001,6 +1010,7 @@ export default function HomePage() {
                     onImageUpdate={handleImageUpdate}
                     onTextUpdate={handleDestinationTextUpdate}
                     onDelete={handleDeleteDestination}
+                    onSaveSuccess={showSaveSuccess}
                     reorderControls={isDevMode ? {
                       canMoveUp: destinationIndex > 0,
                       canMoveDown: destinationIndex < section.destinations.length - 1,
@@ -1075,6 +1085,19 @@ export default function HomePage() {
       </div>
 
       <FloatingContact />
+
+      {saveSuccessMessage && (
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div className="rounded-2xl border border-emerald-300 bg-white px-5 py-4 text-center shadow-2xl sm:px-6">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-base font-bold text-emerald-600">{saveSuccessMessage}</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

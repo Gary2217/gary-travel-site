@@ -633,6 +633,8 @@ export default function TripPage() {
           .sort((a, b) => a.departure_date.localeCompare(b.departure_date))
       );
       setDepartureEditorPrice(typeof normalizedDeparture.price === 'number' ? String(normalizedDeparture.price) : '');
+      setShowBannerEditor(false);
+      setIsCreatingNewDeparture(false);
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -748,6 +750,7 @@ export default function TripPage() {
       setSelectedDepartureId(createdDeparture.id);
       setDepartureEditorPrice(typeof createdDeparture.price === 'number' ? String(createdDeparture.price) : '');
       setIsCreatingNewDeparture(false);
+      setShowBannerEditor(false);
       showSaveSuccess('儲存成功');
       return true;
     } catch {

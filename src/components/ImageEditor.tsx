@@ -10,6 +10,7 @@ interface ImageEditorProps {
   title: string;
   onUpdate: (newImageUrl: string) => void;
   onOpenChange?: (open: boolean) => void;
+  onSaveSuccess?: (message: string) => void;
   uploadFn?: (entityId: string, file: File) => Promise<string>;
   documentUrl?: string;
   onDocumentUpdate?: (url: string) => void;
@@ -23,7 +24,7 @@ interface ImageEditorProps {
   onEditableSubtitleUpdate?: (newSubtitle: string) => Promise<void>;
 }
 
-export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate, editableTitle, editableSubtitle, onEditableTitleUpdate, onEditableSubtitleUpdate }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, onSaveSuccess, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate, editableTitle, editableSubtitle, onEditableTitleUpdate, onEditableSubtitleUpdate }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -127,7 +128,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
 
       resetSelection();
       setIsOpen(false);
-      alert("圖片已儲存並同步更新！");
+      if (onSaveSuccess) onSaveSuccess("圖片已儲存！");
+      else alert("圖片已儲存並同步更新！");
     } catch (error) {
       console.error("Error uploading image:", error);
       const message = error instanceof Error ? error.message : "上傳失敗，請稍後再試";
@@ -328,7 +330,9 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                               }
                             }
 
-                            alert("文字已更新！");
+                            setIsOpen(false);
+                            if (onSaveSuccess) onSaveSuccess("文字已更新！");
+                            else alert("文字已更新！");
                           } catch (err) {
                             const msg = err instanceof Error ? err.message : "更新失敗";
                             alert(`更新失敗：${msg}`);
