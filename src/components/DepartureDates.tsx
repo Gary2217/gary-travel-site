@@ -702,6 +702,12 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                             const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
                             const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                             const segDate = seg.date ? formatDate(seg.date) : null;
+                            const arrDate = seg.date ? (() => {
+                              if (!seg.next_day) return segDate;
+                              const d = new Date(seg.date + "T00:00:00");
+                              d.setDate(d.getDate() + 1);
+                              return formatDate(d.toLocaleDateString("sv-SE"));
+                            })() : null;
                             const rowBorderClass = "border-b border-gray-200";
 
                             return (
@@ -733,10 +739,12 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                                 </div>
 
                                 <div className={`px-3 py-3 text-sm ${rowBorderClass}`}>
-                                  <div className="flex h-full items-center justify-center leading-tight text-center">
-                                    {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
-                                    {seg.arr_airport && <span className="text-gray-600"> {seg.arr_airport}</span>}
-                                    {seg.next_day && <span className="ml-1 text-[10px] text-amber-600">+1</span>}
+                                  <div className="flex h-full flex-col items-center justify-center leading-tight text-center">
+                                    {arrDate && <div className="text-xs text-gray-500">{arrDate.full}</div>}
+                                    <div>
+                                      {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
+                                      {seg.arr_airport && <span className="text-gray-600"> {seg.arr_airport}</span>}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -752,6 +760,12 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                             const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
                             const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                             const segDate = seg.date ? formatDate(seg.date) : null;
+                            const mArrDate = seg.date ? (() => {
+                              if (!seg.next_day) return segDate;
+                              const d2 = new Date(seg.date + "T00:00:00");
+                              d2.setDate(d2.getDate() + 1);
+                              return formatDate(d2.toLocaleDateString("sv-SE"));
+                            })() : null;
 
                             return (
                               <div key={`m-${i}`} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
@@ -764,7 +778,9 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                                 {segDate && <div className="text-[11px] text-gray-500">{segDate.full}</div>}
                                 <div className="text-xs text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1 text-gray-500">{seg.flight_number}</span>}</div>
                                 <div className="mt-1 text-xs text-gray-600">起飛：{seg.dep_time || '—'} {seg.dep_airport || ''}</div>
-                                <div className="text-xs text-gray-600">抵達：{seg.arr_time || '—'} {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
+                                <div className="text-xs text-gray-600">
+                                  抵達：{mArrDate && <span className="text-gray-400">{mArrDate.full} </span>}{seg.arr_time || '—'} {seg.arr_airport || ''}
+                                </div>
                               </div>
                             );
                           })}
