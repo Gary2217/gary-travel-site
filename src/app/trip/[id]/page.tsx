@@ -922,17 +922,36 @@ export default function TripPage() {
                   <p className="mt-0.5 text-[11px] text-gray-900">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || (selectedDeparture ? '未設定' : '—')}</p>
                 </div>
                 {isDevMode && (
-                  <button
-                    type="button"
-                    onClick={() => setShowBannerEditor((v) => !v)}
-                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${
-                      showBannerEditor
-                        ? "bg-sky-100 text-sky-600 hover:bg-sky-200"
-                        : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
-                    }`}
-                  >
-                    {showBannerEditor ? "關閉編輯" : "編輯"}
-                  </button>
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBannerEditor(true);
+                        setIsCreatingNewDeparture(true);
+                        setDepartureEditorDate('');
+                        setDepartureEditorGroupCode('');
+                        setDepartureEditorPrice('');
+                        setDepartureEditorWaitlist('');
+                      }}
+                      className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                    >
+                      新增
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showBannerEditor) setIsCreatingNewDeparture(false);
+                        setShowBannerEditor((v) => !v);
+                      }}
+                      className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                        showBannerEditor
+                          ? "bg-sky-100 text-sky-600 hover:bg-sky-200"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                      }`}
+                    >
+                      {showBannerEditor ? "關閉編輯" : "編輯"}
+                    </button>
+                  </div>
                 )}
               </div>
 
