@@ -1192,9 +1192,30 @@ export default function TripPage() {
                 {!trip.document_text && (
                   <p className="py-4 text-center text-sm text-gray-400">尚未填寫行程概要</p>
                 )}
-                {trip.document_text && (
-                  <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-gray-700">{trip.document_text}</p>
-                )}
+                {trip.document_text && (() => {
+                  const lines = trip.document_text!.split('\n').filter(l => l.trim());
+                  return (
+                    <div className="space-y-2">
+                      {lines.map((line, i) => {
+                        const dayMatch = line.match(/^第\s*(\d+)\s*天\s*/);
+                        if (dayMatch) {
+                          const content = line.replace(/^第\s*\d+\s*天\s*/, '').trim();
+                          return (
+                            <div key={i} className="rounded-xl bg-gray-50 px-3 py-2">
+                              <div className="mb-1 flex items-center gap-2">
+                                <span className="shrink-0 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-600">第{dayMatch[1]}天</span>
+                              </div>
+                              {content && <p className="text-[13.5px] leading-relaxed text-gray-700">{content}</p>}
+                            </div>
+                          );
+                        }
+                        return (
+                          <p key={i} className="px-3 text-[13.5px] leading-relaxed text-gray-600">{line}</p>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
