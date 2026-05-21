@@ -1763,7 +1763,8 @@ export default function TripPage() {
       {/* 開發者模式：PDF / 刪除行程 按鈕列 */}
       {isDevMode && (
         <div className="mx-auto max-w-[1000px] px-3 pb-2 sm:px-4 md:px-8">
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
             <button
               type="button"
               disabled={uploadingDoc}
@@ -1830,6 +1831,8 @@ export default function TripPage() {
             >
               刪除行程
             </button>
+            </div>
+            <p className="text-[10px] text-gray-400">刪除行程 = 永久刪除整個行程及所有資料，無法復原</p>
           </div>
         </div>
       )}
