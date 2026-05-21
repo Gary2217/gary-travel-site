@@ -1087,7 +1087,7 @@ export default function TripPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
                         <button
                           onClick={isCreatingNewDeparture ? saveDepartureInfoAsFirstDeparture : (selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture)}
                           disabled={saving}
