@@ -1221,19 +1221,9 @@ export default function TripPage() {
                     const start = dayPositions[i].index;
                     const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
                     const section = fullText.slice(start, end);
-                    const brackets: string[] = [];
-                    const bracketPattern = /【([^】]+)】/g;
-                    let bMatch;
-                    while ((bMatch = bracketPattern.exec(section)) !== null) {
-                      brackets.push(bMatch[1].trim());
-                    }
-                    if (brackets.length > 0) {
-                      days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
-                    } else {
-                      const plainText = section.replace(/^第\s*\d+\s*天\s*/, '').trim();
-                      if (plainText) {
-                        days.push({ num: dayPositions[i].num, title: plainText });
-                      }
+                    const plainText = section.replace(/^第\s*\d+\s*天\s*/, '').trim();
+                    if (plainText) {
+                      days.push({ num: dayPositions[i].num, title: plainText });
                     }
                   }
 
