@@ -704,9 +704,9 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                             const segDate = seg.date ? formatDate(seg.date) : null;
                             const arrDate = seg.date ? (() => {
                               if (!seg.next_day) return segDate;
-                              const d = new Date(seg.date + "T00:00:00");
-                              d.setDate(d.getDate() + 1);
-                              return formatDate(d.toLocaleDateString("sv-SE"));
+                              const dt = new Date(seg.date + "T00:00:00");
+                              dt.setDate(dt.getDate() + 1);
+                              return formatDate(dt.toLocaleDateString("sv-SE"));
                             })() : null;
                             const rowBorderClass = "border-b border-gray-200";
 
