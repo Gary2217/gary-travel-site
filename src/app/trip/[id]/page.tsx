@@ -1207,9 +1207,9 @@ export default function TripPage() {
                   return (
                     <div className="space-y-1">
                       {grouped.map((day) => (
-                        <div key={day.num} className="flex items-start gap-2 rounded-xl bg-gray-50 px-2.5 py-1.5">
-                          <span className="mt-0.5 shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-600">第{day.num}天</span>
-                          <span className="text-[13px] leading-[1.5] text-gray-700">{day.lines.join(' ')}</span>
+                        <div key={day.num} className="flex items-start gap-1.5 px-1 py-0.5">
+                          <span className="mt-px shrink-0 rounded bg-sky-100 px-1.5 py-px text-[9px] font-bold text-sky-600">第{day.num}天</span>
+                          <span className="text-[11.5px] leading-[1.45] text-gray-700">{day.lines.join(' ')}</span>
                         </div>
                       ))}
                     </div>
