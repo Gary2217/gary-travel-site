@@ -79,11 +79,9 @@ img {
   background: rgba(0, 100, 200, 0.25);
 }
 
-/* 開發者模式：允許圖片右鍵存檔 */
+/* 開發者模式：允許圖片長按儲存（手機） */
 body[data-dev-mode="true"] img {
   -webkit-user-drag: auto;
   -webkit-touch-callout: default;
   user-select: auto;
-  position: relative;
-  z-index: 3;
 }
