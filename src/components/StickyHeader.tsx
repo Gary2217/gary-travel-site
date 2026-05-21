@@ -146,7 +146,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowContactForm(true)}
-              className="text-[13px] font-medium text-gray-600 transition hover:text-sky-600"
+              className="hidden text-[13px] font-medium text-gray-600 transition hover:text-sky-600 sm:block"
             >
               聯絡我們
             </button>
@@ -170,7 +170,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                   <path strokeLinecap="round" strokeLinejoin="round"
                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                <span className="hidden text-[13px] font-medium sm:inline">收藏行程</span>
+                <span className="hidden text-[13px] font-medium md:inline">收藏行程</span>
                 {favIds.length > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
                     {favIds.length > 9 ? "9+" : favIds.length}
