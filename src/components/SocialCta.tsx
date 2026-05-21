@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 import ContactFormModal from "./ContactFormModal";
@@ -24,6 +24,13 @@ export default function SocialCta({
   className = "",
 }: SocialCtaProps) {
   const [showContactForm, setShowContactForm] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('/travel-logo.svg');
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('site_logo_url');
+      if (cached) setLogoUrl(cached);
+    } catch { /* ignore */ }
+  }, []);
   return (
     <div className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 ${className}`.trim()}>
       {/* 1. 社群追蹤 */}
@@ -113,7 +120,8 @@ export default function SocialCta({
               免費諮詢 · 不收服務費 · 即時回覆
             </p>
 
-            <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <img src={logoUrl} alt="旅行沒有終點" className="h-10 w-auto max-w-[140px] object-contain sm:h-12 sm:max-w-[180px]" />
               <button
                 type="button"
                 onClick={() => openExternalLink(lineDmHref)}
