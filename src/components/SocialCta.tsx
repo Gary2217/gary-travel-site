@@ -111,47 +111,45 @@ export default function SocialCta({
       </section>
 
       {/* 2. 聯絡 CTA */}
-      <div className="mt-5 border-t border-gray-100 pt-5 text-center">
-        <div className="flex justify-center">
-          <div className="w-full max-w-[620px]">
+      <div className="mt-5 border-t border-gray-100 pt-5">
+        <div className="mx-auto flex max-w-[960px] items-center gap-4 px-4 sm:gap-10">
+          <img src={logoUrl} alt="旅行沒有終點" className="h-16 w-auto max-w-[100px] shrink-0 object-contain sm:h-32 sm:max-w-none" />
+          <div className="flex-1 text-center">
             <h3 className="text-base font-bold text-gray-900">{title}</h3>
-            <p className="mt-1 text-xs text-gray-500">{description}</p>
-            <p className="mt-2 text-[11px] leading-5 text-gray-500">
+            <p className="mt-1 hidden text-xs text-gray-500 sm:block">{description}</p>
+            <p className="mt-2 hidden text-[11px] leading-5 text-gray-500 sm:block">
               免費諮詢 · 不收服務費 · 即時回覆
             </p>
-
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <img src={logoUrl} alt="旅行沒有終點" className="h-16 w-auto max-w-[280px] object-contain sm:h-20 sm:max-w-[340px]" />
+            <div className="mt-3 flex items-center justify-center gap-1.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => openExternalLink(lineDmHref)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-85"
+                className="inline-flex items-center rounded-lg bg-[#06C755] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-85 sm:px-4 sm:py-2 sm:text-[13px]"
               >
                 {lineLabel}
               </button>
               <button
                 type="button"
                 onClick={() => openExternalLink(fbDmHref)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#1877F2] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-85"
+                className="inline-flex items-center rounded-lg bg-[#1877F2] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-85 sm:px-4 sm:py-2 sm:text-[13px]"
               >
                 {facebookLabel}
               </button>
               <button
                 type="button"
                 onClick={() => openExternalLink(igDmHref)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#E4405F] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-85"
+                className="inline-flex items-center rounded-lg bg-[#E4405F] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-85 sm:px-4 sm:py-2 sm:text-[13px]"
               >
                 {instagramLabel}
               </button>
               <button
                 onClick={() => setShowContactForm(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#ff6b35] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#e55a2b]"
+                className="inline-flex items-center rounded-lg bg-[#ff6b35] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#e55a2b] sm:px-4 sm:py-2 sm:text-[13px]"
               >
                 聯絡我們
               </button>
             </div>
-
-            <p className="mt-2 text-center text-[9px] text-gray-400 sm:text-[10px]">
+            <p className="mt-2 text-[9px] text-gray-400 sm:text-[10px]">
               © {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.
             </p>
           </div>

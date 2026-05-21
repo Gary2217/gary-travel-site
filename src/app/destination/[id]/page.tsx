@@ -608,7 +608,7 @@ export default function DestinationPage() {
         <SocialCta
           className="mt-10"
           title="找不到想要的行程？"
-          description={`聯繫旅遊規劃師蓋瑞 GARY，為您客製專屬的 ${destination.title} 行程`}
+          description="聯繫旅遊規劃師蓋瑞 GARY，為您客製專屬行程"
         />
       </section>
 

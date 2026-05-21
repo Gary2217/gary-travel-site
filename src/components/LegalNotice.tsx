@@ -18,12 +18,9 @@ export default function LegalNotice({ className = "" }: LegalNoticeProps) {
         本網站提供之行程、價格、航班與相關資訊僅供參考，實際內容以最終報價與服務內容為準；遇航空公司、飯店、匯率、天候或不可抗力因素，行程與費用可能調整。第三方平台（LINE、Facebook、Instagram）服務穩定性依各平台實際狀態為準。
       </p>
 
-      <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200/70 bg-amber-50/60 px-2.5 py-2">
-        <span className="mt-px shrink-0 text-[11px] text-amber-500">⚠️</span>
-        <p className="text-[10px] font-medium leading-relaxed text-amber-700/80">
-          我們不會以「旅行沒有終點」或本站名義要求匯款／轉帳至私人帳戶，也不會要求提供 ATM 操作、銀行密碼、驗證碼或信用卡完整資訊；如遇可疑訊息請先透過官方管道確認或撥打 165。
-        </p>
-      </div>
+      <p className="mt-2 text-[10px] leading-relaxed text-gray-400">
+        ⚠️ 我們不會以「旅行沒有終點」或本站名義要求匯款／轉帳至私人帳戶，也不會要求提供 ATM 操作、銀行密碼、驗證碼或信用卡完整資訊；如遇可疑訊息請先透過官方管道確認或撥打 165。
+      </p>
 
       <p className="mt-2 text-[10px] leading-relaxed text-gray-400">
         本網站透過「聯絡我們」表單蒐集之姓名、電話、LINE ID、信箱等個人資料，僅用於回覆您的旅遊諮詢，不會提供給任何第三方。您可隨時要求查閱、更正或刪除個人資料。詳見<Link href="/privacy" className="text-sky-500 underline hover:text-sky-400">隱私權政策</Link>。
