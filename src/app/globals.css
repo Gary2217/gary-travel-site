@@ -13,7 +13,12 @@
 html {
   margin: 0;
   padding: 0;
-  overflow-y: scroll;
+}
+
+@media (min-width: 768px) {
+  html {
+    overflow-y: scroll;
+  }
 }
 
 body {
