@@ -120,8 +120,8 @@ export default function SocialCta({
               免費諮詢 · 不收服務費 · 即時回覆
             </p>
 
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-              <img src={logoUrl} alt="旅行沒有終點" className="h-14 w-auto max-w-[240px] object-contain sm:h-16 sm:max-w-[280px]" />
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+              <img src={logoUrl} alt="旅行沒有終點" className="h-16 w-auto max-w-[280px] object-contain sm:h-20 sm:max-w-[340px]" />
               <button
                 type="button"
                 onClick={() => openExternalLink(lineDmHref)}
