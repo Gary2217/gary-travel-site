@@ -1189,55 +1189,12 @@ export default function TripPage() {
                     </button>
                   )}
                 </div>
-                {!trip.document_text && (() => {
-                  const durationMatch = trip.duration?.match(/(\d+)/);
-                  const dayCount = durationMatch ? Math.min(parseInt(durationMatch[1], 10), 15) : 5;
-
-                  return (
-                    <div className="space-y-1">
-                      <p className="py-1.5 text-center text-[11px] text-gray-400">尚未填寫行程概要，先顯示預設天數</p>
-                      {Array.from({ length: dayCount }, (_, i) => (
-                        <div key={`placeholder-day-${i + 1}`} className="flex items-start gap-2 rounded-xl bg-gray-50 px-2.5 py-1">
-                          <span className="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-600">第{i + 1}天</span>
-                          <span className="text-[13.5px] leading-[1.35] text-gray-500">行程內容待更新</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-                {trip.document_text && (() => {
-                  const fullText = trip.document_text!;
-                  const dayPattern = /第\s*(\d+)\s*天/g;
-                  const dayPositions: { num: string; index: number }[] = [];
-                  let match;
-                  while ((match = dayPattern.exec(fullText)) !== null) {
-                    const dayNum = match[1];
-                    if (!dayPositions.find(d => d.num === dayNum)) {
-                      dayPositions.push({ num: dayNum, index: match.index });
-                    }
-                  }
-                  const days: { num: string; title: string }[] = [];
-                  for (let i = 0; i < dayPositions.length; i++) {
-                    const start = dayPositions[i].index;
-                    const end = i + 1 < dayPositions.length ? dayPositions[i + 1].index : fullText.length;
-                    const section = fullText.slice(start, end);
-                    const plainText = section.replace(/^第\s*\d+\s*天\s*/, '').trim();
-                    if (plainText) {
-                      days.push({ num: dayPositions[i].num, title: plainText });
-                    }
-                  }
-
-                  return (
-                    <div className="space-y-1">
-                      {days.map((d) => (
-                        <div key={d.num} className="flex items-start gap-2 rounded-xl bg-gray-50 px-2.5 py-1">
-                          <span className="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-600">第{d.num}天</span>
-                          <span className="text-[13.5px] leading-[1.35] text-gray-700">{d.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                {!trip.document_text && (
+                  <p className="py-4 text-center text-sm text-gray-400">尚未填寫行程概要</p>
+                )}
+                {trip.document_text && (
+                  <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-gray-700">{trip.document_text}</p>
+                )}
               </div>
             )}
           </div>
