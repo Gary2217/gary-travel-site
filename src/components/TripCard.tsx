@@ -74,171 +74,174 @@ export default function TripCard({
 
   return (
     <>
-      <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
-        {/* 封面圖 */}
+      <div className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md md:flex-row">
+        {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative h-32 overflow-hidden sm:h-36 md:h-44${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative h-36 overflow-hidden sm:h-44 md:h-auto md:w-56 md:shrink-0 lg:w-64${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
-          {cover_image_url ? (
-            <Image
-              src={cover_image_url}
-              alt={title}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover object-center transition duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-100">
-              <svg className="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-
-          {/* 天數標籤 */}
-          <div className="absolute right-2 top-2 rounded-full bg-sky-500/90 px-2.5 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
-            {duration}
-          </div>
-
-          {/* 有檔案時顯示小圖示 */}
-          {!isDevMode && document_url && document_is_available && (
-            <div className="absolute left-2 top-2 rounded-full bg-emerald-500/90 p-1 backdrop-blur-sm" title="點擊查看行程表">
-              <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-          )}
-
-          {isDevMode && document_url && document_is_available && (
-            <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full border border-emerald-400/30 bg-emerald-500/90 px-3 py-1 text-[11px] font-bold text-white shadow-lg backdrop-blur-sm">
-              已有行程表
-            </div>
-          )}
-
-          {/* 收藏按鈕 */}
-          {!isDevMode && <FavoriteButton tripId={id} />}
-
-          {/* Dev mode 圖片編輯 */}
-          {isDevMode && onImageUpdate && (
-            <ImageEditor
-              entityId={id}
-              currentImageUrl={cover_image_url || ""}
-              title={title}
-              onUpdate={(newUrl) => onImageUpdate(id, newUrl)}
-              uploadFn={uploadTripImage}
-              documentUrl={document_url}
-              onDocumentUpdate={onDocumentUpdate ? (url) => onDocumentUpdate(id, url) : undefined}
-              onDocumentAvailabilityUpdate={onDocumentAvailabilityUpdate ? (available) => onDocumentAvailabilityUpdate(id, available) : undefined}
-              documentUploadFn={uploadTripDocument}
-              duration={duration}
-              onDurationUpdate={onDurationUpdate ? (newDur) => onDurationUpdate(id, newDur) : undefined}
-            />
-          )}
-        </div>
-
-        {/* 行程名稱 + 按鈕 */}
-        <div className="p-2 sm:p-3 md:p-4">
-          {isDevMode ? (
-            editingTitle ? (
-              <input
-                ref={titleInputRef}
-                value={titleValue}
-                onChange={e => setTitleValue(e.target.value)}
-                onBlur={async () => {
-                  setEditingTitle(false);
-                  if (titleValue.trim() && titleValue !== title) {
-                    await fetch(`/api/trips/${id}`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ title: titleValue.trim() }),
-                    });
-                    onTitleUpdate?.(id, titleValue.trim());
-                  }
-                }}
-                onKeyDown={e => { if (e.key === 'Enter') titleInputRef.current?.blur(); }}
-                className="mb-1 w-full border-b border-sky-400 bg-transparent text-xs font-bold text-gray-900 outline-none sm:text-sm md:text-base"
-                autoFocus
+          <div className="relative h-full w-full">
+            {cover_image_url ? (
+              <Image
+                src={cover_image_url}
+                alt={title}
+                fill
+                sizes="(max-width: 768px) 100vw, 256px"
+                className="object-cover object-center transition duration-500 group-hover:scale-105"
               />
             ) : (
-              <h3
-                className="line-clamp-2 min-h-[2rem] cursor-pointer border-b border-dashed border-gray-300 text-xs font-bold leading-tight text-gray-900 hover:border-sky-400 hover:text-sky-600 sm:min-h-[2.5rem] sm:text-sm md:text-base"
-                onClick={() => setEditingTitle(true)}
-                title="點擊編輯名稱"
-              >
-                {titleValue}
-              </h3>
-            )
-          ) : (
-              <div className="flex items-start justify-between gap-1">
-                <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 min-h-[2.1rem] text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:min-h-[2.45rem] sm:text-base md:text-[1.1rem]">
-                    {title}
-                  </h3>
-                  {price_range && (
-                    <div className="mt-0.5 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
-                          團費價格
-                        </p>
-                        <ShareButton title={title} url={`/trip/${id}`} small />
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base">
-                          {displayPriceRange}
-                        </p>
-                      </div>
+              <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                <svg className="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+            {/* 天數標籤 */}
+            <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm sm:px-2.5 sm:text-xs">
+              {duration}
+            </div>
+
+            {/* 有檔案時顯示小圖示 */}
+            {!isDevMode && document_url && document_is_available && (
+              <div className="absolute left-1.5 top-1.5 rounded-full bg-emerald-500/90 p-1 backdrop-blur-sm" title="點擊查看行程表">
+                <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+
+            {isDevMode && document_url && document_is_available && (
+              <div className="absolute bottom-1.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-400/30 bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg backdrop-blur-sm sm:text-[10px]">
+                已有行程表
+              </div>
+            )}
+
+            {/* 收藏按鈕 */}
+            {!isDevMode && <FavoriteButton tripId={id} />}
+
+            {/* Dev mode 圖片編輯 */}
+            {isDevMode && onImageUpdate && (
+              <ImageEditor
+                entityId={id}
+                currentImageUrl={cover_image_url || ""}
+                title={title}
+                onUpdate={(newUrl) => onImageUpdate(id, newUrl)}
+                uploadFn={uploadTripImage}
+                documentUrl={document_url}
+                onDocumentUpdate={onDocumentUpdate ? (url) => onDocumentUpdate(id, url) : undefined}
+                onDocumentAvailabilityUpdate={onDocumentAvailabilityUpdate ? (available) => onDocumentAvailabilityUpdate(id, available) : undefined}
+                documentUploadFn={uploadTripDocument}
+                duration={duration}
+                onDurationUpdate={onDurationUpdate ? (newDur) => onDurationUpdate(id, newDur) : undefined}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* 右側文字內容 */}
+        <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:p-3 md:p-4">
+          <div>
+            {isDevMode ? (
+              editingTitle ? (
+                <input
+                  ref={titleInputRef}
+                  value={titleValue}
+                  onChange={e => setTitleValue(e.target.value)}
+                  onBlur={async () => {
+                    setEditingTitle(false);
+                    if (titleValue.trim() && titleValue !== title) {
+                      await fetch(`/api/trips/${id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: titleValue.trim() }),
+                      });
+                      onTitleUpdate?.(id, titleValue.trim());
+                    }
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') titleInputRef.current?.blur(); }}
+                  className="mb-1 w-full border-b border-sky-400 bg-transparent text-xs font-bold text-gray-900 outline-none sm:text-sm md:text-base"
+                  autoFocus
+                />
+              ) : (
+                <h3
+                  className="line-clamp-2 cursor-pointer border-b border-dashed border-gray-300 text-xs font-bold leading-tight text-gray-900 hover:border-sky-400 hover:text-sky-600 sm:text-sm md:text-base"
+                  onClick={() => setEditingTitle(true)}
+                  title="點擊編輯名稱"
+                >
+                  {titleValue}
+                </h3>
+              )
+            ) : (
+              <div>
+                <h3 className="line-clamp-2 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
+                  {title}
+                </h3>
+                {price_range && (
+                  <div className="mt-1 sm:mt-1.5">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
+                        團費價格
+                      </p>
+                      <ShareButton title={title} url={`/trip/${id}`} small />
+                    </div>
+                    <p className="mt-0.5 text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base">
+                      {displayPriceRange}
+                    </p>
                   </div>
                 )}
               </div>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              const from = encodeURIComponent(window.location.pathname + window.location.search);
-              window.location.href = `/trip/${id}?from=${from}`;
-            }}
-            className="mt-2 flex min-h-10 w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:mt-3 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
-          >
-            點我看行程
-            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+            )}
+          </div>
 
-          {/* Dev mode 刪除行程 */}
-          {isDevMode && onDelete && (
+          {/* 按鈕區 */}
+          <div className="mt-2 flex flex-col gap-1.5 sm:mt-auto sm:gap-2">
             <button
               type="button"
               onClick={() => {
-                if (confirm(`確定要刪除「${title}」嗎？此操作無法復原。`)) {
-                  onDelete(id);
-                }
+                const from = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/trip/${id}?from=${from}`;
               }}
-              className="mt-2 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 shadow transition hover:bg-red-100 active:scale-95 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
+              className="flex min-h-8 w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm"
             >
+              點我看行程
               <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              刪除行程
             </button>
-          )}
 
-          {/* 下載 PDF 行程檔 */}
-          {!isDevMode && document_url && document_is_available && (
-            <button
-              onClick={() => setShowDownloadGate(true)}
-              className="mt-2 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow transition hover:bg-emerald-100 active:scale-95 sm:px-4 sm:py-2 sm:text-sm md:text-sm"
-            >
-              <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              下載 PDF 行程檔
-            </button>
-          )}
+            {/* Dev mode 刪除行程 */}
+            {isDevMode && onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`確定要刪除「${title}」嗎？此操作無法復原。`)) {
+                    onDelete(id);
+                  }
+                }}
+                className="flex min-h-8 w-full items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 shadow transition hover:bg-red-100 active:scale-95 sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm"
+              >
+                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                刪除行程
+              </button>
+            )}
 
+            {/* 下載 PDF 行程檔 */}
+            {!isDevMode && document_url && document_is_available && (
+              <button
+                onClick={() => setShowDownloadGate(true)}
+                className="flex min-h-8 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow transition hover:bg-emerald-100 active:scale-95 sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm"
+              >
+                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                下載 PDF 行程檔
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

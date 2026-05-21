@@ -399,20 +399,24 @@ export default function DestinationPage() {
                       {hasSubRegions ? groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
                           {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
                             {g.trips.map((trip) => (
-                              <TripCard key={trip.id} id={trip.id} title={trip.title} duration={trip.duration}
-                                price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
-                                document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                              <div key={trip.id} className="md:min-w-0">
+                                <TripCard id={trip.id} title={trip.title} duration={trip.duration}
+                                  price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
+                                  document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                              </div>
                             ))}
                           </div>
                         </div>
                       )) : (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
                           {trips.map((trip) => (
-                            <TripCard key={trip.id} id={trip.id} title={trip.title} duration={trip.duration}
-                              price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
-                              document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                            <div key={trip.id} className="md:min-w-0">
+                              <TripCard id={trip.id} title={trip.title} duration={trip.duration}
+                                price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
+                                document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                            </div>
                           ))}
                         </div>
                       )}
@@ -440,11 +444,13 @@ export default function DestinationPage() {
                       {groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
                           {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
                             {g.trips.map((trip) => (
-                              <TripCard key={trip.id} id={trip.id} title={trip.title} duration={trip.duration}
-                                price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
-                                document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                              <div key={trip.id} className="md:min-w-0">
+                                <TripCard id={trip.id} title={trip.title} duration={trip.duration}
+                                  price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
+                                  document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -516,7 +522,7 @@ export default function DestinationPage() {
                 : trips;
 
               return (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:gap-4 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
                   {sorted.map((trip) => {
                     const hasMatchingDate = Boolean(
                       dateFilter && trip.departure_dates?.some((d) => d.departure_date === dateFilter)
@@ -531,7 +537,7 @@ export default function DestinationPage() {
                         onDragOver={handleDragOver(tripIndex)}
                         onDragEnd={handleDragEnd}
                         onDrop={handleDrop(tripIndex)}
-                        className={`relative ${isDevMode && isPC ? 'cursor-grab active:cursor-grabbing' : ''} ${dragIndex === tripIndex ? 'opacity-50' : ''} ${dragOverIndex === tripIndex ? 'ring-2 ring-sky-400 rounded-xl' : ''}`}
+                        className={`relative md:min-w-0 ${isDevMode && isPC ? 'cursor-grab active:cursor-grabbing' : ''} ${dragIndex === tripIndex ? 'opacity-50' : ''} ${dragOverIndex === tripIndex ? 'ring-2 ring-sky-400 rounded-xl' : ''}`}
                       >
                           {hasMatchingDate && (
                             <div className="absolute -top-2 left-2 z-10 rounded-full bg-sky-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-sky-500/30">
@@ -584,16 +590,16 @@ export default function DestinationPage() {
                   {isDevMode && (
                     <button
                       onClick={handleAddTrip}
-                      className="group/add flex flex-col overflow-hidden rounded-xl border-2 border-dashed border-sky-200 bg-gray-50 transition hover:border-sky-300 hover:bg-sky-50"
+                      className="group/add col-span-2 flex flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-sky-200 bg-gray-50 p-6 transition hover:border-sky-300 hover:bg-sky-50 md:flex-row md:p-8"
                     >
-                      <div className="flex h-32 items-center justify-center sm:h-36 md:h-44">
+                      <div className="flex h-full w-32 shrink-0 items-center justify-center sm:w-40 md:w-48">
                         <svg className="h-10 w-10 text-sky-400 transition group-hover/add:text-sky-500 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                       </div>
-                      <div className="p-2 sm:p-3 md:p-4">
-                        <p className="min-h-[2rem] text-xs font-semibold text-sky-600 sm:min-h-[2.5rem] sm:text-sm">新增行程</p>
-                        <div className="mt-2 flex w-full items-center justify-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold text-sky-600 sm:mt-3 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
+                      <div className="flex flex-1 flex-col justify-center p-2.5 sm:p-3 md:p-4">
+                        <p className="text-xs font-semibold text-sky-600 sm:text-sm">新增行程</p>
+                        <div className="mt-2 flex w-full items-center justify-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold text-sky-600 sm:px-4 sm:py-2 sm:text-xs md:text-sm">
                           點擊新增
                         </div>
                       </div>
