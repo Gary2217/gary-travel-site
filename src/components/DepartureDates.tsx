@@ -687,6 +687,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                     {d.flight_segments && d.flight_segments.length > 0 ? (
                       // 新格式：多航段表格
                       <>
+                        <p className="mb-2 text-center text-xs text-amber-600">此為本行程預定的航班時間，實際航班以團體確認的航班編號與飛行時間為準。</p>
                         <div className="hidden overflow-hidden rounded-lg border border-gray-200 sm:block">
                           <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-gray-50">
                             <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">航段</div>
