@@ -313,7 +313,7 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         <div>
           <label className={labelClass}>起飛時間</label>
           <input type="time" value={segment.dep_time} onChange={(e) => onChange("dep_time", e.target.value)}
-            className={inputClass} />
+            className={`${inputClass} [color-scheme:light]`} />
         </div>
         <div>
           <label className={labelClass}>起飛機場</label>
@@ -322,7 +322,7 @@ function SegmentRow({ index, total, segment, onChange, onDelete }: {
         <div>
           <label className={labelClass}>抵達時間</label>
           <input type="time" value={segment.arr_time} onChange={(e) => onChange("arr_time", e.target.value)}
-            className={inputClass} />
+            className={`${inputClass} [color-scheme:light]`} />
         </div>
         <div>
           <label className={labelClass}>抵達機場</label>
