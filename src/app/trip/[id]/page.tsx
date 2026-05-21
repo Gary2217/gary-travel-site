@@ -1229,6 +1229,11 @@ export default function TripPage() {
                     }
                     if (brackets.length > 0) {
                       days.push({ num: dayPositions[i].num, title: brackets.join(' - ') });
+                    } else {
+                      const plainText = section.replace(/^第\s*\d+\s*天\s*/, '').trim();
+                      if (plainText) {
+                        days.push({ num: dayPositions[i].num, title: plainText });
+                      }
                     }
                   }
 
