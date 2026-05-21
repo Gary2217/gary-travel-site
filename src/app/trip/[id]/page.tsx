@@ -836,73 +836,6 @@ export default function TripPage() {
                 >
                   編輯資訊
                 </button>
-                {/* PDF 上傳按鈕 */}
-                <button
-                  type="button"
-                  disabled={uploadingDoc}
-                  onClick={() => docInputRef.current?.click()}
-                  className="rounded-full bg-emerald-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-                >
-                  {uploadingDoc ? "上傳中..." : trip.document_url ? "更換 PDF 行程檔" : "上傳 PDF 行程檔"}
-                </button>
-                <input
-                  ref={docInputRef}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!file) return;
-                    if (file.name.split('.').pop()?.toLowerCase() !== 'pdf') {
-                      alert("僅支援 PDF 檔案格式");
-                      return;
-                    }
-                    if (file.size > 50 * 1024 * 1024) {
-                      alert("檔案不能超過 50MB");
-                      return;
-                    }
-                    setUploadingDoc(true);
-                    try {
-                      const result = await uploadTripDocument(tripId, file);
-                      setTrip((prev) => prev ? { ...prev, document_url: result.url, document_is_available: result.document_is_available } : prev);
-                      showSaveSuccess("PDF 行程檔已上傳！");
-                    } catch (err) {
-                      alert(err instanceof Error ? err.message : "上傳失敗，請再試");
-                    } finally {
-                      setUploadingDoc(false);
-                    }
-                  }}
-                />
-                {trip.document_url && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!confirm("確定要刪除此 PDF 行程檔嗎？")) return;
-                      try {
-                        await deleteTripDocument(tripId);
-                        setTrip((prev) => prev ? { ...prev, document_url: undefined, document_is_available: false } : prev);
-                        alert("PDF 已刪除");
-                      } catch (err) {
-                        alert(err instanceof Error ? err.message : "刪除失敗");
-                      }
-                    }}
-                    className="rounded-full border border-red-500/40 bg-red-600/20 px-3 py-1 text-xs font-semibold text-red-300 transition hover:bg-red-600/30"
-                  >
-                    刪除 PDF
-                  </button>
-                )}
-                <button
-                  onClick={async () => {
-                    if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
-                    const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-                    if (res.ok) window.location.href = from || '/';
-                    else alert('刪除失敗，請再試一次');
-                  }}
-                  className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
-                >
-                  刪除行程
-                </button>
               </div>
             )}
 
@@ -1827,6 +1760,80 @@ export default function TripPage() {
         )}
       </div>
 
+      {/* 開發者模式：PDF / 刪除行程 按鈕列 */}
+      {isDevMode && (
+        <div className="mx-auto max-w-[1000px] px-3 pb-2 sm:px-4 md:px-8">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={uploadingDoc}
+              onClick={() => docInputRef.current?.click()}
+              className="rounded-full bg-emerald-600/90 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {uploadingDoc ? "上傳中..." : trip.document_url ? "更換 PDF 行程檔" : "上傳 PDF 行程檔"}
+            </button>
+            <input
+              ref={docInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                if (file.name.split('.').pop()?.toLowerCase() !== 'pdf') {
+                  alert("僅支援 PDF 檔案格式");
+                  return;
+                }
+                if (file.size > 50 * 1024 * 1024) {
+                  alert("檔案不能超過 50MB");
+                  return;
+                }
+                setUploadingDoc(true);
+                try {
+                  const result = await uploadTripDocument(tripId, file);
+                  setTrip((prev) => prev ? { ...prev, document_url: result.url, document_is_available: result.document_is_available } : prev);
+                  showSaveSuccess("PDF 行程檔已上傳！");
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : "上傳失敗，請再試");
+                } finally {
+                  setUploadingDoc(false);
+                }
+              }}
+            />
+            {trip.document_url && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!confirm("確定要刪除此 PDF 行程檔嗎？")) return;
+                  try {
+                    await deleteTripDocument(tripId);
+                    setTrip((prev) => prev ? { ...prev, document_url: undefined, document_is_available: false } : prev);
+                    showSaveSuccess("PDF 已刪除");
+                  } catch (err) {
+                    alert(err instanceof Error ? err.message : "刪除失敗");
+                  }
+                }}
+                className="rounded-full border border-red-500/40 bg-red-600/20 px-3 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-600/30"
+              >
+                刪除 PDF
+              </button>
+            )}
+            <button
+              onClick={async () => {
+                if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
+                const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+                if (res.ok) window.location.href = from || '/';
+                else alert('刪除失敗，請再試一次');
+              }}
+              className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
+            >
+              刪除行程
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 每日行程（全寬顯示） */}
       {days.length > 0 && (
         <div className="w-full px-3 sm:px-4 md:px-8">
@@ -1857,19 +1864,6 @@ export default function TripPage() {
             <p className="text-sm leading-6 text-gray-600 md:text-base">
               目前這個行程尚未建立詳細內容，請透過 LINE 聯繫蓋瑞取得完整行程資料。
             </p>
-            {isDevMode && (
-              <button
-                type="button"
-                disabled={uploadingDoc}
-                onClick={() => docInputRef.current?.click()}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
-                </svg>
-                {uploadingDoc ? "上傳中..." : "上傳 PDF 行程檔"}
-              </button>
-            )}
           </div>
         </div>
       )}
