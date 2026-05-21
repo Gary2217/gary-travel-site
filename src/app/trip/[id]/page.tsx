@@ -1194,25 +1194,24 @@ export default function TripPage() {
                 )}
                 {trip.document_text && (() => {
                   const lines = trip.document_text!.split('\n').filter(l => l.trim());
+                  const grouped: { num: string; lines: string[] }[] = [];
+                  for (const line of lines) {
+                    const dayMatch = line.match(/^第\s*(\d+)\s*天\s*/);
+                    if (dayMatch) {
+                      const content = line.replace(/^第\s*\d+\s*天\s*/, '').trim();
+                      grouped.push({ num: dayMatch[1], lines: content ? [content] : [] });
+                    } else if (grouped.length > 0) {
+                      grouped[grouped.length - 1].lines.push(line.trim());
+                    }
+                  }
                   return (
-                    <div className="space-y-2">
-                      {lines.map((line, i) => {
-                        const dayMatch = line.match(/^第\s*(\d+)\s*天\s*/);
-                        if (dayMatch) {
-                          const content = line.replace(/^第\s*\d+\s*天\s*/, '').trim();
-                          return (
-                            <div key={i} className="rounded-xl bg-gray-50 px-3 py-2">
-                              <div className="mb-1 flex items-center gap-2">
-                                <span className="shrink-0 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-600">第{dayMatch[1]}天</span>
-                              </div>
-                              {content && <p className="text-[13.5px] leading-relaxed text-gray-700">{content}</p>}
-                            </div>
-                          );
-                        }
-                        return (
-                          <p key={i} className="px-3 text-[13.5px] leading-relaxed text-gray-600">{line}</p>
-                        );
-                      })}
+                    <div className="space-y-1">
+                      {grouped.map((day) => (
+                        <div key={day.num} className="flex items-start gap-2 rounded-xl bg-gray-50 px-2.5 py-1.5">
+                          <span className="mt-0.5 shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-600">第{day.num}天</span>
+                          <span className="text-[13px] leading-[1.5] text-gray-700">{day.lines.join(' ')}</span>
+                        </div>
+                      ))}
                     </div>
                   );
                 })()}
