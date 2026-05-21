@@ -1071,7 +1071,7 @@ export default function HomePage() {
           description="立即聯繫旅遊規劃師 蓋瑞 GARY，為您量身打造專屬行程"
         />
 
-        {isDevMode && <ContactInquiries />}
+
       </div>
 
       <FloatingContact />
