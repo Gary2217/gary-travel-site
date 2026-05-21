@@ -24,10 +24,10 @@ const config: Config = {
         site: '1100px',
       },
       height: {
-        header: '4rem', // 64px
+        header: '5rem', // 80px
       },
       spacing: {
-        header: '4rem', // 64px
+        header: '5rem', // 80px
       },
       zIndex: {
         header: '40',
