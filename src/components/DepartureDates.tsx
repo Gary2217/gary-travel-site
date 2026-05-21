@@ -732,17 +732,21 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                                 </div>
 
                                 <div className={`border-r border-gray-200 px-3 py-3 text-sm ${rowBorderClass}`}>
-                                  <div className="flex h-full flex-col items-center justify-center gap-0.5 text-center">
-                                    {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
-                                    {seg.dep_airport && <span className="text-xs text-gray-600">{seg.dep_airport}</span>}
+                                  <div className="flex h-full flex-col justify-center gap-0.5">
+                                    <div className="flex items-baseline gap-2">
+                                      {seg.dep_time && <span className="shrink-0 text-base font-bold text-gray-900">{seg.dep_time}</span>}
+                                      {seg.dep_airport && <span className="text-xs text-gray-600">{seg.dep_airport}</span>}
+                                    </div>
                                   </div>
                                 </div>
 
                                 <div className={`px-3 py-3 text-sm ${rowBorderClass}`}>
-                                  <div className="flex h-full flex-col items-center justify-center gap-0.5 text-center">
+                                  <div className="flex h-full flex-col justify-center gap-0.5">
                                     {arrDate && <div className="text-xs text-gray-500">{arrDate.full}</div>}
-                                    {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
-                                    {seg.arr_airport && <span className="text-xs text-gray-600">{seg.arr_airport}</span>}
+                                    <div className="flex items-baseline gap-2">
+                                      {seg.arr_time && <span className="shrink-0 text-base font-bold text-gray-900">{seg.arr_time}</span>}
+                                      {seg.arr_airport && <span className="text-xs text-gray-600">{seg.arr_airport}</span>}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
