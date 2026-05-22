@@ -12,6 +12,14 @@ import ShareButton from "@/components/ShareButton";
 import { uploadTripImage, uploadTripDocument, lineHref, fbHref, igHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 
+interface DepartureDateInfo {
+  id: string;
+  departure_date: string;
+  price: number | null;
+  seats_available: number;
+  seats_total: number;
+}
+
 interface TripCardProps {
   id: string;
   title: string;
@@ -20,6 +28,7 @@ interface TripCardProps {
   cover_image_url?: string;
   document_url?: string;
   document_is_available?: boolean;
+  departure_dates?: DepartureDateInfo[];
   isDevMode?: boolean;
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
@@ -27,6 +36,14 @@ interface TripCardProps {
   onDurationUpdate?: (tripId: string, newDuration: string) => void;
   onTitleUpdate?: (tripId: string, newTitle: string) => void;
   onDelete?: (tripId: string) => void;
+}
+
+function formatShortDate(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const weekday = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+  return `${mm}/${dd}(${weekday})`;
 }
 
 export default function TripCard({
@@ -37,6 +54,7 @@ export default function TripCard({
   cover_image_url,
   document_url,
   document_is_available,
+  departure_dates,
   isDevMode = false,
   onImageUpdate,
   onDocumentUpdate,
@@ -195,15 +213,32 @@ export default function TripCard({
             )}
           </div>
 
+          {/* 出團日期 badge */}
+          {!isDevMode && departure_dates && departure_dates.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5 sm:mt-2">
+              {departure_dates.slice(0, 4).map((dd) => (
+                <div key={dd.id} className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-center">
+                  <div className="text-[10px] font-semibold text-sky-700">{formatShortDate(dd.departure_date)}</div>
+                  {dd.price && <div className="text-[9px] font-bold text-amber-600">${dd.price.toLocaleString()}</div>}
+                </div>
+              ))}
+              {departure_dates.length > 4 && (
+                <div className="flex items-center rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] text-gray-500">
+                  更多
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 按鈕區 */}
-          <div className="mt-2 flex flex-col gap-1.5 sm:mt-auto sm:gap-2">
+          <div className="mt-2 flex flex-col gap-1.5 sm:mt-auto sm:flex-row sm:flex-wrap sm:gap-2">
             <button
               type="button"
               onClick={() => {
                 const from = encodeURIComponent(window.location.pathname + window.location.search);
                 window.location.href = `/trip/${id}?from=${from}`;
               }}
-              className="flex min-h-8 w-full items-center justify-center gap-1 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm"
+              className="flex min-h-8 items-center justify-center gap-1 rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
             >
               點我看行程
               <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +255,7 @@ export default function TripCard({
                     onDelete(id);
                   }
                 }}
-                className="flex min-h-8 w-full items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 shadow transition hover:bg-red-100 active:scale-95 sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm"
+                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-600 shadow transition hover:bg-red-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
               >
                 <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -233,7 +268,7 @@ export default function TripCard({
             {!isDevMode && document_url && document_is_available && (
               <button
                 onClick={() => setShowDownloadGate(true)}
-                className="flex min-h-8 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow transition hover:bg-emerald-100 active:scale-95 sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm"
+                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-600 shadow transition hover:bg-emerald-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
               >
                 <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

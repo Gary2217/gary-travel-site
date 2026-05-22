@@ -404,7 +404,8 @@ export default function DestinationPage() {
                               <div key={trip.id} className="md:min-w-0">
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
                                   price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
-                                  document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                                  document_url={trip.document_url} document_is_available={trip.document_is_available}
+                                  departure_dates={trip.departure_dates} isDevMode={false} />
                               </div>
                             ))}
                           </div>
@@ -415,7 +416,8 @@ export default function DestinationPage() {
                             <div key={trip.id} className="md:min-w-0">
                               <TripCard id={trip.id} title={trip.title} duration={trip.duration}
                                 price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
-                                document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                                document_url={trip.document_url} document_is_available={trip.document_is_available}
+                                departure_dates={trip.departure_dates} isDevMode={false} />
                             </div>
                           ))}
                         </div>
@@ -449,7 +451,8 @@ export default function DestinationPage() {
                               <div key={trip.id} className="md:min-w-0">
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
                                   price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
-                                  document_url={trip.document_url} document_is_available={trip.document_is_available} isDevMode={false} />
+                                  document_url={trip.document_url} document_is_available={trip.document_is_available}
+                                  departure_dates={trip.departure_dates} isDevMode={false} />
                               </div>
                             ))}
                           </div>
@@ -576,6 +579,7 @@ export default function DestinationPage() {
                           cover_image_url={trip.cover_image_url}
                           document_url={trip.document_url}
                           document_is_available={trip.document_is_available}
+                          departure_dates={trip.departure_dates}
                           isDevMode={isDevMode}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
