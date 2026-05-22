@@ -97,6 +97,7 @@ export default function TripPage() {
   const searchParams = useSearchParams();
   const tripId = params.id as string;
   const from = searchParams.get("from");
+  const requestedDepartureId = searchParams.get("departureId");
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
@@ -471,13 +472,17 @@ export default function TripPage() {
     }
 
     setSelectedDepartureId((current) => {
+      if (requestedDepartureId && departureDates.some((date) => date.id === requestedDepartureId)) {
+        return requestedDepartureId;
+      }
+
       if (current && departureDates.some((date) => date.id === current)) {
         return current;
       }
 
       return departureDates[0].id;
     });
-  }, [departureDates]);
+  }, [departureDates, requestedDepartureId]);
 
   useEffect(() => {
     if (!selectedDeparture) {

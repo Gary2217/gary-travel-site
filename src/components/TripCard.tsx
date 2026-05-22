@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -18,6 +18,10 @@ interface DepartureDateInfo {
   price: number | null;
   seats_available: number;
   seats_total: number;
+  outbound_from?: string | null;
+  flight_segments?: Array<{
+    dep_airport?: string;
+  }> | null;
 }
 
 interface TripCardProps {
@@ -75,6 +79,12 @@ export default function TripCard({
     }
   };
 
+  const navigateToTrip = (departureId?: string) => {
+    const from = encodeURIComponent(window.location.pathname + window.location.search);
+    const departureQuery = departureId ? `&departureId=${encodeURIComponent(departureId)}` : '';
+    window.location.href = `/trip/${id}?from=${from}${departureQuery}`;
+  };
+
   const handleFollowAndDownload = (socialUrl: string) => {
     openExternalLink(socialUrl);
     const timer = setTimeout(() => {
@@ -89,6 +99,16 @@ export default function TripCard({
   const displayPriceRange = price_range
     ?.replace(/NT\$\s*/g, 'NT $ ')
     .replace(/\s*[~～]\s*/g, ' ~ ');
+
+  const departurePlace = (() => {
+    if (!departure_dates || departure_dates.length === 0) return null;
+    const places = departure_dates
+      .map(dd => dd.outbound_from || dd.flight_segments?.[0]?.dep_airport || null)
+      .filter(Boolean) as string[];
+    if (places.length === 0) return null;
+    const unique = [...new Set(places)];
+    return unique.length === 1 ? unique[0] : '多地出發';
+  })();
 
   return (
     <>
@@ -159,8 +179,8 @@ export default function TripCard({
         </div>
 
         {/* 右側文字內容 */}
-        <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:p-3 md:p-4">
-          <div className="flex flex-1 flex-col justify-between">
+        <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3 md:p-4">
+          <div className="space-y-3">
           <div>
             {isDevMode ? (
               editingTitle ? (
@@ -193,61 +213,66 @@ export default function TripCard({
                 </h3>
               )
             ) : (
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
-                      {title}
-                    </h3>
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
+                    {title}
+                  </h3>
+                  <div className="shrink-0">
                     <ShareButton title={title} url={`/trip/${id}`} small />
                   </div>
                 </div>
-                {price_range && (
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
-                      團費價格
-                    </p>
-                    <p className="mt-0.5 text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base">
-                      {displayPriceRange}
-                    </p>
-                  </div>
-                )}
+
+                <div className="flex items-start justify-between gap-4">
+                  {!isDevMode && departure_dates && departure_dates.length > 0 ? (
+                    <div className="flex flex-wrap gap-3">
+                      {departure_dates.slice(0, 4).map((dd) => (
+                        <button
+                          key={dd.id}
+                          type="button"
+                          onClick={() => navigateToTrip(dd.id)}
+                          className="overflow-hidden rounded-md border border-sky-300 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
+                          <div className="bg-white px-3 py-1 text-[12px] font-bold text-sky-700">{formatShortDate(dd.departure_date)}</div>
+                          <div className="bg-sky-500 px-3 py-1 text-[10px] font-semibold text-white">熱銷中</div>
+                        </button>
+                      ))}
+                      {departure_dates.length > 4 && (
+                        <div className="flex items-center rounded-md border border-gray-200 bg-white px-3 py-2 text-[12px] text-gray-500 shadow-sm">
+                          更多
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div />
+                  )}
+
+                  {price_range && (
+                    <div className="shrink-0 pt-1 text-right">
+                      <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
+                        團費價格
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base md:text-[1.15rem]">
+                        {displayPriceRange}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {/* 出團日期 badge */}
-          {!isDevMode && departure_dates && departure_dates.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1.5 sm:mt-2">
-              {departure_dates.slice(0, 4).map((dd) => (
-                <div key={dd.id} className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-center">
-                  <div className="text-[10px] font-semibold text-sky-700">{formatShortDate(dd.departure_date)}</div>
-                  {dd.price && <div className="text-[9px] font-bold text-amber-600">${dd.price.toLocaleString()}</div>}
-                </div>
-              ))}
-              {departure_dates.length > 4 && (
-                <div className="flex items-center rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] text-gray-500">
-                  更多
-                </div>
-              )}
-            </div>
-          )}
-
           {/* 按鈕區 */}
-          <div className="mt-2 flex flex-col gap-1.5 sm:mt-auto sm:flex-row sm:flex-wrap sm:gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                const from = encodeURIComponent(window.location.pathname + window.location.search);
-                window.location.href = `/trip/${id}?from=${from}`;
-              }}
-              className="flex min-h-8 items-center justify-center gap-1 rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-sky-500 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
-            >
-              點我看行程
-              <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+          <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">
+            {!isDevMode && departurePlace && (
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
+                <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>出發地：{departurePlace}</span>
+              </div>
+            )}
 
             {/* Dev mode 刪除行程 */}
             {isDevMode && onDelete && (
@@ -267,21 +292,9 @@ export default function TripCard({
               </button>
             )}
 
-            {/* 下載 PDF 行程檔 */}
-            {!isDevMode && document_url && document_is_available && (
-              <button
-                onClick={() => setShowDownloadGate(true)}
-                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-600 shadow transition hover:bg-emerald-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
-              >
-                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                下載 PDF 行程檔
-              </button>
-            )}
-          </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* 下載門檻彈窗 */}
@@ -355,3 +368,4 @@ export default function TripCard({
     </>
   );
 }
+

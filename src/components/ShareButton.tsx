@@ -67,7 +67,7 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
   };
 
   const buttonClassName = small
-    ? "flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 text-sky-600 shadow-sm transition hover:scale-[1.03] hover:border-sky-300 hover:from-sky-100 hover:to-indigo-100 hover:text-sky-700 active:scale-95"
+    ? "inline-flex h-10 items-center justify-center rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 px-3 text-sm font-semibold text-sky-600 shadow-sm transition hover:scale-[1.03] hover:border-sky-300 hover:from-sky-100 hover:to-indigo-100 hover:text-sky-700 active:scale-95"
     : "flex h-9 w-9 items-center justify-center rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 text-sky-600 shadow-sm transition hover:scale-[1.03] hover:border-sky-300 hover:from-sky-100 hover:to-indigo-100 hover:text-sky-700 active:scale-95";
 
   const iconClassName = small ? "h-4 w-4" : "h-[18px] w-[18px]";
@@ -85,10 +85,14 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
         title="分享"
         aria-label="分享"
       >
-        <svg className={iconClassName} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V4m0 0l-4 4m4-4l4 4" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10H7a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2h-1" />
-        </svg>
+        {small ? (
+          <span>分享</span>
+        ) : (
+          <svg className={iconClassName} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V4m0 0l-4 4m4-4l4 4" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10H7a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2h-1" />
+          </svg>
+        )}
       </button>
 
       {open && (
