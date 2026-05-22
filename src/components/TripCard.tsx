@@ -160,6 +160,7 @@ export default function TripCard({
 
         {/* 右側文字內容 */}
         <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:p-3 md:p-4">
+          <div className="flex flex-1 flex-col justify-between">
           <div>
             {isDevMode ? (
               editingTitle ? (
@@ -192,15 +193,17 @@ export default function TripCard({
                 </h3>
               )
             ) : (
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
-                    {title}
-                  </h3>
-                  <ShareButton title={title} url={`/trip/${id}`} small />
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
+                      {title}
+                    </h3>
+                    <ShareButton title={title} url={`/trip/${id}`} small />
+                  </div>
                 </div>
                 {price_range && (
-                  <div className="mt-1 sm:mt-1.5">
+                  <div className="shrink-0 text-right">
                     <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
                       團費價格
                     </p>
