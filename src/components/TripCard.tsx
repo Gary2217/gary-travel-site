@@ -280,6 +280,7 @@ export default function TripCard({
               </button>
             )}
           </div>
+          </div>
         </div>
       </div>
 
