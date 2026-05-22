@@ -193,17 +193,17 @@ export default function TripCard({
               )
             ) : (
               <div>
-                <h3 className="line-clamp-2 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
-                  {title}
-                </h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
+                    {title}
+                  </h3>
+                  <ShareButton title={title} url={`/trip/${id}`} small />
+                </div>
                 {price_range && (
                   <div className="mt-1 sm:mt-1.5">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
-                        團費價格
-                      </p>
-                      <ShareButton title={title} url={`/trip/${id}`} small />
-                    </div>
+                    <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
+                      團費價格
+                    </p>
                     <p className="mt-0.5 text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base">
                       {displayPriceRange}
                     </p>
