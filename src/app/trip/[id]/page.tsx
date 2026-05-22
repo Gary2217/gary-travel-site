@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -147,6 +147,7 @@ export default function TripPage() {
   const [showBannerEditor, setShowBannerEditor] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [isCreatingNewDeparture, setIsCreatingNewDeparture] = useState(false);
+  const [tableActiveMonth, setTableActiveMonth] = useState<string>("all");
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -801,6 +802,33 @@ export default function TripPage() {
   const { dayText: previewDayText, nightText: previewNightText } = toBannerDaysNights(editDayCount, editNightCount);
   const priceDetailPreview = parsePriceDetail(selectedDepartureInfo.price_detail || '');
 
+  // 出發日期表格：月份分組 & 篩選
+  const departureMonthKeys = (() => {
+    const map = new Map<string, boolean>();
+    departureDates.forEach(d => {
+      const dt = new Date(d.departure_date + 'T00:00:00');
+      map.set(`${dt.getFullYear()}-${dt.getMonth() + 1}`, true);
+    });
+    return Array.from(map.keys()).sort();
+  })();
+  const filteredDepartures = tableActiveMonth === 'all'
+    ? departureDates
+    : departureDates.filter(d => {
+        const dt = new Date(d.departure_date + 'T00:00:00');
+        return `${dt.getFullYear()}-${dt.getMonth() + 1}` === tableActiveMonth;
+      });
+
+  // 航班資訊 helper
+  const selectedFlightSegments = selectedDeparture?.flight_segments;
+  const hasFlightData = !!(selectedDeparture && (
+    (selectedFlightSegments && selectedFlightSegments.length > 0) ||
+    selectedDeparture.outbound_flight || selectedDeparture.outbound_time ||
+    selectedDeparture.outbound_from || selectedDeparture.outbound_to ||
+    selectedDeparture.return_flight || selectedDeparture.return_time ||
+    selectedDeparture.return_from || selectedDeparture.return_to ||
+    selectedDeparture.airline
+  ));
+
   return (
     <main className="min-h-screen bg-transparent text-gray-900">
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
@@ -824,558 +852,349 @@ export default function TripPage() {
             <span className="line-clamp-1 text-gray-600">{trip.title}</span>
           </div>
         )}
-        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
-          <div className="min-w-0 lg:col-span-1">
-            <div ref={titleRef}>
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-[1.75rem] md:text-[2rem]">{trip.title}</h1>
-            {trip.subtitle && (
-              <p className="mt-0.5 text-sm text-gray-600 sm:mt-1 sm:text-[15px] md:text-base">{trip.subtitle}</p>
-            )}
-            {isDevMode && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  onClick={openTripInfoEditor}
-                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500"
-                >
-                  編輯資訊
-                </button>
-              </div>
-            )}
 
+        {/* 標題（移到格線上方） */}
+        <div ref={titleRef} className="mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-[1.75rem] md:text-[2rem]">{trip.title}</h1>
+          {trip.subtitle && (
+            <p className="mt-0.5 text-sm text-gray-600 sm:mt-1 sm:text-[15px] md:text-base">{trip.subtitle}</p>
+          )}
+          {isDevMode && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button onClick={openTripInfoEditor} className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">編輯資訊</button>
             </div>
-            <div className="mt-4 hidden lg:block">
-              <SideMediaCarousel
-                tripId={tripId}
-                fallbackImageUrl={editTripBanner.side_image_url || ""}
-                tripTitle={trip.title}
-                isDevMode={isDevMode}
-                videoMatchHeight={videoMatchHeight}
-              />
+          )}
+        </div>
+
+        <div className="lg:grid lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-6">
+          {/* 左欄：主圖 + 產品資訊 */}
+          <div className="min-w-0">
+            <SideMediaCarousel
+              tripId={tripId}
+              fallbackImageUrl={editTripBanner.side_image_url || ""}
+              tripTitle={trip.title}
+              isDevMode={isDevMode}
+              videoMatchHeight={videoMatchHeight}
+            />
+            <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
+                <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || '—'}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="min-w-[36px] text-[11px] text-sky-600">
+                  <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {selectedDeparture ? (() => {
+                    const start = formatFullDate(selectedDeparture.departure_date);
+                    const daysNum = parseInt(previewDayText.replace(/\D/g, ''), 10) || 0;
+                    let end = '';
+                    if (selectedDeparture.return_date) {
+                      end = formatFullDate(selectedDeparture.return_date);
+                    } else if (daysNum > 1) {
+                      const dt = new Date(selectedDeparture.departure_date + 'T00:00:00');
+                      dt.setDate(dt.getDate() + daysNum - 1);
+                      end = formatFullDate(dt.toLocaleDateString('sv-SE'));
+                    }
+                    const dur = renderDaysNights(previewDayText, previewNightText);
+                    return end ? <>{start} <span className="mx-1.5 text-base font-black text-sky-500">→</span> {end}　{dur}</> : `${start} ${dur}`;
+                  })() : '—'}
+                </span>
+              </div>
+              {trip.destinations && (
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
+                  <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
+                </div>
+              )}
+              {(selectedDeparture?.seats_total ?? 0) > 0 && (
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">
+                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                </div>
+              )}
+              {editTripBanner.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {editTripBanner.tags.map((tag, i) => (
+                    <span key={`${tag}-${i}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* ── 售價說明（嵌在產品資訊卡內） ── */}
+              <div className="mt-3 border-t border-gray-200 pt-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold text-sky-600">$</span>
+                    <h3 className="text-xs font-bold text-gray-900">售價說明</h3>
+                  </div>
+                  {isDevMode && (
+                    <button type="button" onClick={() => setShowPriceDetailModal((v) => !v)} className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition ${showPriceDetailModal ? 'bg-sky-100 text-sky-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                      {showPriceDetailModal ? '收起' : '編輯'}
+                    </button>
+                  )}
+                </div>
+                {/* 價格表 */}
+                <div className="-mx-3.5 overflow-x-auto">
+                  <table className="w-full text-center text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50">
+                        <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">大人</th>
+                        <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">小孩佔床</th>
+                        <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">小孩不佔床</th>
+                        <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">加床</th>
+                        <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">嬰兒</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="whitespace-nowrap px-2 py-2 font-bold text-sky-600">{displayAdultUnit(priceDetailPreview.adultPrice)}</td>
+                        <td className="whitespace-nowrap px-2 py-2 font-bold text-gray-900">{displayChildPrice(priceDetailPreview.childWithBedPrice)}</td>
+                        <td className="whitespace-nowrap px-2 py-2 font-bold text-sky-600">{displayChildPrice(priceDetailPreview.childNoBedPrice)}</td>
+                        <td className="whitespace-nowrap px-2 py-2 font-bold text-gray-900">{displayChildPrice(priceDetailPreview.childExtraBedPrice)}</td>
+                        <td className="whitespace-nowrap px-2 py-2 font-bold text-sky-600">{displayInfantUnit(priceDetailPreview.infantPrice)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                {/* 包含 / 不包含 */}
+                <div className="mt-2 space-y-1 text-xs">
+                  <div className="flex gap-2">
+                    <span className="shrink-0 font-medium text-sky-600">○ 包含項目</span>
+                    <span className="text-gray-600">{[displaySurchargeText(priceDetailPreview.surcharge) !== '售價已內含' ? displaySurchargeText(priceDetailPreview.surcharge) : '含機場稅燃油附加費', displayVisaFeeText(priceDetailPreview.visaFee)].filter(Boolean).join('，')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="shrink-0 font-medium text-red-400">× 不包含項目</span>
+                    <span className="text-gray-600">{priceDetailPreview.quoteNote && priceDetailPreview.quoteNote !== '《無特殊說明》' ? priceDetailPreview.quoteNote : '不含導遊領隊小費'}</span>
+                  </div>
+                </div>
+                {/* 單人房差 */}
+                <div className="mt-2 text-xs">
+                  <div className="flex items-center gap-1.5"><span className="text-gray-500">單人房差</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div ref={rightColumnRef} className="mt-4 lg:mt-0 lg:col-span-1">
-            <div className="relative rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="text-xs font-medium uppercase tracking-wider text-gray-500">出團資訊</h3>
-                  <p className="mt-0.5 text-[11px] text-gray-900">團號：{departureEditorGroupCode || selectedDepartureInfo.group_code || (selectedDeparture ? '未設定' : '—')}</p>
+
+          {/* 右欄：出發日期表格 */}
+          <div ref={rightColumnRef} className="mt-4 lg:mt-0">
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* Dev mode 按鈕 */}
+              {isDevMode && (
+                <div className="flex justify-end gap-1.5 px-4 pt-3">
+                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
+                  <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
                 </div>
-                {isDevMode && (
-                  <div className="flex shrink-0 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowBannerEditor(true);
-                        setIsCreatingNewDeparture(true);
-                        setDepartureEditorDate('');
-                        setDepartureEditorGroupCode('');
-                        setDepartureEditorPrice('');
-                        setDepartureEditorWaitlist('');
-                      }}
-                      className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
-                    >
-                      新增
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (showBannerEditor) setIsCreatingNewDeparture(false);
-                        setShowBannerEditor((v) => !v);
-                      }}
-                      className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${
-                        showBannerEditor
-                          ? "bg-sky-100 text-sky-600 hover:bg-sky-200"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
-                      }`}
-                    >
-                      {showBannerEditor ? "關閉編輯" : "編輯"}
-                    </button>
+              )}
+
+              {/* 月份篩選 */}
+              {departureMonthKeys.length > 1 && (
+                <div className="flex flex-wrap gap-1.5 border-b border-gray-100 px-4 py-2">
+                  <button type="button" onClick={() => setTableActiveMonth("all")} className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${tableActiveMonth === "all" ? "bg-sky-500 text-white" : "text-gray-500 hover:text-sky-600"}`}>全部</button>
+                  {departureMonthKeys.map((m) => {
+                    const mo = m.split("-")[1];
+                    return <button key={m} type="button" onClick={() => setTableActiveMonth(m)} className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${tableActiveMonth === m ? "bg-sky-500 text-white" : "text-gray-500 hover:text-sky-600"}`}>{mo}月</button>;
+                  })}
+                </div>
+              )}
+
+              {/* 桌面版表頭 — 用 table 確保對齊 */}
+              <table className="hidden w-full sm:table">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 text-sm text-gray-900">
+                    <th className="py-2.5 pl-5 pr-2 text-left font-bold">出發日</th>
+                    <th className="px-2 py-2.5 text-center font-bold" style={{width:56}}>團位</th>
+                    <th className="px-2 py-2.5 text-center font-bold" style={{width:56}}>可售</th>
+                    <th className="px-2 py-2.5 text-center font-bold" style={{width:64}}>狀態</th>
+                    <th className="py-2.5 pl-2 pr-4 text-right font-bold" style={{width:100}}>售價</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredDepartures.map((d) => {
+                    const isSelected = selectedDepartureId === d.id;
+                    const soldOut = d.seats_available === 0 && d.seats_total > 0;
+                    return (
+                      <tr
+                        key={d.id}
+                        onClick={() => setSelectedDepartureId(d.id)}
+                        className={`cursor-pointer transition ${isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}
+                      >
+                        <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">{formatFullDate(d.departure_date)}</td>
+                        <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
+                        <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
+                        <td className="px-2 py-2.5 text-center">{soldOut ? <span className="text-[11px] text-gray-400">已售罄</span> : <span className="rounded bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-600">報名</span>}</td>
+                        <td className="py-2.5 pl-2 pr-4 text-right text-sm font-bold text-[#0077b6]">{d.price ? `NT$${d.price.toLocaleString()}` : '洽詢'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* 手機版列表 */}
+              {filteredDepartures.length > 0 ? (
+                <div className="divide-y divide-gray-100 sm:hidden">
+                  {filteredDepartures.map((d) => {
+                    const isSelected = selectedDepartureId === d.id;
+                    const soldOut = d.seats_available === 0 && d.seats_total > 0;
+                    return (
+                      <button key={d.id} type="button" onClick={() => setSelectedDepartureId(d.id)} className={`flex w-full items-center justify-between px-4 py-3 text-left transition ${isSelected ? "border-l-[3px] border-l-sky-500 bg-sky-50" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{formatFullDate(d.departure_date)}</div>
+                          <div className="mt-0.5 flex gap-2 text-[11px] text-gray-500">
+                            {d.seats_total > 0 && <span>團位 {d.seats_total}</span>}
+                            {(d.seats_available ?? 0) > 0 && <span>可售 {d.seats_available}</span>}
+                            {soldOut && <span className="text-red-400">已售罄</span>}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-[#0077b6]">{d.price ? `NT$${d.price.toLocaleString()}` : '洽詢'}</div>
+                          {!soldOut && <span className="text-[11px] text-sky-600">報名</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="px-4 py-6 text-center text-sm text-gray-400">
+                  {departureDates.length > 0 ? "此月份無出團梯次" : "尚未設定出團日期"}
+                </div>
+              )}
+
+              {/* 標籤貼 + 底部價格 */}
+              {editTripBanner.tags.length > 0 && (
+                <div className="border-t border-gray-100 px-4 pt-2.5 pb-0">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
+                    限時折扣
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 mt-2">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-gray-700">團費</div>
+                  <div>
+                    <span className="text-lg font-bold text-amber-600">
+                      {selectedDeparture
+                        ? formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
+                        : (trip.price_range || '洽詢')}
+                    </span>
+                    <span className="ml-1 text-xs text-gray-500">起/人</span>
+                  </div>
+                </div>
+                {editTripBanner.deposit_label && (
+                  <div className="hidden shrink-0 sm:block">
+                    <div className="text-xs font-semibold text-gray-700">訂金</div>
+                    <div>
+                      <span className="text-lg font-bold text-sky-600">{formatDepositText(String(editTripBanner.deposit_label))}</span>
+                    </div>
                   </div>
                 )}
+                <a
+                  href={lineMessageHref(`我想詢問「${trip.title}」${selectedDeparture ? ` ${formatFullDate(selectedDeparture.departure_date)} 出發` : ''}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
+                  className="shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#05b64d]"
+                >
+                  LINE 詢問
+                </a>
               </div>
-
-                <div className="space-y-3">
-                  {editTripBanner.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {editTripBanner.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-center text-[11px] font-medium text-emerald-600"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-gray-800 sm:text-sm">
-                    {renderBannerItems(
-                        [
-                          selectedDeparture ? formatFullDate(selectedDeparture.departure_date) : '',
-                          renderDaysNights(previewDayText, previewNightText),
-                        ].filter(Boolean),
-                      'font-medium'
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-gray-800 sm:text-sm">
-                    {renderBannerItems(
-                      [
-                        (selectedDeparture?.seats_total ?? editTripBanner.seats_total ?? 0) > 0 ? `團位 ${selectedDeparture?.seats_total ?? editTripBanner.seats_total}` : '',
-                        (selectedDeparture?.seats_available ?? editTripBanner.seats_available ?? 0) > 0 ? `可售 ${selectedDeparture?.seats_available ?? editTripBanner.seats_available}` : '',
-                        selectedDeparture ? `候補 ${selectedDepartureInfo.waitlist_count ?? 0}` : '',
-                        editTripBanner.deposit_label
-                          ? `訂金 ${Number(String(editTripBanner.deposit_label).replace(/\D/g, '')).toLocaleString('zh-TW')}/人`
-                          : '',
-                      ].filter(Boolean),
-                      'font-medium'
-                    )}
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-2 text-left">
-                    <p className="text-[11px] font-semibold tracking-[0.2em] text-amber-600">團費價格</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-base font-bold text-amber-600">
-                        {selectedDeparture
-                          ? formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
-                          : (trip.price_range || '尚未設定')}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowPriceDetailModal(true)}
-                        className="inline-flex min-h-9 items-center px-1 text-sm font-medium text-sky-600 underline underline-offset-4 transition hover:text-sky-500"
-                      >
-                        看詳細內容
-                      </button>
-                    </div>
-                  </div>
-
-                  {isDevMode && showBannerEditor && (
-                    <div className={`space-y-3 rounded-[1.25rem] border p-4 ${isCreatingNewDeparture ? 'border-emerald-200 bg-emerald-50' : 'border-sky-200 bg-sky-50'}`}>
-                      <div>
-                        <p className={`text-[10px] font-semibold tracking-[0.2em] ${isCreatingNewDeparture ? 'text-emerald-600' : 'text-sky-600'}`}>
-                          {isCreatingNewDeparture ? '新增梯次' : '目前編輯梯次'}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-600">
-                          {isCreatingNewDeparture
-                            ? '填入新梯次日期與資訊，按「建立新梯次」儲存'
-                            : `點下方出團日期卡片可切換這裡的內容${!selectedDeparture ? '（尚未選擇梯次，先新增或點選梯次）' : ''}`}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">團號</div>
-                          <input
-                            value={departureEditorGroupCode}
-                            onChange={(e) => setDepartureEditorGroupCode(e.target.value)}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">日期</div>
-                          <input
-                            type="date"
-                            value={departureEditorDate}
-                            onChange={(e) => setDepartureEditorDate(e.target.value)}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400 [color-scheme:light]"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">團費</div>
-                          <input
-                            value={departureEditorPrice}
-                            onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">明細</div>
-                          <button
-                            type="button"
-                            onClick={() => setShowPriceDetailModal(true)}
-                            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-xs text-gray-600 transition hover:border-sky-400 hover:text-gray-900"
-                          >
-                            編輯售價明細
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">天數</div>
-                          <input
-                            value={editDayCount}
-                            onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">夜數</div>
-                          <input
-                            id="night-count-input"
-                            value={editNightCount}
-                            onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">團位</div>
-                          <input
-                            type="number"
-                            value={editTripBanner.seats_total ?? ''}
-                            onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">可售</div>
-                          <input
-                            type="number"
-                            value={editTripBanner.seats_available ?? ''}
-                            onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">候補</div>
-                          <input
-                            type="number"
-                            min="0"
-                            value={departureEditorWaitlist}
-                            onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                          <div className="text-xs font-semibold text-gray-600">訂金</div>
-                          <input
-                            value={editTripBanner.deposit_label}
-                            onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="mb-1 text-xs text-gray-500">標籤（Enter 新增）</div>
-                        <div className="flex flex-wrap gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-2">
-                          {editTripBanner.tags.map((tag, i) => (
-                            <span key={`${tag}-${i}`} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-600">
-                              {tag}
-                              <button type="button" onClick={() => setEditTripBanner(prev => ({ ...prev, tags: prev.tags.filter((_, idx) => idx !== i) }))} className="ml-0.5 text-gray-400 hover:text-red-500">×</button>
-                            </span>
-                          ))}
-                          <input
-                            value={editBannerTagInput}
-                            onChange={e => setEditBannerTagInput(e.target.value)}
-                            placeholder="輸入標籤..."
-                            className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-gray-900 outline-none"
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const val = editBannerTagInput.trim();
-                                if (!val) return;
-                                setEditTripBanner(prev => ({ ...prev, tags: [...prev.tags, val] }));
-                                setEditBannerTagInput('');
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-
-          <div className="flex flex-wrap justify-center gap-2">
-                        <button
-                          onClick={isCreatingNewDeparture ? saveDepartureInfoAsFirstDeparture : (selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture)}
-                          disabled={saving}
-                          className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
-                        >
-                          {saving ? '儲存中...' : isCreatingNewDeparture ? '建立新梯次' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
-                        </button>
-                        {selectedDeparture && !isCreatingNewDeparture && (
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() => {
-                              setIsCreatingNewDeparture(true);
-                              setDepartureEditorDate('');
-                              setDepartureEditorGroupCode('');
-                              setDepartureEditorPrice('');
-                              setDepartureEditorWaitlist('');
-                            }}
-                            className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60"
-                          >
-                            + 新增梯次
-                          </button>
-                        )}
-                        {isCreatingNewDeparture && (
-                          <button
-                            type="button"
-                            onClick={() => setIsCreatingNewDeparture(false)}
-                            className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-100"
-                          >
-                            取消新增
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditTripBanner(EMPTY_TRIP_BANNER);
-                            setEditDayCount('');
-                            setEditNightCount('');
-                            setDepartureEditorGroupCode('');
-                            setDepartureEditorWaitlist('');
-                            setDepartureEditorPrice('');
-                            setDetailTitle('');
-                            setDetailSubtitle('');
-                            setDetailAdultPrice('');
-                            setDetailChildWithBedPrice('');
-                            setDetailChildNoBedPrice('');
-                            setDetailChildExtraBedPrice('');
-                            setDetailInfantPrice('');
-                            setDetailPricingNote('');
-                            setDetailDeposit('');
-                            setDetailSingleRoom('');
-                            setDetailVisaFee('');
-                            setDetailSurcharge('');
-                            setDetailGroupNote('');
-                            setDetailQuoteNote('');
-                            setDetailVisaNote('');
-                          }}
-                          className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
-                        >
-                          清空目前內容
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
             </div>
 
+            {/* Dev mode 出團資訊編輯器 */}
+            {isDevMode && showBannerEditor && (
+              <div className={`mt-3 space-y-3 rounded-[1.25rem] border p-4 ${isCreatingNewDeparture ? 'border-emerald-200 bg-emerald-50' : 'border-sky-200 bg-sky-50'}`}>
+                <div>
+                  <p className={`text-[10px] font-semibold tracking-[0.2em] ${isCreatingNewDeparture ? 'text-emerald-600' : 'text-sky-600'}`}>
+                    {isCreatingNewDeparture ? '新增梯次' : '目前編輯梯次'}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    {isCreatingNewDeparture
+                      ? '填入新梯次日期與資訊，按「建立新梯次」儲存'
+                      : `點上方表格列可切換${!selectedDeparture ? '（尚未選擇梯次，先新增或點選梯次）' : ''}`}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">團號</div>
+                    <input value={departureEditorGroupCode} onChange={(e) => setDepartureEditorGroupCode(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">日期</div>
+                    <input type="date" value={departureEditorDate} onChange={(e) => setDepartureEditorDate(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400 [color-scheme:light]" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">團費</div>
+                    <input value={departureEditorPrice} onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">天數</div>
+                    <input value={editDayCount} onChange={e => setEditDayCount(e.target.value.replace(/\D/g, '').slice(0, 2))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">夜數</div>
+                    <input id="night-count-input" value={editNightCount} onChange={e => setEditNightCount(e.target.value.replace(/\D/g, '').slice(0, 2))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">團位</div>
+                    <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">可售</div>
+                    <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">候補</div>
+                    <input type="number" min="0" value={departureEditorWaitlist} onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">訂金</div>
+                    <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1 text-xs text-gray-500">標籤（Enter 新增）</div>
+                  <div className="flex flex-wrap gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-2">
+                    {editTripBanner.tags.map((tag, i) => (
+                      <span key={`${tag}-${i}`} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-600">
+                        {tag}
+                        <button type="button" onClick={() => setEditTripBanner(prev => ({ ...prev, tags: prev.tags.filter((_, idx) => idx !== i) }))} className="ml-0.5 text-gray-400 hover:text-red-500">×</button>
+                      </span>
+                    ))}
+                    <input value={editBannerTagInput} onChange={e => setEditBannerTagInput(e.target.value)} placeholder="輸入標籤..." className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-gray-900 outline-none" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const val = editBannerTagInput.trim(); if (!val) return; setEditTripBanner(prev => ({ ...prev, tags: [...prev.tags, val] })); setEditBannerTagInput(''); } }} />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={isCreatingNewDeparture ? saveDepartureInfoAsFirstDeparture : (selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture)} disabled={saving} className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60">
+                    {saving ? '儲存中...' : isCreatingNewDeparture ? '建立新梯次' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
+                  </button>
+                  {selectedDeparture && !isCreatingNewDeparture && (
+                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
+                  )}
+                  {isCreatingNewDeparture && (
+                    <button type="button" onClick={() => setIsCreatingNewDeparture(false)} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-100">取消新增</button>
+                  )}
+                  <button type="button" onClick={() => { setEditTripBanner(EMPTY_TRIP_BANNER); setEditDayCount(''); setEditNightCount(''); setDepartureEditorGroupCode(''); setDepartureEditorWaitlist(''); setDepartureEditorPrice(''); setDetailTitle(''); setDetailSubtitle(''); setDetailAdultPrice(''); setDetailChildWithBedPrice(''); setDetailChildNoBedPrice(''); setDetailChildExtraBedPrice(''); setDetailInfantPrice(''); setDetailPricingNote(''); setDetailDeposit(''); setDetailSingleRoom(''); setDetailVisaFee(''); setDetailSurcharge(''); setDetailGroupNote(''); setDetailQuoteNote(''); setDetailVisaNote(''); }} className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100">清空目前內容</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
 
-      {showPriceDetailModal && createPortal(
-        <div
-          className="fixed inset-0 z-modal-top flex items-start justify-center overflow-y-auto bg-black/70 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-[calc(env(safe-area-inset-top)+10px)] backdrop-blur-sm sm:items-center sm:p-4"
-          onClick={() => setShowPriceDetailModal(false)}
-        >
-          <div
-            className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[1.25rem] border border-gray-200 bg-white shadow-2xl sm:rounded-[1.9rem]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-gradient-to-br from-sky-50 via-white to-amber-50 px-4 py-4 sm:px-6 sm:py-5">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-[10px] font-semibold tracking-[0.22em] text-sky-500">TOUR PRICE DETAIL</p>
-                  <h3 className="mt-1.5 text-xl font-bold text-gray-900 sm:text-2xl">{detailTitle || '團費與售價說明'}</h3>
-                  <p className="mt-1.5 text-sm font-semibold text-amber-600 sm:text-base">{selectedDeparture ? formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price) : (trip.price_range || '尚未設定')}</p>
-                  <p className="mt-1.5 text-xs text-gray-500 sm:text-sm">
-                    {selectedDeparture ? `${formatFullDate(selectedDeparture.departure_date)}${selectedDepartureInfo.group_code ? `｜團號 ${selectedDepartureInfo.group_code}` : ''}` : '尚未選擇出團日期'}
-                  </p>
-                  {(isDevMode ? detailSubtitle : priceDetailPreview.subtitle) && (
-                    <p className="mt-2 max-w-2xl text-xs leading-6 text-gray-600 sm:text-sm">{isDevMode ? detailSubtitle : priceDetailPreview.subtitle}</p>
-                  )}
-                </div>
-                <button onClick={() => setShowPriceDetailModal(false)} className="text-gray-400 transition hover:text-gray-700">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[calc(100dvh-170px)] space-y-4 overflow-y-auto p-4 sm:max-h-[calc(100dvh-220px)] sm:p-6">
-              {isDevMode ? (
-                <div className="space-y-4">
-                  <div className="grid gap-4 xl:grid-cols-[0.82fr_1.38fr]">
-                    <div className="space-y-4">
-                      <div className="rounded-[1.25rem] border border-gray-200 bg-gray-50 p-4">
-                        <div className="mb-3 flex items-center gap-2 border-b border-dashed border-gray-200 pb-3">
-                          <span className="rounded-sm bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-slate-900">團費</span>
-                          <p className="text-xs text-gray-500">設定大人、小孩、嬰兒的價格與補充說明</p>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
-                            <div className="text-xs font-semibold text-gray-700">團費</div>
-                            <input
-                              value={departureEditorPrice}
-                              onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))}
-                              placeholder="例如：100000"
-                              className="w-full max-w-[135px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
-                            />
-                          </div>
-                        <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
-                            <div className="text-xs font-semibold text-gray-700">大人</div>
-                                <input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} placeholder="例如：100,000元起" className="w-full max-w-[135px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                          </div>
-                          <div className="grid gap-2.5 lg:grid-cols-[104px_minmax(0,1fr)] lg:items-center">
-                            <div className="text-xs font-semibold text-gray-700">嬰兒</div>
-                            <div>
-                                <input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} placeholder="例如：洽詢" className="w-full max-w-[135px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                            </div>
-                          </div>
-                          <div className="grid gap-2.5 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start">
-                            <div className="pt-2 text-xs font-semibold text-gray-700">小孩</div>
-                            <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                              <div className="space-y-1">
-                                <div className="text-xs font-semibold text-gray-600">佔床</div>
-                                <input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} className="w-full max-w-[135px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-xs font-semibold text-gray-600">不佔床</div>
-                                <input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} className="w-full max-w-[135px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                              </div>
-                              <div className="space-y-1 sm:col-span-2 xl:col-span-1">
-                                <div className="text-xs font-semibold text-gray-600">加床</div>
-                                <input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="w-full max-w-[135px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[1.25rem] border border-gray-200 bg-gray-50 p-4">
-                        <div className="mb-3 flex items-center gap-2 border-b border-dashed border-gray-200 pb-3">
-                          <span className="rounded-sm bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-slate-900">每席</span>
-                          <p className="text-xs text-gray-500">設定每席相關附加費用與說明</p>
-                        </div>
-                        <div className="space-y-2.5">
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                              <div className="text-xs font-semibold text-gray-600">訂金</div>
-                              <input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} placeholder="例如：洽詢" className="w-full max-w-[180px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                            </div>
-                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                              <div className="text-xs font-semibold text-gray-600">單人房</div>
-                              <input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} placeholder="例如：洽詢" className="w-full max-w-[180px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                            </div>
-                          </div>
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                              <div className="text-xs font-semibold text-gray-600">簽證費</div>
-                              <input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="免簽證" className="w-full max-w-[180px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                            </div>
-                            <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                              <div className="text-xs font-semibold text-gray-600">附加費</div>
-                              <input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="售價已內含" className="w-full max-w-[180px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.25rem] border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3 flex items-center gap-2 border-b border-dashed border-gray-200 pb-3">
-                      <span className="rounded-sm bg-gray-200 px-2.5 py-0.5 text-xs font-semibold text-slate-900">說明</span>
-                      <p className="text-xs text-gray-500">設定團體、報價與簽證說明</p>
-                    </div>
-                    <div className="space-y-2.5">
-                      <div className="grid gap-2.5 md:grid-cols-[92px_1fr] md:items-start">
-                        <div className="pt-2 text-xs font-semibold text-gray-700">團體說明</div>
-                        <textarea value={detailGroupNote} onChange={(e) => setDetailGroupNote(e.target.value)} rows={3} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs leading-6 text-gray-900 outline-none focus:border-sky-400" placeholder="例如：10人成團，16人滿團" />
-                      </div>
-                      <div className="grid gap-2.5 md:grid-cols-[92px_1fr] md:items-start">
-                        <div className="pt-2 text-xs font-semibold text-gray-700">報價說明</div>
-                        <textarea value={detailQuoteNote} onChange={(e) => setDetailQuoteNote(e.target.value)} rows={3} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs leading-6 text-gray-900 outline-none focus:border-sky-400" placeholder="例如：不含導遊領隊服務費，每人每日300元" />
-                      </div>
-                      <div className="grid gap-2.5 md:grid-cols-[92px_1fr] md:items-start">
-                        <div className="pt-2 text-xs font-semibold text-gray-700">簽證說明</div>
-                        <textarea value={detailVisaNote} onChange={(e) => setDetailVisaNote(e.target.value)} rows={3} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs leading-6 text-gray-900 outline-none focus:border-sky-400" placeholder="例如：持台灣護照可免簽入境" />
-                      </div>
-                    </div>
-                  </div>
-                  </div>
-
-                  <div className="flex flex-wrap justify-end gap-2 pt-1">
-                    <button type="button" onClick={() => setShowPriceDetailModal(false)} className="rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">取消</button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        let saved = false;
-                        if (selectedDeparture) {
-                          saved = await saveSelectedDepartureInfo();
-                        } else {
-                          saved = await saveDepartureInfoAsFirstDeparture();
-                        }
-                        if (saved) {
-                          setShowPriceDetailModal(false);
-                        }
-                      }}
-                      disabled={saving}
-                      className="rounded-full bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
-                    >
-                      {saving ? '儲存中...' : '儲存明細'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6 bg-white px-6 py-6 text-slate-800 sm:px-8">
-                  <div className="grid gap-6 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr] md:gap-8">
-                    <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">團費</span></div>
-                    <div className="space-y-5 text-sm md:pl-2">
-                        <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-center">
-                          <div className="font-semibold text-slate-700">大人</div>
-                          <div className="grid gap-1.5 text-slate-500 md:grid-cols-[92px_1fr] md:items-center">
-                            <span>12歲以上</span>
-                            <span className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-bold text-orange-500"><span></span><span>{displayAdultUnit(priceDetailPreview.adultPrice)}</span></span>
-                          </div>
-                        </div>
-                      <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-start">
-                        <div className="font-semibold text-slate-700">小孩</div>
-                          <div className="grid gap-1.5 md:grid-cols-[92px_1fr] md:items-start">
-                            <div className="text-slate-500">2~未滿12歲</div>
-                            <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
-                               <div><p className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-semibold"><span className="text-slate-500">佔床</span><span className="text-sky-600">{displayChildPrice(priceDetailPreview.childWithBedPrice)}</span></p></div>
-                               <div><p className="inline-grid grid-cols-[52px_1fr] items-center gap-1 font-semibold"><span className="text-slate-500">不佔床</span><span className="text-sky-600">{displayChildPrice(priceDetailPreview.childNoBedPrice)}</span></p></div>
-                               <div><p className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-semibold"><span className="text-slate-500">加床</span><span className="text-sky-600">{displayChildPrice(priceDetailPreview.childExtraBedPrice)}</span></p></div>
-                            </div>
-                           </div>
-                        </div>
-                         <div className="grid gap-3 md:grid-cols-[88px_1fr] md:items-center">
-                           <div className="font-semibold text-slate-700">嬰兒</div>
-                           <div className="grid gap-1.5 text-slate-500 md:grid-cols-[92px_1fr] md:items-center">
-                             <span>2歲以下</span>
-                             <span className="inline-grid grid-cols-[42px_1fr] items-center gap-1 font-semibold text-sky-600"><span></span><span>{displayInfantUnit(priceDetailPreview.infantPrice)}</span></span>
-                           </div>
-                         </div>
-                      {priceDetailPreview.pricingNote && <p className="text-xs text-slate-500">{priceDetailPreview.pricingNote}</p>}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-6 border-b border-dashed border-slate-300 pb-5 md:grid-cols-[90px_1fr] md:gap-8">
-                    <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">每席</span></div>
-                    <div className="grid gap-x-10 gap-y-4 sm:grid-cols-2 text-sm md:pl-2">
-                       <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">訂金</span><span className="font-semibold text-sky-600">{formatDepositText(priceDetailPreview.deposit || String(editTripBanner.deposit_label || ''))}</span></div>
-                         <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">單人房</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
-                         <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">簽證費</span><span className="font-semibold text-sky-600">{displayVisaFeeText(priceDetailPreview.visaFee)}</span></div>
-                         <div className="flex items-center gap-5"><span className="min-w-[56px] text-slate-600">附加費</span><span className="font-semibold text-sky-600">{displaySurchargeText(priceDetailPreview.surcharge)}</span></div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-[90px_1fr]">
-                    <div><span className="inline-block bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">說明</span></div>
-                    <div className="space-y-4 text-sm leading-7">
-                       <div className="grid gap-1 md:grid-cols-[96px_1fr]"><div className="font-semibold text-slate-700">團體說明</div><div className="text-slate-600">{priceDetailPreview.groupNote || '—'}</div></div>
-                       <div className="grid gap-1 md:grid-cols-[96px_1fr]"><div className="font-semibold text-slate-700">報價說明</div><div className="text-slate-600">{priceDetailPreview.quoteNote || '—'}</div></div>
-                       <div className="grid gap-1 md:grid-cols-[96px_1fr]"><div className="font-semibold text-slate-700">簽證說明</div><div className="text-slate-600">{priceDetailPreview.visaNote || '—'}</div></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* DevMode 編輯面板 */}
       {/* 編輯彈窗 */}
@@ -1557,8 +1376,108 @@ export default function TripPage() {
 
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
-        {/* 出團日期 */}
-        {(departureDates.length > 0 || isDevMode) && (
+
+        {/* ═══ 航班資訊 ═══ */}
+        {hasFlightData && selectedDeparture && (
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-gray-500">參考航班</h2>
+            <p className="mb-2 text-center text-xs text-amber-600">此為本行程預定的航班時間，實際航班以團體確認的航班編號與飛行時間為準。</p>
+
+            {selectedDeparture.flight_segments && selectedDeparture.flight_segments.length > 0 ? (
+              <>
+                {/* 桌面版航班表格 */}
+                <div className="hidden overflow-hidden rounded-lg border border-gray-200 sm:block">
+                  <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-gray-50">
+                    <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">航段</div>
+                    <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">班機日期・航空公司及航班</div>
+                    <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">起飛時間及機場</div>
+                    <div className="border-b border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">抵達時間及機場</div>
+                  </div>
+                  {selectedDeparture.flight_segments.map((seg, i) => {
+                    const total = selectedDeparture.flight_segments!.length;
+                    const isFirst = i === 0;
+                    const isLast = i === total - 1 && total > 1;
+                    const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
+                    const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
+                    const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
+                    return (
+                      <div key={i} className="grid grid-cols-[84px_1.4fr_1fr_1fr] items-stretch border-b border-gray-200">
+                        <div className="flex items-center justify-center gap-2 border-r border-gray-200 px-3 py-3">
+                          <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                          <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center border-r border-gray-200 px-3 py-3 text-center leading-tight">
+                          {segDate && <div className="text-xs text-gray-500">{segDate}</div>}
+                          <div className="text-base font-bold text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-600">{seg.flight_number}</span>}</div>
+                        </div>
+                        <div className="flex flex-col justify-center border-r border-gray-200 px-3 py-3">
+                          <div className="flex items-baseline gap-2">
+                            {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
+                            {seg.dep_airport && <span className="text-xs text-gray-600">{seg.dep_airport}</span>}
+                          </div>
+                        </div>
+                        <div className="flex flex-col justify-center px-3 py-3">
+                          <div className="flex items-baseline gap-2">
+                            {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
+                            {seg.arr_airport && <span className="text-xs text-gray-600">{seg.arr_airport}</span>}
+                            {seg.next_day && <span className="ml-1 text-[10px] text-amber-600">+1</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* 手機版航班卡片 */}
+                <div className="space-y-2 sm:hidden">
+                  {selectedDeparture.flight_segments.map((seg, i) => {
+                    const total = selectedDeparture.flight_segments!.length;
+                    const isFirst = i === 0;
+                    const isLast = i === total - 1 && total > 1;
+                    const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
+                    const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
+                    return (
+                      <div key={`m-${i}`} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <div className="mb-1 flex items-center gap-2">
+                          <svg className={`h-3.5 w-3.5 shrink-0 ${isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500"} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                          <span className={`text-xs font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
+                        </div>
+                        {segDate && <div className="text-[11px] text-gray-500">{segDate}</div>}
+                        <div className="text-xs text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1 text-gray-500">{seg.flight_number}</span>}</div>
+                        <div className="mt-1 text-xs text-gray-600">起飛：{seg.dep_time || '—'} {seg.dep_airport || ''}</div>
+                        <div className="text-xs text-gray-600">抵達：{seg.arr_time || '—'} {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              /* 舊格式：去程 / 回程 */
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                {(selectedDeparture.outbound_flight || selectedDeparture.outbound_time) && (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-gray-100 px-4 py-3">
+                    <span className="text-xs font-bold text-sky-600">去程</span>
+                    <span className="text-xs text-gray-700">{formatFullDate(selectedDeparture.departure_date)}</span>
+                    <span className="text-xs text-gray-700">{selectedDeparture.airline} {selectedDeparture.outbound_flight}</span>
+                    <span className="text-xs"><span className="font-semibold text-gray-900">{selectedDeparture.outbound_time}</span> {selectedDeparture.outbound_from}</span>
+                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{selectedDeparture.outbound_arrival_time}</span> {selectedDeparture.outbound_to}{selectedDeparture.outbound_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
+                  </div>
+                )}
+                {(selectedDeparture.return_flight || selectedDeparture.return_time) && (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3">
+                    <span className="text-xs font-bold text-amber-600">回程</span>
+                    <span className="text-xs text-gray-700">{selectedDeparture.return_date ? formatFullDate(selectedDeparture.return_date) : '—'}</span>
+                    <span className="text-xs text-gray-700">{selectedDeparture.airline} {selectedDeparture.return_flight}</span>
+                    <span className="text-xs"><span className="font-semibold text-gray-900">{selectedDeparture.return_time}</span> {selectedDeparture.return_from}</span>
+                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{selectedDeparture.return_arrival_time}</span> {selectedDeparture.return_to}{selectedDeparture.return_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Dev mode: 出團梯次管理（航班編輯用） */}
+        {isDevMode && (
           <DepartureDates
             tripId={tripId}
             tripTitle={trip.title}
