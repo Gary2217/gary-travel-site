@@ -145,8 +145,6 @@ export default function TripPage() {
   const [detailVisaNote, setDetailVisaNote] = useState('');
   const [showPriceDetailModal, setShowPriceDetailModal] = useState(false);
   const [showBannerEditor, setShowBannerEditor] = useState(false);
-  const [showTextEditor, setShowTextEditor] = useState(false);
-  const [editDaySections, setEditDaySections] = useState<{ num: number; text: string }[]>([]);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [isCreatingNewDeparture, setIsCreatingNewDeparture] = useState(false);
 
@@ -1160,68 +1158,6 @@ export default function TripPage() {
                 </div>
             </div>
 
-            {(
-              <div className="mt-2 min-h-[240px] rounded-xl border border-gray-200 bg-white p-2.5 shadow-sm">
-                <div className="mb-1.5 flex items-start justify-between gap-3">
-                  <h3 className="text-sm font-bold text-sky-600">行程概要</h3>
-                  {isDevMode && (
-                    <button
-                      onClick={() => {
-                        const fullText = trip.document_text || '';
-                        const dayPattern = /第\s*(\d+)\s*天/g;
-                        const positions: { num: number; index: number }[] = [];
-                        let m;
-                        while ((m = dayPattern.exec(fullText)) !== null) {
-                          const dayNum = parseInt(m[1]);
-                          if (!positions.find(p => p.num === dayNum)) positions.push({ num: dayNum, index: m.index });
-                        }
-                        if (positions.length > 0) {
-                          const sections = positions.map((pos, i) => {
-                            const end = i + 1 < positions.length ? positions[i + 1].index : fullText.length;
-                            return { num: pos.num, text: fullText.slice(pos.index, end).trim() };
-                          });
-                          setEditDaySections(sections);
-                        } else {
-                          const durationMatch = trip.duration?.match(/(\d+)/);
-                          const dayCount = durationMatch ? parseInt(durationMatch[1]) : 5;
-                          setEditDaySections(Array.from({ length: dayCount }, (_, i) => ({ num: i + 1, text: '' })));
-                        }
-                        setShowTextEditor(true);
-                      }}
-                      className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[11px] font-semibold text-white transition hover:bg-emerald-500"
-                    >
-                      編輯行程概要
-                    </button>
-                  )}
-                </div>
-                {!trip.document_text && (
-                  <p className="py-4 text-center text-sm text-gray-400">尚未填寫行程概要</p>
-                )}
-                {trip.document_text && (() => {
-                  const lines = trip.document_text!.split('\n').filter(l => l.trim());
-                  const grouped: { num: string; lines: string[] }[] = [];
-                  for (const line of lines) {
-                    const dayMatch = line.match(/^第\s*(\d+)\s*天\s*/);
-                    if (dayMatch) {
-                      const content = line.replace(/^第\s*\d+\s*天\s*/, '').trim();
-                      grouped.push({ num: dayMatch[1], lines: content ? [content] : [] });
-                    } else if (grouped.length > 0) {
-                      grouped[grouped.length - 1].lines.push(line.trim());
-                    }
-                  }
-                  return (
-                    <div className="space-y-1">
-                      {grouped.map((day) => (
-                        <div key={day.num} className="flex items-start gap-1.5 px-1 py-0.5">
-                          <span className="mt-px shrink-0 rounded bg-sky-100 px-1.5 py-px text-[9px] font-bold text-sky-600">第{day.num}天</span>
-                          <span className="text-[11.5px] leading-[1.45] text-gray-700">{day.lines.join(' ')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1613,107 +1549,6 @@ export default function TripPage() {
               className="mt-3 w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
             >
               {saving ? '儲存中...' : '儲存'}
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* 行程概要編輯彈窗 */}
-      {showTextEditor && createPortal(
-        <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={() => setShowTextEditor(false)}>
-          <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl"
-            onClick={e => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-900">編輯行程概要</h3>
-              <button onClick={() => setShowTextEditor(false)} className="text-gray-400 hover:text-gray-700">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <p className="mb-3 text-xs text-gray-500">每天的行程獨立編輯，格式範例：第1天【桃園機場】—【目的地】</p>
-            <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
-              {editDaySections.map((sec, i) => (
-                <div key={sec.num} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <label className="text-xs font-bold text-sky-600">第{sec.num}天</label>
-                    {editDaySections.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditDaySections(prev => prev.filter((_, idx) => idx !== i));
-                        }}
-                        className="text-[10px] text-red-400/70 transition hover:text-red-400"
-                      >
-                        刪除此天
-                      </button>
-                    )}
-                  </div>
-                    <textarea
-                    value={sec.text}
-                    onChange={e => {
-                      setEditDaySections(prev => {
-                        const updated = [...prev];
-                        updated[i] = { ...sec, text: e.target.value };
-                        return updated;
-                      });
-                    }}
-                    rows={3}
-                    placeholder={`第${sec.num}天【景點A】—【景點B】—【景點C】`}
-                    className="w-full rounded border border-gray-200 bg-white px-2 py-1.5 text-sm leading-relaxed text-gray-900 outline-none focus:border-sky-400"
-                  />
-                </div>
-              ))}
-              {/* 新增天數按鈕 */}
-              <button
-                type="button"
-                onClick={() => {
-                  const maxNum = editDaySections.length > 0
-                    ? Math.max(...editDaySections.map(s => s.num))
-                    : 0;
-                  setEditDaySections(prev => [...prev, { num: maxNum + 1, text: '' }]);
-                }}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 bg-gray-50 py-2.5 text-xs text-gray-500 transition hover:border-sky-400 hover:text-sky-600"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                新增天數
-              </button>
-            </div>
-            <button
-              disabled={saving}
-              onClick={async () => {
-                setSaving(true);
-                // 組合所有天數為一段文字
-                const combinedText = editDaySections
-                  .filter(s => s.text.trim())
-                  .map(s => {
-                    // 如果使用者沒有自己寫「第X天」開頭，自動補上
-                    const trimmed = s.text.trim();
-                    if (/^第\s*\d+\s*天/.test(trimmed)) return trimmed;
-                    return `第${s.num}天 ${trimmed}`;
-                  })
-                  .join('\n');
-                const res = await fetch(`/api/trips/${tripId}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ document_text: combinedText }),
-                });
-                if (res.ok) {
-                  setTrip(prev => prev ? { ...prev, document_text: combinedText } : prev);
-                  setShowTextEditor(false);
-                  showSaveSuccess('儲存成功');
-                } else {
-                  alert('儲存失敗，請再試一次');
-                }
-                setSaving(false);
-              }}
-              className="mt-4 w-full rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
-            >
-              {saving ? '儲存中...' : '儲存行程概要'}
             </button>
           </div>
         </div>,
