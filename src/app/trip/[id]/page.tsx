@@ -975,6 +975,36 @@ export default function TripPage() {
                 <div className="mt-2 text-xs">
                   <div className="flex items-center gap-1.5"><span className="text-gray-500">單人房差</span><span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span></div>
                 </div>
+
+                {/* Dev mode 售價編輯 */}
+                {isDevMode && showPriceDetailModal && (
+                  <div className="mt-3 space-y-3 rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+                    <p className="text-[10px] font-semibold tracking-[0.2em] text-sky-600">售價明細編輯</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">大人</label><input value={detailAdultPrice} onChange={(e) => setDetailAdultPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">小孩佔床</label><input value={detailChildWithBedPrice} onChange={(e) => setDetailChildWithBedPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">小孩不佔床</label><input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">加床</label><input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">嬰兒</label><input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">團費</label><input value={departureEditorPrice} onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">訂金</label><input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">單人房差</label><input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">簽證費</label><input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">附加費</label><input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">團體說明</label><textarea value={detailGroupNote} onChange={(e) => setDetailGroupNote(e.target.value)} rows={2} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs leading-5 outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">報價說明</label><textarea value={detailQuoteNote} onChange={(e) => setDetailQuoteNote(e.target.value)} rows={2} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs leading-5 outline-none focus:border-sky-400" /></div>
+                      <div><label className="mb-0.5 block text-[10px] text-gray-500">簽證說明</label><textarea value={detailVisaNote} onChange={(e) => setDetailVisaNote(e.target.value)} rows={2} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs leading-5 outline-none focus:border-sky-400" /></div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setShowPriceDetailModal(false)} className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] text-gray-600 hover:bg-gray-50">收起</button>
+                      <button type="button" disabled={saving} onClick={async () => { const ok = selectedDeparture ? await saveSelectedDepartureInfo() : await saveDepartureInfoAsFirstDeparture(); if (ok) setShowPriceDetailModal(false); }} className="rounded-full bg-sky-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-sky-500 disabled:opacity-60">{saving ? '儲存中...' : '儲存售價'}</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1063,25 +1093,34 @@ export default function TripPage() {
                 </div>
               )}
 
-              {/* 標籤貼 + 底部價格 */}
-              {editTripBanner.tags.length > 0 && (
-                <div className="border-t border-gray-100 px-4 pt-2.5 pb-0">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
-                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
-                    限時折扣
-                  </span>
-                </div>
-              )}
+              {/* 折扣券 + 底部價格 */}
+              <div className="border-t border-gray-100 px-4 pt-2.5 pb-0">
+                <span className="relative inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 py-1 pl-3 pr-4 text-xs font-bold text-white shadow-sm before:absolute before:-left-1 before:top-1/2 before:h-2.5 before:w-2.5 before:-translate-y-1/2 before:rounded-full before:bg-white after:absolute after:-right-1 after:top-1/2 after:h-2.5 after:w-2.5 after:-translate-y-1/2 after:rounded-full after:bg-white">
+                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
+                  限時折500
+                </span>
+              </div>
               <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 mt-2">
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-gray-700">團費</div>
-                  <div>
-                    <span className="text-lg font-bold text-amber-600">
-                      {selectedDeparture
-                        ? formatDisplayPrice(departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
-                        : (trip.price_range || '洽詢')}
-                    </span>
-                    <span className="ml-1 text-xs text-gray-500">起/人</span>
+                  <div className="flex items-baseline gap-1.5">
+                    {(() => {
+                      const currentPrice = selectedDeparture
+                        ? (departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
+                        : null;
+                      const originalPrice = currentPrice ? currentPrice + 500 : null;
+                      return (
+                        <>
+                          {originalPrice && (
+                            <span className="relative text-sm text-gray-400"><span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-2 border-red-500 -rotate-12"></span></span>NT$ {originalPrice.toLocaleString('zh-TW')}</span>
+                          )}
+                          <span className="text-lg font-bold text-amber-600">
+                            {currentPrice ? formatDisplayPrice(currentPrice) : (trip.price_range || '洽詢')}
+                          </span>
+                        </>
+                      );
+                    })()}
+                    <span className="text-xs text-gray-500">起/人</span>
                   </div>
                 </div>
                 {editTripBanner.deposit_label && (
@@ -1379,14 +1418,20 @@ export default function TripPage() {
 
         {/* ═══ 航班資訊 ═══ */}
         {hasFlightData && selectedDeparture && (
-          <section className="mb-8">
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-gray-500">參考航班</h2>
-            <p className="mb-2 text-center text-xs text-amber-600">此為本行程預定的航班時間，實際航班以團體確認的航班編號與飛行時間為準。</p>
+          <section className="mb-8 flex gap-0">
+            {/* 左側直排標籤 */}
+            <div className="hidden shrink-0 sm:flex sm:flex-col sm:items-center sm:justify-center sm:rounded-l-xl sm:border sm:border-r-0 sm:border-sky-200 sm:bg-sky-50 sm:px-3 sm:py-4">
+              <span className="text-base font-bold tracking-[0.3em] text-sky-600" style={{writingMode:'vertical-rl'}}>參考航班</span>
+            </div>
+            {/* 手機版標題 */}
+            <h2 className="mb-3 text-sm font-bold text-sky-600 sm:hidden">✈ 參考航班</h2>
+            <div className="min-w-0 flex-1">
+            <p className="mb-2 rounded-t-xl border border-b-0 border-gray-200 bg-gray-50 px-4 py-2 text-center text-xs text-amber-600 sm:rounded-tl-none">此為本行程預定的航班時間，實際航班以團體確認的航班編號與飛行時間為準。</p>
 
             {selectedDeparture.flight_segments && selectedDeparture.flight_segments.length > 0 ? (
               <>
                 {/* 桌面版航班表格 */}
-                <div className="hidden overflow-hidden rounded-lg border border-gray-200 sm:block">
+                <div className="hidden overflow-hidden rounded-r-lg rounded-bl-lg border border-gray-200 sm:block">
                   <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-gray-50">
                     <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">航段</div>
                     <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">班機日期・航空公司及航班</div>
@@ -1473,6 +1518,7 @@ export default function TripPage() {
                 )}
               </div>
             )}
+            </div>
           </section>
         )}
 
