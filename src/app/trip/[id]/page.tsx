@@ -1147,7 +1147,7 @@ export default function TripPage() {
                   </div>
                 )}
                 <a
-                  href={lineMessageHref(`我想詢問「${trip.title}」${selectedDeparture ? ` ${formatFullDate(selectedDeparture.departure_date)} 出發` : ''}`)}
+                  href={lineHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
