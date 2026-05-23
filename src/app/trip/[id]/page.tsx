@@ -1059,9 +1059,9 @@ export default function TripPage() {
                       >
                         <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">
                           {formatFullDate(d.departure_date)}
-                          {d.label === '保證出團' && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">保證出團</span>}
-                          {d.label === '即將成團' && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">即將成團</span>}
-                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-600">{d.label}</span>}
+                          {d.label === '保證出團' && <span className="ml-8 inline-flex items-center rounded bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">保證出團</span>}
+                          {d.label === '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">即將成團</span>}
+                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
                         </td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
