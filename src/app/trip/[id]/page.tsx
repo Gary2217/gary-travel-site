@@ -148,6 +148,7 @@ export default function TripPage() {
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [isCreatingNewDeparture, setIsCreatingNewDeparture] = useState(false);
   const [tableActiveMonth, setTableActiveMonth] = useState<string>("all");
+  const [departureEditorLabel, setDepartureEditorLabel] = useState('');
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -489,6 +490,7 @@ export default function TripPage() {
       setDepartureEditorPrice('');
       setDepartureEditorGroupCode('');
       setDepartureEditorWaitlist('');
+      setDepartureEditorLabel('');
       setDetailTitle(DEFAULT_PRICE_DETAIL.title);
       setDetailSubtitle(DEFAULT_PRICE_DETAIL.subtitle);
       setDetailAdultPrice(DEFAULT_PRICE_DETAIL.adultPrice);
@@ -509,6 +511,7 @@ export default function TripPage() {
 
     setDepartureEditorDate(selectedDeparture.departure_date);
     setDepartureEditorPrice(selectedDeparture.price ? String(selectedDeparture.price) : '');
+    setDepartureEditorLabel(selectedDeparture.label || '');
 
     const infoSource = selectedDepartureInfo;
 
@@ -583,6 +586,7 @@ export default function TripPage() {
       price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
+      label: departureEditorLabel || null,
     };
 
     try {
@@ -693,6 +697,7 @@ export default function TripPage() {
       price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
+      label: departureEditorLabel || null,
     };
 
     try {
@@ -1012,13 +1017,16 @@ export default function TripPage() {
           {/* 右欄：出發日期表格 */}
           <div ref={rightColumnRef} className="mt-4 lg:mt-0">
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-              {/* Dev mode 按鈕 */}
-              {isDevMode && (
-                <div className="flex justify-end gap-1.5 px-4 pt-3">
-                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
-                  <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
-                </div>
-              )}
+              {/* 出團資訊標題 + Dev mode 按鈕 */}
+              <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+                <h3 className="text-base font-bold text-gray-900">出團資訊</h3>
+                {isDevMode && (
+                  <div className="flex shrink-0 gap-1.5">
+                    <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
+                    <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
+                  </div>
+                )}
+              </div>
 
               {/* 月份篩選 */}
               {departureMonthKeys.length > 1 && (
@@ -1052,7 +1060,12 @@ export default function TripPage() {
                         onClick={() => setSelectedDepartureId(d.id)}
                         className={`cursor-pointer transition ${isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}
                       >
-                        <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">{formatFullDate(d.departure_date)}</td>
+                        <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">
+                          {formatFullDate(d.departure_date)}
+                          {d.label === '保證出團' && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">保證出團</span>}
+                          {d.label === '即將成團' && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">即將成團</span>}
+                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-600">{d.label}</span>}
+                        </td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
                         <td className="px-2 py-2.5 text-center">{soldOut ? <span className="text-[11px] text-gray-400">已售罄</span> : <span className="rounded bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-600">報名</span>}</td>
@@ -1072,7 +1085,12 @@ export default function TripPage() {
                     return (
                       <button key={d.id} type="button" onClick={() => setSelectedDepartureId(d.id)} className={`flex w-full items-center justify-between px-4 py-3 text-left transition ${isSelected ? "border-l-[3px] border-l-sky-500 bg-sky-50" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{formatFullDate(d.departure_date)}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatFullDate(d.departure_date)}
+                            {d.label === '保證出團' && <span className="ml-1.5 rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-600">保證出團</span>}
+                            {d.label === '即將成團' && <span className="ml-1.5 rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-600">即將成團</span>}
+                            {d.label && d.label !== '保證出團' && d.label !== '即將成團' && <span className="ml-1.5 rounded bg-sky-100 px-1 py-0.5 text-[9px] font-bold text-sky-600">{d.label}</span>}
+                          </div>
                           <div className="mt-0.5 flex gap-2 text-[11px] text-gray-500">
                             {d.seats_total > 0 && <span>團位 {d.seats_total}</span>}
                             {(d.seats_available ?? 0) > 0 && <span>可售 {d.seats_available}</span>}
@@ -1192,6 +1210,17 @@ export default function TripPage() {
                   <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                     <div className="text-xs font-semibold text-gray-600">候補</div>
                     <input type="number" min="0" value={departureEditorWaitlist} onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">標籤</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['保證出團', '即將成團'].map((lbl) => (
+                        <button key={lbl} type="button" onClick={() => setDepartureEditorLabel(departureEditorLabel === lbl ? '' : lbl)} className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${departureEditorLabel === lbl ? (lbl === '保證出團' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white') : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{lbl}</button>
+                      ))}
+                      {departureEditorLabel && departureEditorLabel !== '保證出團' && departureEditorLabel !== '即將成團' && (
+                        <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-600">{departureEditorLabel}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
