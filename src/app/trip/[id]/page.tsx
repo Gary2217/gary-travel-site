@@ -1017,16 +1017,13 @@ export default function TripPage() {
           {/* 右欄：出發日期表格 */}
           <div ref={rightColumnRef} className="mt-4 lg:mt-0">
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-              {/* 出團資訊標題 + Dev mode 按鈕 */}
-              <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-                <h3 className="text-base font-bold text-gray-900">出團資訊</h3>
-                {isDevMode && (
-                  <div className="flex shrink-0 gap-1.5">
-                    <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
-                    <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
-                  </div>
-                )}
-              </div>
+              {/* Dev mode 按鈕 */}
+              {isDevMode && (
+                <div className="flex justify-end gap-1.5 px-4 pt-2.5 pb-1">
+                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
+                  <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
+                </div>
+              )}
 
               {/* 月份篩選 */}
               {departureMonthKeys.length > 1 && (
@@ -1039,11 +1036,11 @@ export default function TripPage() {
                 </div>
               )}
 
-              {/* 桌面版表頭 — 用 table 確保對齊 */}
+              {/* 桌面版表頭 — 出團資訊在表頭列 */}
               <table className="hidden w-full sm:table">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-sm text-gray-900">
-                    <th className="py-2.5 pl-5 pr-2 text-left font-bold">出發日</th>
+                    <th className="py-2.5 pl-5 pr-2 text-left font-bold">出團日期</th>
                     <th className="px-2 py-2.5 text-center font-bold" style={{width:56}}>團位</th>
                     <th className="px-2 py-2.5 text-center font-bold" style={{width:56}}>可售</th>
                     <th className="px-2 py-2.5 text-center font-bold" style={{width:64}}>狀態</th>
