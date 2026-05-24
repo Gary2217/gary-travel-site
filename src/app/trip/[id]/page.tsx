@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getSiteLogo, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import TripCard from "@/components/TripCard";
 import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
 import DayItinerary from "@/components/DayItinerary";
@@ -149,6 +150,10 @@ export default function TripPage() {
   const [isCreatingNewDeparture, setIsCreatingNewDeparture] = useState(false);
   const [tableActiveMonth, setTableActiveMonth] = useState<string>("all");
   const [departureEditorLabel, setDepartureEditorLabel] = useState('');
+  const [recommendedTrips, setRecommendedTrips] = useState<Trip[]>([]);
+  const [recommendedLoading, setRecommendedLoading] = useState(false);
+  const recommendRef = useRef<HTMLDivElement>(null);
+  const recommendFetched = useRef(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -540,6 +545,38 @@ export default function TripPage() {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
   }, []);
 
+  // 懶載入推薦行程（滾動到底部附近才觸發）
+  useEffect(() => {
+    if (!trip || recommendFetched.current || recommendedTrips.length > 0) return;
+    const el = recommendRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !recommendFetched.current) {
+          recommendFetched.current = true;
+          setRecommendedLoading(true);
+          (async () => {
+            try {
+              const dest = await getDestination(trip.destination_id);
+              if (!dest.region_id || !dest.regions?.category_label) return;
+              const related = await getRelatedTrips(dest.region_id, dest.regions.category_label, trip.destination_id);
+              const regionFiltered = (related.regionTrips || []).filter((t: Trip) => t.id !== tripId);
+              const categoryFiltered = (related.categoryTrips || []).filter((t: Trip) => t.id !== tripId && !regionFiltered.some((r: Trip) => r.id === t.id));
+              const combined = [...regionFiltered, ...categoryFiltered].slice(0, 4);
+              setRecommendedTrips(combined);
+            } catch { /* 靜默 */ }
+            finally { setRecommendedLoading(false); }
+          })();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '400px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [trip, tripId, recommendedTrips.length]);
+
   const buildDepartureInfoPayload = (): DepartureBannerInfo => ({
     group_code: departureEditorGroupCode.trim(),
     waitlist_count: departureEditorWaitlist ? Number(departureEditorWaitlist) : 0,
@@ -871,9 +908,9 @@ export default function TripPage() {
           )}
         </div>
 
-        <div className="lg:grid lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-6">
-          {/* 左欄：主圖 + 產品資訊 */}
-          <div className="min-w-0">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-6">
+          {/* 主圖 */}
+          <div className="order-1 min-w-0 lg:order-none lg:col-start-1 lg:row-start-1">
             <SideMediaCarousel
               tripId={tripId}
               fallbackImageUrl={editTripBanner.side_image_url || ""}
@@ -881,6 +918,10 @@ export default function TripPage() {
               isDevMode={isDevMode}
               videoMatchHeight={videoMatchHeight}
             />
+          </div>
+
+          {/* 產品資訊 — 手機排第3、桌面左欄第2行 */}
+          <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
             <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
                 <div className="flex items-center gap-2.5">
                   <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
@@ -1014,8 +1055,8 @@ export default function TripPage() {
             </div>
           </div>
 
-          {/* 右欄：出發日期表格 */}
-          <div ref={rightColumnRef} className="mt-4 lg:mt-0">
+          {/* 出發日期 — 手機排第2、桌面右欄跨列 */}
+          <div ref={rightColumnRef} className="order-2 mt-3 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* Dev mode 按鈕 */}
               {isDevMode && (
@@ -1683,8 +1724,53 @@ export default function TripPage() {
 
       {/* 按鈕區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-6 sm:px-4 md:px-8">
+
+        {/* 懶載入偵測哨兵 */}
+        <div ref={recommendRef} />
+
+        {/* 更多推薦行程 */}
+        {recommendedTrips.length > 0 && (
+          <section className="mt-10">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 px-3 py-1 text-sm font-bold text-white shadow-sm">
+                <span>👍</span>
+                <span>推薦</span>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">更多推薦行程</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {recommendedTrips.map((rt) => (
+                <div key={rt.id} className="relative">
+                  <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
+                    <span>👍</span>
+                    <span>推薦</span>
+                  </div>
+                  <TripCard
+                    id={rt.id}
+                    title={rt.title}
+                    duration={rt.duration}
+                    price_range={rt.price_range}
+                    cover_image_url={rt.cover_image_url}
+                    document_url={rt.document_url}
+                    document_is_available={rt.document_is_available}
+                    departure_dates={rt.departure_dates}
+                    isDevMode={false}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {recommendedLoading && (
+          <div className="mt-10 flex items-center justify-center py-6">
+            <div className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
+            <span className="ml-2 text-sm text-gray-500">載入推薦行程...</span>
+          </div>
+        )}
+
         {/* 分享 & 下載 */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+        <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:gap-3">
           <button
             onClick={() => setShowShareGate(true)}
             className="flex flex-1 items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 active:scale-[0.98] md:py-3"
