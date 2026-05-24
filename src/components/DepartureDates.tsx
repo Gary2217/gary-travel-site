@@ -349,10 +349,10 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [formDate, setFormDate] = useState(today);
   const [formSegments, setFormSegments] = useState<FlightSegment[]>([]);
 
-  const emptySegment = (): FlightSegment => ({
-    date: "", airline: "", flight_number: "", dep_time: "", dep_airport: "", arr_time: "", arr_airport: "", next_day: false,
+  const emptySegment = (date?: string): FlightSegment => ({
+    date: date || "", airline: "", flight_number: "", dep_time: "", dep_airport: "", arr_time: "", arr_airport: "", next_day: false,
   });
-  const addSegment = () => setFormSegments((prev) => [...prev, emptySegment()]);
+  const addSegment = () => setFormSegments((prev) => [...prev, emptySegment(prev.length === 0 ? formDate : "")]);
   const removeSegment = (i: number) => setFormSegments((prev) => prev.filter((_, idx) => idx !== i));
   const updateSegment = (i: number, field: keyof FlightSegment, value: string | boolean) =>
     setFormSegments((prev) => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
@@ -387,6 +387,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormDate(today);
     setFormSegments([]);
     setEditingId(null);
+  };
+
+  // 出發日期變更時同步第一段航班日期
+  const handleFormDateChange = (newDate: string) => {
+    setFormDate(newDate);
+    if (formSegments.length > 0) {
+      setFormSegments((prev) => prev.map((s, i) => i === 0 ? { ...s, date: newDate } : s));
+    }
   };
 
   /** 新增梯次時，使用空白資料 */
@@ -449,8 +457,29 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     };
   };
 
+  /** 檢查航段日期是否與出發日期一致 */
+  const validateFlightDates = (): boolean => {
+    if (formSegments.length === 0) return true;
+    const depTime = new Date(formDate + 'T00:00:00').getTime();
+    for (let i = 0; i < formSegments.length; i++) {
+      const seg = formSegments[i];
+      if (!seg.date) continue;
+      const segTime = new Date(seg.date + 'T00:00:00').getTime();
+      const diffDays = Math.abs(segTime - depTime) / 86400000;
+      // 第一段去程不應早於出發日，回程可晚幾天
+      if (i === 0 && segTime < depTime) {
+        return !confirm(`第 ${i + 1} 段航班日期（${seg.date}）早於出發日期（${formDate}），確定要儲存嗎？`);
+      }
+      if (diffDays > 30) {
+        return !confirm(`第 ${i + 1} 段航班日期（${seg.date}）與出發日期差距 ${Math.round(diffDays)} 天，確定要儲存嗎？`);
+      }
+    }
+    return true;
+  };
+
   const handleAdd = async () => {
     if (!formDate) return;
+    if (!validateFlightDates()) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/trips/${tripId}/departure-dates`, {
@@ -477,6 +506,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const handleEdit = async () => {
     if (!editingId || !formDate) return;
+    if (!validateFlightDates()) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${editingId}`, {
@@ -586,7 +616,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             <div>
               <label className={labelClass}>出發日期 *</label>
               <div className="flex gap-1">
-                <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
+                <input type="date" value={formDate} onChange={(e) => handleFormDateChange(e.target.value)}
                   className={`${inputClass} flex-1`} />
                 {departureDayLabel && (
                   <span className="flex items-center rounded-lg border border-sky-200 bg-sky-50 px-2 text-xs font-bold text-sky-600">
