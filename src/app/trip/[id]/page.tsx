@@ -971,7 +971,7 @@ export default function TripPage() {
                 )}
               {/* ── 售價說明（標籤 + 彈窗） ── */}
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-600 transition hover:bg-sky-100">
+                <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
                   <span className="font-bold">$</span> 售價說明 / 加床等
                 </button>
                 {isDevMode && (
