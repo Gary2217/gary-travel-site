@@ -1499,18 +1499,18 @@ export default function TripPage() {
             {/* 手機版標題 */}
             <h2 className="mb-3 text-sm font-bold text-sky-600 sm:hidden">✈ 參考航班</h2>
             <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-2.5 sm:rounded-tl-none">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-2 sm:rounded-tl-none">
               <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span className="text-sm font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
+                <svg className="h-3.5 w-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span className="text-xs font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
+                {flightSource.label && (
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${flightSource.label === '保證出團' ? 'bg-red-100 text-red-600' : flightSource.label === '即將成團' ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>
+                    {flightSource.label}
+                  </span>
+                )}
               </div>
-              {flightSource.label && (
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${flightSource.label === '保證出團' ? 'bg-red-100 text-red-600' : flightSource.label === '即將成團' ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>
-                  {flightSource.label}
-                </span>
-              )}
+              <span className="text-[10px] text-amber-600">實際航班以團體確認為準</span>
             </div>
-            <p className="border-x border-gray-200 bg-gray-50 px-4 py-2 text-center text-xs text-amber-600">此為本行程預定的航班時間，實際航班以團體確認的航班編號與飛行時間為準。</p>
 
             {flightSource.flight_segments && flightSource.flight_segments.length > 0 ? (
               <>
