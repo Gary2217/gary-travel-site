@@ -485,7 +485,11 @@ export default function TripPage() {
         return current;
       }
 
-      return departureDates[0].id;
+      // 優先選有航班資料的梯次
+      const withFlight = departureDates.find(d =>
+        (d.flight_segments && d.flight_segments.length > 0) || d.outbound_flight || d.airline
+      );
+      return (withFlight || departureDates[0]).id;
     });
   }, [departureDates, requestedDepartureId]);
 
