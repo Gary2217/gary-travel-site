@@ -864,16 +864,18 @@ export default function TripPage() {
         return `${dt.getFullYear()}-${dt.getMonth() + 1}` === tableActiveMonth;
       });
 
-  // 航班資訊 helper
-  const selectedFlightSegments = selectedDeparture?.flight_segments;
-  const hasFlightData = !!(selectedDeparture && (
-    (selectedFlightSegments && selectedFlightSegments.length > 0) ||
-    selectedDeparture.outbound_flight || selectedDeparture.outbound_time ||
-    selectedDeparture.outbound_from || selectedDeparture.outbound_to ||
-    selectedDeparture.return_flight || selectedDeparture.return_time ||
-    selectedDeparture.return_from || selectedDeparture.return_to ||
-    selectedDeparture.airline
-  ));
+  // 航班資訊 helper — 固定顯示，切換梯次時跟著切換；沒有航班資料時 fallback 到有資料的梯次
+  const hasFlight = (d: DepartureDate) =>
+    (d.flight_segments && d.flight_segments.length > 0) ||
+    d.outbound_flight || d.outbound_time ||
+    d.outbound_from || d.outbound_to ||
+    d.return_flight || d.return_time ||
+    d.return_from || d.return_to ||
+    d.airline;
+  const flightFallback = departureDates.find(hasFlight) || null;
+  const flightSource = (selectedDeparture && hasFlight(selectedDeparture)) ? selectedDeparture : flightFallback;
+  const selectedFlightSegments = flightSource?.flight_segments;
+  const hasFlightData = !!flightSource;
 
   return (
     <main className="min-h-screen bg-transparent text-gray-900">
@@ -1488,7 +1490,7 @@ export default function TripPage() {
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
 
         {/* ═══ 航班資訊 ═══ */}
-        {hasFlightData && selectedDeparture && (
+        {hasFlightData && flightSource && (
           <section className="mb-8 flex flex-col gap-0 sm:flex-row">
             {/* 左側直排標籤 */}
             <div className="hidden shrink-0 sm:flex sm:flex-col sm:items-center sm:justify-center sm:rounded-l-xl sm:border sm:border-r-0 sm:border-sky-200 sm:bg-sky-50 sm:px-3 sm:py-4">
@@ -1499,7 +1501,7 @@ export default function TripPage() {
             <div className="min-w-0 flex-1">
             <p className="mb-2 rounded-t-xl border border-b-0 border-gray-200 bg-gray-50 px-4 py-2 text-center text-xs text-amber-600 sm:rounded-tl-none">此為本行程預定的航班時間，實際航班以團體確認的航班編號與飛行時間為準。</p>
 
-            {selectedDeparture.flight_segments && selectedDeparture.flight_segments.length > 0 ? (
+            {flightSource.flight_segments && flightSource.flight_segments.length > 0 ? (
               <>
                 {/* 桌面版航班表格 */}
                 <div className="hidden overflow-hidden rounded-r-lg rounded-bl-lg border border-gray-200 sm:block">
@@ -1509,8 +1511,8 @@ export default function TripPage() {
                     <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">起飛時間及機場</div>
                     <div className="border-b border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">抵達時間及機場</div>
                   </div>
-                  {selectedDeparture.flight_segments.map((seg, i) => {
-                    const total = selectedDeparture.flight_segments!.length;
+                  {flightSource.flight_segments.map((seg, i) => {
+                    const total = flightSource.flight_segments!.length;
                     const isFirst = i === 0;
                     const isLast = i === total - 1 && total > 1;
                     const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
@@ -1545,8 +1547,8 @@ export default function TripPage() {
                 </div>
                 {/* 手機版航班卡片 */}
                 <div className="space-y-2 sm:hidden">
-                  {selectedDeparture.flight_segments.map((seg, i) => {
-                    const total = selectedDeparture.flight_segments!.length;
+                  {flightSource.flight_segments.map((seg, i) => {
+                    const total = flightSource.flight_segments!.length;
                     const isFirst = i === 0;
                     const isLast = i === total - 1 && total > 1;
                     const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
@@ -1569,22 +1571,22 @@ export default function TripPage() {
             ) : (
               /* 舊格式：去程 / 回程 */
               <div className="overflow-hidden rounded-lg border border-gray-200">
-                {(selectedDeparture.outbound_flight || selectedDeparture.outbound_time) && (
+                {(flightSource.outbound_flight || flightSource.outbound_time) && (
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-gray-100 px-4 py-3">
                     <span className="text-xs font-bold text-sky-600">去程</span>
-                    <span className="text-xs text-gray-700">{formatFullDate(selectedDeparture.departure_date)}</span>
-                    <span className="text-xs text-gray-700">{selectedDeparture.airline} {selectedDeparture.outbound_flight}</span>
-                    <span className="text-xs"><span className="font-semibold text-gray-900">{selectedDeparture.outbound_time}</span> {selectedDeparture.outbound_from}</span>
-                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{selectedDeparture.outbound_arrival_time}</span> {selectedDeparture.outbound_to}{selectedDeparture.outbound_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
+                    <span className="text-xs text-gray-700">{formatFullDate(flightSource.departure_date)}</span>
+                    <span className="text-xs text-gray-700">{flightSource.airline} {flightSource.outbound_flight}</span>
+                    <span className="text-xs"><span className="font-semibold text-gray-900">{flightSource.outbound_time}</span> {flightSource.outbound_from}</span>
+                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{flightSource.outbound_arrival_time}</span> {flightSource.outbound_to}{flightSource.outbound_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
                   </div>
                 )}
-                {(selectedDeparture.return_flight || selectedDeparture.return_time) && (
+                {(flightSource.return_flight || flightSource.return_time) && (
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3">
                     <span className="text-xs font-bold text-amber-600">回程</span>
-                    <span className="text-xs text-gray-700">{selectedDeparture.return_date ? formatFullDate(selectedDeparture.return_date) : '—'}</span>
-                    <span className="text-xs text-gray-700">{selectedDeparture.airline} {selectedDeparture.return_flight}</span>
-                    <span className="text-xs"><span className="font-semibold text-gray-900">{selectedDeparture.return_time}</span> {selectedDeparture.return_from}</span>
-                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{selectedDeparture.return_arrival_time}</span> {selectedDeparture.return_to}{selectedDeparture.return_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
+                    <span className="text-xs text-gray-700">{flightSource.return_date ? formatFullDate(flightSource.return_date) : '—'}</span>
+                    <span className="text-xs text-gray-700">{flightSource.airline} {flightSource.return_flight}</span>
+                    <span className="text-xs"><span className="font-semibold text-gray-900">{flightSource.return_time}</span> {flightSource.return_from}</span>
+                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{flightSource.return_arrival_time}</span> {flightSource.return_to}{flightSource.return_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
                   </div>
                 )}
               </div>
