@@ -696,7 +696,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {filtered.length > 0 ? (
         <div>
           {/* 卡片橫排 */}
-          <div className="flex flex-wrap gap-2 sm:gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-x-visible sm:pb-0">
             {Array.from(filteredGrouped.entries()).map(([monthLabel, monthDates]) => (
               <div key={monthLabel} className="contents">
                 {/* 月份分隔標籤 */}
@@ -712,7 +712,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                       key={d.id}
                       type="button"
                       onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
-                      className={`flex flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition sm:px-3 sm:py-2 ${
+                      className={`flex shrink-0 flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition sm:px-3 sm:py-2 ${
                         isSelected
                           ? "border-sky-400 bg-sky-50 shadow-sm"
                           : "border-gray-200 bg-white hover:border-gray-300"
