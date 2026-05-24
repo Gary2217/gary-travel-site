@@ -1569,7 +1569,7 @@ export default function TripPage() {
                   })}
                 </div>
                 {/* 手機版航班卡片 */}
-                <div className="space-y-2 sm:hidden">
+                <div className="space-y-2.5 sm:hidden">
                   {flightSource.flight_segments.map((seg, i) => {
                     const total = flightSource.flight_segments!.length;
                     const isFirst = i === 0;
@@ -1577,15 +1577,15 @@ export default function TripPage() {
                     const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                     const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
                     return (
-                      <div key={`m-${i}`} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                        <div className="mb-1 flex items-center gap-2">
-                          <svg className={`h-3.5 w-3.5 shrink-0 ${isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500"} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                          <span className={`text-xs font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
+                      <div key={`m-${i}`} className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+                        <div className="mb-1.5 flex items-center gap-2">
+                          <svg className={`h-4 w-4 shrink-0 ${isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500"} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                          <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
                         </div>
-                        {segDate && <div className="text-[11px] text-gray-500">{segDate}</div>}
-                        <div className="text-xs text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1 text-gray-500">{seg.flight_number}</span>}</div>
-                        <div className="mt-1 text-xs text-gray-600">起飛：{seg.dep_time || '—'} {seg.dep_airport || ''}</div>
-                        <div className="text-xs text-gray-600">抵達：{seg.arr_time || '—'} {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
+                        {segDate && <div className="text-xs text-gray-500">{segDate}</div>}
+                        <div className="text-sm text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-500">{seg.flight_number}</span>}</div>
+                        <div className="mt-1.5 text-sm text-gray-600">起飛：<span className="font-semibold text-gray-900">{seg.dep_time || '—'}</span> {seg.dep_airport || ''}</div>
+                        <div className="text-sm text-gray-600">抵達：<span className="font-semibold text-gray-900">{seg.arr_time || '—'}</span> {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
                       </div>
                     );
                   })}
@@ -1701,7 +1701,7 @@ export default function TripPage() {
       {/* 每日行程（全寬顯示） */}
       {days.length > 0 && (
         <div className="w-full px-3 sm:px-4 md:px-8">
-          <div className="mx-auto mb-6 min-h-[calc(100vh-14rem)] w-full max-w-none pb-4">
+          <div className="mx-auto mb-6 w-full max-w-none pb-4">
             <h2 className="mb-4 text-xl font-bold text-gray-900 md:text-2xl">每日行程</h2>
             <div className="space-y-3 pb-2">
               {days.map((day) => (
@@ -1747,15 +1747,15 @@ export default function TripPage() {
 
         {/* 更多推薦行程 */}
         {recommendedTrips.length > 0 && (
-          <section className="mt-10">
-            <div className="mb-4 flex items-center gap-2">
+          <section className="mt-8">
+            <div className="mb-3 flex items-center gap-2 sm:mb-4">
               <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 px-3 py-1 text-sm font-bold text-white shadow-sm">
                 <span>👍</span>
                 <span>推薦</span>
               </div>
-              <h2 className="text-lg font-bold text-gray-900">更多推薦行程</h2>
+              <h2 className="text-base font-bold text-gray-900 sm:text-lg">更多推薦行程</h2>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
               {recommendedTrips.map((rt) => (
                 <div key={rt.id} className="relative">
                   <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">

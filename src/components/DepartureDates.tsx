@@ -696,7 +696,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {filtered.length > 0 ? (
         <div>
           {/* 卡片橫排 */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:gap-2">
             {Array.from(filteredGrouped.entries()).map(([monthLabel, monthDates]) => (
               <div key={monthLabel} className="contents">
                 {/* 月份分隔標籤 */}
@@ -712,18 +712,18 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                       key={d.id}
                       type="button"
                       onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
-                      className={`flex flex-col items-center rounded-lg border px-3 py-2 text-center transition ${
+                      className={`flex flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition sm:px-3 sm:py-2 ${
                         isSelected
-                          ? "border-sky-400 bg-sky-50"
+                          ? "border-sky-400 bg-sky-50 shadow-sm"
                           : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                     >
-                      <div className="text-sm font-bold text-gray-900">{info.short}（{info.weekday}）</div>
-                      <div className="mt-0.5">
+                      <div className="text-sm font-bold text-gray-900 sm:text-sm">{info.short}（{info.weekday}）</div>
+                      <div className="mt-1 sm:mt-0.5">
                         {d.price ? (
-                          <span className="text-xs font-bold text-amber-600">${d.price.toLocaleString()}</span>
+                          <span className="text-sm font-bold text-amber-600 sm:text-xs">${d.price.toLocaleString()}</span>
                         ) : (
-                          <span className="text-[10px] text-gray-400">洽詢</span>
+                          <span className="text-xs text-gray-400 sm:text-[10px]">洽詢</span>
                         )}
                       </div>
                       <CountdownBadge days={days} />
