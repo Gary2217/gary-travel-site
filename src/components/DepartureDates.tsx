@@ -396,6 +396,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setFormSegments([]);
   };
 
+  /** 完整 payload（新增梯次用，含 price/label/seats 初始值） */
   const buildPayload = () => {
     const out = formSegments[0];
     const ret = formSegments.length > 1 ? formSegments[formSegments.length - 1] : null;
@@ -424,6 +425,30 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     };
   };
 
+  /** 航班專用 payload（編輯梯次用，不碰 price/label/seats 避免覆蓋） */
+  const buildFlightPayload = () => {
+    const out = formSegments[0];
+    const ret = formSegments.length > 1 ? formSegments[formSegments.length - 1] : null;
+    return {
+      departure_date: formDate,
+      airline: out?.airline || null,
+      outbound_flight: out?.flight_number || null,
+      outbound_time: out?.dep_time || null,
+      outbound_from: out?.dep_airport || null,
+      outbound_arrival_time: out?.arr_time || null,
+      outbound_to: out?.arr_airport || null,
+      outbound_next_day: out?.next_day || false,
+      return_date: ret?.date || null,
+      return_flight: ret?.flight_number || null,
+      return_time: ret?.dep_time || null,
+      return_from: ret?.dep_airport || null,
+      return_arrival_time: ret?.arr_time || null,
+      return_to: ret?.arr_airport || null,
+      return_next_day: ret?.next_day || false,
+      flight_segments: formSegments.length > 0 ? formSegments : null,
+    };
+  };
+
   const handleAdd = async () => {
     if (!formDate) return;
     setSaving(true);
@@ -433,16 +458,21 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildPayload()),
       });
-      if (res.ok) {
-        const added = await res.json();
-        onDatesChange([...dates, added].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
-        onSelectedDateChange(added.id);
-        resetForm();
-        setShowAddForm(false);
-        onSaveSuccess?.();
+      if (!res.ok) {
+        alert('新增梯次失敗，請再試一次');
+        return;
       }
-    } catch { /* 靜默 */ }
-    setSaving(false);
+      const added = await res.json();
+      onDatesChange([...dates, added].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
+      onSelectedDateChange(added.id);
+      resetForm();
+      setShowAddForm(false);
+      onSaveSuccess?.();
+    } catch {
+      alert('新增梯次失敗，請再試一次');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = async () => {
@@ -452,27 +482,38 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(buildFlightPayload()),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        onDatesChange(
-          dates.map((d) => (d.id === editingId ? updated : d)).sort((a, b) => a.departure_date.localeCompare(b.departure_date))
-        );
-        resetForm();
-        setShowAddForm(false);
-        onSaveSuccess?.();
+      if (!res.ok) {
+        alert('更新梯次失敗，請再試一次');
+        return;
       }
-    } catch { /* 靜默 */ }
-    setSaving(false);
+      const updated = await res.json();
+      onDatesChange(
+        dates.map((d) => (d.id === editingId ? updated : d)).sort((a, b) => a.departure_date.localeCompare(b.departure_date))
+      );
+      resetForm();
+      setShowAddForm(false);
+      onSaveSuccess?.();
+    } catch {
+      alert('更新梯次失敗，請再試一次');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("確定刪除此出團梯次？")) return;
-    const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/trips/${tripId}/departure-dates?dateId=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert('刪除梯次失敗，請再試一次');
+        return;
+      }
       onDatesChange(dates.filter((d) => d.id !== id));
       if (selectedDateId === id) onSelectedDateChange(null);
+    } catch {
+      alert('刪除梯次失敗，請再試一次');
     }
   };
 

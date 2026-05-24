@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, lineDmHref, type Destination, type Trip } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
@@ -68,6 +68,8 @@ export default function DestinationPage() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isPC, setIsPC] = useState(false);
+  const recommendRef = useRef<HTMLDivElement>(null);
+  const relatedFetched = useRef(false);
 
   // 從 URL query params 讀取搜尋條件
   useEffect(() => {
@@ -116,6 +118,34 @@ export default function DestinationPage() {
     loadData();
     return () => { isMounted = false; };
   }, [destinationId]);
+
+  // 有行程時，懶載入推薦行程（滾動到底部附近才觸發）
+  useEffect(() => {
+    if (trips.length === 0) return;
+    if (!destination?.region_id || !destination?.regions?.category_label) return;
+    if (relatedFetched.current || relatedTrips) return;
+
+    const el = recommendRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !relatedFetched.current) {
+          relatedFetched.current = true;
+          setRelatedLoading(true);
+          getRelatedTrips(destination.region_id, destination.regions!.category_label, destinationId)
+            .then(setRelatedTrips)
+            .catch(() => {})
+            .finally(() => setRelatedLoading(false));
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [destination, destinationId, trips.length, relatedTrips]);
 
   useEffect(() => {
     async function loadSiteLogo() {
@@ -613,6 +643,54 @@ export default function DestinationPage() {
               );
             })()}
           </>
+        )}
+
+        {/* 懶載入偵測哨兵 */}
+        {trips.length > 0 && <div ref={recommendRef} />}
+
+        {/* 熱門行程推薦（有行程時顯示同區域推薦） */}
+        {trips.length > 0 && relatedTrips && relatedTrips.regionTrips.length > 0 && (
+          <section className="mt-10">
+            <div className="mb-4 flex items-center gap-2 sm:mb-6">
+              <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 px-3 py-1 text-sm font-bold text-white shadow-sm">
+                <span>👍</span>
+                <span>推薦</span>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 sm:text-xl">
+                {destination.regions?.title}熱門行程
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
+              {relatedTrips.regionTrips.slice(0, 6).map((trip) => (
+                <div key={trip.id} className="relative md:min-w-0">
+                  {/* 推薦標籤 */}
+                  <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
+                    <span>👍</span>
+                    <span>推薦</span>
+                  </div>
+                  <TripCard
+                    id={trip.id}
+                    title={trip.title}
+                    duration={trip.duration}
+                    price_range={getTripCardPrice(trip)}
+                    cover_image_url={trip.cover_image_url}
+                    document_url={trip.document_url}
+                    document_is_available={trip.document_is_available}
+                    departure_dates={trip.departure_dates}
+                    isDevMode={false}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 載入推薦行程中 */}
+        {trips.length > 0 && relatedLoading && (
+          <div className="mt-10 flex items-center justify-center py-6">
+            <div className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
+            <span className="ml-2 text-sm text-gray-500">載入推薦行程...</span>
+          </div>
         )}
 
         <SocialCta

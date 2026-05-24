@@ -90,7 +90,7 @@ export async function GET(
     }
 
     return NextResponse.json({ regionTrips, categoryTrips }, {
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' },
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

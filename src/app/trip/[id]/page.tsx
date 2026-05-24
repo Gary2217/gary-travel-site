@@ -882,52 +882,52 @@ export default function TripPage() {
               videoMatchHeight={videoMatchHeight}
             />
             <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
-              <div className="flex items-center gap-2.5">
-                <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
-                <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || '—'}</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="min-w-[36px] text-[11px] text-sky-600">
-                  <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                </span>
-                <span className="text-sm font-medium text-gray-900">
-                  {selectedDeparture ? (() => {
-                    const start = formatFullDate(selectedDeparture.departure_date);
-                    const daysNum = parseInt(previewDayText.replace(/\D/g, ''), 10) || 0;
-                    let end = '';
-                    if (selectedDeparture.return_date) {
-                      end = formatFullDate(selectedDeparture.return_date);
-                    } else if (daysNum > 1) {
-                      const dt = new Date(selectedDeparture.departure_date + 'T00:00:00');
-                      dt.setDate(dt.getDate() + daysNum - 1);
-                      end = formatFullDate(dt.toLocaleDateString('sv-SE'));
-                    }
-                    const dur = renderDaysNights(previewDayText, previewNightText);
-                    return end ? <>{start} <span className="mx-1.5 text-base font-black text-sky-500">→</span> {end}　{dur}</> : `${start} ${dur}`;
-                  })() : '—'}
-                </span>
-              </div>
-              {trip.destinations && (
                 <div className="flex items-center gap-2.5">
-                  <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
-                  <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
+                  <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || '—'}</span>
                 </div>
-              )}
-              {(selectedDeparture?.seats_total ?? 0) > 0 && (
                 <div className="flex items-center gap-2.5">
                   <span className="min-w-[36px] text-[11px] text-sky-600">
-                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </span>
-                  <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {selectedDeparture ? (() => {
+                      const start = formatFullDate(selectedDeparture.departure_date);
+                      const daysNum = parseInt(previewDayText.replace(/\D/g, ''), 10) || 0;
+                      let end = '';
+                      if (selectedDeparture.return_date) {
+                        end = formatFullDate(selectedDeparture.return_date);
+                      } else if (daysNum > 1) {
+                        const dt = new Date(selectedDeparture.departure_date + 'T00:00:00');
+                        dt.setDate(dt.getDate() + daysNum - 1);
+                        end = formatFullDate(dt.toLocaleDateString('sv-SE'));
+                      }
+                      const dur = renderDaysNights(previewDayText, previewNightText);
+                      return end ? <>{start} <span className="mx-1.5 text-base font-black text-sky-500">→</span> {end}　{dur}</> : `${start} ${dur}`;
+                    })() : '—'}
+                  </span>
                 </div>
-              )}
-              {editTripBanner.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {editTripBanner.tags.map((tag, i) => (
-                    <span key={`${tag}-${i}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">{tag}</span>
-                  ))}
-                </div>
-              )}
+                {trip.destinations && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
+                    <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
+                  </div>
+                )}
+                {(selectedDeparture?.seats_total ?? 0) > 0 && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                  </div>
+                )}
+                {editTripBanner.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {editTripBanner.tags.map((tag, i) => (
+                      <span key={`${tag}-${i}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">{tag}</span>
+                    ))}
+                  </div>
+                )}
 
               {/* ── 售價說明（嵌在產品資訊卡內） ── */}
               <div className="mt-3 border-t border-gray-200 pt-3">
@@ -1127,7 +1127,7 @@ export default function TripPage() {
                       return (
                         <>
                           {originalPrice && (
-                            <span className="relative text-sm text-gray-400"><span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-2 border-red-500 -rotate-12"></span></span>NT$ {originalPrice.toLocaleString('zh-TW')}</span>
+                            <span className="relative text-lg font-medium text-gray-600"><span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2.5px] border-red-600 -rotate-12"></span></span>NT$ {originalPrice.toLocaleString('zh-TW')}</span>
                           )}
                           <span className="text-lg font-bold text-amber-600">
                             {currentPrice ? formatDisplayPrice(currentPrice) : (trip.price_range || '洽詢')}
@@ -1444,7 +1444,7 @@ export default function TripPage() {
 
         {/* ═══ 航班資訊 ═══ */}
         {hasFlightData && selectedDeparture && (
-          <section className="mb-8 flex gap-0">
+          <section className="mb-8 flex flex-col gap-0 sm:flex-row">
             {/* 左側直排標籤 */}
             <div className="hidden shrink-0 sm:flex sm:flex-col sm:items-center sm:justify-center sm:rounded-l-xl sm:border sm:border-r-0 sm:border-sky-200 sm:bg-sky-50 sm:px-3 sm:py-4">
               <span className="text-base font-bold tracking-[0.3em] text-sky-600" style={{writingMode:'vertical-rl'}}>參考航班</span>
