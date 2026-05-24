@@ -969,14 +969,6 @@ export default function TripPage() {
                     <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
                   </div>
                 )}
-                {editTripBanner.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {editTripBanner.tags.map((tag, i) => (
-                      <span key={`${tag}-${i}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">{tag}</span>
-                    ))}
-                  </div>
-                )}
-
               {/* ── 售價說明（標籤 + 彈窗） ── */}
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-600 transition hover:bg-sky-100">
