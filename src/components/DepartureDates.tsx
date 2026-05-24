@@ -551,7 +551,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     setEditingId(d.id);
     setFormDate(d.departure_date);
     if (d.flight_segments && d.flight_segments.length > 0) {
-      setFormSegments(d.flight_segments);
+      // 自動同步第一段航班日期為出發日期
+      setFormSegments(d.flight_segments.map((s, i) => i === 0 ? { ...s, date: d.departure_date } : s));
     } else {
       const segs: FlightSegment[] = [];
       if (d.outbound_flight || d.outbound_time || d.outbound_from || d.outbound_to) {
