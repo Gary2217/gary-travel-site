@@ -734,8 +734,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             ))}
           </div>
 
-          {/* 選中卡片的展開詳情（在卡片列下方） */}
-          {selectedDateId && (() => {
+          {/* 選中卡片的展開詳情（Dev mode 才展開編輯，航班已在主頁顯示不重複） */}
+          {isDevMode && selectedDateId && (() => {
             const d = filtered.find((x) => x.id === selectedDateId);
             if (!d) return null;
             const info = formatDate(d.departure_date);
@@ -743,16 +743,14 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
             return (
               <div className="mt-3 rounded-xl border border-sky-200 bg-white p-4 shadow-sm">
-                {isDevMode && (
-                  <div className="mb-3 flex items-center gap-2">
-                    <button onClick={() => openEditForm(d)}
-                      className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-600 transition hover:bg-amber-100">編輯</button>
-                    <button onClick={() => handleDelete(d.id)}
-                      className="rounded-full bg-red-50 px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-100">刪除</button>
-                  </div>
-                )}
+                <div className="mb-3 flex items-center gap-2">
+                  <button onClick={() => openEditForm(d)}
+                    className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-600 transition hover:bg-amber-100">編輯航班</button>
+                  <button onClick={() => handleDelete(d.id)}
+                    className="rounded-full bg-red-50 px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-100">刪除梯次</button>
+                </div>
 
-                {/* 航班表格 */}
+                {/* 航班表格（Dev mode 預覽） */}
                 {showFlight && (
                   <div className="mb-3">
                     {d.flight_segments && d.flight_segments.length > 0 ? (

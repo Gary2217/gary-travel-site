@@ -1489,6 +1489,18 @@ export default function TripPage() {
       {/* 內容區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
 
+        {/* ═══ 出團日期卡片（所有用戶可見） ═══ */}
+        <DepartureDates
+          tripId={tripId}
+          tripTitle={trip.title}
+          dates={departureDates}
+          isDevMode={isDevMode}
+          onDatesChange={setDepartureDates}
+          selectedDateId={selectedDepartureId}
+          onSelectedDateChange={setSelectedDepartureId}
+          onSaveSuccess={() => showSaveSuccess('出團梯次已儲存')}
+        />
+
         {/* ═══ 航班資訊 ═══ */}
         {hasFlightData && flightSource && (
           <section className="mb-8 flex flex-col gap-0 sm:flex-row">
@@ -1606,19 +1618,7 @@ export default function TripPage() {
           </section>
         )}
 
-        {/* Dev mode: 出團梯次管理（航班編輯用） */}
-        {isDevMode && (
-          <DepartureDates
-            tripId={tripId}
-            tripTitle={trip.title}
-            dates={departureDates}
-            isDevMode={isDevMode}
-            onDatesChange={setDepartureDates}
-            selectedDateId={selectedDepartureId}
-            onSelectedDateChange={setSelectedDepartureId}
-            onSaveSuccess={() => showSaveSuccess('出團梯次已儲存')}
-          />
-        )}
+        {/* DepartureDates 已移至航班資訊上方，所有用戶可見 */}
       </div>
 
       {/* 開發者模式：PDF / 刪除行程 按鈕列 */}
