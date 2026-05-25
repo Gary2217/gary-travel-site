@@ -225,8 +225,8 @@ export default function TripCard({
 
                 {!isDevMode && departure_dates && departure_dates.length > 0 && (
                   <div className="flex items-center gap-1.5">
-                    <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">日期</span>
-                    <span className="truncate text-xs text-gray-600">
+                    <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
+                    <span className="truncate text-sm text-gray-700 sm:text-base">
                       {departure_dates.slice(0, 3).map(dd => {
                         const d = new Date(dd.departure_date + 'T00:00:00');
                         return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -238,7 +238,7 @@ export default function TripCard({
                 <div className="flex items-center justify-between gap-2">
                   {!isDevMode && departure_dates && departure_dates.length > 3 ? (
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-xs text-gray-600">
+                      <span className="truncate text-sm text-gray-700 sm:text-base">
                         {departure_dates.slice(3, 5).map(dd => {
                           const d = new Date(dd.departure_date + 'T00:00:00');
                           return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -253,21 +253,22 @@ export default function TripCard({
                     </div>
                   )}
                 </div>
+
+                {!isDevMode && departurePlace && (
+                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
+                    <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>出發地：{departurePlace}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* 按鈕區 */}
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">
-            {!isDevMode && departurePlace && (
-              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
-                <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>出發地：{departurePlace}</span>
-              </div>
-            )}
 
             {/* Dev mode 刪除行程 */}
             {isDevMode && onDelete && (

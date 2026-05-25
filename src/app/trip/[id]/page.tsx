@@ -917,7 +917,7 @@ export default function TripPage() {
           <div className="order-1 min-w-0 lg:order-none lg:col-start-1 lg:row-start-1">
             <SideMediaCarousel
               tripId={tripId}
-              fallbackImageUrl={editTripBanner.side_image_url || trip.cover_image_url || ""}
+              fallbackImageUrl={trip.cover_image_url || editTripBanner.side_image_url || ""}
               tripTitle={trip.title}
               isDevMode={isDevMode}
               videoMatchHeight={videoMatchHeight}
