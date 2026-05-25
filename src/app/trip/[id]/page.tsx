@@ -150,6 +150,7 @@ export default function TripPage() {
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [isCreatingNewDeparture, setIsCreatingNewDeparture] = useState(false);
   const [tableActiveMonth, setTableActiveMonth] = useState<string>("all");
+  const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
   const [departureEditorLabel, setDepartureEditorLabel] = useState('');
   const [recommendedTrips, setRecommendedTrips] = useState<Trip[]>([]);
   const [recommendedLoading, setRecommendedLoading] = useState(false);
@@ -903,7 +904,7 @@ export default function TripPage() {
         )}
 
         {/* 標題（移到格線上方） */}
-        <div ref={titleRef} className="mb-4">
+        <div ref={titleRef} className="mb-4 hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 sm:text-[1.75rem] md:text-[2rem]">{trip.title}</h1>
           {trip.subtitle && (
             <p className="mt-0.5 text-sm text-gray-600 sm:mt-1 sm:text-[15px] md:text-base">{trip.subtitle}</p>
@@ -927,8 +928,118 @@ export default function TripPage() {
             />
           </div>
 
-          {/* 產品資訊 — 手機排第3、桌面左欄第2行 */}
-          <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
+          {/* 手機版合併資訊卡（標題+資訊+折扣+價格+按鈕） */}
+          <div className="order-2 mt-3 lg:hidden">
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* 標題 */}
+              <div className="border-l-[3px] border-l-sky-500 px-4 py-3">
+                <h2 className="text-base font-bold leading-snug text-gray-900">{trip.title}</h2>
+                {trip.subtitle && <p className="mt-0.5 text-[13px] text-gray-600">{trip.subtitle}</p>}
+                {isDevMode && (
+                  <button onClick={openTripInfoEditor} className="mt-2 rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500">編輯資訊</button>
+                )}
+              </div>
+
+              {/* 標籤 */}
+              {editTripBanner.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 px-4 py-2">
+                  {editTripBanner.tags.map((tag, i) => (
+                    <span key={`m-tag-${i}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* 資訊列 */}
+              <div className="space-y-2 border-t border-gray-100 px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">日期</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {selectedDeparture ? (() => {
+                      const start = formatFullDate(selectedDeparture.departure_date);
+                      const daysNum = parseInt(previewDayText.replace(/\D/g, ''), 10) || 0;
+                      let end = '';
+                      if (selectedDeparture.return_date) {
+                        end = formatFullDate(selectedDeparture.return_date);
+                      } else if (daysNum > 1) {
+                        const dt = new Date(selectedDeparture.departure_date + 'T00:00:00');
+                        dt.setDate(dt.getDate() + daysNum - 1);
+                        end = formatFullDate(dt.toLocaleDateString('sv-SE'));
+                      }
+                      const dur = renderDaysNights(previewDayText, previewNightText);
+                      return end ? <>{start} <span className="mx-1 text-base font-black text-sky-500">→</span> {end}　{dur}</> : `${start} ${dur}`;
+                    })() : '—'}
+                  </span>
+                </div>
+                {trip.destinations && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
+                    <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
+                  </div>
+                )}
+                {(selectedDeparture?.seats_total ?? 0) > 0 && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">團位</span>
+                    <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
+                    <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
+                  </button>
+                </div>
+              </div>
+
+              {/* 折扣 + 價格 + 按鈕 */}
+              <div className="border-t border-gray-100 px-4 py-3">
+                <span className="relative inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 py-1 pl-3 pr-4 text-xs font-bold text-white shadow-sm before:absolute before:-left-1 before:top-1/2 before:h-2.5 before:w-2.5 before:-translate-y-1/2 before:rounded-full before:bg-white after:absolute after:-right-1 after:top-1/2 after:h-2.5 after:w-2.5 after:-translate-y-1/2 after:rounded-full after:bg-white">
+                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
+                  限時折500
+                </span>
+                <div className="mt-2 flex items-baseline gap-1.5">
+                  {(() => {
+                    const currentPrice = selectedDeparture
+                      ? (departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
+                      : null;
+                    const originalPrice = currentPrice ? currentPrice + 500 : null;
+                    return (
+                      <>
+                        {originalPrice && (
+                          <span className="relative text-lg font-medium text-gray-600"><span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2.5px] border-red-600 -rotate-12"></span></span>NT$ {originalPrice.toLocaleString('zh-TW')}</span>
+                        )}
+                        <span className="text-lg font-bold text-amber-600">
+                          {currentPrice ? formatDisplayPrice(currentPrice) : (trip.price_range || '洽詢')}
+                        </span>
+                      </>
+                    );
+                  })()}
+                  <span className="text-xs text-gray-500">起/人</span>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  {departureDates.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileDatePicker(true)}
+                      className="flex-1 rounded-lg border-2 border-sky-500 bg-white py-2.5 text-center text-sm font-bold text-sky-600 transition hover:bg-sky-50 active:scale-[0.98]"
+                    >
+                      選擇其他日期
+                    </button>
+                  )}
+                  <a
+                    href={lineHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
+                    className="flex flex-1 items-center justify-center rounded-lg border-2 border-[#06C755] bg-[#06C755] py-2.5 text-sm font-bold text-white transition hover:bg-[#05b64d] active:scale-[0.98]"
+                  >
+                    LINE 詢問
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 產品資訊 — 桌面左欄第2行（手機隱藏） */}
+          <div className="hidden min-w-0 lg:block lg:order-none lg:col-start-1 lg:row-start-2">
             <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
                 <div className="flex items-center gap-2.5">
                   <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
@@ -1014,7 +1125,7 @@ export default function TripPage() {
           </div>
 
           {/* 出發日期 — 手機排第2、桌面右欄跨列 */}
-          <div ref={rightColumnRef} className="order-2 mt-3 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
+          <div ref={rightColumnRef} className="hidden mt-3 lg:block lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* Dev mode 按鈕 */}
               {isDevMode && (
@@ -1026,7 +1137,7 @@ export default function TripPage() {
 
               {/* 月份篩選 */}
               {departureMonthKeys.length > 1 && (
-                <div className="flex flex-wrap gap-1.5 border-b border-gray-100 px-4 py-2">
+                <div className="hidden flex-wrap gap-1.5 border-b border-gray-100 px-4 py-2 sm:flex">
                   <button type="button" onClick={() => setTableActiveMonth("all")} className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${tableActiveMonth === "all" ? "bg-sky-500 text-white" : "text-gray-500 hover:text-sky-600"}`}>全部</button>
                   {departureMonthKeys.map((m) => {
                     const mo = m.split("-")[1];
@@ -1072,38 +1183,25 @@ export default function TripPage() {
                 </tbody>
               </table>
 
-              {/* 手機版列表 */}
-              {filteredDepartures.length > 0 ? (
-                <div className="divide-y divide-gray-100 sm:hidden">
-                  {filteredDepartures.map((d) => {
-                    const isSelected = selectedDepartureId === d.id;
-                    const soldOut = d.seats_available === 0 && d.seats_total > 0;
-                    return (
-                      <button key={d.id} type="button" onClick={() => setSelectedDepartureId(d.id)} className={`flex w-full items-center justify-between px-4 py-3 text-left transition ${isSelected ? "border-l-[3px] border-l-sky-500 bg-sky-50" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatFullDate(d.departure_date)}
-                            {d.label === '保證出團' && <span className="ml-1.5 rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-600">保證出團</span>}
-                            {d.label === '即將成團' && <span className="ml-1.5 rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-600">即將成團</span>}
-                            {d.label && d.label !== '保證出團' && d.label !== '即將成團' && <span className="ml-1.5 rounded bg-sky-100 px-1 py-0.5 text-[9px] font-bold text-sky-600">{d.label}</span>}
-                          </div>
-                          <div className="mt-0.5 flex gap-2 text-[11px] text-gray-500">
-                            {d.seats_total > 0 && <span>團位 {d.seats_total}</span>}
-                            {(d.seats_available ?? 0) > 0 && <span>可售 {d.seats_available}</span>}
-                            {soldOut && <span className="text-red-400">已售罄</span>}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-[#0077b6]">{d.price ? `NT$${d.price.toLocaleString()}` : '洽詢'}</div>
-                          {!soldOut && <span className="text-[11px] text-sky-600">報名</span>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="px-4 py-6 text-center text-sm text-gray-400">
-                  {departureDates.length > 0 ? "此月份無出團梯次" : "尚未設定出團日期"}
+              {/* 手機版：選擇其他日期 + LINE 詢問 按鈕 */}
+              {departureDates.length > 1 && (
+                <div className="flex gap-2 px-4 py-2.5 sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileDatePicker(true)}
+                    className="flex-1 rounded-lg border-2 border-sky-500 bg-white py-2.5 text-center text-sm font-bold text-sky-600 transition hover:bg-sky-50 active:scale-[0.98]"
+                  >
+                    選擇其他日期
+                  </button>
+                  <a
+                    href={lineHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
+                    className="flex flex-1 items-center justify-center rounded-lg border-2 border-[#06C755] bg-[#06C755] py-2.5 text-sm font-bold text-white transition hover:bg-[#05b64d] active:scale-[0.98]"
+                  >
+                    LINE 詢問
+                  </a>
                 </div>
               )}
 
@@ -1150,7 +1248,7 @@ export default function TripPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
-                  className="shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#05b64d]"
+                  className="hidden shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#05b64d] sm:inline-flex"
                 >
                   LINE 詢問
                 </a>
@@ -1460,10 +1558,9 @@ export default function TripPage() {
             <div className="hidden shrink-0 sm:flex sm:flex-col sm:items-center sm:justify-center sm:rounded-l-xl sm:border sm:border-r-0 sm:border-sky-200 sm:bg-sky-50 sm:px-3 sm:py-4">
               <span className="text-base font-bold tracking-[0.3em] text-sky-600" style={{writingMode:'vertical-rl'}}>參考航班</span>
             </div>
-            {/* 手機版標題 */}
-            <h2 className="mb-3 text-sm font-bold text-sky-600 sm:hidden">✈ 參考航班</h2>
+            {/* 手機版標題（已整合到下方卡片） */}
             <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-2 sm:rounded-tl-none">
+            <div className="hidden flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-2 sm:flex sm:rounded-tl-none">
               <div className="flex items-center gap-2">
                 <svg className="h-3.5 w-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 <span className="text-xs font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
@@ -1520,27 +1617,60 @@ export default function TripPage() {
                     );
                   })}
                 </div>
-                {/* 手機版航班卡片 */}
-                <div className="space-y-2.5 sm:hidden">
+                {/* 手機版航班（仿易飛網） */}
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white sm:hidden">
+                  <div className="border-b border-gray-200 py-2.5 text-center text-sm font-bold text-gray-900">
+                    參考航班
+                  </div>
                   {flightSource.flight_segments.map((seg, i) => {
                     const total = flightSource.flight_segments!.length;
                     const isFirst = i === 0;
                     const isLast = i === total - 1 && total > 1;
                     const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
+                    const labelColor = isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600";
                     const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
                     return (
-                      <div key={`m-${i}`} className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
-                        <div className="mb-1.5 flex items-center gap-2">
-                          <svg className={`h-4 w-4 shrink-0 ${isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500"} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                          <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
+                      <div key={`m-${i}`} className={`px-4 py-3 ${i < total - 1 ? 'border-b border-gray-200' : ''}`}>
+                        <div className="flex items-center gap-2 text-xs text-gray-700">
+                          <span className={`font-bold ${labelColor}`}>{segmentLabel}</span>
+                          <span className="text-gray-300">|</span>
+                          {segDate && <span>{segDate}</span>}
+                          <span className="ml-1">{seg.airline}{seg.flight_number && ` ${seg.flight_number}`}</span>
                         </div>
-                        {segDate && <div className="text-xs text-gray-500">{segDate}</div>}
-                        <div className="text-sm text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-500">{seg.flight_number}</span>}</div>
-                        <div className="mt-1.5 text-sm text-gray-600">起飛：<span className="font-semibold text-gray-900">{seg.dep_time || '—'}</span> {seg.dep_airport || ''}</div>
-                        <div className="text-sm text-gray-600">抵達：<span className="font-semibold text-gray-900">{seg.arr_time || '—'}</span> {seg.arr_airport || ''}{seg.next_day ? ' +1' : ''}</div>
+                        <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-start">
+                          <div>
+                            <div className="text-xl font-bold text-gray-900">{seg.dep_time || '—'}</div>
+                            <div className="mt-0.5 text-xs text-gray-500">{seg.dep_airport || ''}</div>
+                          </div>
+                          <div className="flex items-center justify-center px-1 pt-2">
+                            {isLast ? (
+                              <div className="flex w-24 items-center">
+                                <svg className="h-5 w-5 -ml-1 shrink-0 -rotate-90 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                <div className="h-px flex-1 border-t-2 border-dashed border-sky-400" />
+                                <svg className="h-3 w-3 -mr-0.5 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z" /></svg>
+                              </div>
+                            ) : (
+                              <div className="flex w-24 items-center">
+                                <svg className="h-3 w-3 -ml-0.5 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 7l-5 5 5 5V7z" /></svg>
+                                <div className="h-px flex-1 border-t-2 border-dashed border-sky-400" />
+                                <svg className="h-5 w-5 -mr-1 shrink-0 rotate-90 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xl font-bold text-gray-900">
+                              {seg.arr_time || '—'}
+                              {seg.next_day && <span className="ml-1 text-sm font-medium text-amber-600">(跨日)</span>}
+                            </div>
+                            <div className="mt-0.5 text-xs text-gray-500">{seg.arr_airport || ''}</div>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
+                  <div className="border-t border-gray-100 px-4 py-2">
+                    <p className="text-center text-[10px] text-amber-600">*航班時間僅供參考，最終確定的航班，以說明會資料為準！</p>
+                  </div>
                 </div>
               </>
             ) : (
@@ -2026,6 +2156,84 @@ export default function TripPage() {
             >
               關閉
             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 手機版出發日期選擇 Modal（仿易飛網全螢幕樣式） */}
+      {showMobileDatePicker && createPortal(
+        <div className="fixed inset-0 z-modal-top flex flex-col bg-white">
+          {/* Header */}
+          <div className="flex items-center border-b border-gray-200 bg-[#0077b6] px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setShowMobileDatePicker(false)}
+              className="mr-3 text-white"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h3 className="flex-1 text-center text-base font-bold text-white">出發日期</h3>
+            <div className="w-8" />
+          </div>
+
+          {/* 排序提示 */}
+          <div className="flex items-center justify-end border-b border-gray-100 px-4 py-2">
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <span className="font-medium text-gray-700">排序</span>
+              <span className="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px]">日期近到遠</span>
+            </div>
+          </div>
+
+          {/* 表頭 */}
+          <div className="grid grid-cols-[1fr_44px_44px_44px_76px] items-center border-b border-gray-200 bg-gray-50 px-4 py-2 text-[11px] font-semibold text-gray-500">
+            <span>出發日</span>
+            <span className="text-center">團位</span>
+            <span className="text-center">可售</span>
+            <span className="text-center">狀態</span>
+            <span className="text-right">價格</span>
+          </div>
+
+          {/* 日期列表 */}
+          <div className="flex-1 overflow-y-auto">
+            {departureDates.map((d) => {
+              const isSelected = selectedDepartureId === d.id;
+              const soldOut = d.seats_available === 0 && d.seats_total > 0;
+              const dt = new Date(d.departure_date + 'T00:00:00');
+              const shortDate = `${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedDepartureId(d.id);
+                    setShowMobileDatePicker(false);
+                  }}
+                  className={`grid w-full grid-cols-[1fr_44px_44px_44px_76px] items-center border-b border-gray-100 px-4 py-3.5 text-left transition ${
+                    isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-sm font-medium ${isSelected ? 'text-sky-600' : 'text-gray-900'}`}>{shortDate}</span>
+                    {d.label === '保證出團' && <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-600">保證出團</span>}
+                    {d.label === '即將成團' && <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-600">即將成團</span>}
+                  </div>
+                  <span className="text-center text-sm text-gray-700">{d.seats_total || '—'}</span>
+                  <span className="text-center text-sm text-gray-700">{d.seats_available ?? '—'}</span>
+                  <span className="text-center">
+                    {soldOut
+                      ? <span className="text-[11px] text-gray-400">已售罄</span>
+                      : <span className="text-[11px] font-semibold text-sky-600">報名</span>
+                    }
+                  </span>
+                  <span className="text-right text-sm font-bold text-[#0077b6]">
+                    {d.price ? `NT$${d.price.toLocaleString()}` : '洽詢'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>,
         document.body
