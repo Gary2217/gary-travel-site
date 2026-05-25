@@ -429,7 +429,7 @@ export default function DestinationPage() {
                       {hasSubRegions ? groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
                           {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
+                          <div className="flex flex-col gap-3">
                             {g.trips.map((trip) => (
                               <div key={trip.id} className="md:min-w-0">
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
@@ -441,7 +441,7 @@ export default function DestinationPage() {
                           </div>
                         </div>
                       )) : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
+                        <div className="flex flex-col gap-3">
                           {trips.map((trip) => (
                             <div key={trip.id} className="md:min-w-0">
                               <TripCard id={trip.id} title={trip.title} duration={trip.duration}
@@ -476,7 +476,7 @@ export default function DestinationPage() {
                       {groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
                           {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
+                          <div className="flex flex-col gap-3">
                             {g.trips.map((trip) => (
                               <div key={trip.id} className="md:min-w-0">
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
@@ -555,7 +555,7 @@ export default function DestinationPage() {
                 : trips;
 
               return (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
+                <div className="flex flex-col gap-3">
                   {sorted.map((trip) => {
                     const hasMatchingDate = Boolean(
                       dateFilter && trip.departure_dates?.some((d) => d.departure_date === dateFilter)
@@ -660,7 +660,7 @@ export default function DestinationPage() {
                 {destination.regions?.title}熱門行程
               </h2>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:flex md:flex-col md:gap-3">
+            <div className="flex flex-col gap-3">
               {relatedTrips.regionTrips.slice(0, 6).map((trip) => (
                 <div key={trip.id} className="relative md:min-w-0">
                   {/* 推薦標籤 */}

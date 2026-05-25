@@ -112,10 +112,10 @@ export default function TripCard({
 
   return (
     <>
-      <div className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md md:flex-row">
+        <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative h-36 overflow-hidden sm:h-44 md:h-auto md:w-56 md:shrink-0 lg:w-64${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative h-[140px] w-[140px] shrink-0 overflow-hidden sm:h-[160px] sm:w-48 md:min-h-[160px] md:w-56 md:self-stretch lg:w-64${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
           <div className="relative h-full w-full">
@@ -223,38 +223,33 @@ export default function TripCard({
                   </div>
                 </div>
 
-                <div className="flex items-start justify-between gap-4">
-                  {!isDevMode && departure_dates && departure_dates.length > 0 ? (
-                    <div className="flex flex-wrap gap-3">
-                      {departure_dates.slice(0, 4).map((dd) => (
-                        <button
-                          key={dd.id}
-                          type="button"
-                          onClick={() => navigateToTrip(dd.id)}
-                          className="overflow-hidden rounded-md border border-sky-300 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                        >
-                          <div className="bg-white px-3 py-1 text-[12px] font-bold text-sky-700">{formatShortDate(dd.departure_date)}</div>
-                          <div className="bg-sky-500 px-3 py-1 text-[10px] font-semibold text-white">熱銷中</div>
-                        </button>
-                      ))}
-                      {departure_dates.length > 4 && (
-                        <div className="flex items-center rounded-md border border-gray-200 bg-white px-3 py-2 text-[12px] text-gray-500 shadow-sm">
-                          更多
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div />
-                  )}
+                {!isDevMode && departure_dates && departure_dates.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-600">日期</span>
+                    <span className="truncate text-xs text-gray-600">
+                      {departure_dates.slice(0, 3).map(dd => {
+                        const d = new Date(dd.departure_date + 'T00:00:00');
+                        return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+                      }).join('、')}
+                    </span>
+                  </div>
+                )}
 
+                <div className="flex items-center justify-between gap-2">
+                  {!isDevMode && departure_dates && departure_dates.length > 3 ? (
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-xs text-gray-600">
+                        {departure_dates.slice(3, 5).map(dd => {
+                          const d = new Date(dd.departure_date + 'T00:00:00');
+                          return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+                        }).join('、')}{departure_dates.length > 5 ? ' ...更多' : ''}
+                      </span>
+                    </div>
+                  ) : <div />}
                   {price_range && (
-                    <div className="shrink-0 pt-1 text-right">
-                      <p className="text-[10px] font-medium tracking-[0.12em] text-amber-600 sm:text-[11px]">
-                        團費價格
-                      </p>
-                      <p className="mt-0.5 text-sm font-bold leading-relaxed tracking-[0.04em] tabular-nums text-amber-600 sm:text-base md:text-[1.15rem]">
-                        {displayPriceRange}
-                      </p>
+                    <div className="shrink-0 text-right">
+                      <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">$ {displayPriceRange?.replace(/NT\s*\$\s*/g, '')}</span>
+                      <span className="ml-0.5 text-[10px] text-gray-500">起</span>
                     </div>
                   )}
                 </div>
