@@ -728,15 +728,11 @@ export default function TripPage() {
   };
 
   const saveDepartureInfoAsFirstDeparture = async (): Promise<boolean> => {
-    if (!departureEditorDate) {
-      alert('請先填寫出團日期');
-      return false;
-    }
-
     setSaving(true);
 
+    const fallbackDate = departureEditorDate || new Date().toISOString().slice(0, 10);
     const departureCreatePayload = {
-      departure_date: departureEditorDate,
+      departure_date: fallbackDate,
       price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
@@ -921,7 +917,7 @@ export default function TripPage() {
           <div className="order-1 min-w-0 lg:order-none lg:col-start-1 lg:row-start-1">
             <SideMediaCarousel
               tripId={tripId}
-              fallbackImageUrl={editTripBanner.side_image_url || ""}
+              fallbackImageUrl={editTripBanner.side_image_url || trip.cover_image_url || ""}
               tripTitle={trip.title}
               isDevMode={isDevMode}
               videoMatchHeight={videoMatchHeight}
