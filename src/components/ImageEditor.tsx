@@ -147,7 +147,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
           e.stopPropagation();
           setIsOpen(true);
         }}
-        className="absolute right-2 top-2 z-10 rounded-full bg-blue-600 p-2 text-white shadow-lg transition hover:bg-blue-700"
+        className="absolute bottom-2 left-2 z-10 rounded-full bg-blue-600 p-2 text-white shadow-lg transition hover:bg-blue-700"
         title="編輯圖片"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
