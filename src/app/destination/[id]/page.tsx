@@ -651,14 +651,13 @@ export default function DestinationPage() {
         {/* 熱門行程推薦（有行程時顯示同區域推薦） */}
         {trips.length > 0 && relatedTrips && relatedTrips.regionTrips.length > 0 && (
           <section className="mt-10">
-            <div className="mb-4 flex items-center gap-2 sm:mb-6">
-              <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 px-3 py-1 text-sm font-bold text-white shadow-sm">
-                <span>👍</span>
-                <span>推薦</span>
+            <div className="-mx-3 mb-4 rounded-xl bg-gradient-to-r from-red-700 via-amber-600 to-yellow-500 px-4 py-5 shadow-lg sm:-mx-4 sm:mb-6 sm:px-5 sm:py-6">
+              <div className="flex flex-col items-center gap-1">
+                <h2 className="text-xl font-black tracking-[0.15em] text-white drop-shadow-md sm:text-2xl">
+                  {destination.regions?.title}熱門行程
+                </h2>
+                <div className="mt-0.5 h-[2px] w-16 rounded-full bg-gradient-to-r from-transparent via-yellow-300 to-transparent" />
               </div>
-              <h2 className="text-lg font-bold text-gray-900 sm:text-xl">
-                {destination.regions?.title}熱門行程
-              </h2>
             </div>
             <div className="flex flex-col gap-3">
               {relatedTrips.regionTrips.slice(0, 6).map((trip) => (

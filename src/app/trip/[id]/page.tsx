@@ -976,14 +976,14 @@ export default function TripPage() {
                     <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
                   </div>
                 )}
-                {(selectedDeparture?.seats_total ?? 0) > 0 && (
-                  <div className="flex items-center gap-2.5">
-                    <span className="min-w-[36px] text-[11px] text-sky-600">團位</span>
-                    <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
+                <div className="flex items-center justify-between gap-2">
+                  {(selectedDeparture?.seats_total ?? 0) > 0 ? (
+                    <div className="flex items-center gap-2.5">
+                      <span className="min-w-[36px] text-[11px] text-sky-600">團位</span>
+                      <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                    </div>
+                  ) : <div />}
+                  <button type="button" onClick={() => setShowPriceInfoModal(true)} className="shrink-0 inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
                     <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
                   </button>
                 </div>
@@ -995,7 +995,7 @@ export default function TripPage() {
                   <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
                   限時折500
                 </span>
-                <div className="mt-2 flex items-baseline gap-1.5">
+                <div className="mt-2 flex items-baseline justify-between gap-2">
                   {(() => {
                     const currentPrice = selectedDeparture
                       ? (departureEditorPrice ? Number(departureEditorPrice) : selectedDeparture.price)
@@ -1004,15 +1004,17 @@ export default function TripPage() {
                     return (
                       <>
                         {originalPrice && (
-                          <span className="relative text-lg font-medium text-gray-600"><span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2.5px] border-red-600 -rotate-12"></span></span>NT$ {originalPrice.toLocaleString('zh-TW')}</span>
+                          <span className="relative text-2xl font-bold text-gray-600">NT$ {originalPrice.toLocaleString('zh-TW')}<span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2px] border-red-600 -rotate-6"></span></span></span>
                         )}
-                        <span className="text-lg font-bold text-amber-600">
-                          {currentPrice ? formatDisplayPrice(currentPrice) : (trip.price_range || '洽詢')}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-3xl font-black tracking-tight text-amber-600">
+                            {currentPrice ? `NT$ ${currentPrice.toLocaleString('zh-TW')}` : (trip.price_range || '洽詢')}
+                          </span>
+                          <span className="ml-1 text-xs text-gray-500">起/人</span>
+                        </div>
                       </>
                     );
                   })()}
-                  <span className="text-xs text-gray-500">起/人</span>
                 </div>
                 <div className="mt-3 flex gap-2">
                   {departureDates.length > 1 && (
@@ -1072,24 +1074,26 @@ export default function TripPage() {
                     <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
                   </div>
                 )}
-                {(selectedDeparture?.seats_total ?? 0) > 0 && (
+              {/* ── 團位 + 售價說明（同一列） ── */}
+              <div className="flex items-center justify-between gap-2">
+                {(selectedDeparture?.seats_total ?? 0) > 0 ? (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">
                       <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </span>
                     <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
                   </div>
-                )}
-              {/* ── 售價說明（標籤 + 彈窗） ── */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
-                  <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
-                </button>
-                {isDevMode && (
-                  <button type="button" onClick={() => setShowPriceDetailModal((v) => !v)} className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition ${showPriceDetailModal ? 'bg-sky-100 text-sky-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                    {showPriceDetailModal ? '收起編輯' : '編輯售價'}
+                ) : <div />}
+                <div className="flex shrink-0 gap-1.5">
+                  <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
+                    <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
                   </button>
-                )}
+                  {isDevMode && (
+                    <button type="button" onClick={() => setShowPriceDetailModal((v) => !v)} className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition ${showPriceDetailModal ? 'bg-sky-100 text-sky-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                      {showPriceDetailModal ? '收起編輯' : '編輯售價'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Dev mode 售價編輯（展開在卡片內） */}
@@ -1224,10 +1228,10 @@ export default function TripPage() {
                       return (
                         <>
                           {originalPrice && (
-                            <span className="relative text-lg font-medium text-gray-600"><span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2.5px] border-red-600 -rotate-12"></span></span>NT$ {originalPrice.toLocaleString('zh-TW')}</span>
+                            <span className="relative text-sm text-gray-400 line-through decoration-red-500 decoration-2">NT$ {originalPrice.toLocaleString('zh-TW')}</span>
                           )}
-                          <span className="text-lg font-bold text-amber-600">
-                            {currentPrice ? formatDisplayPrice(currentPrice) : (trip.price_range || '洽詢')}
+                          <span className="text-2xl font-black tracking-tight text-gray-900">
+                            {currentPrice ? `NT$ ${currentPrice.toLocaleString('zh-TW')}` : (trip.price_range || '洽詢')}
                           </span>
                         </>
                       );
@@ -1837,7 +1841,7 @@ export default function TripPage() {
               </div>
               <h2 className="text-base font-bold text-gray-900 sm:text-lg">更多推薦行程</h2>
             </div>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+            <div className="flex flex-col gap-3">
               {recommendedTrips.map((rt) => (
                 <div key={rt.id} className="relative">
                   <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
@@ -1869,10 +1873,10 @@ export default function TripPage() {
         )}
 
         {/* 分享 & 下載 */}
-        <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:gap-3">
+        <div className="mt-8 flex flex-row gap-2 sm:gap-3">
           <button
             onClick={() => setShowShareGate(true)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 active:scale-[0.98] md:py-3"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 active:scale-[0.98] md:py-3"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -1883,7 +1887,7 @@ export default function TripPage() {
           {trip.document_url && (
             <button
               onClick={() => setShowDownloadGate(true)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-emerald-400 bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-600 active:scale-[0.98] md:py-3"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] md:py-3"
             >
               <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
