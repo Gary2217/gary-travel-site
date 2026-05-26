@@ -1175,7 +1175,7 @@ export default function TripPage() {
                     return (
                       <tr
                         key={d.id}
-                        onClick={() => setSelectedDepartureId(d.id)}
+                        onClick={() => { setSelectedDepartureId(d.id); if (d.label === '限時優惠' && promoContent) setShowPromoPopup(true); }}
                         className={`cursor-pointer transition ${isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}
                       >
                         <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">
@@ -2114,6 +2114,7 @@ export default function TripPage() {
                   onClick={() => {
                     setSelectedDepartureId(d.id);
                     setShowMobileDatePicker(false);
+                    if (d.label === '限時優惠' && promoContent) setShowPromoPopup(true);
                   }}
                   className={`grid w-full grid-cols-[1fr_44px_44px_44px_76px] items-center border-b border-gray-100 px-4 py-3.5 text-left transition ${
                     isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-transparent"
