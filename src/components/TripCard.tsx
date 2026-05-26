@@ -220,10 +220,7 @@ export default function TripCard({
                   <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
                     {title}
                   </h3>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {isPromoEnabled && (
-                      <span className="rounded-md bg-gradient-to-r from-red-500 to-rose-500 px-2 py-0.5 text-[10px] font-bold text-white sm:text-xs">限時優惠</span>
-                    )}
+                  <div className="shrink-0">
                     <ShareButton title={title} url={`/trip/${id}`} small />
                   </div>
                 </div>
@@ -231,12 +228,26 @@ export default function TripCard({
                 {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
-                    <span className="truncate text-sm text-gray-700 sm:text-base">
-                      {departure_dates.filter(dd => dd.departure_date).slice(0, 3).map(dd => {
+                    <div className="flex flex-wrap items-end gap-x-1 gap-y-0.5">
+                      {departure_dates.filter(dd => dd.departure_date).slice(0, 3).map((dd, i, arr) => {
                         const d = new Date(dd.departure_date + 'T00:00:00');
-                        return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-                      }).join('、')}
-                    </span>
+                        const dateStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+                        const isPromo = dd.label === '限時優惠';
+                        return (
+                          <span key={dd.id} className="inline-flex items-center">
+                            {isPromo ? (
+                              <span className="inline-flex flex-col items-center">
+                                <span className="rounded bg-gradient-to-r from-red-500 to-rose-500 px-1.5 py-px text-[8px] font-bold leading-tight text-white sm:text-[9px]">限時優惠</span>
+                                <span className="text-sm font-bold text-red-500 sm:text-base">{dateStr}</span>
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-700 sm:text-base">{dateStr}</span>
+                            )}
+                            {i < arr.length - 1 && <span className="ml-0.5 text-sm text-gray-400">、</span>}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
