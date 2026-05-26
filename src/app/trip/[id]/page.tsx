@@ -730,9 +730,8 @@ export default function TripPage() {
   const saveDepartureInfoAsFirstDeparture = async (): Promise<boolean> => {
     setSaving(true);
 
-    const fallbackDate = departureEditorDate || new Date().toISOString().slice(0, 10);
     const departureCreatePayload = {
-      departure_date: fallbackDate,
+      departure_date: departureEditorDate || null,
       price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
@@ -1384,137 +1383,18 @@ export default function TripPage() {
                 <input value={editSubtitle} onChange={e => setEditSubtitle(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400" />
               </div>
-              <div>
-                <label className="mb-1 block text-xs text-gray-500">價格區間</label>
-                <input value={editPriceRange} onChange={e => setEditPriceRange(e.target.value)}
-                  placeholder="例：NT$ 25,000 起"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-gray-500">行程亮點（輸入後按 Enter 新增）</label>
-                <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-2">
-                  {editHighlights.split(/[、,，]/).filter(s => s.trim()).map((tag, i) => (
-                    <span key={i} className="flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-xs text-sky-600">
-                      {tag.trim()}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const tags = editHighlights.split(/[、,，]/).filter(s => s.trim());
-                          tags.splice(i, 1);
-                          setEditHighlights(tags.join('、'));
-                        }}
-                        className="ml-0.5 text-gray-400 hover:text-red-500"
-                      >×</button>
-                    </span>
-                  ))}
-                  <input
-                    placeholder="輸入亮點..."
-                    className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-gray-900 outline-none"
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (val) {
-                          setEditHighlights(prev => prev ? `${prev}、${val}` : val);
-                          (e.target as HTMLInputElement).value = '';
-                        }
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="pt-2">
-                <p className="mb-1.5 text-[11px] font-semibold text-sky-600">右側出團資訊</p>
-                <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-2.5 sm:p-3">
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] text-gray-500">左上標籤</label>
-                      <input value={editTripBanner.code_label} onChange={e => setEditTripBanner(prev => ({ ...prev, code_label: e.target.value }))}
-                        placeholder="例：5天4夜" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] text-gray-500">價格標籤</label>
-                      <input value={editTripBanner.price_label} onChange={e => setEditTripBanner(prev => ({ ...prev, price_label: e.target.value }))}
-                        placeholder="例：NT$45,000~55,000" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] text-gray-500">出發資訊</label>
-                      <input value={editTripBanner.departure_label} onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: e.target.value }))}
-                        placeholder="例：2026/07/14 台北出發" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] text-gray-500">天數顯示</label>
-                      <input value={editTripBanner.duration_label} onChange={e => setEditTripBanner(prev => ({ ...prev, duration_label: e.target.value }))}
-                        placeholder="例：4天" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] text-gray-500">團位總數</label>
-                      <input type="number" value={editTripBanner.seats_total ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_total: e.target.value ? Number(e.target.value) : null }))}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] text-gray-500">可售團位</label>
-                      <input type="number" value={editTripBanner.seats_available ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, seats_available: e.target.value ? Number(e.target.value) : null }))}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] text-gray-500">訂金說明</label>
-                    <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value }))}
-                      placeholder="例：訂金 15,000/人" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-sky-400" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] text-gray-500">標籤（按 Enter 新增）</label>
-                    <div className="flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5">
-                      {editTripBanner.tags.map((tag, i) => (
-                        <span key={`${tag}-${i}`} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-600">
-                          {tag}
-                          <button type="button" onClick={() => setEditTripBanner(prev => ({ ...prev, tags: prev.tags.filter((_, idx) => idx !== i) }))} className="ml-0.5 text-gray-400 hover:text-red-500">×</button>
-                        </span>
-                      ))}
-                      <input
-                        value={editBannerTagInput}
-                        onChange={e => setEditBannerTagInput(e.target.value)}
-                        placeholder="輸入標籤..."
-                        className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-xs text-gray-900 outline-none"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const val = editBannerTagInput.trim();
-                            if (!val) return;
-                            setEditTripBanner(prev => ({ ...prev, tags: [...prev.tags, val] }));
-                            setEditBannerTagInput('');
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setEditTripBanner(EMPTY_TRIP_BANNER)}
-                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-100"
-                    >
-                      清空右側資訊
-                    </button>
-                  </div>
-                </div>
-              </div>
+
             </div>
             <button
               disabled={saving}
               onClick={async () => {
                 setSaving(true);
-                const highlights = editHighlights.split(/[、,，]/).map(s => s.trim()).filter(Boolean);
                 const res = await fetch(`/api/trips/${tripId}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     title: editTitle.trim(),
                     subtitle: editSubtitle.trim(),
-                    price_range: editPriceRange.trim(),
-                    highlights,
-                    trip_banner: editTripBanner,
                   }),
                 });
                 if (res.ok) {

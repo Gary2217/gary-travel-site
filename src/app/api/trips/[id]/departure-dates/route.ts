@@ -30,17 +30,13 @@ export async function POST(
       flight_segments,
     } = body;
 
-    if (!departure_date) {
-      return NextResponse.json({ error: '請選擇出發日期' }, { status: 400 });
-    }
-
     const supabase = createSupabase();
 
     const { data, error } = await supabase
       .from('trip_departure_dates')
       .insert({
         trip_id: params.id,
-        departure_date,
+        departure_date: departure_date || null,
         departure_city: departure_city || '桃園',
         airline: airline || null,
         price: price || null,

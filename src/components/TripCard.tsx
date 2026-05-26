@@ -141,15 +141,6 @@ export default function TripCard({
               {duration}
             </div>
 
-            {/* 有檔案時顯示小圖示 */}
-            {!isDevMode && document_url && document_is_available && (
-              <div className="absolute left-1.5 top-1.5 rounded-full bg-emerald-500/90 p-1 backdrop-blur-sm" title="點擊查看行程表">
-                <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-            )}
-
             {isDevMode && document_url && document_is_available && (
               <div className="absolute bottom-1.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-400/30 bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg backdrop-blur-sm sm:text-[10px]">
                 已有行程表
@@ -200,6 +191,9 @@ export default function TripCard({
                     }
                   }}
                   onKeyDown={e => { if (e.key === 'Enter') titleInputRef.current?.blur(); }}
+                  onMouseDown={e => e.stopPropagation()}
+                  onDragStart={e => e.stopPropagation()}
+                  draggable={false}
                   className="mb-1 w-full border-b border-sky-400 bg-transparent text-xs font-bold text-gray-900 outline-none sm:text-sm md:text-base"
                   autoFocus
                 />
@@ -223,11 +217,11 @@ export default function TripCard({
                   </div>
                 </div>
 
-                {!isDevMode && departure_dates && departure_dates.length > 0 && (
+                {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
                     <span className="truncate text-sm text-gray-700 sm:text-base">
-                      {departure_dates.slice(0, 3).map(dd => {
+                      {departure_dates.filter(dd => dd.departure_date).slice(0, 3).map(dd => {
                         const d = new Date(dd.departure_date + 'T00:00:00');
                         return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
                       }).join('、')}
@@ -236,13 +230,13 @@ export default function TripCard({
                 )}
 
                 <div className="flex items-center justify-between gap-2">
-                  {!isDevMode && departure_dates && departure_dates.length > 3 ? (
+                  {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 3 ? (
                     <div className="flex min-w-0 items-center gap-1.5">
                       <span className="truncate text-sm text-gray-700 sm:text-base">
-                        {departure_dates.slice(3, 5).map(dd => {
+                        {departure_dates.filter(dd => dd.departure_date).slice(3, 5).map(dd => {
                           const d = new Date(dd.departure_date + 'T00:00:00');
                           return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-                        }).join('、')}{departure_dates.length > 5 ? ' ...更多' : ''}
+                        }).join('、')}{departure_dates.filter(dd => dd.departure_date).length > 5 ? ' ...更多' : ''}
                       </span>
                     </div>
                   ) : <div />}
