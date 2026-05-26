@@ -271,6 +271,11 @@ export default function DestinationPage() {
 
   function handleDragStart(index: number) {
     return (e: React.DragEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('input, textarea, [contenteditable]')) {
+        e.preventDefault();
+        return;
+      }
       setDragIndex(index);
       setDragOverIndex(index);
       e.dataTransfer.effectAllowed = 'move';
