@@ -635,6 +635,7 @@ export default function DestinationPage() {
                           isDevMode={isDevMode}
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
+                          promoContent={trip.trip_banner?.promo_content || ''}
                           onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
