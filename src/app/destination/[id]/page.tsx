@@ -592,12 +592,7 @@ export default function DestinationPage() {
                     return (
                       <div
                         key={trip.id}
-                        draggable={isDevMode && isPC}
-                        onDragStart={handleDragStart(tripIndex)}
-                        onDragOver={handleDragOver(tripIndex)}
-                        onDragEnd={handleDragEnd}
-                        onDrop={handleDrop(tripIndex)}
-                        className={`relative md:min-w-0 ${isDevMode && isPC ? 'cursor-grab active:cursor-grabbing' : ''} ${dragIndex === tripIndex ? 'opacity-50' : ''} ${dragOverIndex === tripIndex ? 'ring-2 ring-sky-400 rounded-xl' : ''}`}
+                        className="relative md:min-w-0"
                       >
                           {hasMatchingDate && (
                             <div className="absolute -top-2 left-2 z-10 rounded-full bg-sky-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-sky-500/30">
