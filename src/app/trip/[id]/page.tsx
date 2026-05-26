@@ -949,7 +949,7 @@ export default function TripPage() {
               <div className="space-y-2 border-t border-gray-100 px-4 py-3">
                 <div className="flex items-center gap-2.5">
                   <span className="min-w-[36px] text-[11px] text-sky-600">日期</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="whitespace-nowrap text-xs font-medium text-gray-900 sm:text-sm">
                     {selectedDeparture ? (() => {
                       const start = formatFullDate(selectedDeparture.departure_date);
                       const daysNum = parseInt(previewDayText.replace(/\D/g, ''), 10) || 0;
@@ -962,7 +962,7 @@ export default function TripPage() {
                         end = formatFullDate(dt.toLocaleDateString('sv-SE'));
                       }
                       const dur = renderDaysNights(previewDayText, previewNightText);
-                      return end ? <>{start} <span className="mx-1 text-base font-black text-sky-500">→</span> {end}　{dur}</> : `${start} ${dur}`;
+                      return end ? <>{start} <span className="mx-1 text-sm font-black text-sky-500 sm:text-base">→</span> {end}　{dur}</> : `${start} ${dur}`;
                     })() : '—'}
                   </span>
                 </div>
