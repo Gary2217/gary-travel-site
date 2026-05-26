@@ -1229,7 +1229,7 @@ export default function TripPage() {
                       return (
                         <>
                           {originalPrice && (
-                            <span className="relative text-sm text-gray-400 line-through decoration-red-500 decoration-2">NT$ {originalPrice.toLocaleString('zh-TW')}</span>
+                            <span className="relative text-base font-semibold text-gray-500 line-through decoration-red-600 decoration-2">NT$ {originalPrice.toLocaleString('zh-TW')}</span>
                           )}
                           <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-2xl font-black tracking-tight text-transparent">
                             {displayPrice ? `NT$ ${displayPrice.toLocaleString('zh-TW')}` : '洽詢'}
