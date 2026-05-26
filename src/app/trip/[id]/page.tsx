@@ -1385,6 +1385,12 @@ export default function TripPage() {
                 <input value={editSubtitle} onChange={e => setEditSubtitle(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400" />
               </div>
+              <div>
+                <label className="mb-1 block text-xs text-gray-500">價格區間（不建梯次時用這個顯示價格）</label>
+                <input value={editPriceRange} onChange={e => setEditPriceRange(e.target.value)}
+                  placeholder="例：NT$39,900"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400" />
+              </div>
 
             </div>
             <button
@@ -1397,6 +1403,7 @@ export default function TripPage() {
                   body: JSON.stringify({
                     title: editTitle.trim(),
                     subtitle: editSubtitle.trim(),
+                    price_range: editPriceRange.trim(),
                   }),
                 });
                 if (res.ok) {
