@@ -1181,7 +1181,8 @@ export default function TripPage() {
                           {formatFullDate(d.departure_date)}
                           {d.label === '保證出團' && <span className="ml-8 inline-flex items-center rounded bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">保證出團</span>}
                           {d.label === '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">即將成團</span>}
-                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
+                          {d.label === '限時優惠' && <button type="button" onClick={(e) => { e.stopPropagation(); setShowPromoPopup(true); }} className="ml-8 inline-flex items-center rounded bg-gradient-to-r from-red-100 to-rose-100 px-2 py-0.5 text-xs font-bold text-red-600 transition hover:from-red-200 hover:to-rose-200">🔥 限時優惠</button>}
+                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && d.label !== '限時優惠' && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
                         </td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
@@ -1222,26 +1223,6 @@ export default function TripPage() {
                   <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
                   限時折500
                 </span>
-                {/* 限時優惠標籤 */}
-                {promoEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => isDevMode ? setShowPromoEditor(true) : setShowPromoPopup(true)}
-                    className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-red-500 to-rose-500 px-3 py-1 text-xs font-bold text-white shadow-sm transition hover:from-red-600 hover:to-rose-600"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    限時優惠
-                  </button>
-                )}
-                {isDevMode && !promoEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => setShowPromoEditor(true)}
-                    className="inline-flex items-center gap-1 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-400 transition hover:border-red-300 hover:text-red-500"
-                  >
-                    + 限時優惠
-                  </button>
-                )}
                 </div>
               <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 mt-2">
                 <div className="min-w-0">
@@ -1341,10 +1322,10 @@ export default function TripPage() {
                   <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                     <div className="text-xs font-semibold text-gray-600">標籤</div>
                     <div className="flex flex-wrap gap-1.5">
-                      {['保證出團', '即將成團'].map((lbl) => (
-                        <button key={lbl} type="button" onClick={() => setDepartureEditorLabel(departureEditorLabel === lbl ? '' : lbl)} className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${departureEditorLabel === lbl ? (lbl === '保證出團' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white') : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{lbl}</button>
+                      {['保證出團', '即將成團', '限時優惠'].map((lbl) => (
+                        <button key={lbl} type="button" onClick={() => { setDepartureEditorLabel(departureEditorLabel === lbl ? '' : lbl); if (lbl === '限時優惠' && departureEditorLabel !== lbl) setShowPromoEditor(true); }} className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${departureEditorLabel === lbl ? (lbl === '保證出團' ? 'bg-red-500 text-white' : lbl === '限時優惠' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' : 'bg-amber-500 text-white') : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{lbl}</button>
                       ))}
-                      {departureEditorLabel && departureEditorLabel !== '保證出團' && departureEditorLabel !== '即將成團' && (
+                      {departureEditorLabel && departureEditorLabel !== '保證出團' && departureEditorLabel !== '即將成團' && departureEditorLabel !== '限時優惠' && (
                         <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-600">{departureEditorLabel}</span>
                       )}
                     </div>
@@ -2140,6 +2121,7 @@ export default function TripPage() {
                     <span className={`text-sm font-medium ${isSelected ? 'text-sky-600' : 'text-gray-900'}`}>{shortDate}</span>
                     {d.label === '保證出團' && <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-600">保證出團</span>}
                     {d.label === '即將成團' && <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-600">即將成團</span>}
+                    {d.label === '限時優惠' && <span className="rounded bg-gradient-to-r from-red-100 to-rose-100 px-1 py-0.5 text-[9px] font-bold text-red-600">🔥 限時優惠</span>}
                   </div>
                   <span className="text-center text-sm text-gray-700">{d.seats_total || '—'}</span>
                   <span className="text-center text-sm text-gray-700">{d.seats_available ?? '—'}</span>
