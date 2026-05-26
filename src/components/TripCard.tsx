@@ -34,6 +34,8 @@ interface TripCardProps {
   document_is_available?: boolean;
   departure_dates?: DepartureDateInfo[];
   isDevMode?: boolean;
+  isCustomTour?: boolean;
+  onCustomTourToggle?: (tripId: string, value: boolean) => void;
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
   onDocumentAvailabilityUpdate?: (tripId: string, available: boolean) => void;
@@ -60,6 +62,8 @@ export default function TripCard({
   document_is_available,
   departure_dates,
   isDevMode = false,
+  isCustomTour = false,
+  onCustomTourToggle,
   onImageUpdate,
   onDocumentUpdate,
   onDocumentAvailabilityUpdate,
@@ -71,9 +75,10 @@ export default function TripCard({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(title);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleCoverClick = () => {
-    if (!isDevMode) {
+    if (!isDevMode && !isCustomTour) {
       const from = encodeURIComponent(window.location.pathname + window.location.search);
       window.location.href = `/trip/${id}?from=${from}`;
     }
@@ -157,6 +162,7 @@ export default function TripCard({
                 currentImageUrl={cover_image_url || ""}
                 title={title}
                 onUpdate={(newUrl) => onImageUpdate(id, newUrl)}
+                onSaveSuccess={(msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 2500); }}
                 uploadFn={uploadTripImage}
                 documentUrl={document_url}
                 onDocumentUpdate={onDocumentUpdate ? (url) => onDocumentUpdate(id, url) : undefined}
@@ -252,6 +258,23 @@ export default function TripCard({
             )}
           </div>
 
+          {/* 包團/客製標籤 */}
+          {isCustomTour && !isDevMode && (
+            <div className="flex items-center gap-2">
+              <span className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-bold text-sky-700">此團可以包團或客製</span>
+              <a
+                href={lineHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-1.5 text-sm font-bold text-white transition hover:bg-[#05b64d]"
+              >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                LINE 詢問
+              </a>
+            </div>
+          )}
+
           {/* 出發地（貼底） */}
           {!isDevMode && departurePlace && (
             <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
@@ -265,6 +288,17 @@ export default function TripCard({
 
           {/* 按鈕區 */}
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">
+
+            {/* Dev mode 包團/客製切換 */}
+            {isDevMode && onCustomTourToggle && (
+              <button
+                type="button"
+                onClick={() => onCustomTourToggle(id, !isCustomTour)}
+                className={`flex min-h-8 items-center justify-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold shadow transition active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm ${isCustomTour ? 'border-sky-300 bg-sky-100 text-sky-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+              >
+                {isCustomTour ? '✓ 已設包團/客製' : '+ 設為包團/客製'}
+              </button>
+            )}
 
             {/* Dev mode 刪除行程 */}
             {isDevMode && onDelete && (
@@ -290,6 +324,16 @@ export default function TripCard({
       </div>
 
       {/* 下載門檻彈窗 */}
+      {/* 上傳成功 toast */}
+      {toastMessage && createPortal(
+        <div className="fixed inset-x-0 top-20 z-modal-top flex justify-center pointer-events-none">
+          <div className="rounded-xl border border-emerald-200 bg-white px-6 py-3 text-sm font-bold text-emerald-600 shadow-lg pointer-events-auto">
+            ✓ {toastMessage}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showDownloadGate && createPortal(
         <div
           className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"

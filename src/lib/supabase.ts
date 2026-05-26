@@ -133,6 +133,7 @@ export type TripBanner = {
   deposit_label: string;
   side_image_url?: string;
   departure_info_map?: Record<string, DepartureBannerInfo>;
+  custom_tour?: boolean;
 };
 
 export type DepartureBannerInfo = {

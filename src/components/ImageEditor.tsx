@@ -495,9 +495,8 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                            onDocumentAvailabilityUpdate?.(result.document_is_available);
                            setSelectedDocFile(null);
                            setSelectedDocFileName("");
+                           if (onSaveSuccess) onSaveSuccess("行程檔案上傳成功！");
                            setIsOpen(false);
-                           if (onSaveSuccess) onSaveSuccess("行程檔案已儲存！");
-                           else alert("行程檔案已儲存！");
                         } catch (error) {
                           const msg = error instanceof Error ? error.message : "上傳失敗";
                           alert(`上傳失敗：${msg}`);

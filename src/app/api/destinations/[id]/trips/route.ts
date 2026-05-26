@@ -42,8 +42,8 @@ export async function GET(
         ...tripData,
         document_is_available: Boolean(trip.document_url),
         departure_dates: (rawDates || [])
-          .filter((d: any) => d.is_active && d.departure_date >= today)
-          .sort((a: any, b: any) => a.departure_date.localeCompare(b.departure_date)),
+          .filter((d: any) => d.is_active && (!d.departure_date || d.departure_date >= today))
+          .sort((a: any, b: any) => (a.departure_date || '').localeCompare(b.departure_date || '')),
       };
     });
 

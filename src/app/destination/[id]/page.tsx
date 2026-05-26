@@ -219,6 +219,28 @@ export default function DestinationPage() {
     );
   };
 
+  const handleCustomTourToggle = async (tripId: string, value: boolean) => {
+    try {
+      const trip = trips.find(t => t.id === tripId);
+      const currentBanner = trip?.trip_banner || {};
+      const updatedBanner = { ...currentBanner, custom_tour: value };
+      const res = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_banner: updatedBanner }),
+      });
+      if (res.ok) {
+        setTrips(prev =>
+          prev.map(t =>
+            t.id === tripId ? { ...t, trip_banner: updatedBanner } : t
+          )
+        );
+      }
+    } catch {
+      alert('設定失敗，請再試一次');
+    }
+  };
+
   const handleAddTrip = async () => {
     try {
       const newTrip = await createTrip(destinationId);
@@ -611,6 +633,8 @@ export default function DestinationPage() {
                           document_is_available={trip.document_is_available}
                           departure_dates={trip.departure_dates}
                           isDevMode={isDevMode}
+                          isCustomTour={trip.trip_banner?.custom_tour ?? false}
+                          onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
                           onDocumentAvailabilityUpdate={handleTripDocumentAvailabilityUpdate}
