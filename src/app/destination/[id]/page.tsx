@@ -222,8 +222,8 @@ export default function DestinationPage() {
   const handleCustomTourToggle = async (tripId: string, value: boolean) => {
     try {
       const trip = trips.find(t => t.id === tripId);
-      const currentBanner = trip?.trip_banner || {};
-      const updatedBanner = { ...currentBanner, custom_tour: value };
+      const currentBanner = trip?.trip_banner;
+      const updatedBanner = { ...(currentBanner || { code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '' }), custom_tour: value };
       const res = await fetch(`/api/trips/${tripId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
