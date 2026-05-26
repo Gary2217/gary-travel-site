@@ -134,6 +134,8 @@ export type TripBanner = {
   side_image_url?: string;
   departure_info_map?: Record<string, DepartureBannerInfo>;
   custom_tour?: boolean;
+  promo_enabled?: boolean;
+  promo_content?: string;
 };
 
 export type DepartureBannerInfo = {

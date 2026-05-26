@@ -156,6 +156,11 @@ export default function TripPage() {
   const [recommendedLoading, setRecommendedLoading] = useState(false);
   const recommendRef = useRef<HTMLDivElement>(null);
   const recommendFetched = useRef(false);
+  const [showPromoEditor, setShowPromoEditor] = useState(false);
+  const [promoContent, setPromoContent] = useState('');
+  const [promoEnabled, setPromoEnabled] = useState(false);
+  const [savingPromo, setSavingPromo] = useState(false);
+  const [showPromoPopup, setShowPromoPopup] = useState(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -470,6 +475,8 @@ export default function TripPage() {
     setEditTripBanner(nextBanner);
     setEditDayCount((trip.trip_banner?.code_label || '').replace(/\D/g, '').slice(0, 2));
     setEditNightCount((trip.trip_banner?.duration_label || '').replace(/\D/g, '').slice(0, 2));
+    setPromoEnabled(trip.trip_banner?.promo_enabled ?? false);
+    setPromoContent(trip.trip_banner?.promo_content ?? '');
   }, [trip]);
 
   useEffect(() => {
@@ -1208,13 +1215,34 @@ export default function TripPage() {
                 </div>
               )}
 
-              {/* 折扣券 + 底部價格 */}
+              {/* 折扣券 + 限時優惠 + 底部價格 */}
               <div className="border-t border-gray-100 px-4 pt-2.5 pb-0">
+                <div className="flex flex-wrap items-center gap-2">
                 <span className="relative inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 py-1 pl-3 pr-4 text-xs font-bold text-white shadow-sm before:absolute before:-left-1 before:top-1/2 before:h-2.5 before:w-2.5 before:-translate-y-1/2 before:rounded-full before:bg-white after:absolute after:-right-1 after:top-1/2 after:h-2.5 after:w-2.5 after:-translate-y-1/2 after:rounded-full after:bg-white">
                   <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.94s4.18 1.36 4.18 3.85c0 1.89-1.44 2.96-3.12 3.19z" /></svg>
                   限時折500
                 </span>
-              </div>
+                {/* 限時優惠標籤 */}
+                {promoEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => isDevMode ? setShowPromoEditor(true) : setShowPromoPopup(true)}
+                    className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-red-500 to-rose-500 px-3 py-1 text-xs font-bold text-white shadow-sm transition hover:from-red-600 hover:to-rose-600"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    限時優惠
+                  </button>
+                )}
+                {isDevMode && !promoEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPromoEditor(true)}
+                    className="inline-flex items-center gap-1 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-400 transition hover:border-red-300 hover:text-red-500"
+                  >
+                    + 限時優惠
+                  </button>
+                )}
+                </div>
               <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 mt-2">
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-gray-700">團費</div>
@@ -2143,6 +2171,69 @@ export default function TripPage() {
             <p className="text-base font-bold text-emerald-600">{saveSuccessMessage}</p>
           </div>
         </div>
+      )}
+      {/* 限時優惠 — 開發者編輯彈窗 */}
+      {showPromoEditor && createPortal(
+        <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowPromoEditor(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">編輯限時優惠</h3>
+              <button onClick={() => setShowPromoEditor(false)} className="text-gray-400 hover:text-gray-700">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                <span className="text-sm font-semibold text-gray-700">啟用限時優惠彈窗</span>
+                <button type="button" onClick={() => setPromoEnabled(!promoEnabled)} className={`relative h-6 w-11 rounded-full transition ${promoEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${promoEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+                </button>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-gray-500">優惠內容（用戶看到的文字）</label>
+                <textarea value={promoContent} onChange={e => setPromoContent(e.target.value)} rows={5} placeholder="例：即日起報名享早鳥優惠折扣 NT$500！&#10;加碼贈送：免費 WiFi 機&#10;活動期限：2026/06/30 止" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400" />
+              </div>
+              <button type="button" disabled={savingPromo} onClick={async () => {
+                setSavingPromo(true);
+                try {
+                  const updatedBanner = { ...editTripBanner, promo_enabled: promoEnabled, promo_content: promoContent.trim() };
+                  const res = await fetch(`/api/trips/${tripId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trip_banner: updatedBanner }) });
+                  if (res.ok) {
+                    const updated = await res.json();
+                    setTrip(prev => prev ? { ...prev, ...updated } : prev);
+                    setShowPromoEditor(false);
+                    showSaveSuccess('限時優惠已儲存');
+                  } else { alert('儲存失敗，請再試一次'); }
+                } catch { alert('儲存失敗'); } finally { setSavingPromo(false); }
+              }} className="w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60">
+                {savingPromo ? '儲存中...' : '儲存'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 限時優惠 — 用戶彈窗 */}
+      {showPromoPopup && promoEnabled && promoContent && createPortal(
+        <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowPromoPopup(false); }}>
+          <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="relative rounded-t-2xl bg-gradient-to-r from-red-500 to-rose-500 px-5 py-4">
+              <h3 className="text-lg font-black text-white">🎉 限時優惠</h3>
+              <button onClick={() => setShowPromoPopup(false)} className="absolute right-3 top-3 rounded-full bg-white/20 p-1 text-white transition hover:bg-white/40">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{promoContent}</div>
+              <a href={lineHref} target="_blank" rel="noopener noreferrer" className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#06C755] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#05b64d]">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                立即 LINE 詢問優惠
+              </a>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </main>
   );

@@ -35,6 +35,7 @@ interface TripCardProps {
   departure_dates?: DepartureDateInfo[];
   isDevMode?: boolean;
   isCustomTour?: boolean;
+  isPromoEnabled?: boolean;
   onCustomTourToggle?: (tripId: string, value: boolean) => void;
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
@@ -63,6 +64,7 @@ export default function TripCard({
   departure_dates,
   isDevMode = false,
   isCustomTour = false,
+  isPromoEnabled = false,
   onCustomTourToggle,
   onImageUpdate,
   onDocumentUpdate,
@@ -218,7 +220,10 @@ export default function TripCard({
                   <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
                     {title}
                   </h3>
-                  <div className="shrink-0">
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {isPromoEnabled && (
+                      <span className="rounded-md bg-gradient-to-r from-red-500 to-rose-500 px-2 py-0.5 text-[10px] font-bold text-white sm:text-xs">限時優惠</span>
+                    )}
                     <ShareButton title={title} url={`/trip/${id}`} small />
                   </div>
                 </div>
