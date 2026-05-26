@@ -112,7 +112,7 @@ export default function TripCard({
 
   return (
     <>
-        <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
+        <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md min-h-[160px] sm:min-h-[180px] md:min-h-[200px]">
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
           className={`relative h-[140px] w-[140px] shrink-0 overflow-hidden sm:h-[160px] sm:w-48 md:h-auto md:w-[300px] md:self-stretch lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
