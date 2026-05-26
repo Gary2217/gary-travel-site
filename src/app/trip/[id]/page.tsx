@@ -625,7 +625,7 @@ export default function TripPage() {
     };
 
     const departurePayload = {
-      departure_date: departureEditorDate,
+      departure_date: departureEditorDate || null,
       price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
