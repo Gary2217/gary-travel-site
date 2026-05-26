@@ -260,16 +260,16 @@ export default function TripCard({
 
           {/* 包團/客製標籤 */}
           {isCustomTour && !isDevMode && (
-            <div className="flex items-center gap-2">
-              <span className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-bold text-sky-700">此團可以包團或客製</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-base font-bold text-sky-700 sm:text-lg">此團可包團或客製，歡迎詢問</span>
               <a
                 href={lineHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-1.5 text-sm font-bold text-white transition hover:bg-[#05b64d]"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#06C755] px-5 py-2 text-base font-bold text-white transition hover:bg-[#05b64d] sm:text-lg"
               >
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
                 LINE 詢問
               </a>
             </div>
