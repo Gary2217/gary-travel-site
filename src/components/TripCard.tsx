@@ -18,6 +18,7 @@ interface DepartureDateInfo {
   price: number | null;
   seats_available: number;
   seats_total: number;
+  label?: string | null;
   outbound_from?: string | null;
   flight_segments?: Array<{
     dep_airport?: string;
