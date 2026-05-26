@@ -624,13 +624,15 @@ export default function TripPage() {
       },
     };
 
-    const departurePayload = {
-      departure_date: departureEditorDate || null,
+    const departurePayload: Record<string, unknown> = {
       price: parseDeparturePrice(departureEditorPrice),
       seats_total: editTripBanner.seats_total,
       seats_available: editTripBanner.seats_available,
       label: departureEditorLabel || null,
     };
+    if (departureEditorDate) {
+      departurePayload.departure_date = departureEditorDate;
+    }
 
     try {
       const [tripRes, departureRes] = await Promise.all([
