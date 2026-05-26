@@ -115,7 +115,7 @@ export default function TripCard({
         <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative h-[140px] w-[140px] shrink-0 overflow-hidden sm:h-[160px] sm:w-48 md:h-[220px] md:w-[300px] lg:h-[240px] lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative h-[140px] w-[140px] shrink-0 overflow-hidden sm:h-[160px] sm:w-48 md:h-auto md:w-[300px] md:self-stretch lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
           <div className="relative h-full w-full">
@@ -179,7 +179,7 @@ export default function TripCard({
         </div>
 
         {/* 右側文字內容 */}
-        <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3 md:p-4">
+        <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3 md:justify-between md:p-4">
           <div className="space-y-3">
           <div>
             {isDevMode ? (
@@ -254,18 +254,20 @@ export default function TripCard({
                   )}
                 </div>
 
-                {!isDevMode && departurePlace && (
-                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
-                    <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>出發地：{departurePlace}</span>
-                  </div>
-                )}
               </div>
             )}
           </div>
+
+          {/* 出發地（貼底） */}
+          {!isDevMode && departurePlace && (
+            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
+              <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>出發地：{departurePlace}</span>
+            </div>
+          )}
 
           {/* 按鈕區 */}
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">
