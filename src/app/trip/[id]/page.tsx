@@ -858,6 +858,7 @@ export default function TripPage() {
   const departureMonthKeys = (() => {
     const map = new Map<string, boolean>();
     departureDates.forEach(d => {
+      if (!d.departure_date) return;
       const dt = new Date(d.departure_date + 'T00:00:00');
       map.set(`${dt.getFullYear()}-${dt.getMonth() + 1}`, true);
     });
@@ -1224,6 +1225,7 @@ export default function TripPage() {
                   限時折500
                 </span>
                 </div>
+              </div>
               <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 mt-2">
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-gray-700">團費</div>
