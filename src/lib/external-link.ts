@@ -11,10 +11,11 @@ export function openExternalLink(url: string) {
 
   if (typeof window === "undefined") return;
 
-  if (isInAppOrMobileBrowser()) {
-    window.location.assign(url);
-    return;
-  }
+  // 優先嘗試開新分頁，讓使用者能返回網站
+  const newWindow = window.open(url, "_blank", "noopener,noreferrer");
 
-  window.open(url, "_blank", "noopener,noreferrer");
+  // 若被 in-app 瀏覽器攔截（回傳 null），才 fallback 跳轉
+  if (!newWindow) {
+    window.location.assign(url);
+  }
 }
