@@ -15,33 +15,70 @@
 
 ---
 
-## 2. 模型分流規則（省 Token 優先）
+## 2. 模型分流規則（省 Token 最優先）
 
-預設用最低層級模型，只有確實需要才往上升。
+**原則：預設 Haiku，確實不夠才升 Sonnet，極少用 Opus。**
+
+### 判斷流程（每次任務前必須跑）
+
+```
+1. 改幾個檔案？
+   → 1-2 檔 → 大概率 Haiku
+   → 3-4 檔 → 大概率 Sonnet
+   → 5+ 檔  → 才考慮 Opus
+
+2. 需要理解跨檔邏輯嗎？
+   → 不需要（改 class、換文字、修單一函式）→ Haiku
+   → 需要（資料流、元件互動、API 串接）→ Sonnet
+
+3. 是已知解法還是要設計方案？
+   → 已知（加 class、換 href、改 props）→ Haiku
+   → 要想（新功能架構、效能問題根因）→ Sonnet / Opus
+```
 
 ### Claude 模型
 
-| 層級 | 模型 | 適用場景 |
-|------|------|----------|
-| 🔴 重度（少用） | **Opus** | 跨 5 檔以上架構重構、DB schema 重新設計（非新增欄位）、找不出原因的跨檔 bug、安全性審查 |
-| 🟡 主力 | **Sonnet** | 新功能開發（頁面、元件、API route）、2-4 檔重構、Code review、效能優化、SQL migration、CLAUDE.md 更新、中等複雜度除錯 |
-| 🟢 輕量（優先用） | **Haiku** | 文案修改/翻譯、Tailwind 樣式微調（顏色、間距、字體）、新增/修改 env 變數、格式修正/import 排序、明確的單行 bug fix、已知解法套用（如加 `"use client"`）、git commit message |
+| 層級 | 模型 | 適用場景 | 本專案實際範例 |
+|------|------|----------|---------------|
+| 🟢 輕量（**預設用這個**） | **Haiku** | 1-2 檔修改、Tailwind 樣式、文案、單一函式修改、已知解法套用、env 變數、git commit message | 卡片加 `min-h`、日期行加 `whitespace-nowrap`、`<a>` 改 `<button>`、社群連結 URL 修改、`openExternalLink` 改 `window.open`、圖片換 URL、文案中文修改、加 `"use client"`、改 `text-sm` → `text-xs` |
+| 🟡 主力 | **Sonnet** | 新頁面/元件/API route 開發、3-4 檔重構、中等除錯（要追資料流）、SQL migration、效能優化、Code review | 新增機票頁面、新增 API route、TripCard 元件重寫、Supabase query 優化、出團日期功能開發、搜尋功能開發 |
+| 🔴 重度（**極少用**） | **Opus** | 5+ 檔架構重構、DB schema 重新設計、找不到原因的跨檔 bug、安全性審查、整體效能瓶頸分析 | 整站資料流重構、RLS 政策全面審查、從 Pages Router 遷移到 App Router |
 
 ### GPT 模型
 
 | 層級 | 模型 | 適用場景 |
 |------|------|----------|
-| 🔴 重度（少用） | **GPT-4o** | 同 Opus 適用場景 |
+| 🟢 輕量（**預設用這個**） | **GPT-4.1-nano** | 同 Haiku 適用場景 |
 | 🟡 主力 | **GPT-4o-mini** | 同 Sonnet 適用場景 |
-| 🟢 輕量（優先用） | **GPT-4.1-nano** | 同 Haiku 適用場景 |
+| 🔴 重度（**極少用**） | **GPT-4o** | 同 Opus 適用場景 |
+
+### 本專案常見任務 → 對應模型速查
+
+| 任務類型 | 模型 | 說明 |
+|----------|------|------|
+| Tailwind class 增刪改 | 🟢 Haiku | 改顏色、間距、字體、RWD 斷點、加 `min-h` / `whitespace-nowrap` |
+| 社群連結/URL 修改 | 🟢 Haiku | 換 LINE/FB/IG 連結、改 `target` 行為 |
+| 文案修改/翻譯 | 🟢 Haiku | 按鈕文字、提示訊息、SEO 文案 |
+| 單一元件小改 | 🟢 Haiku | 改 props、加條件渲染、調整排版 |
+| 單一函式修改 | 🟢 Haiku | `openExternalLink` 邏輯修改、格式化函式調整 |
+| `<a>` 改 `<button>` 等標籤替換 | 🟢 Haiku | HTML 標籤變更、屬性調整 |
+| env 變數新增/修改 | 🟢 Haiku | `.env` 和引用處一起改 |
+| git commit / push | 🟢 Haiku | 寫 commit message、推送 |
+| 新頁面開發 | 🟡 Sonnet | 整頁 + API route + 型別定義 |
+| 新元件開發 | 🟡 Sonnet | 完整元件（含 state、事件、樣式） |
+| 跨檔除錯 | 🟡 Sonnet | 資料流追蹤、API 回傳格式問題 |
+| SQL migration | 🟡 Sonnet | 新增欄位、建 index、RLS policy |
+| 整站架構調整 | 🔴 Opus | 資料流重構、大規模 schema 變更 |
+| 安全性/效能審查 | 🔴 Opus | 全面檢查、跨模組分析 |
 
 ### Token 節省策略
 
-- 預設用最低層級，確實不夠才升級
-- 不跑不必要的背景探索任務，用直接讀取檔案方式
+- **預設 Haiku**，確實不夠才升級，不要「怕出錯」就用高階模型
+- 不跑不必要的背景探索任務，直接讀取已知檔案
 - 一次只修必要檔案，不做「順便改善」
 - 回覆精簡，不加多餘解釋或寒暄
 - 不掃描整個 repo，只看相關檔案
+- 同類型小修改合併成一次請求（例如三個元件都要改 class → 一次講完）
 
 ---
 
