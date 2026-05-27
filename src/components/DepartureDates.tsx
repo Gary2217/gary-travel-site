@@ -397,6 +397,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const today = new Date().toLocaleDateString("sv-SE");
   const [formDate, setFormDate] = useState(today);
+  const [formSchedule, setFormSchedule] = useState("");
   const [formSegments, setFormSegments] = useState<FlightSegment[]>([]);
 
   const emptySegment = (date?: string): FlightSegment => ({
@@ -435,6 +436,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
 
   const resetForm = () => {
     setFormDate(today);
+    setFormSchedule("");
     setFormSegments([]);
     setEditingId(null);
   };
@@ -483,12 +485,13 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     };
   };
 
-  /** 航班專用 payload（編輯梯次用，不碰 price/label/seats 避免覆蓋） */
+  /** 航班專用 payload（編輯梯次用，含 schedule label） */
   const buildFlightPayload = () => {
     const out = formSegments[0];
     const ret = formSegments.length > 1 ? formSegments[formSegments.length - 1] : null;
     return {
       departure_date: formDate,
+      ...(formSchedule ? { label: formSchedule } : {}),
       airline: out?.airline || null,
       outbound_flight: out?.flight_number || null,
       outbound_time: out?.dep_time || null,
@@ -600,6 +603,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const openEditForm = (d: DepartureDate) => {
     setEditingId(d.id);
     setFormDate(d.departure_date);
+    setFormSchedule(d.label && d.label.includes('去') ? d.label : "");
     if (d.flight_segments && d.flight_segments.length > 0) {
       // 自動同步第一段航班日期為出發日期
       setFormSegments(d.flight_segments.map((s, i) => i === 0 ? { ...s, date: d.departure_date } : s));
@@ -676,7 +680,21 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 )}
               </div>
             </div>
-
+            <div>
+              <label className={labelClass}>航班時段</label>
+              <select value={formSchedule} onChange={(e) => setFormSchedule(e.target.value)} className={inputClass}>
+                <option value="">無</option>
+                <option value="早去早回">早去早回</option>
+                <option value="早去午回">早去午回</option>
+                <option value="早去晚回">早去晚回</option>
+                <option value="午去早回">午去早回</option>
+                <option value="午去午回">午去午回</option>
+                <option value="午去晚回">午去晚回</option>
+                <option value="晚去早回">晚去早回</option>
+                <option value="晚去午回">晚去午回</option>
+                <option value="晚去晚回">晚去晚回</option>
+              </select>
+            </div>
           </div>
 
           {/* 航班明細 */}

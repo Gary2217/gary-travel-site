@@ -1361,9 +1361,7 @@ export default function TripPage() {
                       {['保證出團', '即將成團', '限時優惠'].map((lbl) => (
                         <button key={lbl} type="button" onClick={() => { setDepartureEditorLabel(departureEditorLabel === lbl ? '' : lbl); if (lbl === '限時優惠' && departureEditorLabel !== lbl) setShowPromoEditor(true); }} className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${departureEditorLabel === lbl ? (lbl === '保證出團' ? 'bg-red-500 text-white' : lbl === '限時優惠' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' : 'bg-amber-500 text-white') : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{lbl}</button>
                       ))}
-                      {departureEditorLabel && departureEditorLabel !== '保證出團' && departureEditorLabel !== '即將成團' && departureEditorLabel !== '限時優惠' && (
-                        <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-600">{departureEditorLabel}</span>
-                      )}
+
                     </div>
                   </div>
                 </div>
