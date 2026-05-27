@@ -1092,7 +1092,7 @@ export default function TripPage() {
                 {(selectedDeparture?.seats_total ?? 0) > 0 ? (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">
-                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18v3h3v-3h10v3h3v-3h1a1 1 0 001-1v-3H2v3a1 1 0 001 1h1zM19 6V5a3 3 0 00-3-3H8a3 3 0 00-3 3v1a3 3 0 00-3 3v4h20V9a3 3 0 00-3-3zM7 5a1 1 0 011-1h8a1 1 0 011 1v1H7V5z" /></svg>
                     </span>
                     <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
                   </div>
@@ -1132,8 +1132,8 @@ export default function TripPage() {
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">訂金</label><input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">單人房差</label><input value={detailSingleRoom} onChange={(e) => setDetailSingleRoom(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
-                    <div><label className="mb-0.5 block text-[10px] text-gray-500">簽證費</label><input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
-                    <div><label className="mb-0.5 block text-[10px] text-gray-500">附加費</label><input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                    <div><label className="mb-0.5 block text-[10px] text-gray-500">包含項目</label><input value={detailSurcharge} onChange={(e) => setDetailSurcharge(e.target.value)} placeholder="例：含機場稅燃油附加費" className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                    <div><label className="mb-0.5 block text-[10px] text-gray-500">不包含項目</label><input value={detailVisaFee} onChange={(e) => setDetailVisaFee(e.target.value)} placeholder="例：不含導遊領隊小費" className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
                   </div>
                   <div className="space-y-2">
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">團體說明</label><textarea value={detailGroupNote} onChange={(e) => setDetailGroupNote(e.target.value)} rows={2} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs leading-5 outline-none focus:border-sky-400" /></div>
@@ -2020,7 +2020,7 @@ export default function TripPage() {
           onClick={(e) => { if (e.target === e.currentTarget) setShowPriceInfoModal(false); }}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl sm:p-6"
+            className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl sm:max-w-md sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -2033,39 +2033,43 @@ export default function TripPage() {
               </button>
             </div>
 
-            {/* 價格表 */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">大人</th>
-                    <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">小孩佔床</th>
-                    <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">小孩不佔床</th>
-                    <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">加床</th>
-                    <th className="whitespace-nowrap px-2 py-2 font-medium text-gray-600">嬰兒</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="whitespace-nowrap px-2 py-2 font-bold text-sky-600">{displayAdultUnit(priceDetailPreview.adultPrice)}</td>
-                    <td className="whitespace-nowrap px-2 py-2 font-bold text-gray-900">{displayChildPrice(priceDetailPreview.childWithBedPrice)}</td>
-                    <td className="whitespace-nowrap px-2 py-2 font-bold text-sky-600">{displayChildPrice(priceDetailPreview.childNoBedPrice)}</td>
-                    <td className="whitespace-nowrap px-2 py-2 font-bold text-gray-900">{displayChildPrice(priceDetailPreview.childExtraBedPrice)}</td>
-                    <td className="whitespace-nowrap px-2 py-2 font-bold text-sky-600">{displayInfantUnit(priceDetailPreview.infantPrice)}</td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* 價格表 — 直式排版 */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm sm:grid-cols-3">
+              <div>
+                <div className="text-[11px] text-gray-500">大人</div>
+                <div className="font-bold text-sky-600">{displayAdultUnit(priceDetailPreview.adultPrice)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-500">小孩佔床</div>
+                <div className="font-bold text-gray-900">{displayChildPrice(priceDetailPreview.childWithBedPrice)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-500">小孩不佔床</div>
+                <div className="font-bold text-sky-600">{displayChildPrice(priceDetailPreview.childNoBedPrice)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-500">加床</div>
+                <div className="font-bold text-gray-900">{displayChildPrice(priceDetailPreview.childExtraBedPrice)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-500">嬰兒</div>
+                <div className="font-bold text-sky-600">{displayInfantUnit(priceDetailPreview.infantPrice)}</div>
+              </div>
             </div>
 
             <div className="mt-3 space-y-2 text-sm">
-              <div className="flex gap-2">
-                <span className="shrink-0 font-medium text-sky-600">○ 包含項目</span>
-                <span className="text-gray-600">{[displaySurchargeText(priceDetailPreview.surcharge) !== '售價已內含' ? displaySurchargeText(priceDetailPreview.surcharge) : '含機場稅燃油附加費', displayVisaFeeText(priceDetailPreview.visaFee)].filter(Boolean).join('，')}</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="shrink-0 font-medium text-red-400">× 不包含項目</span>
-                <span className="text-gray-600">{priceDetailPreview.quoteNote && priceDetailPreview.quoteNote !== '《無特殊說明》' ? priceDetailPreview.quoteNote : '不含導遊領隊小費'}</span>
-              </div>
+              {(priceDetailPreview.surcharge || priceDetailPreview.visaFee) && (
+                <div className="flex gap-2">
+                  <span className="shrink-0 font-medium text-sky-600">○ 包含項目</span>
+                  <span className="text-gray-600">{[priceDetailPreview.surcharge, priceDetailPreview.visaFee].filter(v => v && v !== '售價已內含' && v !== '免簽證').join('，') || '含機場稅燃油附加費'}</span>
+                </div>
+              )}
+              {priceDetailPreview.quoteNote && priceDetailPreview.quoteNote !== '《無特殊說明》' && (
+                <div className="flex gap-2">
+                  <span className="shrink-0 font-medium text-red-400">× 不包含項目</span>
+                  <span className="text-gray-600">{priceDetailPreview.quoteNote}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <span className="text-gray-500">單人房差</span>
                 <span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span>
