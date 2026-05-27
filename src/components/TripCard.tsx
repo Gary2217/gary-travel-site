@@ -34,6 +34,7 @@ interface TripCardProps {
   document_url?: string;
   document_is_available?: boolean;
   departure_dates?: DepartureDateInfo[];
+  tags?: string[];
   isDevMode?: boolean;
   isCustomTour?: boolean;
   isPromoEnabled?: boolean;
@@ -64,6 +65,7 @@ export default function TripCard({
   document_url,
   document_is_available,
   departure_dates,
+  tags,
   isDevMode = false,
   isCustomTour = false,
   isPromoEnabled = false,
@@ -123,10 +125,10 @@ export default function TripCard({
 
   return (
     <>
-        <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md min-h-[160px] sm:min-h-[180px] md:min-h-[200px]">
+        <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative h-[140px] w-[140px] shrink-0 overflow-hidden sm:h-[160px] sm:w-48 md:h-auto md:w-[300px] md:self-stretch lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative w-[140px] shrink-0 self-stretch overflow-hidden sm:w-48 md:w-[300px] lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
           <div className="relative h-full w-full">
@@ -182,7 +184,7 @@ export default function TripCard({
         </div>
 
         {/* 右側文字內容 */}
-        <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3 md:justify-between md:p-4">
+        <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:p-3 md:p-4">
           <div className="space-y-3">
           <div>
             {isDevMode ? (
@@ -230,10 +232,10 @@ export default function TripCard({
                 </div>
 
                 {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
-                    <div className="flex flex-wrap items-end gap-x-1 gap-y-0.5">
-                      {departure_dates.filter(dd => dd.departure_date).slice(0, 3).map((dd, i, arr) => {
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
+                      <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
+                      {departure_dates.filter(dd => dd.departure_date).slice(0, 6).map((dd, i, arr) => {
                         const d = new Date(dd.departure_date + 'T00:00:00');
                         const dateStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
                         const isPromo = dd.label === '限時優惠';
@@ -251,60 +253,59 @@ export default function TripCard({
                           </span>
                         );
                       })}
+                      {departure_dates.filter(dd => dd.departure_date).length > 6 && <span className="text-sm text-gray-400">...更多</span>}
                     </div>
+                    {price_range && (
+                      <div className="shrink-0 text-right">
+                        <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">$ {displayPriceRange?.replace(/NT\s*\$\s*/g, '')}</span>
+                        <span className="ml-0.5 text-[10px] text-gray-500">起</span>
+                      </div>
+                    )}
                   </div>
                 )}
-
-                <div className="flex items-center justify-between gap-2">
-                  {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 3 ? (
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-sm text-gray-700 sm:text-base">
-                        {departure_dates.filter(dd => dd.departure_date).slice(3, 5).map(dd => {
-                          const d = new Date(dd.departure_date + 'T00:00:00');
-                          return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-                        }).join('、')}{departure_dates.filter(dd => dd.departure_date).length > 5 ? ' ...更多' : ''}
-                      </span>
-                    </div>
-                  ) : <div />}
-                  {price_range && (
-                    <div className="shrink-0 text-right">
-                      <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">$ {displayPriceRange?.replace(/NT\s*\$\s*/g, '')}</span>
-                      <span className="ml-0.5 text-[10px] text-gray-500">起</span>
-                    </div>
-                  )}
-                </div>
 
               </div>
             )}
           </div>
 
-          {/* 包團/客製標籤 */}
-          {isCustomTour && !isDevMode && (
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-base font-bold text-sky-700 sm:text-lg">此團可包團或客製，歡迎詢問</span>
-              <a
-                href={lineHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#06C755] px-5 py-2 text-base font-bold text-white transition hover:bg-[#05b64d] sm:text-lg"
-              >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
-                LINE 詢問
-              </a>
-            </div>
-          )}
+          {/* 下半區：標籤 + 出發地 + 包團（mt-auto 推到底部） */}
+          <div className="mt-2 space-y-5">
+            {tags && tags.length > 0 && !isDevMode && (
+              <div className="flex flex-wrap items-center gap-1">
+                {tags.map((tag, i) => (
+                  <span key={i} className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600 sm:text-xs">{tag}</span>
+                ))}
+              </div>
+            )}
 
-          {/* 出發地（貼底） */}
-          {!isDevMode && departurePlace && (
-            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
-              <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>出發地：{departurePlace}</span>
-            </div>
-          )}
+            {/* 出發地 */}
+            {!isDevMode && departurePlace && (
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
+                <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>出發地：{departurePlace}</span>
+              </div>
+            )}
+
+            {/* 包團/客製標籤 */}
+            {isCustomTour && !isDevMode && (
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-base font-bold text-sky-700 sm:text-lg">此團可包團或客製，歡迎詢問</span>
+                <a
+                  href={lineHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#06C755] px-5 py-2 text-base font-bold text-white transition hover:bg-[#05b64d] sm:text-lg"
+                >
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                  LINE 詢問
+                </a>
+              </div>
+            )}
+          </div>
 
           {/* 按鈕區 */}
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">

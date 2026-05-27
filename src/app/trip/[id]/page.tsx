@@ -1056,6 +1056,21 @@ export default function TripPage() {
           {/* 產品資訊 — 桌面左欄第2行（手機隱藏） */}
           <div className="hidden min-w-0 lg:block lg:order-none lg:col-start-1 lg:row-start-2">
             <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
+                {editTripBanner.tags && editTripBanner.tags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {editTripBanner.tags.map((tag, i) => (
+                      <span key={i} className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">{tag}</span>
+                    ))}
+                  </div>
+                )}
+                {selectedDeparture?.label && selectedDeparture.label.includes('去') && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{selectedDeparture.label}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5">
                   <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
                   <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || '—'}</span>
@@ -1087,14 +1102,23 @@ export default function TripPage() {
                     <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
                   </div>
                 )}
-              {/* ── 團位 + 售價說明（同一列） ── */}
+              {/* ── 團位 ── */}
+              {(selectedDeparture?.seats_total ?? 0) > 0 && (
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">
+                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18v3h3v-3h10v3h3v-3h1a1 1 0 001-1v-3H2v3a1 1 0 001 1h1zM19 6V5a3 3 0 00-3-3H8a3 3 0 00-3 3v1a3 3 0 00-3 3v4h20V9a3 3 0 00-3-3zM7 5a1 1 0 011-1h8a1 1 0 011 1v1H7V5z" /></svg>
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                </div>
+              )}
+              {/* ── 成團人數 + 售價說明（同一列） ── */}
               <div className="flex items-center justify-between gap-2">
-                {(selectedDeparture?.seats_total ?? 0) > 0 ? (
+                {editTripBanner.min_group_size ? (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">
-                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18v3h3v-3h10v3h3v-3h1a1 1 0 001-1v-3H2v3a1 1 0 001 1h1zM19 6V5a3 3 0 00-3-3H8a3 3 0 00-3 3v1a3 3 0 00-3 3v4h20V9a3 3 0 00-3-3zM7 5a1 1 0 011-1h8a1 1 0 011 1v1H7V5z" /></svg>
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     </span>
-                    <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                    <span className="text-sm font-medium text-gray-900">成團人數 <strong>{editTripBanner.min_group_size}</strong> 人</span>
                   </div>
                 ) : <div />}
                 <div className="flex shrink-0 gap-1.5">
@@ -1108,14 +1132,6 @@ export default function TripPage() {
                   )}
                 </div>
               </div>
-              {editTripBanner.min_group_size && (
-                <div className="flex items-center gap-2.5">
-                  <span className="min-w-[36px] text-[11px] text-sky-600">
-                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">成團人數 <strong>{editTripBanner.min_group_size}</strong> 人</span>
-                </div>
-              )}
 
               {/* Dev mode 售價編輯（展開在卡片內） */}
               {isDevMode && showPriceDetailModal && (
@@ -1197,7 +1213,7 @@ export default function TripPage() {
                           {d.label === '保證出團' && <span className="ml-8 inline-flex items-center rounded bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">保證出團</span>}
                           {d.label === '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">即將成團</span>}
                           {d.label === '限時優惠' && <button type="button" onClick={(e) => { e.stopPropagation(); setShowPromoPopup(true); }} className="ml-8 inline-flex items-center rounded bg-gradient-to-r from-red-100 to-rose-100 px-2 py-0.5 text-xs font-bold text-red-600 transition hover:from-red-200 hover:to-rose-200">🔥 限時優惠</button>}
-                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && d.label !== '限時優惠' && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
+                          {d.label && d.label !== '保證出團' && d.label !== '即將成團' && d.label !== '限時優惠' && !d.label.includes('去') && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
                         </td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
@@ -1473,6 +1489,29 @@ export default function TripPage() {
           onSaveSuccess={() => showSaveSuccess('出團梯次已儲存')}
         />
 
+        {/* ═══ 手機版：團號 + 航班標籤 + 標籤（桌面版在左欄顯示） ═══ */}
+        {selectedDeparture && (
+          <div className="mb-4 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm lg:hidden">
+            {editTripBanner.tags && editTripBanner.tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {editTripBanner.tags.map((tag, i) => (
+                  <span key={i} className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">{tag}</span>
+                ))}
+              </div>
+            )}
+            {selectedDeparture.label && selectedDeparture.label.includes('去') && (
+              <div className="flex items-center gap-2.5">
+                <svg className="h-4 w-4 shrink-0 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                <span className="text-sm font-medium text-gray-900">{selectedDeparture.label}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2.5">
+              <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
+              <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || '—'}</span>
+            </div>
+          </div>
+        )}
+
         {/* ═══ 航班資訊 ═══ */}
         {hasFlightData && flightSource && (
           <section className="mb-8 flex flex-col gap-0 sm:flex-row">
@@ -1482,17 +1521,17 @@ export default function TripPage() {
             </div>
             {/* 手機版標題（已整合到下方卡片） */}
             <div className="min-w-0 flex-1">
-            <div className="hidden flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-2 sm:flex sm:rounded-tl-none">
+            <div className="hidden flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-3 sm:flex sm:rounded-tl-none">
               <div className="flex items-center gap-2">
-                <svg className="h-3.5 w-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span className="text-xs font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
+                <svg className="h-4 w-4 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span className="text-sm font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
                 {flightSource.label && (
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${flightSource.label === '保證出團' ? 'bg-red-100 text-red-600' : flightSource.label === '即將成團' ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${flightSource.label === '保證出團' ? 'bg-red-100 text-red-600' : flightSource.label === '即將成團' ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>
                     {flightSource.label}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] text-amber-600">實際航班以團體確認為準</span>
+              <span className="text-xs text-amber-600">實際航班以團體確認為準</span>
             </div>
 
             {flightSource.flight_segments && flightSource.flight_segments.length > 0 ? (
@@ -1500,10 +1539,10 @@ export default function TripPage() {
                 {/* 桌面版航班表格 */}
                 <div className="hidden overflow-hidden rounded-r-lg rounded-bl-lg border border-gray-200 sm:block">
                   <div className="grid grid-cols-[84px_1.4fr_1fr_1fr] bg-gray-50">
-                    <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">航段</div>
-                    <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">班機日期・航空公司及航班</div>
-                    <div className="border-b border-r border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">起飛時間及機場</div>
-                    <div className="border-b border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-500">抵達時間及機場</div>
+                    <div className="border-b border-r border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">航段</div>
+                    <div className="border-b border-r border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">班機日期・航空公司及航班</div>
+                    <div className="border-b border-r border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">起飛時間及機場</div>
+                    <div className="border-b border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">抵達時間及機場</div>
                   </div>
                   {flightSource.flight_segments.map((seg, i) => {
                     const total = flightSource.flight_segments!.length;
@@ -1525,14 +1564,14 @@ export default function TripPage() {
                         <div className="flex flex-col justify-center border-r border-gray-200 px-3 py-3">
                           <div className="flex items-baseline gap-2">
                             {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
-                            {seg.dep_airport && <span className="text-xs text-gray-600">{seg.dep_airport}</span>}
+                            {seg.dep_airport && <span className="text-sm text-gray-600">{seg.dep_airport}</span>}
                           </div>
                         </div>
                         <div className="flex flex-col justify-center px-3 py-3">
                           <div className="flex items-baseline gap-2">
                             {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
-                            {seg.arr_airport && <span className="text-xs text-gray-600">{seg.arr_airport}</span>}
-                            {seg.next_day && <span className="ml-1 text-[10px] text-amber-600">+1</span>}
+                            {seg.arr_airport && <span className="text-sm text-gray-600">{seg.arr_airport}</span>}
+                            {seg.next_day && <span className="ml-1 text-base font-bold text-amber-600">+1天</span>}
                           </div>
                         </div>
                       </div>
@@ -1582,7 +1621,7 @@ export default function TripPage() {
                           <div className="text-right">
                             <div className="text-xl font-bold text-gray-900">
                               {seg.arr_time || '—'}
-                              {seg.next_day && <span className="ml-1 text-sm font-medium text-amber-600">(跨日)</span>}
+                              {seg.next_day && <span className="ml-1 text-base font-bold text-amber-600">+1天</span>}
                             </div>
                             <div className="mt-0.5 text-xs text-gray-500">{seg.arr_airport || ''}</div>
                           </div>
@@ -1604,7 +1643,7 @@ export default function TripPage() {
                     <span className="text-xs text-gray-700">{formatFullDate(flightSource.departure_date)}</span>
                     <span className="text-xs text-gray-700">{flightSource.airline} {flightSource.outbound_flight}</span>
                     <span className="text-xs"><span className="font-semibold text-gray-900">{flightSource.outbound_time}</span> {flightSource.outbound_from}</span>
-                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{flightSource.outbound_arrival_time}</span> {flightSource.outbound_to}{flightSource.outbound_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
+                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{flightSource.outbound_arrival_time}</span> {flightSource.outbound_to}{flightSource.outbound_next_day && <span className="ml-1 font-bold text-amber-600">+1天</span>}</span>
                   </div>
                 )}
                 {(flightSource.return_flight || flightSource.return_time) && (
@@ -1613,7 +1652,7 @@ export default function TripPage() {
                     <span className="text-xs text-gray-700">{flightSource.return_date ? formatFullDate(flightSource.return_date) : '—'}</span>
                     <span className="text-xs text-gray-700">{flightSource.airline} {flightSource.return_flight}</span>
                     <span className="text-xs"><span className="font-semibold text-gray-900">{flightSource.return_time}</span> {flightSource.return_from}</span>
-                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{flightSource.return_arrival_time}</span> {flightSource.return_to}{flightSource.return_next_day && <span className="ml-1 text-amber-600">+1</span>}</span>
+                    <span className="text-xs">→ <span className="font-semibold text-gray-900">{flightSource.return_arrival_time}</span> {flightSource.return_to}{flightSource.return_next_day && <span className="ml-1 font-bold text-amber-600">+1天</span>}</span>
                   </div>
                 )}
               </div>

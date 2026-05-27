@@ -7,6 +7,7 @@ const CITIES = ["桃園", "台中", "高雄", "松山", "其他"];
 
 // 機場清單：tw:true 為台灣出發機場（預設優先顯示）
 const AIRPORTS = [
+  { code: "TPE", name: "桃園國際機場", tw: true },
   { code: "TPE", name: "桃園國際機場第一航廈", tw: true },
   { code: "TPE", name: "桃園國際機場第二航廈", tw: true },
   { code: "TSA", name: "台北松山機場", tw: true },
@@ -191,10 +192,10 @@ function CountdownBadge({ days }: { days: number }) {
 
 function SeatsBadge({ available, total }: { available: number; total: number }) {
   if (total === 0 && available === 0) return null;
-  if (available === 0 && total > 0) return <span className="mt-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-500">已售罄</span>;
-  if (available <= 3) return <span className="mt-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">僅剩 {available} 位</span>;
-  if (available <= 10) return <span className="mt-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">剩 {available} 位</span>;
-  return <span className="mt-0.5 text-[9px] text-gray-400">可售 {available}</span>;
+  if (available === 0 && total > 0) return <span className="mt-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-500">已售罄</span>;
+  if (available <= 3) return <span className="mt-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">僅剩 {available} 位</span>;
+  if (available <= 10) return <span className="mt-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">剩 {available} 位</span>;
+  return <span className="mt-0.5 text-xs font-medium text-gray-500">可售 {available}</span>;
 }
 
 function getWeekdayFromDate(dateStr: string) {
@@ -675,6 +676,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 )}
               </div>
             </div>
+
           </div>
 
           {/* 航班明細 */}
