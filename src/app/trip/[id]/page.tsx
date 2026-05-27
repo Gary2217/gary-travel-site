@@ -383,6 +383,22 @@ export default function TripPage() {
     return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}（${weekday}）`;
   };
 
+  /** 從航班資料自動算出 schedule label（午去早回等），label 欄位有 schedule 值也回傳 */
+  const getScheduleLabel = (dep?: DepartureDate | null): string => {
+    if (!dep) return '';
+    // 如果 label 本身就是 schedule 類型，直接用
+    if (dep.label && dep.label.includes('去')) return dep.label;
+    // 從 flight_segments 計算
+    const segs = dep.flight_segments;
+    if (!segs || segs.length === 0) return '';
+    const first = segs[0];
+    const last = segs[segs.length - 1];
+    if (!first?.dep_time || !last?.arr_time) return '';
+    const hour = (t: string) => parseInt(t.split(':')[0], 10);
+    const slot = (h: number) => h < 12 ? '早' : h < 17 ? '午' : '晚';
+    return `${slot(hour(first.dep_time))}去${slot(hour(last.arr_time))}回`;
+  };
+
   const parsePriceDetail = (detail: string): PriceDetailContent => {
     if (!detail.trim()) return DEFAULT_PRICE_DETAIL;
 
@@ -1063,12 +1079,12 @@ export default function TripPage() {
                     ))}
                   </div>
                 )}
-                {selectedDeparture?.label && selectedDeparture.label.includes('去') && (
+                {getScheduleLabel(selectedDeparture) && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">
                       <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
                     </span>
-                    <span className="text-sm font-medium text-gray-900">{selectedDeparture.label}</span>
+                    <span className="text-sm font-medium text-gray-900">{getScheduleLabel(selectedDeparture)}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2.5">
@@ -1214,6 +1230,7 @@ export default function TripPage() {
                           {d.label === '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">即將成團</span>}
                           {d.label === '限時優惠' && <button type="button" onClick={(e) => { e.stopPropagation(); setShowPromoPopup(true); }} className="ml-8 inline-flex items-center rounded bg-gradient-to-r from-red-100 to-rose-100 px-2 py-0.5 text-xs font-bold text-red-600 transition hover:from-red-200 hover:to-rose-200">🔥 限時優惠</button>}
                           {d.label && d.label !== '保證出團' && d.label !== '即將成團' && d.label !== '限時優惠' && !d.label.includes('去') && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
+                          {getScheduleLabel(d) && <span className="ml-2 inline-flex items-center rounded bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-500">{getScheduleLabel(d)}</span>}
                         </td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
@@ -1497,10 +1514,10 @@ export default function TripPage() {
                 ))}
               </div>
             )}
-            {selectedDeparture.label && selectedDeparture.label.includes('去') && (
+            {getScheduleLabel(selectedDeparture) && (
               <div className="flex items-center gap-2.5">
                 <svg className="h-4 w-4 shrink-0 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                <span className="text-sm font-medium text-gray-900">{selectedDeparture.label}</span>
+                <span className="text-sm font-medium text-gray-900">{getScheduleLabel(selectedDeparture)}</span>
               </div>
             )}
             <div className="flex items-center gap-2.5">
@@ -1523,7 +1540,10 @@ export default function TripPage() {
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 <span className="text-sm font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
-                {flightSource.label && (
+                {getScheduleLabel(flightSource) && (
+                  <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-bold text-sky-600">{getScheduleLabel(flightSource)}</span>
+                )}
+                {flightSource.label && !flightSource.label.includes('去') && (
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${flightSource.label === '保證出團' ? 'bg-red-100 text-red-600' : flightSource.label === '即將成團' ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>
                     {flightSource.label}
                   </span>
