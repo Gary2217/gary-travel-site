@@ -985,7 +985,7 @@ export default function TripPage() {
                   {(selectedDeparture?.seats_total ?? 0) > 0 ? (
                     <div className="flex items-center gap-2.5">
                       <span className="min-w-[36px] text-[11px] text-sky-600">團位</span>
-                      <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                      <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong>{editTripBanner.min_group_size ? <span className="ml-3 text-xs text-gray-500">成團 <strong className="text-gray-700">{editTripBanner.min_group_size}</strong> 人</span> : null}</span>
                     </div>
                   ) : <div />}
                   <button type="button" onClick={() => setShowPriceInfoModal(true)} className="shrink-0 inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
@@ -1088,7 +1088,7 @@ export default function TripPage() {
                     <span className="min-w-[36px] text-[11px] text-sky-600">
                       <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </span>
-                    <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
+                    <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong>{editTripBanner.min_group_size ? <span className="ml-3 text-xs text-gray-500">成團人數 <strong className="text-gray-700">{editTripBanner.min_group_size}</strong> 人</span> : null}</span>
                   </div>
                 ) : <div />}
                 <div className="flex shrink-0 gap-1.5">
@@ -1320,6 +1320,10 @@ export default function TripPage() {
                   <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                     <div className="text-xs font-semibold text-gray-600">候補</div>
                     <input type="number" min="0" value={departureEditorWaitlist} onChange={(e) => setDepartureEditorWaitlist(e.target.value.replace(/\D/g, ''))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">成團</div>
+                    <input type="number" min="0" value={editTripBanner.min_group_size ?? ''} onChange={e => setEditTripBanner(prev => ({ ...prev, min_group_size: e.target.value ? Number(e.target.value) : null }))} placeholder="例：16" className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
                   </div>
                   <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                     <div className="text-xs font-semibold text-gray-600">標籤</div>

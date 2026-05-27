@@ -136,6 +136,7 @@ export type TripBanner = {
   custom_tour?: boolean;
   promo_enabled?: boolean;
   promo_content?: string;
+  min_group_size?: number | null;
 };
 
 export type DepartureBannerInfo = {
