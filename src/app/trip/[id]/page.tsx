@@ -1230,7 +1230,6 @@ export default function TripPage() {
                           {d.label === '即將成團' && <span className="ml-8 inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">即將成團</span>}
                           {d.label === '限時優惠' && <button type="button" onClick={(e) => { e.stopPropagation(); setShowPromoPopup(true); }} className="ml-8 inline-flex items-center rounded bg-gradient-to-r from-red-100 to-rose-100 px-2 py-0.5 text-xs font-bold text-red-600 transition hover:from-red-200 hover:to-rose-200">🔥 限時優惠</button>}
                           {d.label && d.label !== '保證出團' && d.label !== '即將成團' && d.label !== '限時優惠' && !d.label.includes('去') && <span className="ml-8 inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-600">{d.label}</span>}
-                          {getScheduleLabel(d) && <span className="ml-2 inline-flex items-center rounded bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-500">{getScheduleLabel(d)}</span>}
                         </td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_total || '—'}</td>
                         <td className="px-2 py-2.5 text-center text-sm text-gray-700">{d.seats_available ?? '—'}</td>
