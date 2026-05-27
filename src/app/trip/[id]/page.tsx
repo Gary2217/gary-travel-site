@@ -2034,7 +2034,11 @@ export default function TripPage() {
             </div>
 
             {/* 價格表 — 直式排版 */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm sm:grid-cols-3">
+            <div className="relative grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm sm:grid-cols-3">
+              <div className="absolute right-3 top-2 text-right">
+                <div className="text-[10px] text-gray-400">單人房差</div>
+                <div className="text-xs font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</div>
+              </div>
               <div>
                 <div className="text-[11px] text-gray-500">大人</div>
                 <div className="font-bold text-sky-600">{displayAdultUnit(priceDetailPreview.adultPrice)}</div>
@@ -2070,10 +2074,7 @@ export default function TripPage() {
                   <span className="text-gray-600">{priceDetailPreview.quoteNote}</span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-500">單人房差</span>
-                <span className="font-semibold text-sky-600">{formatSingleRoomText(priceDetailPreview.singleRoom)}</span>
-              </div>
+
             </div>
 
             <button
