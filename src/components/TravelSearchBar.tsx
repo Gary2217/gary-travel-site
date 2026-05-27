@@ -296,6 +296,13 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       setDepartureOpen(false);
       return;
     }
+    // 只選日期也能搜尋
+    if (date) {
+      const qs = new URLSearchParams({ date });
+      if (departureCityId) qs.set("city", departureCityId);
+      router.push(`/search?${qs.toString()}`);
+      return;
+    }
     onSearch?.({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: null, date });
   };
 

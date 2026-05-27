@@ -225,6 +225,15 @@ export async function getDestinationTrips(destinationId: string) {
   return res.json();
 }
 
+// 依日期搜尋行程
+export async function searchTripsByDate(date: string, city?: string) {
+  const qs = new URLSearchParams({ date });
+  if (city) qs.set('city', city);
+  const res = await fetch(`/api/search-trips?${qs.toString()}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  return res.json();
+}
+
 // 取得單一行程（含每日明細）
 export async function getTripWithDays(tripId: string) {
   const res = await fetch(`/api/trips/${tripId}`, {
