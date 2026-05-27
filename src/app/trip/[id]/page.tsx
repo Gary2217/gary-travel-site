@@ -988,16 +988,16 @@ export default function TripPage() {
                       <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
                     </div>
                   ) : <div />}
-                  {editTripBanner.min_group_size && (
-                    <div className="flex items-center gap-2.5">
-                      <span className="min-w-[36px] text-[11px] text-sky-600">成團</span>
-                      <span className="text-sm font-medium text-gray-900">成團人數 <strong>{editTripBanner.min_group_size}</strong> 人</span>
-                    </div>
-                  )}
                   <button type="button" onClick={() => setShowPriceInfoModal(true)} className="shrink-0 inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
                     <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
                   </button>
                 </div>
+                {editTripBanner.min_group_size && (
+                  <div className="flex items-center gap-2.5 mt-1">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">成團</span>
+                    <span className="text-sm font-medium text-gray-900">成團人數 <strong>{editTripBanner.min_group_size}</strong> 人</span>
+                  </div>
+                )}
               </div>
 
               {/* 折扣 + 價格 + 按鈕 */}
@@ -1097,12 +1097,6 @@ export default function TripPage() {
                     <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
                   </div>
                 ) : <div />}
-                {editTripBanner.min_group_size && (
-                  <div className="flex items-center gap-2.5">
-                    <span className="min-w-[36px] text-[11px] text-sky-600">成團</span>
-                    <span className="text-sm font-medium text-gray-900">成團人數 <strong>{editTripBanner.min_group_size}</strong> 人</span>
-                  </div>
-                )}
                 <div className="flex shrink-0 gap-1.5">
                   <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
                     <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
@@ -1114,6 +1108,14 @@ export default function TripPage() {
                   )}
                 </div>
               </div>
+              {editTripBanner.min_group_size && (
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">
+                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">成團人數 <strong>{editTripBanner.min_group_size}</strong> 人</span>
+                </div>
+              )}
 
               {/* Dev mode 售價編輯（展開在卡片內） */}
               {isDevMode && showPriceDetailModal && (
