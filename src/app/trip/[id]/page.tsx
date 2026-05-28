@@ -1183,7 +1183,7 @@ export default function TripPage() {
 
           {/* 出發日期 — 手機排第2、桌面右欄跨列 */}
           <div ref={rightColumnRef} className="hidden mt-3 lg:block lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
-            <div className="rounded-xl border-2 border-sky-200/80 bg-white shadow-sm ring-1 ring-sky-100/50">
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* Dev mode 按鈕 */}
               {isDevMode && (
                 <div className="flex justify-end gap-1.5 px-4 pt-2.5 pb-1">
@@ -1222,7 +1222,7 @@ export default function TripPage() {
                       <tr
                         key={d.id}
                         onClick={() => { setSelectedDepartureId(d.id); if (d.label === '限時優惠' && promoContent) setShowPromoPopup(true); }}
-                        className={`cursor-pointer transition ${isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-transparent hover:bg-gray-50"}`}
+                        className={`cursor-pointer transition ${isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-sky-200 hover:border-l-sky-400 hover:bg-sky-50/30"}`}
                       >
                         <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">
                           {formatFullDate(d.departure_date)}
