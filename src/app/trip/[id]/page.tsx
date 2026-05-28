@@ -1222,7 +1222,8 @@ export default function TripPage() {
                       <tr
                         key={d.id}
                         onClick={() => { setSelectedDepartureId(d.id); if (d.label === '限時優惠' && promoContent) setShowPromoPopup(true); }}
-                        className={`cursor-pointer transition ${isSelected ? "bg-sky-50 border-l-[3px] border-l-sky-500" : "border-l-[3px] border-l-sky-200 hover:border-l-sky-400 hover:bg-sky-50/30"}`}
+                        className={`cursor-pointer transition ${isSelected ? "outline outline-2 outline-sky-400 bg-sky-50/40" : "hover:bg-gray-50"}`}
+                        style={isSelected ? { outlineOffset: '-2px' } : undefined}
                       >
                         <td className="py-2.5 pl-5 pr-2 text-sm font-medium text-gray-900">
                           {formatFullDate(d.departure_date)}
