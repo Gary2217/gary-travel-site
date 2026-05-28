@@ -49,6 +49,7 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
   const [progress, setProgress] = useState<ScrapeProgressData | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [waitingForStart, setWaitingForStart] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type?: "success" | "error" | "warning";
@@ -101,6 +102,7 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
       const nextRunning = Boolean(data.running);
       setProgress(data);
       onRunningChange?.(nextRunning);
+      if (nextRunning) setWaitingForStart(false);
       pollErrorNotifiedRef.current = false;
 
       if (previousRunning && !nextRunning) {
@@ -282,6 +284,19 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
             )}
           </div>
         </div>
+      ) : waitingForStart ? (
+        <div className="rounded-2xl border border-sky-500/20 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+          <div className="flex items-center gap-3 px-4 py-6">
+            <svg className="h-5 w-5 animate-spin text-sky-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <div>
+              <p className="text-sm font-bold text-white">等待 GitHub Actions 啟動...</p>
+              <p className="mt-0.5 text-[11px] text-white/40">通常需要 20-60 秒，啟動後會自動顯示進度</p>
+            </div>
+          </div>
+        </div>
       ) : latest?.status === "failed" ? (
         <div className="rounded-2xl border border-red-500/20 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
@@ -316,7 +331,8 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
                 try {
                   if (onRetry) {
                     await onRetry();
-                    setToast({ message: "🔄 已觸發重新抓取", type: "success" });
+                    setWaitingForStart(true);
+                    setToast({ message: "🔄 已觸發，等待 GitHub Actions 啟動...", type: "success" });
                   }
                 } catch {
                   setToast({ message: "觸發失敗，請稍後再試", type: "error" });
