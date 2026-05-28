@@ -29,17 +29,26 @@ const CITY_BY_AIRPORT = {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function loadEnv() {
-  const env = readFileSync('.env.local', 'utf8');
-  const getEnv = (key) => {
-    const matched = env.match(new RegExp(`^${key}=(.+)$`, 'm'));
-    return matched ? matched[1].trim() : null;
-  };
-
-  const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const serviceRoleKey = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+  // 優先讀 process.env（GitHub Actions），fallback 讀 .env.local（本機）
+  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('缺少 NEXT_PUBLIC_SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY，請確認 .env.local');
+    try {
+      const env = readFileSync('.env.local', 'utf8');
+      const getEnv = (key) => {
+        const matched = env.match(new RegExp(`^${key}=(.+)$`, 'm'));
+        return matched ? matched[1].trim() : null;
+      };
+      supabaseUrl = supabaseUrl || getEnv('NEXT_PUBLIC_SUPABASE_URL');
+      serviceRoleKey = serviceRoleKey || getEnv('SUPABASE_SERVICE_ROLE_KEY');
+    } catch {
+      // .env.local 不存在（GitHub Actions 環境）
+    }
+  }
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('缺少 NEXT_PUBLIC_SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY');
   }
 
   return { supabaseUrl, serviceRoleKey };
