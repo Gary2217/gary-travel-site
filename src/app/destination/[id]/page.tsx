@@ -92,6 +92,10 @@ export default function DestinationPage() {
           getDestinationTrips(destinationId),
         ]);
         if (!isMounted) return;
+        if (!destData) {
+          setError("找不到此目的地");
+          return;
+        }
         setDestination(destData);
         setTrips(tripsData);
 
@@ -387,18 +391,20 @@ export default function DestinationPage() {
     );
   }
 
-  if (error || !destination) {
+  if (error || !destination || !destination.title) {
     return (
-      <main className="min-h-screen bg-transparent text-gray-900">
+      <main className="min-h-screen bg-white text-gray-900">
         <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
-            <p className="text-lg text-red-400">{error || "找不到此目的地"}</p>
+            <p className="text-4xl">🔍</p>
+            <p className="mt-3 text-lg font-bold text-gray-700">{error || "找不到此目的地"}</p>
+            <p className="mt-1 text-sm text-gray-400">此頁面可能已移除或網址有誤</p>
             <button
-              onClick={() => window.history.back()}
-              className="mt-4 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              onClick={() => window.location.href = '/'}
+              className="mt-5 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
             >
-              返回上一頁
+              回首頁
             </button>
           </div>
         </div>
