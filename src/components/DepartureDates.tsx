@@ -645,9 +645,9 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
     !!(d.outbound_flight || d.outbound_time || d.return_flight || d.return_time);
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 rounded-2xl border-2 border-sky-200 bg-gradient-to-br from-sky-50/50 via-white to-blue-50/50 p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-medium uppercase tracking-wider text-gray-500">出團日期</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600">出團日期</h2>
         {isDevMode && (
           <button
             onClick={() => {
