@@ -46,7 +46,7 @@ function loadEnv() {
 }
 
 function parseArgs(argv) {
-  const args = { regions: null, logId: null };
+  const args = { regions: null, logId: null, destinationId: null };
 
   for (const arg of argv) {
     if (arg.startsWith('--regions=')) {
@@ -57,6 +57,8 @@ function parseArgs(argv) {
         .filter(Boolean);
     } else if (arg.startsWith('--log-id=')) {
       args.logId = arg.slice('--log-id='.length).trim() || null;
+    } else if (arg.startsWith('--destination-id=')) {
+      args.destinationId = arg.slice('--destination-id='.length).trim() || null;
     }
   }
 
@@ -428,11 +430,38 @@ async function updateLog(supabase, logId, patch) {
 async function loadDestinations(supabase) {
   const { data, error } = await supabase
     .from('destinations')
-    .select('id, title, subtitle, display_order, is_active')
+    .select('id, title, subtitle, display_order, is_active, source_url')
     .eq('is_active', true);
 
   if (error) throw new Error(`讀取 destinations 失敗：${error.message}`);
   return data || [];
+}
+
+function getRegionConfigBySourceUrl(sourceUrl) {
+  const normalized = sanitizeText(sourceUrl);
+  if (!normalized) return null;
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(normalized);
+  } catch {
+    return null;
+  }
+
+  const pathname = parsedUrl.pathname.endsWith('/') ? parsedUrl.pathname : `${parsedUrl.pathname}/`;
+  return REGION_PAGES.find((region) => region.url === pathname) || null;
+}
+
+function getSourceBlockId(sourceUrl) {
+  const normalized = sanitizeText(sourceUrl);
+  if (!normalized) return '';
+
+  try {
+    const parsedUrl = new URL(normalized);
+    return parsedUrl.hash.replace(/^#/, '').trim();
+  } catch {
+    return '';
+  }
 }
 
 async function loadExistingTrips(supabase) {
@@ -537,7 +566,7 @@ function findExistingTripForScrapedTrip(scrapedTrip, destinationTrips, consumedT
   return bestScore >= 0.7 ? bestMatch : null;
 }
 
-async function scrapeRegionListings(page, regionConfig) {
+async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '') {
   const url = `${BASE_URL}${regionConfig.url}`;
   console.log(`\n🌐 區域頁：${url}`);
 
@@ -550,7 +579,8 @@ async function scrapeRegionListings(page, regionConfig) {
 
   await scrollToLoadLazyContent(page);
 
-  const sections = await page.$$eval('.row.expand-graphics', (containers, baseUrl) => {
+  const targetBlockId = getSourceBlockId(targetSourceUrl);
+  const sections = await page.$$eval('.row.expand-graphics', (containers, { baseUrl, targetBlockId }) => {
     const normalize = (value) => String(value || '').replace(/\s+/g, ' ').trim();
     const seenHref = new Set();
 
@@ -559,6 +589,11 @@ async function scrapeRegionListings(page, regionConfig) {
         const parent = container.parentElement;
         const header = parent?.querySelector('.header-title');
         const sectionLabel = normalize(header?.textContent || '');
+        const blockId = normalize(
+          container.getAttribute('id') ||
+          parent?.getAttribute('id') ||
+          parent?.closest('[id]')?.getAttribute('id') || ''
+        );
         const cards = Array.from(container.querySelectorAll('.item-box a[href*="/products/group/"]'));
         const trips = cards
           .map((link, index) => {
@@ -580,10 +615,11 @@ async function scrapeRegionListings(page, regionConfig) {
           .filter(Boolean);
 
         if (!trips.length) return null;
-        return { label: sectionLabel, trips };
+        return { label: sectionLabel, block_id: blockId, trips };
       })
+      .filter((section) => !targetBlockId || section?.block_id === targetBlockId)
       .filter(Boolean);
-  }, BASE_URL);
+  }, { baseUrl: BASE_URL, targetBlockId });
 
   const allTrips = sections.flatMap((section) => section.trips);
   console.log(`  📋 找到 ${sections.length} 個區塊，${allTrips.length} 筆行程`);
@@ -898,21 +934,40 @@ async function insertPendingChanges(supabase, changes) {
 
 async function main() {
   const { supabaseUrl, serviceRoleKey } = loadEnv();
-  const { regions, logId: requestedLogId } = parseArgs(process.argv.slice(2));
-  const selectedRegions = selectRegions(regions);
   const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const regionDetailsInitial = buildRegionDetails(selectedRegions);
-  const logId = await createOrResetLog(supabase, requestedLogId, selectedRegions.length, regionDetailsInitial);
+  const { regions, logId: requestedLogId, destinationId } = parseArgs(process.argv.slice(2));
+  let selectedRegions = selectRegions(regions);
 
   let browser = null;
+  let logId = null;
 
   try {
-    console.log(`🚀 開始自動抓取，log_id=${logId}`);
-
     const [destinations, existingTrips] = await Promise.all([
       loadDestinations(supabase),
       loadExistingTrips(supabase),
     ]);
+
+    let targetDestination = null;
+    if (destinationId) {
+      targetDestination = destinations.find((destination) => destination.id === destinationId) || null;
+      if (!targetDestination) {
+        throw new Error(`找不到指定目的地：${destinationId}`);
+      }
+      if (!sanitizeText(targetDestination.source_url)) {
+        throw new Error(`指定目的地缺少 source_url：${targetDestination.title}`);
+      }
+
+      const targetRegion = getRegionConfigBySourceUrl(targetDestination.source_url);
+      if (!targetRegion) {
+        throw new Error(`無法從 source_url 判斷區域頁：${targetDestination.source_url}`);
+      }
+
+      selectedRegions = [targetRegion];
+    }
+
+    const initialRegionDetails = buildRegionDetails(selectedRegions);
+    logId = await createOrResetLog(supabase, requestedLogId, selectedRegions.length, initialRegionDetails);
+    console.log(`🚀 開始自動抓取，log_id=${logId}`);
 
     const resolveDestination = buildDestinationResolver(destinations, existingTrips);
     const tripsByDestinationId = existingTrips.reduce((accumulator, trip) => {
@@ -923,7 +978,7 @@ async function main() {
     }, new Map());
 
     const matchedTripIdsByDestination = new Map();
-    let regionDetails = regionDetailsInitial;
+    let regionDetails = initialRegionDetails;
     let totalTrips = 0;
     let completedTrips = 0;
     let completedRegions = 0;
@@ -952,7 +1007,7 @@ async function main() {
         region_details: regionDetails,
       });
 
-      const sections = await scrapeRegionListings(page, regionConfig);
+      const sections = await scrapeRegionListings(page, regionConfig, targetDestination?.source_url || '');
       const tripSummaries = sections.flatMap((section) => section.trips);
       totalTrips += tripSummaries.length;
       regionDetails = mergeRegionDetail(regionDetails, regionConfig.key, {
@@ -990,7 +1045,7 @@ async function main() {
         }
         await detailPage.close().catch(() => {});
 
-        const destination = resolveDestination(scrapedTrip.destination_label) || resolveDestination(tripSummary.section_label);
+        const destination = targetDestination || resolveDestination(scrapedTrip.destination_label) || resolveDestination(tripSummary.section_label);
         if (!destination) {
           // 找不到 destination → 可能是朋威新增的 tab/區域，寫通知不中斷
           const missingLabel = scrapedTrip.destination_label || tripSummary.section_label;
@@ -1077,7 +1132,11 @@ async function main() {
         await sleep(300);
       }
 
-      for (const [destinationId, destinationTrips] of tripsByDestinationId.entries()) {
+      const destinationEntries = targetDestination
+        ? [[targetDestination.id, tripsByDestinationId.get(targetDestination.id) || []]]
+        : [...tripsByDestinationId.entries()];
+
+      for (const [destinationId, destinationTrips] of destinationEntries) {
         const scrapedTrips = scrapedByDestination.get(destinationId);
         if (!scrapedTrips?.length) continue;
 
@@ -1135,11 +1194,13 @@ async function main() {
       browser = null;
     }
 
-    await updateLog(supabase, logId, {
-      status: 'failed',
-      error_message: message,
-      finished_at: new Date().toISOString(),
-    });
+    if (logId) {
+      await updateLog(supabase, logId, {
+        status: 'failed',
+        error_message: message,
+        finished_at: new Date().toISOString(),
+      });
+    }
 
     console.error('\n❌ 自動抓取失敗');
     console.error(message);

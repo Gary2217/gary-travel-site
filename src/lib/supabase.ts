@@ -26,6 +26,7 @@ export type Destination = {
   title: string;
   subtitle: string;
   image_url: string;
+  source_url?: string | null;
   display_order: number;
   is_active: boolean;
   click_count: number;

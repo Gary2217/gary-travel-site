@@ -57,7 +57,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const updates: { title?: string; subtitle?: string } = {};
+    const updates: { title?: string; subtitle?: string; source_url?: string | null } = {};
 
     if (typeof body.title === 'string') {
       const title = body.title.trim();
@@ -71,6 +71,10 @@ export async function PATCH(
       updates.subtitle = body.subtitle.trim();
     }
 
+    if (body.source_url === null || typeof body.source_url === 'string') {
+      updates.source_url = body.source_url ? body.source_url.trim() : null;
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: '沒有可更新的欄位' }, { status: 400 });
     }
@@ -80,7 +84,7 @@ export async function PATCH(
       .from('destinations')
       .update(updates)
       .eq('id', params.id)
-      .select('id,title,subtitle,image_url,updated_at')
+      .select('id,title,subtitle,image_url,source_url,updated_at')
       .single();
 
     if (error) {

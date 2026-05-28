@@ -2,6 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 
+interface DestinationOption {
+  id: string;
+  title: string;
+  source_url?: string | null;
+}
+
 interface ScrapeSettingsData {
   auto_enabled: boolean;
   frequency_days: number;
@@ -17,6 +23,10 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [triggering, setTriggering] = useState(false);
+  const [destinations, setDestinations] = useState<DestinationOption[]>([]);
+  const [selectedDestinationId, setSelectedDestinationId] = useState("");
+  const [destinationLoading, setDestinationLoading] = useState(true);
+  const [pageTriggering, setPageTriggering] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -38,6 +48,26 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    async function loadDestinations() {
+      try {
+        const res = await fetch("/api/destinations", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as DestinationOption[];
+        setDestinations(Array.isArray(data) ? data : []);
+      } catch {
+        // 靜默失敗
+      } finally {
+        setDestinationLoading(false);
+      }
+    }
+
+    loadDestinations();
+  }, []);
 
   const updateSettings = async (patch: Partial<ScrapeSettingsData>) => {
     if (!settings) return;
@@ -74,6 +104,30 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
       // 靜默失敗
     } finally {
       setTriggering(false);
+    }
+  };
+
+  const selectedDestination = destinations.find(
+    (destination) => destination.id === selectedDestinationId
+  );
+
+  const handlePageTrigger = async () => {
+    if (!selectedDestinationId) return;
+    setPageTriggering(true);
+    try {
+      const res = await fetch("/api/scrape/trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ destinationId: selectedDestinationId }),
+      });
+      if (res.ok) {
+        onTrigger?.();
+      }
+    } catch {
+      // 靜默失敗
+    } finally {
+      setPageTriggering(false);
     }
   };
 
@@ -207,6 +261,51 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
             "🚀 立即抓取"
           )}
         </button>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div>
+            <h3 className="text-sm font-bold text-white">指定頁面抓取</h3>
+            <p className="mt-0.5 text-[11px] text-white/40">
+              選擇目的地後，只抓取對應朋威分頁，縮短執行時間
+            </p>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div>
+              <p className="mb-1.5 text-xs font-semibold text-white/80">目的地 URL（我的網站）</p>
+              <select
+                value={selectedDestinationId}
+                onChange={(e) => setSelectedDestinationId(e.target.value)}
+                disabled={destinationLoading}
+                className="w-full rounded-xl border border-white/10 bg-[#1a2332] px-3 py-2 text-sm text-white outline-none transition hover:border-white/20 disabled:opacity-40"
+              >
+                <option value="" className="bg-[#1a2332] text-white">
+                  {destinationLoading ? "載入目的地中..." : "選擇目的地"}
+                </option>
+                {destinations.map((destination) => (
+                  <option key={destination.id} value={destination.id} className="bg-[#1a2332] text-white">
+                    {destination.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-xs font-semibold text-white/80">對應朋威 URL（自動帶出）</p>
+              <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/70 break-all">
+                {selectedDestination?.source_url || "尚未設定 source_url"}
+              </div>
+            </div>
+
+            <button
+              onClick={handlePageTrigger}
+              disabled={pageTriggering || !selectedDestinationId || !selectedDestination?.source_url}
+              className="w-full rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+            >
+              {pageTriggering ? "啟動中..." : "🔍 抓取此頁"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

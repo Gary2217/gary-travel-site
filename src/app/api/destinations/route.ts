@@ -13,7 +13,7 @@ export async function GET() {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase
       .from('destinations')
-      .select('id, title, subtitle, image_url, display_order, sub_region, region_id')
+      .select('id, title, subtitle, image_url, display_order, sub_region, region_id, source_url')
       .eq('is_active', true)
       .order('display_order', { ascending: true });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
         display_order: nextOrder,
         is_active: true,
         click_count: 0,
+        source_url: typeof body.source_url === 'string' ? body.source_url.trim() : null,
       })
-      .select('id, region_id, title, subtitle, image_url, display_order, sub_region')
+      .select('id, region_id, title, subtitle, image_url, display_order, sub_region, source_url')
       .single();
 
     if (error) {

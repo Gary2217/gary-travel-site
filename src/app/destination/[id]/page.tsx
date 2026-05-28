@@ -9,6 +9,7 @@ import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
 import DevModeToggle from "@/components/DevModeToggle";
+import Toast from "@/components/Toast";
 
 async function handleReorder<T extends { id: string; display_order: number }>(
   table: 'destinations' | 'trips',
@@ -68,6 +69,8 @@ export default function DestinationPage() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isPC, setIsPC] = useState(false);
+  const [scrapeTriggering, setScrapeTriggering] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
 
@@ -158,6 +161,11 @@ export default function DestinationPage() {
     }
 
     loadSiteLogo();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsDevMode(localStorage.getItem('dev_mode_enabled') === '1');
   }, []);
 
   useEffect(() => {
@@ -335,6 +343,34 @@ export default function DestinationPage() {
     }
 
     return trip.price_range;
+  };
+
+  const handleScrapeThisPage = async () => {
+    if (scrapeTriggering) return;
+
+    setScrapeTriggering(true);
+    try {
+      const res = await fetch('/api/scrape/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ destinationId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || '觸發抓取失敗');
+      }
+
+      setToastMessage('已觸發抓取');
+      setTimeout(() => {
+        router.push('/admin?tab=scrape');
+      }, 600);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '觸發抓取失敗');
+    } finally {
+      setScrapeTriggering(false);
+    }
   };
 
   if (loading) {
@@ -728,6 +764,16 @@ export default function DestinationPage() {
       </section>
 
       <FloatingContact />
+      {isDevMode && (
+        <button
+          onClick={() => void handleScrapeThisPage()}
+          disabled={scrapeTriggering}
+          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-500 disabled:opacity-60"
+        >
+          {scrapeTriggering ? '⏳ 啟動中...' : '🔄 更新抓取此頁'}
+        </button>
+      )}
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
     </main>
   );
 }

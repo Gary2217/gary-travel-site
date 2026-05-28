@@ -8,6 +8,10 @@ on:
         description: '要抓取的區域（逗號分隔，all=全部）'
         required: false
         default: 'all'
+      destination_id:
+        description: '指定目的地 ID'
+        required: false
+        default: ''
 
   # 排程觸發（每日 UTC 19:00 = 台灣凌晨 03:00）
   schedule:
@@ -61,7 +65,10 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           REGIONS="${{ github.event.inputs.regions || 'all' }}"
-          if [ "$REGIONS" = "all" ]; then
+          DEST_ID="${{ github.event.inputs.destination_id || '' }}"
+          if [ -n "$DEST_ID" ]; then
+            node scripts/auto-scrape.mjs --destination-id=$DEST_ID
+          elif [ "$REGIONS" = "all" ]; then
             node scripts/auto-scrape.mjs
           else
             node scripts/auto-scrape.mjs --regions=$REGIONS

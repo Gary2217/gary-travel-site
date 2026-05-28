@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const regions = body.regions || []; // 空 = 全部抓
+    const destinationId = typeof body.destinationId === 'string' ? body.destinationId.trim() : '';
 
     // 觸發 GitHub Actions workflow_dispatch
     const response = await fetch(
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
           ref: 'main',
           inputs: {
             regions: regions.length > 0 ? regions.join(',') : 'all',
+            destination_id: destinationId || '',
           },
         }),
       },
@@ -49,7 +51,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ triggered: true, regions: regions.length > 0 ? regions : 'all' });
+    return NextResponse.json({
+      triggered: true,
+      regions: regions.length > 0 ? regions : 'all',
+      destinationId: destinationId || null,
+    });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
