@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const BASE_URL = 'https://www.pwgotravel.com.tw';
 const REGION_PAGES = [
-  { key: 'asia', url: '/asia/', tabs: ['中東', '中亞', '西伯利亞'] },
+  { key: 'asia', url: '/asia/', tabs: ['中東', '中亞', '西伯利亞', '高雄出發'] },
   { key: 'japan', url: '/japan/', tabs: ['北海道', '東北', '關東', '中部', '關西', '四國', '九州', '沖繩'] },
   { key: 'south-korea', url: '/south-korea/', tabs: ['首爾', '釜山', '濟州島'] },
   { key: 'thailand', url: '/thailand/', tabs: ['曼谷', '泰北', '普吉'] },
@@ -466,7 +466,7 @@ async function loadExistingTrips(supabase) {
         is_active
       )
     `)
-    .eq('is_active', true);
+    ; // 不篩選 is_active，停用行程也要比對
 
   if (error) throw new Error(`讀取 trips 失敗：${error.message}`);
   return data || [];
@@ -684,8 +684,9 @@ async function scrapeTripDetail(page, tripSummary) {
     };
   }, tripSummary.href, tripSummary.section_label);
 
-  const durationMatch = sanitizeText(data.duration_text).match(/(\d+)\s*天\s*(\d+)\s*夜/);
-  const duration = durationMatch ? `${durationMatch[1]}天${durationMatch[2]}夜` : sanitizeText(data.duration_text);
+  const durationRaw = sanitizeText(data.duration_text);
+  const durationMatch = durationRaw.match(/(\d+)\s*天?\s*(\d+)\s*夜?/) || durationRaw.match(/(\d+)\D+(\d+)/);
+  const duration = durationMatch ? `${durationMatch[1]}天${durationMatch[2]}夜` : (durationRaw.includes('天') ? durationRaw : '');
   const minGroupSize = parseNumber(data.min_group_size_text);
   const enrichedFlightSegments = (data.flight_segments || []).map((segment) => ({
     airline: formatAirlineLabel(segment.airline, segment.flight_number),
@@ -733,6 +734,7 @@ async function scrapeTripDetail(page, tripSummary) {
     tags,
     price_detail: priceDetail,
     flight_segments: enrichedFlightSegments,
+    flightSegments: enrichedFlightSegments,
     departures,
     departure_label: getDepartureLabel(data.airport),
     display_order: tripSummary.display_order,
@@ -856,11 +858,23 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   return changes;
 }
 
+const insertedChangeKeys = new Set();
+
 async function insertPendingChanges(supabase, changes) {
   if (!changes.length) return 0;
-  const { error } = await supabase.from('pending_changes').insert(changes);
+
+  // 去重：同一個 trip + 同一個 change_type + 同一個 field_name 只建一筆
+  const deduped = changes.filter((c) => {
+    const key = `${c.trip_id || 'new'}_${c.change_type}_${c.field_name || ''}`;
+    if (insertedChangeKeys.has(key)) return false;
+    insertedChangeKeys.add(key);
+    return true;
+  });
+
+  if (!deduped.length) return 0;
+  const { error } = await supabase.from('pending_changes').insert(deduped);
   if (error) throw new Error(`寫入 pending_changes 失敗：${error.message}`);
-  return changes.length;
+  return deduped.length;
 }
 
 async function main() {
