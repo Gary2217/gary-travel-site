@@ -3,13 +3,23 @@
 import { useEffect, useState, useCallback } from "react";
 import ScrapeCompareModal from "./ScrapeCompareModal";
 import type { ScrapeChangeItem } from "./ScrapeCompareModal";
+import Toast from "./Toast";
 
-// ── Types ────────────────────────────────────────────────
 interface ScrapeChangesProps {
   onCountChange?: (count: number) => void;
 }
 
-// ── Helpers ──────────────────────────────────────────────
+async function getErrorMessage(res: Response, fallback: string) {
+  try {
+    const data = await res.json();
+    return typeof data?.error === "string" && data.error.trim()
+      ? data.error
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const CHANGE_TYPE_CONFIG: Record<
   string,
   { icon: string; label: string; badgeClass: string }
@@ -74,10 +84,7 @@ function getAlertSummary(change: ScrapeChangeItem): string {
 }
 
 function getTypeConfig(type: string) {
-  return (
-    CHANGE_TYPE_CONFIG[type] ??
-    CHANGE_TYPE_CONFIG.info
-  );
+  return CHANGE_TYPE_CONFIG[type] ?? CHANGE_TYPE_CONFIG.info;
 }
 
 function relativeTime(iso: string) {
@@ -90,14 +97,39 @@ function relativeTime(iso: string) {
   return `${Math.floor(h / 24)}天前`;
 }
 
-// ── Main Component ───────────────────────────────────────
 export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   const [changes, setChanges] = useState<ScrapeChangeItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedChange, setSelectedChange] = useState<ScrapeChangeItem | null>(
-    null,
-  );
+  const [selectedChange, setSelectedChange] = useState<ScrapeChangeItem | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type?: "success" | "error" | "warning";
+  } | null>(null);
+
+  const removeChange = useCallback(
+    (id: string) => {
+      setChanges((prev) => {
+        const next = prev.filter((c) => c.id !== id);
+        onCountChange?.(next.length);
+        return next;
+      });
+      setSelectedChange((prev) => (prev?.id === id ? null : prev));
+    },
+    [onCountChange],
+  );
+
+  const removeChanges = useCallback(
+    (ids: string[]) => {
+      setChanges((prev) => {
+        const next = prev.filter((c) => !ids.includes(c.id));
+        onCountChange?.(next.length);
+        return next;
+      });
+    },
+    [onCountChange],
+  );
 
   const fetchChanges = useCallback(async () => {
     try {
@@ -110,9 +142,17 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
         const items = Array.isArray(data) ? data : [];
         setChanges(items);
         onCountChange?.(items.length);
+      } else {
+        setToast({
+          message: `載入變更失敗：${await getErrorMessage(res, "請稍後再試")}`,
+          type: "error",
+        });
       }
-    } catch {
-      // 靜默失敗
+    } catch (error) {
+      setToast({
+        message: `載入變更失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -124,52 +164,85 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
 
   const handleIgnore = async (id: string) => {
     try {
-      await fetch("/api/scrape/changes", {
-        method: "PUT",
+      const res = await fetch("/api/scrape/changes", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ids: [id], action: "ignore" }),
+        body: JSON.stringify({ ids: [id], status: "dismissed" }),
       });
-      setSelectedChange(null);
-      setChanges((prev) => prev.filter((c) => c.id !== id));
-      onCountChange?.(changes.length - 1);
-    } catch {
-      // 靜默失敗
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, "操作失敗"));
+      }
+      const change = changes.find((c) => c.id === id);
+      removeChange(id);
+      setToast({
+        message: `已忽略「${change?.trip_title || "此行程"}」`,
+        type: "success",
+      });
+      return true;
+    } catch (error) {
+      setToast({
+        message: `操作失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
+      return false;
     }
   };
 
   const handleApply = async (id: string) => {
     try {
-      await fetch("/api/scrape/apply", {
+      const res = await fetch("/api/scrape/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ changeIds: [id] }),
       });
-      setSelectedChange(null);
-      setChanges((prev) => prev.filter((c) => c.id !== id));
-      onCountChange?.(changes.length - 1);
-    } catch {
-      // 靜默失敗
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, "更新失敗"));
+      }
+      const data = (await res.json()) as {
+        results?: Array<{ id: string; success: boolean; error?: string }>;
+      };
+      const result = data.results?.[0];
+      if (!result?.success) {
+        throw new Error(result?.error || "更新失敗");
+      }
+      const change = changes.find((c) => c.id === id);
+      removeChange(id);
+      setToast({
+        message: `已更新「${change?.trip_title || "此行程"}」`,
+        type: "success",
+      });
+      return true;
+    } catch (error) {
+      setToast({
+        message: `更新失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
+      return false;
     }
   };
 
   const handleBulkIgnore = async () => {
     setBulkLoading(true);
     try {
-      await fetch("/api/scrape/changes", {
-        method: "PUT",
+      const ids = changes.map((c) => c.id);
+      const res = await fetch("/api/scrape/changes", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          ids: changes.map((c) => c.id),
-          action: "ignore",
-        }),
+        body: JSON.stringify({ ids, status: "dismissed" }),
       });
-      setChanges([]);
-      onCountChange?.(0);
-    } catch {
-      // 靜默失敗
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, "操作失敗"));
+      }
+      removeChanges(ids);
+      setToast({ message: `已忽略 ${ids.length} 筆`, type: "success" });
+    } catch (error) {
+      setToast({
+        message: `操作失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setBulkLoading(false);
     }
@@ -178,18 +251,67 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   const handleBulkApply = async () => {
     setBulkLoading(true);
     try {
-      await fetch("/api/scrape/apply", {
+      const ids = changes.map((c) => c.id);
+      const res = await fetch("/api/scrape/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ changeIds: changes.map((c) => c.id) }),
+        body: JSON.stringify({ changeIds: ids }),
       });
-      setChanges([]);
-      onCountChange?.(0);
-    } catch {
-      // 靜默失敗
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, "更新失敗"));
+      }
+      const data = (await res.json()) as {
+        success?: number;
+        failed?: number;
+        results?: Array<{ id: string; success: boolean; error?: string }>;
+      };
+      const successIds = (data.results || [])
+        .filter((result) => result.success)
+        .map((result) => result.id);
+      const successCount = data.success ?? successIds.length;
+      const failCount = data.failed ?? Math.max(ids.length - successCount, 0);
+
+      if (successIds.length > 0) {
+        removeChanges(successIds);
+      }
+
+      if (failCount > 0) {
+        setToast({
+          message: `更新失敗：${successCount} 筆成功，${failCount} 筆失敗`,
+          type: "error",
+        });
+      } else {
+        setToast({ message: `已更新 ${successCount} 筆行程`, type: "success" });
+      }
+    } catch (error) {
+      setToast({
+        message: `更新失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setBulkLoading(false);
+    }
+  };
+
+  const handleClearProcessed = async () => {
+    setClearing(true);
+    try {
+      const res = await fetch("/api/scrape/changes?status=dismissed", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, "清除失敗"));
+      }
+      setToast({ message: "已清除", type: "success" });
+    } catch (error) {
+      setToast({
+        message: `清除失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -217,11 +339,7 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
         {loading ? (
           <div className="flex items-center justify-center px-4 py-12">
             <div className="flex items-center gap-2 text-white/40">
-              <svg
-                className="h-4 w-4 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -245,7 +363,6 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
           </div>
         ) : (
           <>
-            {/* 變更列表 */}
             <div className="divide-y divide-white/5">
               {changes.map((change) => {
                 const config = getTypeConfig(change.change_type);
@@ -308,8 +425,7 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
               })}
             </div>
 
-            {/* 底部批量按鈕 */}
-            <div className="flex items-center justify-end gap-2 border-t border-white/10 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-4 py-3">
               <button
                 onClick={handleBulkIgnore}
                 disabled={bulkLoading}
@@ -324,18 +440,33 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
               >
                 {bulkLoading ? "處理中..." : "全部更新"}
               </button>
+              <button
+                onClick={handleClearProcessed}
+                disabled={clearing}
+                className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white/40 transition hover:bg-white/5 hover:text-white/70 disabled:opacity-50"
+              >
+                {clearing ? "清除中..." : "清除已處理紀錄"}
+              </button>
             </div>
           </>
         )}
       </div>
 
-      {/* 比對 Modal */}
       {selectedChange && (
         <ScrapeCompareModal
           change={selectedChange}
           onClose={() => setSelectedChange(null)}
           onApply={handleApply}
           onIgnore={handleIgnore}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={toast.type === "error" ? 5000 : 3000}
         />
       )}
     </>

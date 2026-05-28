@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Toast from "./Toast";
 
 interface DestinationOption {
   id: string;
@@ -18,6 +19,17 @@ interface ScrapeSettingsProps {
   onTrigger?: () => void;
 }
 
+async function getErrorMessage(res: Response, fallback: string) {
+  try {
+    const data = await res.json();
+    return typeof data?.error === "string" && data.error.trim()
+      ? data.error
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
   const [settings, setSettings] = useState<ScrapeSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +39,10 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
   const [destinationLoading, setDestinationLoading] = useState(true);
   const [pageTriggering, setPageTriggering] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type?: "success" | "error" | "warning";
+  } | null>(null);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -37,9 +53,17 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
+      } else {
+        setToast({
+          message: `載入設定失敗：${await getErrorMessage(res, "請稍後再試")}`,
+          type: "error",
+        });
       }
-    } catch {
-      // 靜默失敗
+    } catch (error) {
+      setToast({
+        message: `載入設定失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -59,8 +83,11 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
         if (!res.ok) return;
         const data = (await res.json()) as DestinationOption[];
         setDestinations(Array.isArray(data) ? data : []);
-      } catch {
-        // 靜默失敗
+      } catch (error) {
+        setToast({
+          message: `載入目的地失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+          type: "error",
+        });
       } finally {
         setDestinationLoading(false);
       }
@@ -82,9 +109,18 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
+        setToast({ message: "設定已儲存", type: "success" });
+      } else {
+        setToast({
+          message: `儲存失敗：${await getErrorMessage(res, "請稍後再試")}`,
+          type: "error",
+        });
       }
-    } catch {
-      // 靜默失敗
+    } catch (error) {
+      setToast({
+        message: `儲存失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -99,9 +135,18 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
       });
       if (res.ok) {
         onTrigger?.();
+        setToast({ message: "已觸發全部抓取", type: "success" });
+      } else {
+        setToast({
+          message: `觸發失敗：${await getErrorMessage(res, "請稍後再試")}`,
+          type: "error",
+        });
       }
-    } catch {
-      // 靜默失敗
+    } catch (error) {
+      setToast({
+        message: `觸發失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setTriggering(false);
     }
@@ -123,9 +168,21 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
       });
       if (res.ok) {
         onTrigger?.();
+        setToast({
+          message: `已觸發「${selectedDestination?.title || "此頁"}」抓取`,
+          type: "success",
+        });
+      } else {
+        setToast({
+          message: `觸發失敗：${await getErrorMessage(res, "請稍後再試")}`,
+          type: "error",
+        });
       }
-    } catch {
-      // 靜默失敗
+    } catch (error) {
+      setToast({
+        message: `觸發失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
     } finally {
       setPageTriggering(false);
     }
@@ -165,15 +222,16 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-      <div className="border-b border-white/10 px-4 py-3">
-        <h2 className="text-sm font-bold text-white">抓取設定</h2>
-        <p className="mt-0.5 text-[11px] text-white/40">
-          設定自動抓取頻率，或手動立即執行
-        </p>
-      </div>
+    <>
+      <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+        <div className="border-b border-white/10 px-4 py-3">
+          <h2 className="text-sm font-bold text-white">抓取設定</h2>
+          <p className="mt-0.5 text-[11px] text-white/40">
+            設定自動抓取頻率，或手動立即執行
+          </p>
+        </div>
 
-      <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4">
         {/* 自動抓取開關 */}
         <div className="flex items-center justify-between">
           <div>
@@ -306,7 +364,17 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
             </button>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={toast.type === "error" ? 5000 : 3000}
+        />
+      )}
+    </>
   );
 }

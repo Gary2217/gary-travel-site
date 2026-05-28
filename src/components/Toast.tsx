@@ -6,12 +6,35 @@ import { createPortal } from "react-dom";
 interface ToastProps {
   message: string;
   duration?: number;
+  type?: "success" | "error" | "warning";
   onClose: () => void;
 }
 
-export default function Toast({ message, duration = 3000, onClose }: ToastProps) {
+export default function Toast({
+  message,
+  duration = 3000,
+  type,
+  onClose,
+}: ToastProps) {
   const [visible, setVisible] = useState(true);
   const [mounted, setMounted] = useState(false);
+
+  const prefix =
+    type === "success"
+      ? "✅"
+      : type === "error"
+        ? "❌"
+        : type === "warning"
+          ? "⚠️"
+          : "";
+  const prefixClass =
+    type === "success"
+      ? "text-emerald-500"
+      : type === "error"
+        ? "text-red-500"
+        : type === "warning"
+          ? "text-amber-500"
+          : "text-gray-500";
 
   useEffect(() => {
     setMounted(true);
@@ -36,7 +59,10 @@ export default function Toast({ message, duration = 3000, onClose }: ToastProps)
         visible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
       }`}
     >
-      {message}
+      <span className="inline-flex items-center gap-2">
+        {prefix ? <span className={prefixClass}>{prefix}</span> : null}
+        <span>{message}</span>
+      </span>
     </div>,
     document.body
   );

@@ -71,8 +71,8 @@ export interface ScrapeChangeItem {
 interface ScrapeCompareModalProps {
   change: ScrapeChangeItem;
   onClose: () => void;
-  onApply: (id: string) => void;
-  onIgnore: (id: string) => void;
+  onApply: (id: string) => Promise<boolean> | boolean;
+  onIgnore: (id: string) => Promise<boolean> | boolean;
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -152,7 +152,10 @@ export default function ScrapeCompareModal({
 
   const handleApply = async () => {
     setApplying(true);
-    onApply(change.id);
+    const success = await onApply(change.id);
+    if (!success) {
+      setApplying(false);
+    }
   };
 
   const oursPrice = details.price_detail?.ours?.split("\t") ?? [];
