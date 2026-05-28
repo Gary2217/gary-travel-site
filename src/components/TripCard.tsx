@@ -128,7 +128,7 @@ export default function TripCard({
         <div className="group relative flex flex-row overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative w-[140px] shrink-0 self-stretch overflow-hidden sm:w-48 md:w-[300px] lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative min-h-[160px] w-[140px] shrink-0 self-stretch overflow-hidden sm:min-h-[200px] sm:w-48 md:w-[300px] lg:w-[340px]${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
         >
           <div className="relative h-full w-full">
