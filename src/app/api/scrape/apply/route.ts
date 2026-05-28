@@ -23,17 +23,96 @@ interface ScrapedTrip {
   price_range: string;
   display_order: number;
   destination_id: string;
+  cover_image_url?: string;
   trip_banner: Record<string, unknown>;
   departures: Array<{
     date: string;
-    city: string;
+    departure_city: string;
     airline: string;
     price: number;
     label: string;
-    total: number;
-    avail: number;
+    seats_total: number;
+    seats_available: number;
   }>;
-  flightSegments: Array<Record<string, unknown>>;
+  flightSegments: FlightSegment[];
+}
+
+interface FlightSegment {
+  day_text?: string;
+  airline?: string;
+  flight_number?: string;
+  dep_time?: string;
+  dep_airport?: string;
+  arr_time?: string;
+  arr_airport?: string;
+  next_day?: boolean;
+}
+
+interface DepartureInfoMapValue {
+  group_code: string;
+  price_detail: string;
+}
+
+function extractPriceColumn(priceDetailStr: unknown, index: number) {
+  const value = String(priceDetailStr || '')
+    .split('\t')
+    [index]?.replace(/[^\d]/g, '');
+
+  return value || '';
+}
+
+async function rebuildDepartureInfoMap(
+  supabase: ReturnType<typeof createSupabase>,
+  tripId: string,
+  scraped: ScrapedTrip,
+) {
+  const { data: newDeps, error: depsErr } = await supabase
+    .from('trip_departure_dates')
+    .select('id')
+    .eq('trip_id', tripId);
+
+  if (depsErr) return depsErr.message;
+
+  const departureInfoMap: Record<string, DepartureInfoMapValue> = {};
+  for (const dep of newDeps || []) {
+    departureInfoMap[dep.id] = {
+      group_code: String(scraped.trip_banner?.code_label || ''),
+      price_detail: JSON.stringify({
+        title: '團費與售價說明',
+        subtitle: '依航空與房型不同，價格略有調整',
+        adultPrice: extractPriceColumn(scraped.trip_banner?.price_detail, 0),
+        childWithBedPrice: extractPriceColumn(scraped.trip_banner?.price_detail, 1),
+        childNoBedPrice: extractPriceColumn(scraped.trip_banner?.price_detail, 2),
+        childExtraBedPrice: extractPriceColumn(scraped.trip_banner?.price_detail, 3),
+        infantPrice: extractPriceColumn(scraped.trip_banner?.price_detail, 4),
+      }),
+    };
+  }
+
+  const { data: currentTrip, error: currentTripErr } = await supabase
+    .from('trips')
+    .select('trip_banner')
+    .eq('id', tripId)
+    .single();
+
+  if (currentTripErr) return currentTripErr.message;
+
+  const existingBanner =
+    currentTrip?.trip_banner && typeof currentTrip.trip_banner === 'object'
+      ? (currentTrip.trip_banner as Record<string, unknown>)
+      : {};
+
+  const updatedBanner = {
+    ...existingBanner,
+    departure_info_map: departureInfoMap,
+  };
+
+  const { error: updateBannerErr } = await supabase
+    .from('trips')
+    .update({ trip_banner: updatedBanner })
+    .eq('id', tripId);
+
+  return updateBannerErr?.message;
 }
 
 // POST: 確認變更，寫入正式 DB
@@ -108,6 +187,8 @@ export async function POST(req: NextRequest) {
                 subtitle: scraped.subtitle,
                 duration: scraped.duration,
                 price_range: scraped.price_range,
+                display_order: scraped.display_order,
+                cover_image_url: scraped.cover_image_url || null,
                 trip_banner: mergedBanner,
               })
               .eq('id', change.trip_id);
@@ -127,41 +208,63 @@ export async function POST(req: NextRequest) {
             }
 
             // 刪除舊日期
-            await supabase
+            const { error: deleteErr } = await supabase
               .from('trip_departure_dates')
               .delete()
               .eq('trip_id', change.trip_id);
+
+            if (deleteErr) {
+              results.push({ id: changeId, success: false, error: deleteErr.message });
+              continue;
+            }
 
             // 插入新日期
             const segments = scraped.flightSegments || [];
             const outbound = segments[0] || null;
             const returnFlight = segments[segments.length - 1] || null;
+            let departureError: string | null = null;
 
             for (const dep of scraped.departures) {
-              await supabase.from('trip_departure_dates').insert({
+              const { error: insertDepErr } = await supabase.from('trip_departure_dates').insert({
                 trip_id: change.trip_id,
                 departure_date: dep.date,
-                departure_city: dep.city,
+                departure_city: dep.departure_city,
                 airline: dep.airline,
                 price: dep.price,
                 label: dep.label,
-                seats_total: dep.total,
-                seats_available: dep.avail,
-                outbound_flight: (outbound as Record<string, unknown>)?.flight_number || null,
-                outbound_time: (outbound as Record<string, unknown>)?.dep_time || null,
-                outbound_from: (outbound as Record<string, unknown>)?.dep_airport || null,
-                outbound_arrival_time: (outbound as Record<string, unknown>)?.arr_time || null,
-                outbound_to: (outbound as Record<string, unknown>)?.arr_airport || null,
-                outbound_next_day: (outbound as Record<string, unknown>)?.next_day || false,
-                return_flight: (returnFlight as Record<string, unknown>)?.flight_number || null,
-                return_time: (returnFlight as Record<string, unknown>)?.dep_time || null,
-                return_from: (returnFlight as Record<string, unknown>)?.dep_airport || null,
-                return_arrival_time: (returnFlight as Record<string, unknown>)?.arr_time || null,
-                return_to: (returnFlight as Record<string, unknown>)?.arr_airport || null,
-                return_next_day: (returnFlight as Record<string, unknown>)?.next_day || false,
+                seats_total: dep.seats_total,
+                seats_available: dep.seats_available,
+                outbound_flight: outbound?.flight_number || null,
+                outbound_time: outbound?.dep_time || null,
+                outbound_from: outbound?.dep_airport || null,
+                outbound_arrival_time: outbound?.arr_time || null,
+                outbound_to: outbound?.arr_airport || null,
+                outbound_next_day: outbound?.next_day || false,
+                return_flight: returnFlight?.flight_number || null,
+                return_time: returnFlight?.dep_time || null,
+                return_from: returnFlight?.dep_airport || null,
+                return_arrival_time: returnFlight?.arr_time || null,
+                return_to: returnFlight?.arr_airport || null,
+                return_next_day: returnFlight?.next_day || false,
                 flight_segments: segments,
                 is_active: true,
               });
+
+              if (insertDepErr) {
+                departureError = insertDepErr.message;
+                break;
+              }
+            }
+
+            if (departureError) {
+              results.push({ id: changeId, success: false, error: departureError });
+              continue;
+            }
+
+            const rebuildErr = await rebuildDepartureInfoMap(supabase, change.trip_id, scraped);
+            if (rebuildErr) {
+              results.push({ id: changeId, success: false, error: rebuildErr });
+              continue;
             }
             break;
           }
@@ -184,6 +287,7 @@ export async function POST(req: NextRequest) {
                 highlights: [],
                 is_active: true,
                 display_order: scraped.display_order || 99,
+                cover_image_url: scraped.cover_image_url || null,
                 trip_banner: scraped.trip_banner,
               })
               .select('id')
@@ -199,32 +303,49 @@ export async function POST(req: NextRequest) {
               const segments = scraped.flightSegments || [];
               const outbound = segments[0] || null;
               const returnFlight = segments[segments.length - 1] || null;
+              let departureError: string | null = null;
 
               for (const dep of scraped.departures) {
-                await supabase.from('trip_departure_dates').insert({
+                const { error: insertDepErr } = await supabase.from('trip_departure_dates').insert({
                   trip_id: inserted.id,
                   departure_date: dep.date,
-                  departure_city: dep.city,
+                  departure_city: dep.departure_city,
                   airline: dep.airline,
                   price: dep.price,
                   label: dep.label,
-                  seats_total: dep.total,
-                  seats_available: dep.avail,
-                  outbound_flight: (outbound as Record<string, unknown>)?.flight_number || null,
-                  outbound_time: (outbound as Record<string, unknown>)?.dep_time || null,
-                  outbound_from: (outbound as Record<string, unknown>)?.dep_airport || null,
-                  outbound_arrival_time: (outbound as Record<string, unknown>)?.arr_time || null,
-                  outbound_to: (outbound as Record<string, unknown>)?.arr_airport || null,
-                  outbound_next_day: (outbound as Record<string, unknown>)?.next_day || false,
-                  return_flight: (returnFlight as Record<string, unknown>)?.flight_number || null,
-                  return_time: (returnFlight as Record<string, unknown>)?.dep_time || null,
-                  return_from: (returnFlight as Record<string, unknown>)?.dep_airport || null,
-                  return_arrival_time: (returnFlight as Record<string, unknown>)?.arr_time || null,
-                  return_to: (returnFlight as Record<string, unknown>)?.arr_airport || null,
-                  return_next_day: (returnFlight as Record<string, unknown>)?.next_day || false,
+                  seats_total: dep.seats_total,
+                  seats_available: dep.seats_available,
+                  outbound_flight: outbound?.flight_number || null,
+                  outbound_time: outbound?.dep_time || null,
+                  outbound_from: outbound?.dep_airport || null,
+                  outbound_arrival_time: outbound?.arr_time || null,
+                  outbound_to: outbound?.arr_airport || null,
+                  outbound_next_day: outbound?.next_day || false,
+                  return_flight: returnFlight?.flight_number || null,
+                  return_time: returnFlight?.dep_time || null,
+                  return_from: returnFlight?.dep_airport || null,
+                  return_arrival_time: returnFlight?.arr_time || null,
+                  return_to: returnFlight?.arr_airport || null,
+                  return_next_day: returnFlight?.next_day || false,
                   flight_segments: segments,
                   is_active: true,
                 });
+
+                if (insertDepErr) {
+                  departureError = insertDepErr.message;
+                  break;
+                }
+              }
+
+              if (departureError) {
+                results.push({ id: changeId, success: false, error: departureError });
+                continue;
+              }
+
+              const rebuildErr = await rebuildDepartureInfoMap(supabase, inserted.id, scraped);
+              if (rebuildErr) {
+                results.push({ id: changeId, success: false, error: rebuildErr });
+                continue;
               }
             }
             break;
@@ -255,10 +376,15 @@ export async function POST(req: NextRequest) {
         }
 
         // 標記為已處理
-        await supabase
+        const { error: approveErr } = await supabase
           .from('pending_changes')
           .update({ status: 'approved' })
           .eq('id', changeId);
+
+        if (approveErr) {
+          results.push({ id: changeId, success: false, error: approveErr.message });
+          continue;
+        }
 
         results.push({ id: changeId, success: true });
       } catch (err) {

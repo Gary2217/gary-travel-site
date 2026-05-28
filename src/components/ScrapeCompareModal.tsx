@@ -5,12 +5,12 @@ import { useState } from "react";
 // ── Types ────────────────────────────────────────────────
 interface FlightSegment {
   airline: string;
-  flight_no: string;
-  day: string;
-  departure_time: string;
-  departure_airport: string;
-  arrival_time: string;
-  arrival_airport: string;
+  flight_number: string;
+  day_text: string;
+  dep_time: string;
+  dep_airport: string;
+  arr_time: string;
+  arr_airport: string;
   next_day: boolean;
 }
 
@@ -313,22 +313,23 @@ export default function ScrapeCompareModal({
                               key={i}
                               className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px]"
                             >
-                              <span className="text-white/40">{seg.day}</span>
+                              <span className="text-white/40">{seg.day_text}</span>
+                              <span className="text-sky-300/70">{seg.airline}</span>
                               <span className="font-semibold text-white/80">
-                                {seg.flight_no}
+                                {seg.flight_number}
                               </span>
                               <span className="text-white/50">
-                                {seg.departure_time}
+                                {seg.dep_time}
                               </span>
                               <span className="text-white/40">
-                                {seg.departure_airport}
+                                {seg.dep_airport}
                               </span>
                               <span className="text-white/20">→</span>
                               <span className="text-white/50">
-                                {seg.arrival_time}
+                                {seg.arr_time}
                               </span>
                               <span className="text-white/40">
-                                {seg.arrival_airport}
+                                {seg.arr_airport}
                               </span>
                               {seg.next_day && (
                                 <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-400">

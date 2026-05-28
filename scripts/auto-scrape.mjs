@@ -126,6 +126,13 @@ function formatPriceRange(adultPrice) {
   return normalized.replace(/元起$/, '起');
 }
 
+function padDate(dateStr) {
+  const normalized = sanitizeText(dateStr).replace(/\//g, '-');
+  const parts = normalized.split('-');
+  if (parts.length !== 3) return normalized;
+  return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+}
+
 function parseNumber(value) {
   const digits = String(value || '').replace(/[^\d-]/g, '');
   return digits ? Number(digits) : null;
@@ -651,7 +658,7 @@ async function scrapeTripDetail(page, tripSummary) {
 
     const departures = Array.from(document.querySelectorAll('#search-table tbody tr'))
       .map((row) => {
-        const date = clean(row.querySelector('.YMD')?.textContent || '').replace(/\//g, '-');
+        const date = padDate(clean(row.querySelector('.YMD')?.textContent || ''));
         if (!date) return null;
 
         return {
@@ -666,13 +673,16 @@ async function scrapeTripDetail(page, tripSummary) {
       })
       .filter(Boolean);
 
+    const rawCode = clean(document.querySelector('.GroupNumber')?.textContent || '');
+    const codeMatch = rawCode.match(/[A-Z][A-Z0-9]{4,}/);
+
     return {
       source_url: sourceUrl,
       source_section_label: sectionLabel,
       destination_label: destinationLabel,
       title: clean(document.querySelector('h1')?.textContent || ''),
       cover_image_url: absolute(document.querySelector('#BasicCarousel img')?.getAttribute('src') || ''),
-      code_label: clean(document.querySelector('.GroupNumber')?.textContent || '').replace(/^.*?([A-Z0-9]{5,})$/, '$1'),
+      code_label: codeMatch ? codeMatch[0] : rawCode,
       duration_text: basicInfo['旅遊天數'] || '',
       min_group_size_text: basicInfo['成團人數'] || '',
       airport: basicInfo['出發機場'] || '',
@@ -686,9 +696,15 @@ async function scrapeTripDetail(page, tripSummary) {
 
   const durationRaw = sanitizeText(data.duration_text);
   const durationMatch = durationRaw.match(/(\d+)\s*天?\s*(\d+)\s*夜?/) || durationRaw.match(/(\d+)\D+(\d+)/);
-  const duration = durationMatch ? `${durationMatch[1]}天${durationMatch[2]}夜` : (durationRaw.includes('天') ? durationRaw : '');
+  let duration = durationMatch ? `${durationMatch[1]}天${durationMatch[2]}夜` : (durationRaw.includes('天') ? durationRaw : '');
+  if (!durationMatch) {
+    const nums = durationRaw.match(/\d+/g);
+    if (nums && nums.length >= 2) duration = `${nums[0]}天${nums[1]}夜`;
+    else if (nums && nums.length === 1) duration = `${nums[0]}天${Number(nums[0]) - 1}夜`;
+  }
   const minGroupSize = parseNumber(data.min_group_size_text);
   const enrichedFlightSegments = (data.flight_segments || []).map((segment) => ({
+    day_text: sanitizeText(segment.day_text || ''),
     airline: formatAirlineLabel(segment.airline, segment.flight_number),
     flight_number: sanitizeText(segment.flight_number),
     dep_time: sanitizeText(segment.dep_time),
