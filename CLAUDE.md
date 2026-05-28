@@ -406,6 +406,7 @@ export async function GET(
 - **我們的網站**：https://gary-travel-site.vercel.app
 - **原則**：朋威頁面上某個 tab 有幾個行程，我的對應目的地頁就放幾個，順序完全一致
 - **排序規則**：依朋威網站顯示順序（上→下、左→右），第一列左起 1、2、3，第二列左起 4、5、6，依此類推，對應 `display_order` 值 1、2、3...
+- **價格來源**：一律以朋威**行程詳情頁**為準（列表頁價格可能過時）
 
 ### 來源頁面 URL 對照
 
@@ -424,69 +425,94 @@ export async function GET(
 | 南亞 | `/southasia/` | 不丹、馬爾地夫、斯里蘭卡 |
 | 紐澳美加 | `/new/` | 紐澳、美加 |
 
-### 每個行程要抓的欄位
+### 抓取欄位完整清單（按來源頁面位置）
 
-#### A. 行程基本資訊（寫入 `trips` 表）
+每個行程必須點進**詳情頁**，依序抓取以下所有欄位。缺一不可。
 
-| 欄位 | 來源位置 | 範例 | 必填 |
-|------|---------|------|------|
-| `title` | 行程標題（完整含天數） | `閃耀阿布達比、杜拜7日~季節限定地球村、奇蹟花園` | ✅ |
-| `subtitle` | 航空公司＋主要景點摘要 | `阿提哈德航空｜地球村、奇蹟花園、杜拜之框、沙漠衝沙` | ✅ |
-| `duration` | 天數（X天Y夜） | `7天6夜` | ✅ |
-| `price_range` | 售價文字 | `NT$49,900起` | ✅ |
-| `destination_id` | 對應我們的目的地 UUID | — | ✅ |
-| `display_order` | 朋威頁面排序位置（1 起算） | `1` | ✅ |
-| `is_active` | 固定 `true` | — | ✅ |
-| `highlights` | 空陣列（不抓） | `[]` | — |
-| `cover_image_url` | 行程封面圖（需下載上傳到 Supabase Storage） | — | ⚠️ 後補 |
+#### ① 頁面頂部區塊
 
-#### B. trip_banner（寫入 `trips.trip_banner` JSONB 欄位）
+| 欄位 | 來源位置 | 寫入位置 | 範例 |
+|------|---------|---------|------|
+| 行程標題 | `<h1>` 大標題 | `trips.title` | `閃耀阿布達比、杜拜7日~季節限定地球村、奇蹟花園` |
+| 封面圖片 | 標題旁的大圖 | `trips.cover_image_url`（下載後上傳 Storage） | ⚠️ 後補 |
+| 團型編號 | 「團型編號」欄位 | `trip_banner.code_label` | `AUH4AG7D` |
+| 旅遊天數 | 「旅遊天數」欄位 | `trips.duration` + `trip_banner.duration_label` | `7天6夜` |
+| 成團人數 | 「成團人數」欄位 | `trip_banner.min_group_size` | `16` |
+| 出發機場 | 「出發機場」欄位 | `trip_banner.airport` | `桃園國際機場` |
+| 航空公司 | 「航空公司」欄位 | `trip_banner.airline` | `阿提哈德航空（EY）` |
+| 標籤 | 金色 `#tag` 列表 | `trip_banner.tags` | `['特別推薦', '優質深度', '城市巡禮']` |
+
+#### ② 售價明細表格（「更多售價說明」）
+
+**這是最常漏抓的區塊，必須逐格填入，不可填「洽詢」除非來源確實顯示洽詢。**
+
+| 欄位 | 寫入位置 | 範例 |
+|------|---------|------|
+| 大人價格 | `price_detail` 第 1 欄 | `NT$49,900元起` |
+| 小孩佔床價格 | `price_detail` 第 2 欄 | `NT$49,900元起` |
+| 小孩不佔床價格 | `price_detail` 第 3 欄 | `NT$46,900元起` |
+| 加床價格 | `price_detail` 第 4 欄 | `NT$49,900元起` |
+| 嬰兒價格 | `price_detail` 第 5 欄 | `NT$10,000元起` |
+
+寫入格式：以 `\t`（tab）分隔 5 欄，存入 `trip_banner.price_detail`
+```
+NT$49,900元起\tNT$49,900元起\tNT$46,900元起\tNT$49,900元起\tNT$10,000元起
+```
+
+#### ③ 航班資訊（「航班資訊」彈窗）
+
+每個航段一筆，存入 `flightSegments` 陣列，並用於建立出發日期。
 
 | 欄位 | 來源位置 | 範例 |
 |------|---------|------|
-| `code_label` | 團號（頁面上「團型編號」） | `AUH4AG7D` |
-| `price_label` | 售價標籤 | `NT$49,900起` |
-| `tags` | 行程標籤（金色 tag） | `['特別推薦', '優質深度', '城市巡禮']` |
-| `departure_label` | 出發地標籤 | `桃園出發` / `高雄出發` |
-| `duration_label` | 天數標籤 | `7天6夜` |
-| `seats_total` | 總座位數 | `20` |
-| `min_group_size` | 最少成團人數 | `16` |
-| `airport` | 出發機場 | `桃園國際機場` |
-| `airline` | 航空公司 | `阿提哈德航空（EY）` |
-| `price_detail` | 售價明細（大人/小孩/嬰兒用 tab 分隔） | `NT$49,900元起\tNT$49,900元起\t...` |
-| `custom_tour` | 包團/客製行程（無出發日的行程設為 `true`） | `true` |
+| 航空公司 | 航段左側 logo + 名稱 | `阿提哈德航空（EY）` |
+| 航班號 | 航段編號 | `EY899` |
+| 第幾天 | 「第X天」標示 | `第1天` |
+| 起飛時間 | 出發時間 | `18:40` |
+| 出發機場 | 出發機場名稱 | `桃園國際機場` |
+| 抵達時間 | 抵達時間（注意 `+1天`） | `00:30` |
+| 抵達機場 | 抵達機場名稱 | `阿布達比機場` |
+| 是否跨日 | 是否顯示 `+1天` | `true` / `false` |
 
-#### C. 出發日期（寫入 `trip_departure_dates` 表，每個日期一筆）
+#### ④ 出發日期表格（「出發日期」區塊）
 
-| 欄位 | 來源位置 | 範例 |
-|------|---------|------|
+每個出發日期一筆，寫入 `trip_departure_dates` 表。
+
+| 欄位 | 來源表格欄位 | 範例 |
+|------|-----------|------|
 | `departure_date` | 出發日期 | `2026-07-10` |
-| `departure_city` | 出發城市 | `桃園` / `高雄` |
+| `departure_city` | 依出發機場判斷 | `桃園` / `高雄` |
 | `airline` | 航空公司 | `阿提哈德航空（EY）` |
-| `price` | 該梯次售價（數字） | `49900` |
-| `label` | 去回時段標籤 | `晚去晚回` / `早去早回` / `午去午回` |
-| `seats_total` | 總座位數 | `20` |
-| `seats_available` | 可售座位數 | `19` |
-| `outbound_flight` | 去程航班號 | `EY899` |
-| `outbound_time` | 去程起飛時間 | `18:40` |
-| `outbound_from` | 去程出發機場 | `桃園國際機場` |
-| `outbound_arrival_time` | 去程抵達時間 | `00:30` |
-| `outbound_to` | 去程抵達機場 | `阿布達比機場` |
-| `outbound_next_day` | 去程是否跨日 | `true` |
-| `return_flight` | 回程航班號 | `EY898` |
-| `return_time` | 回程起飛時間 | `21:25` |
-| `return_from` | 回程出發機場 | `阿布達比機場` |
-| `return_arrival_time` | 回程抵達時間 | `09:00` |
-| `return_to` | 回程抵達機場 | `桃園國際機場` |
-| `return_next_day` | 回程是否跨日 | `true` |
-| `flight_segments` | 完整航段陣列（多段轉機用） | JSON 陣列 |
+| `price` | 售價（數字，去掉 NT$ 和逗號） | `49900` |
+| `label` | 去回時段 | `晚去晚回` / `早去早回` / `午去午回` |
+| `seats_total` | 機位數 | `20` |
+| `seats_available` | 可售數 | `19` |
+| 去程航班 | 從③的第一個航段取 | `EY899` / `18:40` / `桃園國際機場` → `阿布達比機場` |
+| 回程航班 | 從③的最後一個航段取 | `EY898` / `21:25` / `阿布達比機場` → `桃園國際機場` |
+| `flight_segments` | 完整航段陣列（從③組成） | JSON 陣列 |
 
-#### D. 不需要抓的資料
+#### ⑤ 行程基本資訊（組合欄位）
+
+| 欄位 | 組合方式 | 寫入位置 |
+|------|---------|---------|
+| `subtitle` | 航空公司 + 主要景點摘要 | `trips.subtitle` |
+| `price_range` | 大人售價文字 | `trips.price_range`（如 `NT$49,900起`） |
+| `price_label` | 同 price_range | `trip_banner.price_label` |
+| `departure_label` | 依出發機場 | `trip_banner.departure_label`（`桃園出發` / `高雄出發`） |
+| `seats_total` | 從出發日期表格取 | `trip_banner.seats_total` |
+| `display_order` | 朋威頁面排序位置 | `trips.display_order`（1 起算） |
+| `destination_id` | 對應我們的目的地 UUID | `trips.destination_id` |
+| `is_active` | 固定 | `true` |
+| `highlights` | 固定空陣列 | `[]` |
+| `custom_tour` | 無出發日的行程 | `trip_banner.custom_tour = true` |
+
+#### ⑥ 不需要抓的資料
 
 - ❌ 每日行程（`day_itineraries`）— 之後放 PDF 取代
 - ❌ 行程特色（`highlights`）— 設為空陣列
 - ❌ 飯店介紹詳情
 - ❌ 訂購須知文字
+- ❌ 費用說明文字（只抓價格數字）
 
 ### 抓取 Script 規範
 
@@ -529,7 +555,8 @@ const DESTINATIONS = {
 
 - **SUPABASE_SERVICE_ROLE_KEY**：從 `.env.local` 讀取，**禁止硬編碼在 script 中**
 - **圖片處理**：先下載到本地 → 上傳 Supabase Storage → 取得公開 URL
-- **價格以朋威為準**：如有差異，一律以朋威網站當前顯示為正確值
+- **價格以朋威詳情頁為準**：列表頁價格可能過時，一律以點進去的詳情頁為正確值
+- **售價明細 5 欄全填**：大人、小孩佔床、小孩不佔床、加床、嬰兒 — 來源寫什麼就填什麼，不可自行填「洽詢」
 - **出發日期全部重建**：更新時先 `DELETE` 舊日期，再 `INSERT` 新日期
 - **保留既有圖片**：更新 `trip_banner` 時，必須保留 `side_image_url` 和 `departure_info_map`
 - **客製行程**：無出發日期的行程，設 `trip_banner.custom_tour = true`，不插入出發日期
@@ -540,12 +567,13 @@ const DESTINATIONS = {
 
 1. **確認來源頁面** — 開啟朋威對應頁面，數清楚 tab 內行程數量
 2. **確認目的地 ID** — 查 Supabase `destinations` 表，確認對應的 `destination_id`
-3. **逐一記錄行程資料** — 點進每個行程詳情頁，抓取上述 A/B/C 三類欄位
-4. **寫入 Script** — 參照 `scripts/update-middle-east-siberia-trips.mjs` 的格式
-5. **執行 Script** — `node scripts/import-{region}-trips.mjs`
-6. **驗證結果** — 打 API 確認行程數、價格、排序是否正確
-7. **抓取圖片** — 執行圖片爬蟲或手動上傳
-8. **最終比對** — 開啟我們的頁面與朋威頁面並排，逐一比對
+3. **逐一點進詳情頁** — 每個行程都必須點進去，抓取 ①②③④⑤ 全部欄位
+4. **特別檢查售價明細** — ② 的 5 欄價格是否全部填入（不可遺漏）
+5. **寫入 Script** — 參照 `scripts/update-middle-east-siberia-trips.mjs` 的格式
+6. **執行 Script** — `node scripts/import-{region}-trips.mjs`
+7. **驗證結果** — 打 API 確認：行程數、價格、排序、售價明細是否正確
+8. **抓取圖片** — 執行圖片爬蟲或手動上傳
+9. **最終比對** — 開啟我們的頁面與朋威頁面並排，逐一比對（含售價彈窗）
 
 ---
 
