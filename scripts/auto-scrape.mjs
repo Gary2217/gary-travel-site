@@ -889,7 +889,10 @@ async function insertPendingChanges(supabase, changes) {
 
   if (!deduped.length) return 0;
   const { error } = await supabase.from('pending_changes').insert(deduped);
-  if (error) throw new Error(`寫入 pending_changes 失敗：${error.message}`);
+  if (error) {
+    console.log(`  ⚠️ 寫入 pending_changes 失敗：${error.message}`);
+    return 0;
+  }
   return deduped.length;
 }
 
@@ -989,7 +992,38 @@ async function main() {
 
         const destination = resolveDestination(scrapedTrip.destination_label) || resolveDestination(tripSummary.section_label);
         if (!destination) {
-          throw new Error(`找不到 destination 對應：${scrapedTrip.destination_label || tripSummary.section_label}`);
+          // 找不到 destination → 可能是朋威新增的 tab/區域，寫通知不中斷
+          const missingLabel = scrapedTrip.destination_label || tripSummary.section_label;
+          console.log(`  🟣 找不到 destination：${missingLabel}，寫入 new_tab 通知`);
+          const alertChange = {
+            scrape_log_id: logId,
+            destination_id: null,
+            trip_id: null,
+            change_type: 'new_tab',
+            field_name: 'destination',
+            old_value: null,
+            new_value: missingLabel,
+            trip_title: scrapedTrip.title,
+            source_code: scrapedTrip.code_label || '',
+            source_url: scrapedTrip.source_url || tripSummary.href,
+            region_label: regionConfig.key,
+            scraped_data: {
+              alert_type: 'new_tab',
+              missing_destination_label: missingLabel,
+              region_key: regionConfig.key,
+              region_url: `${BASE_URL}${regionConfig.url}`,
+              trip_title: scrapedTrip.title,
+              trip_code: scrapedTrip.code_label || '',
+              trip_price: scrapedTrip.price_range || '',
+              trip_duration: scrapedTrip.duration || '',
+              message: `[新分頁/區域] 朋威的「${missingLabel}」在我們的 DB 找不到對應的目的地。\n[來源] ${BASE_URL}${regionConfig.url}\n[行程] ${scrapedTrip.title}\n[原因] 可能是朋威新增了路線，或 destination 名稱不匹配。\n[建議] 到 Supabase 新增 destination（title="${missingLabel}"），或手動對應現有 destination。`,
+            },
+            status: 'pending',
+          };
+          await supabase.from('pending_changes').insert(alertChange).catch(() => {});
+          changesFound += 1;
+          completedTrips += 1;
+          continue;
         }
 
         const destinationTrips = tripsByDestinationId.get(destination.id) || [];

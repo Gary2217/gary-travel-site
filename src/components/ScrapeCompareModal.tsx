@@ -63,6 +63,8 @@ export interface ScrapeChangeItem {
   summary: string;
   status: string;
   created_at: string;
+  source_url?: string;
+  scraped_data?: Record<string, unknown>;
   details: ScrapeChangeDetails;
 }
 

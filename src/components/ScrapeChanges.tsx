@@ -44,7 +44,34 @@ const CHANGE_TYPE_CONFIG: Record<
     label: "資訊變更",
     badgeClass: "bg-white/10 text-white/60",
   },
+  flight: {
+    icon: "✈️",
+    label: "航班變更",
+    badgeClass: "bg-cyan-500/20 text-cyan-400",
+  },
+  new_tab: {
+    icon: "🟣",
+    label: "新分頁/區域",
+    badgeClass: "bg-purple-500/20 text-purple-400",
+  },
+  warning: {
+    icon: "⚠️",
+    label: "抓取異常",
+    badgeClass: "bg-yellow-500/20 text-yellow-400",
+  },
 };
+
+function getAlertMessage(change: ScrapeChangeItem): string | null {
+  if (change.change_type !== "new_tab" && change.change_type !== "warning") return null;
+  const msg = change.scraped_data?.message;
+  return typeof msg === "string" ? msg : null;
+}
+
+function getAlertSummary(change: ScrapeChangeItem): string {
+  const msg = getAlertMessage(change);
+  if (msg) return msg.split("\n")[0];
+  return change.summary || "";
+}
 
 function getTypeConfig(type: string) {
   return (
@@ -239,9 +266,14 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                           {config.label}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-[11px] text-white/40">
-                        {change.summary}
+                      <p className="mt-0.5 text-[11px] text-white/40">
+                        {getAlertSummary(change)}
                       </p>
+                      {getAlertMessage(change) && (
+                        <pre className="mt-1 max-w-full overflow-x-auto whitespace-pre-wrap rounded bg-white/5 p-2 text-[10px] text-white/50">
+                          {getAlertMessage(change)}
+                        </pre>
+                      )}
                       <p className="mt-0.5 text-[10px] text-white/25">
                         {relativeTime(change.created_at)}
                       </p>
@@ -253,12 +285,23 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                       >
                         忽略
                       </button>
-                      <button
-                        onClick={() => setSelectedChange(change)}
-                        className="rounded-full bg-sky-600/20 px-3 py-1.5 text-[11px] font-semibold text-sky-400 transition hover:bg-sky-600/30"
-                      >
-                        查看詳情
-                      </button>
+                      {change.change_type !== "new_tab" && change.change_type !== "warning" ? (
+                        <button
+                          onClick={() => setSelectedChange(change)}
+                          className="rounded-full bg-sky-600/20 px-3 py-1.5 text-[11px] font-semibold text-sky-400 transition hover:bg-sky-600/30"
+                        >
+                          查看詳情
+                        </button>
+                      ) : (
+                        <a
+                          href={change.source_url || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-full bg-purple-600/20 px-3 py-1.5 text-[11px] font-semibold text-purple-400 transition hover:bg-purple-600/30"
+                        >
+                          開啟來源
+                        </a>
+                      )}
                     </div>
                   </div>
                 );
