@@ -466,7 +466,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(10,10,20,0.85)] backdrop-blur-[12px]">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
-          <button onClick={() => router.push('/')} className="rounded-full p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white">
+          <button onClick={() => router.back()} className="rounded-full p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
