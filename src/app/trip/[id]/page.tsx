@@ -1183,7 +1183,7 @@ export default function TripPage() {
 
           {/* 出發日期 — 手機排第2、桌面右欄跨列 */}
           <div ref={rightColumnRef} className="hidden mt-3 lg:block lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="rounded-xl border-2 border-sky-200/80 bg-white shadow-sm ring-1 ring-sky-100/50">
               {/* Dev mode 按鈕 */}
               {isDevMode && (
                 <div className="flex justify-end gap-1.5 px-4 pt-2.5 pb-1">
