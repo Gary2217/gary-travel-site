@@ -637,6 +637,11 @@ async function scrapeTripDetail(page, tripSummary) {
 
   const data = await page.evaluate((sourceUrl, sectionLabel) => {
     const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+    const padDate = (dateStr) => {
+      const parts = String(dateStr || '').replace(/\//g, '-').split('-');
+      if (parts.length !== 3) return dateStr;
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    };
     const absolute = (value) => {
       const url = String(value || '').trim();
       if (!url) return '';
