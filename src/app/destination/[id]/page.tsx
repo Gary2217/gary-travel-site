@@ -70,6 +70,7 @@ export default function DestinationPage() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isPC, setIsPC] = useState(false);
   const [scrapeTriggering, setScrapeTriggering] = useState(false);
+  const [scrapeRunning, setScrapeRunning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
@@ -81,6 +82,23 @@ export default function DestinationPage() {
     setDateFilter(qs.get('date') || '');
     setCityFilter(qs.get('city') || '');
   }, []);
+
+  // 檢查是否有抓取進行中（防重複觸發）
+  useEffect(() => {
+    if (!isDevMode) return;
+    let cancelled = false;
+    async function checkRunning() {
+      try {
+        const res = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setScrapeRunning(data.running === true);
+        }
+      } catch { /* ignore */ }
+    }
+    checkRunning();
+    return () => { cancelled = true; };
+  }, [isDevMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -773,10 +791,10 @@ export default function DestinationPage() {
       {isDevMode && (
         <button
           onClick={() => void handleScrapeThisPage()}
-          disabled={scrapeTriggering}
+          disabled={scrapeTriggering || scrapeRunning}
           className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-500 disabled:opacity-60"
         >
-          {scrapeTriggering ? '⏳ 啟動中...' : '🔄 更新抓取此頁'}
+          {scrapeRunning ? '⏳ 抓取進行中' : scrapeTriggering ? '⏳ 啟動中...' : '🔄 更新抓取此頁'}
         </button>
       )}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}

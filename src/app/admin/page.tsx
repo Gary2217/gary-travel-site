@@ -237,6 +237,7 @@ export default function AdminPage() {
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
   const [scrapePendingCount, setScrapePendingCount] = useState(0);
   const [scrapeRefreshKey, setScrapeRefreshKey] = useState(0);
+  const [scrapeIsRunning, setScrapeIsRunning] = useState(false);
 
   // 讀取 query param ?tab=scrape
   useEffect(() => {
@@ -1114,8 +1115,8 @@ export default function AdminPage() {
         {/* ── Scrape Tab ── */}
         {activeTab === "scrape" && (
           <div className="space-y-4">
-            <ScrapeSettings onTrigger={() => setScrapeRefreshKey((k) => k + 1)} />
-            <ScrapeProgress refreshKey={scrapeRefreshKey} />
+            <ScrapeSettings onTrigger={() => setScrapeRefreshKey((k) => k + 1)} isRunning={scrapeIsRunning} />
+            <ScrapeProgress refreshKey={scrapeRefreshKey} onRunningChange={setScrapeIsRunning} />
             <ScrapeChanges onCountChange={setScrapePendingCount} />
           </div>
         )}

@@ -30,6 +30,7 @@ interface ScrapeProgressData {
 
 interface ScrapeProgressProps {
   refreshKey?: number;
+  onRunningChange?: (running: boolean) => void;
 }
 
 async function getErrorMessage(res: Response, fallback: string) {
@@ -43,7 +44,7 @@ async function getErrorMessage(res: Response, fallback: string) {
   }
 }
 
-export default function ScrapeProgress({ refreshKey }: ScrapeProgressProps) {
+export default function ScrapeProgress({ refreshKey, onRunningChange }: ScrapeProgressProps) {
   const [progress, setProgress] = useState<ScrapeProgressData | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [toast, setToast] = useState<{
@@ -97,6 +98,7 @@ export default function ScrapeProgress({ refreshKey }: ScrapeProgressProps) {
       const previousRunning = previousRunningRef.current;
       const nextRunning = Boolean(data.running);
       setProgress(data);
+      onRunningChange?.(nextRunning);
       pollErrorNotifiedRef.current = false;
 
       if (previousRunning && !nextRunning) {

@@ -18,6 +18,7 @@ interface ScrapeSettingsData {
 
 interface ScrapeSettingsProps {
   onTrigger?: () => void;
+  isRunning?: boolean;
 }
 
 async function getErrorMessage(res: Response, fallback: string) {
@@ -31,7 +32,7 @@ async function getErrorMessage(res: Response, fallback: string) {
   }
 }
 
-export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
+export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeSettingsProps) {
   const [settings, setSettings] = useState<ScrapeSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -313,10 +314,12 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
         {/* 立即抓取按鈕 */}
         <button
           onClick={handleTrigger}
-          disabled={triggering}
+          disabled={triggering || isRunning}
           className="w-full rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
         >
-          {triggering ? (
+          {isRunning ? (
+            "⏳ 抓取進行中..."
+          ) : triggering ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -362,10 +365,10 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
             )}
             <button
               onClick={handlePageTrigger}
-              disabled={pageTriggering || !selectedDestinationId || !selectedDestination?.source_url}
+              disabled={pageTriggering || isRunning || !selectedDestinationId || !selectedDestination?.source_url}
               className="shrink-0 rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
             >
-              {pageTriggering ? "抓取中..." : "🔍 抓取此頁"}
+              {isRunning ? "⏳ 進行中" : pageTriggering ? "抓取中..." : "🔍 抓取此頁"}
             </button>
           </div>
           {selectedDestinationId && !selectedDestination?.source_url && (
