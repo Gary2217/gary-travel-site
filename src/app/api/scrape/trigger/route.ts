@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   if (authError) return authError;
 
   try {
-    const githubToken = process.env.GITHUB_PAT;
+    const githubToken = process.env.GH_PAT || process.env.GITHUB_PAT;
     const repo = process.env.GITHUB_REPO || 'Gary2217/gary-travel-site';
 
     if (!githubToken) {
