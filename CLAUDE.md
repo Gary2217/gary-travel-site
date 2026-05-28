@@ -22,63 +22,80 @@
 ### 判斷流程（每次任務前必須跑）
 
 ```
-1. 改幾個檔案？
-   → 1-2 檔 → 大概率 Haiku
-   → 3-4 檔 → 大概率 Sonnet
-   → 5+ 檔  → 才考慮 Opus
+步驟一：這個任務改幾個檔案？需要跨檔理解嗎？
+  → 1-2 檔、不需跨檔理解 → Haiku
+  → 3-4 檔、或需追資料流  → Sonnet
+  → 5+ 檔、或整站架構決策  → Opus
 
-2. 需要理解跨檔邏輯嗎？
-   → 不需要（改 class、換文字、修單一函式）→ Haiku
-   → 需要（資料流、元件互動、API 串接）→ Sonnet
-
-3. 是已知解法還是要設計方案？
-   → 已知（加 class、換 href、改 props）→ Haiku
-   → 要想（新功能架構、效能問題根因）→ Sonnet / Opus
+步驟二：是已知做法，還是要設計方案？
+  → 已知做法（改 class、換 URL、寫 script、套現有模板） → Haiku
+  → 要思考設計（新功能架構、效能根因、跨模組串接）    → Sonnet / Opus
 ```
 
-### Claude 模型
+### Claude 模型對照
 
-| 層級 | 模型 | 適用場景 | 本專案實際範例 |
-|------|------|----------|---------------|
-| 🟢 輕量（**預設用這個**） | **Haiku** | 1-2 檔修改、Tailwind 樣式、文案、單一函式修改、已知解法套用、env 變數、git commit message | 卡片加 `min-h`、日期行加 `whitespace-nowrap`、`<a>` 改 `<button>`、社群連結 URL 修改、`openExternalLink` 改 `window.open`、圖片換 URL、文案中文修改、加 `"use client"`、改 `text-sm` → `text-xs` |
-| 🟡 主力 | **Sonnet** | 新頁面/元件/API route 開發、3-4 檔重構、中等除錯（要追資料流）、SQL migration、效能優化、Code review | 新增機票頁面、新增 API route、TripCard 元件重寫、Supabase query 優化、出團日期功能開發、搜尋功能開發 |
-| 🔴 重度（**極少用**） | **Opus** | 5+ 檔架構重構、DB schema 重新設計、找不到原因的跨檔 bug、安全性審查、整體效能瓶頸分析 | 整站資料流重構、RLS 政策全面審查、從 Pages Router 遷移到 App Router |
+| 層級 | 模型 | 何時用 |
+|------|------|--------|
+| 🟢 **預設** | **Haiku** | 1-2 檔修改、已知解法、不需跨檔理解 |
+| 🟡 主力 | **Sonnet** | 3-4 檔、新功能開發、需追資料流 |
+| 🔴 極少 | **Opus** | 5+ 檔架構重構、跨模組 bug、安全審查 |
 
-### GPT 模型
+### GPT 模型對照
 
-| 層級 | 模型 | 適用場景 |
-|------|------|----------|
-| 🟢 輕量（**預設用這個**） | **GPT-4.1-nano** | 同 Haiku 適用場景 |
-| 🟡 主力 | **GPT-4o-mini** | 同 Sonnet 適用場景 |
-| 🔴 重度（**極少用**） | **GPT-4o** | 同 Opus 適用場景 |
+| 層級 | 模型 | 何時用 |
+|------|------|--------|
+| 🟢 **預設** | **GPT-4.1-nano** | 同 Haiku |
+| 🟡 主力 | **GPT-4o-mini** | 同 Sonnet |
+| 🔴 極少 | **GPT-4o** | 同 Opus |
 
-### 本專案常見任務 → 對應模型速查
+### 本專案任務速查表
 
-| 任務類型 | 模型 | 說明 |
-|----------|------|------|
-| Tailwind class 增刪改 | 🟢 Haiku | 改顏色、間距、字體、RWD 斷點、加 `min-h` / `whitespace-nowrap` |
-| 社群連結/URL 修改 | 🟢 Haiku | 換 LINE/FB/IG 連結、改 `target` 行為 |
-| 文案修改/翻譯 | 🟢 Haiku | 按鈕文字、提示訊息、SEO 文案 |
-| 單一元件小改 | 🟢 Haiku | 改 props、加條件渲染、調整排版 |
-| 單一函式修改 | 🟢 Haiku | `openExternalLink` 邏輯修改、格式化函式調整 |
-| `<a>` 改 `<button>` 等標籤替換 | 🟢 Haiku | HTML 標籤變更、屬性調整 |
-| env 變數新增/修改 | 🟢 Haiku | `.env` 和引用處一起改 |
-| git commit / push | 🟢 Haiku | 寫 commit message、推送 |
-| 新頁面開發 | 🟡 Sonnet | 整頁 + API route + 型別定義 |
-| 新元件開發 | 🟡 Sonnet | 完整元件（含 state、事件、樣式） |
-| 跨檔除錯 | 🟡 Sonnet | 資料流追蹤、API 回傳格式問題 |
-| SQL migration | 🟡 Sonnet | 新增欄位、建 index、RLS policy |
-| 整站架構調整 | 🔴 Opus | 資料流重構、大規模 schema 變更 |
-| 安全性/效能審查 | 🔴 Opus | 全面檢查、跨模組分析 |
+#### 🟢 Haiku（八成任務都用這個）
+
+| 任務 | 範例 |
+|------|------|
+| Tailwind 樣式調整 | 改色、間距、字體、RWD 斷點、`min-h`、`whitespace-nowrap` |
+| 文案 / URL 修改 | 按鈕文字、社群連結、SEO 文案、`<a>` 改 `<button>` |
+| 單一元件小改 | 改 props、加條件渲染、調排版、加 `"use client"` |
+| 單一函式修改 | `openExternalLink` 邏輯、格式化函式 |
+| env 變數 | `.env` 新增/修改 + 引用處 |
+| git 操作 | commit、push、寫 commit message |
+| 行程資料修正 | 改價格、改排序、移動行程到其他目的地、停用行程 |
+| 寫/改匯入 Script | 參照現有 `scripts/*.mjs` 模板，改資料內容 |
+| 圖片更換 | 換 `cover_image_url`、上傳 Supabase Storage |
+| DB 單筆資料操作 | 改某行程 `trip_banner`、更新 `display_order` |
+
+#### 🟡 Sonnet（需要跨檔理解或新功能）
+
+| 任務 | 範例 |
+|------|------|
+| 新頁面開發 | 整頁 + API route + 型別定義 |
+| 新元件開發 | 完整元件（state、事件、樣式、API 串接） |
+| 行程抓取全流程 | 從朋威網站抓新區域行程（需開頁面→分析→寫 script→執行→驗證） |
+| 跨檔除錯 | 資料流追蹤、API 回傳格式不符、元件互動問題 |
+| SQL migration | 新增欄位、建 index、RLS policy |
+| Supabase query 優化 | JOIN 查詢、效能調整 |
+| 搜尋 / 篩選功能 | 涉及前端 + API + DB query |
+| 出團日期功能調整 | `DepartureDates` 元件 + API + DB 連動 |
+
+#### 🔴 Opus（極少用，需明確理由）
+
+| 任務 | 範例 |
+|------|------|
+| 整站架構重構 | 資料流大改、Pages → App Router 遷移 |
+| DB schema 重新設計 | 多表結構調整、FK 關係重建 |
+| 跨模組疑難 bug | 試了 2+ 次還找不到原因的問題 |
+| 安全性 / 效能審查 | RLS 全面檢查、效能瓶頸分析 |
 
 ### Token 節省策略
 
 - **預設 Haiku**，確實不夠才升級，不要「怕出錯」就用高階模型
-- 不跑不必要的背景探索任務，直接讀取已知檔案
+- 行程資料修正（改價格、改排序、停用）→ 都是 Haiku，因為只改 DB 資料
+- 抓新區域行程（朋威→分析→寫 script）→ Sonnet，因為跨多頁比對
+- 不跑不必要的背景探索，直接讀已知檔案
 - 一次只修必要檔案，不做「順便改善」
-- 回覆精簡，不加多餘解釋或寒暄
-- 不掃描整個 repo，只看相關檔案
-- 同類型小修改合併成一次請求（例如三個元件都要改 class → 一次講完）
+- 回覆精簡，不加多餘解釋
+- 同類型小修改合併一次請求（三個元件都改 class → 一次講完）
 
 ---
 
@@ -378,6 +395,157 @@ export async function GET(
 - 不可只講概念，必須提供實作步驟
 - 回覆需清楚分段，方便閱讀與複製
 - Code、變數名、技術術語可保持英文
+
+---
+
+## 15. 行程資料抓取規範（從朋威旅行社）
+
+### 資料來源
+
+- **來源網站**：朋威旅行社 https://www.pwgotravel.com.tw
+- **我們的網站**：https://gary-travel-site.vercel.app
+- **原則**：朋威頁面上某個 tab 有幾個行程，我的對應目的地頁就放幾個，順序完全一致
+- **排序規則**：依朋威網站顯示順序（上→下、左→右），第一列左起 1、2、3，第二列左起 4、5、6，依此類推，對應 `display_order` 值 1、2、3...
+
+### 來源頁面 URL 對照
+
+| 朋威頁面 | URL | 分頁 tab 結構 |
+|---------|-----|-------------|
+| 日本 | `/japan/` | 北海道、東北、關東、中部、關西、四國、九州、沖繩 |
+| 韓國 | `/south-korea/` | 首爾、釜山、濟州島 |
+| 泰國 | `/thailand/` | 曼谷、泰北、普吉 |
+| 越南 | `/vietnam/` | 富國島、芽莊、中越、北越 |
+| 印尼 | `/indonesia/` | 峇里島、雅加達 |
+| 馬新 | `/malaysia/` | 馬來西亞/新加坡 |
+| 菲律賓 | `/philippines/` | 長灘島、宿霧薄荷島 |
+| 歐洲 | `/europe/` | 中西歐、東歐、南歐、北歐 |
+| 港澳大陸 | `/china/` | 東北、華東、華中、華南、西南、西北 |
+| 中東亞非 | `/asia/` | 中東、中亞、西伯利亞、高雄出發 |
+| 南亞 | `/southasia/` | 不丹、馬爾地夫、斯里蘭卡 |
+| 紐澳美加 | `/new/` | 紐澳、美加 |
+
+### 每個行程要抓的欄位
+
+#### A. 行程基本資訊（寫入 `trips` 表）
+
+| 欄位 | 來源位置 | 範例 | 必填 |
+|------|---------|------|------|
+| `title` | 行程標題（完整含天數） | `閃耀阿布達比、杜拜7日~季節限定地球村、奇蹟花園` | ✅ |
+| `subtitle` | 航空公司＋主要景點摘要 | `阿提哈德航空｜地球村、奇蹟花園、杜拜之框、沙漠衝沙` | ✅ |
+| `duration` | 天數（X天Y夜） | `7天6夜` | ✅ |
+| `price_range` | 售價文字 | `NT$49,900起` | ✅ |
+| `destination_id` | 對應我們的目的地 UUID | — | ✅ |
+| `display_order` | 朋威頁面排序位置（1 起算） | `1` | ✅ |
+| `is_active` | 固定 `true` | — | ✅ |
+| `highlights` | 空陣列（不抓） | `[]` | — |
+| `cover_image_url` | 行程封面圖（需下載上傳到 Supabase Storage） | — | ⚠️ 後補 |
+
+#### B. trip_banner（寫入 `trips.trip_banner` JSONB 欄位）
+
+| 欄位 | 來源位置 | 範例 |
+|------|---------|------|
+| `code_label` | 團號（頁面上「團型編號」） | `AUH4AG7D` |
+| `price_label` | 售價標籤 | `NT$49,900起` |
+| `tags` | 行程標籤（金色 tag） | `['特別推薦', '優質深度', '城市巡禮']` |
+| `departure_label` | 出發地標籤 | `桃園出發` / `高雄出發` |
+| `duration_label` | 天數標籤 | `7天6夜` |
+| `seats_total` | 總座位數 | `20` |
+| `min_group_size` | 最少成團人數 | `16` |
+| `airport` | 出發機場 | `桃園國際機場` |
+| `airline` | 航空公司 | `阿提哈德航空（EY）` |
+| `price_detail` | 售價明細（大人/小孩/嬰兒用 tab 分隔） | `NT$49,900元起\tNT$49,900元起\t...` |
+| `custom_tour` | 包團/客製行程（無出發日的行程設為 `true`） | `true` |
+
+#### C. 出發日期（寫入 `trip_departure_dates` 表，每個日期一筆）
+
+| 欄位 | 來源位置 | 範例 |
+|------|---------|------|
+| `departure_date` | 出發日期 | `2026-07-10` |
+| `departure_city` | 出發城市 | `桃園` / `高雄` |
+| `airline` | 航空公司 | `阿提哈德航空（EY）` |
+| `price` | 該梯次售價（數字） | `49900` |
+| `label` | 去回時段標籤 | `晚去晚回` / `早去早回` / `午去午回` |
+| `seats_total` | 總座位數 | `20` |
+| `seats_available` | 可售座位數 | `19` |
+| `outbound_flight` | 去程航班號 | `EY899` |
+| `outbound_time` | 去程起飛時間 | `18:40` |
+| `outbound_from` | 去程出發機場 | `桃園國際機場` |
+| `outbound_arrival_time` | 去程抵達時間 | `00:30` |
+| `outbound_to` | 去程抵達機場 | `阿布達比機場` |
+| `outbound_next_day` | 去程是否跨日 | `true` |
+| `return_flight` | 回程航班號 | `EY898` |
+| `return_time` | 回程起飛時間 | `21:25` |
+| `return_from` | 回程出發機場 | `阿布達比機場` |
+| `return_arrival_time` | 回程抵達時間 | `09:00` |
+| `return_to` | 回程抵達機場 | `桃園國際機場` |
+| `return_next_day` | 回程是否跨日 | `true` |
+| `flight_segments` | 完整航段陣列（多段轉機用） | JSON 陣列 |
+
+#### D. 不需要抓的資料
+
+- ❌ 每日行程（`day_itineraries`）— 之後放 PDF 取代
+- ❌ 行程特色（`highlights`）— 設為空陣列
+- ❌ 飯店介紹詳情
+- ❌ 訂購須知文字
+
+### 抓取 Script 規範
+
+#### 檔案命名與位置
+
+```
+scripts/
+├── import-{region}-trips.mjs       # 首次匯入（新增行程到 DB）
+├── update-{region}-trips.mjs       # 更新既有行程（價格/出發日期/排序）
+├── scrape-and-replace-images.mjs   # 爬取圖片並上傳 Supabase Storage
+└── verify-data.mjs                 # 驗證匯入結果
+```
+
+#### Script 標準模板
+
+```javascript
+import { readFileSync } from 'fs';
+import { createClient } from '@supabase/supabase-js';
+
+const env = readFileSync('.env.local', 'utf8');
+const getEnv = (k) => {
+  const m = env.match(new RegExp(`^${k}=(.+)$`, 'm'));
+  return m ? m[1].trim() : null;
+};
+
+const sb = createClient(
+  getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  getEnv('SUPABASE_SERVICE_ROLE_KEY')
+);
+
+// 目的地 ID 對照表（從 Supabase destinations 表取得）
+const DESTINATIONS = {
+  dubai: '2b1e1dac-4b61-4113-8a64-8cfb3861dc03',
+  uzbekistan: 'f1b28d9d-ecd7-4c68-97cb-cef84b417ecc',
+  // ... 其他目的地
+};
+```
+
+#### 注意事項
+
+- **SUPABASE_SERVICE_ROLE_KEY**：從 `.env.local` 讀取，**禁止硬編碼在 script 中**
+- **圖片處理**：先下載到本地 → 上傳 Supabase Storage → 取得公開 URL
+- **價格以朋威為準**：如有差異，一律以朋威網站當前顯示為正確值
+- **出發日期全部重建**：更新時先 `DELETE` 舊日期，再 `INSERT` 新日期
+- **保留既有圖片**：更新 `trip_banner` 時，必須保留 `side_image_url` 和 `departure_info_map`
+- **客製行程**：無出發日期的行程，設 `trip_banner.custom_tour = true`，不插入出發日期
+
+### 抓取步驟 Checklist
+
+每次抓取新的區域行程時，依序執行：
+
+1. **確認來源頁面** — 開啟朋威對應頁面，數清楚 tab 內行程數量
+2. **確認目的地 ID** — 查 Supabase `destinations` 表，確認對應的 `destination_id`
+3. **逐一記錄行程資料** — 點進每個行程詳情頁，抓取上述 A/B/C 三類欄位
+4. **寫入 Script** — 參照 `scripts/update-middle-east-siberia-trips.mjs` 的格式
+5. **執行 Script** — `node scripts/import-{region}-trips.mjs`
+6. **驗證結果** — 打 API 確認行程數、價格、排序是否正確
+7. **抓取圖片** — 執行圖片爬蟲或手動上傳
+8. **最終比對** — 開啟我們的頁面與朋威頁面並排，逐一比對
 
 ---
 
