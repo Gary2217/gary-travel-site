@@ -1,0 +1,67 @@
+name: 自動抓取朋威行程
+
+on:
+  # 手動觸發（從前端按鈕或 GitHub UI）
+  workflow_dispatch:
+    inputs:
+      regions:
+        description: '要抓取的區域（逗號分隔，all=全部）'
+        required: false
+        default: 'all'
+
+  # 排程觸發（每日 UTC 19:00 = 台灣凌晨 03:00）
+  schedule:
+    - cron: '0 19 * * *'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Check auto-scrape setting
+        if: github.event_name == 'schedule'
+        id: check-auto
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # 檢查 site_settings 是否啟用自動抓取
+          ENABLED=$(node -e "
+            const{createClient}=require('@supabase/supabase-js');
+            const sb=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY);
+            sb.from('site_settings').select('value').eq('key','scrape_auto_enabled').single()
+              .then(({data})=>{console.log(data?.value===true||data?.value==='true'?'true':'false')})
+              .catch(()=>console.log('false'));
+          ")
+          echo "enabled=$ENABLED" >> $GITHUB_OUTPUT
+
+      - name: Skip if auto-scrape disabled
+        if: github.event_name == 'schedule' && steps.check-auto.outputs.enabled != 'true'
+        run: echo "自動抓取已關閉，跳過" && exit 0
+
+      - name: Run scraper
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          REGIONS="${{ github.event.inputs.regions || 'all' }}"
+          if [ "$REGIONS" = "all" ]; then
+            node scripts/auto-scrape.mjs
+          else
+            node scripts/auto-scrape.mjs --regions=$REGIONS
+          fi

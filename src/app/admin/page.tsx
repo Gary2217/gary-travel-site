@@ -1,7 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Fragment, useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import ScrapeSettings from "../../components/ScrapeSettings";
+import ScrapeProgress from "../../components/ScrapeProgress";
+import ScrapeChanges from "../../components/ScrapeChanges";
 
 // ── Types ────────────────────────────────────────────────
 interface StatsOverview { total_views: number; total_downloads: number; total_shares: number; total_inquiries: number }
@@ -217,8 +220,9 @@ const PLATFORM_BADGE: Record<string, string> = {
 // ── Main Page ────────────────────────────────────────────
 export default function AdminPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [checking,       setChecking]       = useState(true);
-  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events" | "health" | "forms">("overview");
+  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events" | "health" | "forms" | "scrape">("overview");
   const [stats,          setStats]          = useState<Stats | null>(null);
   const [statsLoading,   setStatsLoading]   = useState(false);
   const [selectedTrip,   setSelectedTrip]   = useState<string | null>(null);
@@ -231,6 +235,34 @@ export default function AdminPage() {
   const [forms, setForms] = useState<ContactFormSubmission[]>([]);
   const [formsLoading, setFormsLoading] = useState(false);
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
+  const [scrapePendingCount, setScrapePendingCount] = useState(0);
+  const [scrapeRefreshKey, setScrapeRefreshKey] = useState(0);
+
+  // 讀取 query param ?tab=scrape
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "scrape") setActiveTab("scrape");
+  }, [searchParams]);
+
+  // 載入 pending 變更數量
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/scrape/changes?status=pending&count_only=1", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setScrapePendingCount(typeof data.count === "number" ? data.count : Array.isArray(data) ? data.length : 0);
+      }
+    } catch {
+      // 靜默失敗
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [fetchPendingCount]);
 
   async function runOrphanCleanup(dryRun: boolean) {
     setCleanupLoading(true);
@@ -451,10 +483,15 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-6">
-          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"], ["forms", "📬 諮詢表單"]] as const).map(([tab, label]) => (
+          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"], ["forms", "📬 諮詢表單"], ["scrape", "🔄 行程抓取"]] as const).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeTab === tab ? "bg-sky-600 text-white" : "text-white/50 hover:text-white/80"}`}>
+              className={`relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeTab === tab ? "bg-sky-600 text-white" : "text-white/50 hover:text-white/80"}`}>
               {label}
+              {tab === "scrape" && scrapePendingCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  {scrapePendingCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -1071,6 +1108,15 @@ export default function AdminPage() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* ── Scrape Tab ── */}
+        {activeTab === "scrape" && (
+          <div className="space-y-4">
+            <ScrapeSettings onTrigger={() => setScrapeRefreshKey((k) => k + 1)} />
+            <ScrapeProgress refreshKey={scrapeRefreshKey} />
+            <ScrapeChanges onCountChange={setScrapePendingCount} />
           </div>
         )}
 

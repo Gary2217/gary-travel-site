@@ -15,6 +15,7 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [showInquiries, setShowInquiries] = useState(false);
   const [showReloginToast, setShowReloginToast] = useState(false);
+  const [scrapePendingCount, setScrapePendingCount] = useState(0);
 
   // 同步 dev mode 狀態到 body attribute（供全域 CSS 使用）
   useEffect(() => {
@@ -213,12 +214,21 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
       setIsDevMode(enabled);
       onToggle(enabled);
 
-      // 載入維護模式狀態
+      // 載入維護模式狀態 + 抓取待確認數量
       if (authorized) {
         try {
           const mRes = await fetch("/api/maintenance", { cache: "no-store" });
           const mData = await mRes.json();
           setMaintenanceOn(Boolean(mData.enabled));
+        } catch {
+          // 靜默失敗
+        }
+        try {
+          const sRes = await fetch("/api/scrape/changes?status=pending&count_only=1", { cache: "no-store", credentials: "include" });
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            setScrapePendingCount(typeof sData.count === "number" ? sData.count : Array.isArray(sData) ? sData.length : 0);
+          }
         } catch {
           // 靜默失敗
         }
@@ -306,6 +316,20 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             後台
+          </a>
+          <a
+            href="/admin?tab=scrape"
+            className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-500/80 text-white transition hover:bg-sky-500 sm:h-8 sm:w-8"
+            title="行程抓取通知"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {scrapePendingCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                {scrapePendingCount}
+              </span>
+            )}
           </a>
           <button
             onClick={() => setShowInquiries(!showInquiries)}
