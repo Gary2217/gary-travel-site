@@ -535,7 +535,8 @@ async function scrapeRegionListings(page, regionConfig) {
   console.log(`\n🌐 區域頁：${url}`);
 
   try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(3000);
   } catch {
     console.log('  ⚠️ 區域頁載入逾時，改用目前內容繼續');
   }
@@ -585,12 +586,11 @@ async function scrapeRegionListings(page, regionConfig) {
 
 async function scrapeTripDetail(page, tripSummary) {
   try {
-    await page.goto(tripSummary.href, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(tripSummary.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await sleep(2000);
   } catch {
     console.log(`  ⚠️ 詳情頁載入逾時，繼續解析：${tripSummary.title}`);
   }
-
-  await sleep(500);
 
   const data = await page.evaluate((sourceUrl, sectionLabel) => {
     const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
@@ -898,10 +898,13 @@ async function main() {
 
     browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      protocolTimeout: 300000,
     });
 
     const page = await browser.newPage();
+    page.setDefaultTimeout(60000);
+    page.setDefaultNavigationTimeout(60000);
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
@@ -934,7 +937,25 @@ async function main() {
       for (let index = 0; index < tripSummaries.length; index += 1) {
         const tripSummary = tripSummaries[index];
         console.log(`  🔍 [${index + 1}/${tripSummaries.length}] ${tripSummary.title}`);
-        const scrapedTrip = await scrapeTripDetail(page, tripSummary);
+
+        // 每筆行程用獨立 page 避免記憶體累積
+        const detailPage = await browser.newPage();
+        detailPage.setDefaultTimeout(60000);
+        detailPage.setDefaultNavigationTimeout(60000);
+        await detailPage.setUserAgent(
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        );
+
+        let scrapedTrip;
+        try {
+          scrapedTrip = await scrapeTripDetail(detailPage, tripSummary);
+        } catch (detailErr) {
+          console.log(`  ⚠️ 抓取失敗，跳過：${tripSummary.title} (${detailErr.message})`);
+          await detailPage.close().catch(() => {});
+          completedTrips += 1;
+          continue;
+        }
+        await detailPage.close().catch(() => {});
 
         const destination = resolveDestination(scrapedTrip.destination_label) || resolveDestination(tripSummary.section_label);
         if (!destination) {
