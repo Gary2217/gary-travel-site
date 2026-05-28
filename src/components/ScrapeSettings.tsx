@@ -52,7 +52,12 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        setSettings(data);
+        // API 回傳 scrape_auto_enabled / scrape_interval_days / scrape_last_run，映射成短 key
+        setSettings({
+          auto_enabled: data.scrape_auto_enabled === true || data.scrape_auto_enabled === 'true',
+          frequency_days: Number(data.scrape_interval_days) || 3,
+          last_scrape_at: data.scrape_last_run ?? null,
+        });
       } else {
         setToast({
           message: `載入設定失敗：${await getErrorMessage(res, "請稍後再試")}`,
@@ -104,11 +109,14 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...settings, ...patch }),
+        // 映射成 API 期望的 scrape_ 前綴 key
+        body: JSON.stringify({
+          scrape_auto_enabled: patch.auto_enabled ?? settings.auto_enabled,
+          scrape_interval_days: patch.frequency_days ?? settings.frequency_days,
+        }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setSettings(data);
+        setSettings({ ...settings, ...patch });
         setToast({ message: "設定已儲存", type: "success" });
       } else {
         setToast({

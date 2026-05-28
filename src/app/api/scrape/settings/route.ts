@@ -64,9 +64,11 @@ export async function PUT(req: NextRequest) {
 
     for (const key of SCRAPE_KEYS) {
       if (body[key] !== undefined) {
+        // site_settings.value 是 JSONB NOT NULL，確保不送 null
+        const val = body[key] ?? false;
         updates.push({
           key,
-          value: body[key],
+          value: val,
           updated_at: new Date().toISOString(),
         });
       }
