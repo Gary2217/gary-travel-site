@@ -1116,7 +1116,12 @@ export default function AdminPage() {
         {activeTab === "scrape" && (
           <div className="space-y-4">
             <ScrapeSettings onTrigger={() => setScrapeRefreshKey((k) => k + 1)} isRunning={scrapeIsRunning} />
-            <ScrapeProgress refreshKey={scrapeRefreshKey} onRunningChange={setScrapeIsRunning} />
+            <ScrapeProgress refreshKey={scrapeRefreshKey} onRunningChange={setScrapeIsRunning} onRetry={async () => {
+              try {
+                const res = await fetch('/api/scrape/trigger', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({}) });
+                if (res.ok) setScrapeRefreshKey((k) => k + 1);
+              } catch { /* ignore */ }
+            }} />
             <ScrapeChanges onCountChange={setScrapePendingCount} />
           </div>
         )}

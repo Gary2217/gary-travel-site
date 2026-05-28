@@ -31,6 +31,7 @@ interface ScrapeProgressData {
 interface ScrapeProgressProps {
   refreshKey?: number;
   onRunningChange?: (running: boolean) => void;
+  onRetry?: () => void;
 }
 
 async function getErrorMessage(res: Response, fallback: string) {
@@ -44,7 +45,7 @@ async function getErrorMessage(res: Response, fallback: string) {
   }
 }
 
-export default function ScrapeProgress({ refreshKey, onRunningChange }: ScrapeProgressProps) {
+export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }: ScrapeProgressProps) {
   const [progress, setProgress] = useState<ScrapeProgressData | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [toast, setToast] = useState<{
@@ -278,6 +279,44 @@ export default function ScrapeProgress({ refreshKey, onRunningChange }: ScrapePr
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      ) : latest?.status === "failed" ? (
+        <div className="rounded-2xl border border-red-500/20 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-red-400">❌</span>
+              <h2 className="text-sm font-bold text-red-400">上次抓取失敗</h2>
+            </div>
+            <span className="text-[10px] text-white/30">
+              {latest?.started_at ? new Date(latest.started_at).toLocaleString("zh-TW") : ""}
+            </span>
+          </div>
+          <div className="space-y-3 p-4">
+            <div className="rounded-xl bg-red-500/5 p-3">
+              <p className="text-[10px] font-semibold text-white/40">失敗原因</p>
+              <p className="mt-1 text-sm text-red-300">{latest?.error_message || "未知錯誤"}</p>
+            </div>
+            {latest?.current_region && (
+              <div className="rounded-xl bg-white/5 p-3">
+                <p className="text-[10px] font-semibold text-white/40">停在哪裡</p>
+                <p className="mt-1 text-sm text-white/70">
+                  區域：{latest.current_region}
+                  {latest.current_trip && <span className="ml-1.5 text-white/40">› {latest.current_trip}</span>}
+                </p>
+                <p className="mt-1 text-[11px] text-white/40">
+                  進度：{latest.completed_trips || 0} / {latest.total_trips || 0} 行程
+                </p>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                if (onRetry) onRetry();
+              }}
+              className="w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+            >
+              🔄 重新抓取
+            </button>
           </div>
         </div>
       ) : null}
