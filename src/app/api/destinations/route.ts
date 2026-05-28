@@ -13,7 +13,7 @@ export async function GET() {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase
       .from('destinations')
-      .select('id, title, subtitle, image_url, display_order, sub_region, region_id, source_url')
+      .select('id, title, subtitle, image_url, display_order, sub_region, region_id, source_url, regions(title, category_label)')
       .eq('is_active', true)
       .order('display_order', { ascending: true });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

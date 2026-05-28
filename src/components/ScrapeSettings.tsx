@@ -7,6 +7,7 @@ interface DestinationOption {
   id: string;
   title: string;
   source_url?: string | null;
+  regions?: { title?: string; category_label?: string } | null;
 }
 
 interface ScrapeSettingsData {
@@ -335,13 +336,24 @@ export default function ScrapeSettings({ onTrigger }: ScrapeSettingsProps) {
               value={selectedDestinationId}
               onChange={(e) => setSelectedDestinationId(e.target.value)}
               disabled={destinationLoading}
-              className="h-9 max-w-[180px] flex-1 rounded-lg border border-white/10 bg-[#1a2332] px-2 text-xs text-white outline-none"
-              style={{ WebkitAppearance: 'none', maxHeight: '200px' }}
+              className="h-9 max-w-[200px] flex-1 rounded-lg border border-white/10 bg-[#1a2332] px-2 text-xs text-white outline-none"
             >
               <option value="">{destinationLoading ? "載入中..." : "選擇目的地"}</option>
-              {destinations.map((d) => (
-                <option key={d.id} value={d.id}>{d.title}</option>
-              ))}
+              {(() => {
+                const grouped = new Map<string, DestinationOption[]>();
+                for (const d of destinations) {
+                  const region = d.regions?.category_label || d.regions?.title || "其他";
+                  if (!grouped.has(region)) grouped.set(region, []);
+                  grouped.get(region)!.push(d);
+                }
+                return Array.from(grouped.entries()).map(([region, dests]) => (
+                  <optgroup key={region} label={`── ${region} ──`}>
+                    {dests.map((d) => (
+                      <option key={d.id} value={d.id}>{d.title}</option>
+                    ))}
+                  </optgroup>
+                ));
+              })()}
             </select>
             {selectedDestination?.source_url && (
               <span className="hidden truncate text-[10px] text-white/40 sm:inline-block sm:max-w-[200px]">
