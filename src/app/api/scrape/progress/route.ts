@@ -41,6 +41,23 @@ export async function GET() {
       );
     }
 
+    // 自動偵測卡住的 running 紀錄（超過 35 分鐘視為 crash）
+    if (log.status === 'running' && log.started_at) {
+      const elapsed = Date.now() - new Date(log.started_at).getTime();
+      if (elapsed > 35 * 60 * 1000) {
+        await supabase
+          .from('scrape_logs')
+          .update({
+            status: 'failed',
+            error_message: 'GitHub Actions 逾時或異常中斷',
+            finished_at: new Date().toISOString(),
+          })
+          .eq('id', log.id);
+        log.status = 'failed';
+        log.error_message = 'GitHub Actions 逾時或異常中斷';
+      }
+    }
+
     // 取待確認變更數量
     const { count: pendingCount } = await supabase
       .from('pending_changes')
