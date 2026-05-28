@@ -31,7 +31,7 @@ interface ScrapeProgressData {
 interface ScrapeProgressProps {
   refreshKey?: number;
   onRunningChange?: (running: boolean) => void;
-  onRetry?: () => void;
+  onRetry?: () => void | Promise<void>;
 }
 
 async function getErrorMessage(res: Response, fallback: string) {
@@ -48,6 +48,7 @@ async function getErrorMessage(res: Response, fallback: string) {
 export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }: ScrapeProgressProps) {
   const [progress, setProgress] = useState<ScrapeProgressData | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type?: "success" | "error" | "warning";
@@ -310,12 +311,23 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
               </div>
             )}
             <button
-              onClick={() => {
-                if (onRetry) onRetry();
+              onClick={async () => {
+                setRetrying(true);
+                try {
+                  if (onRetry) {
+                    await onRetry();
+                    setToast({ message: "🔄 已觸發重新抓取", type: "success" });
+                  }
+                } catch {
+                  setToast({ message: "觸發失敗，請稍後再試", type: "error" });
+                } finally {
+                  setRetrying(false);
+                }
               }}
-              className="w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              disabled={retrying}
+              className="w-full rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
             >
-              🔄 重新抓取
+              {retrying ? "⏳ 觸發中..." : "🔄 重新抓取"}
             </button>
           </div>
         </div>
