@@ -788,141 +788,132 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Region Tabs — 導航列 + hover 下拉 */}
+      {/* Region Tabs — 深藍導航列 + hover 下拉 */}
       <div
-        className="sticky top-20 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]"
+        className="sticky top-20 z-40"
         onMouseLeave={() => {
           navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150);
         }}
       >
-        <div className="relative mx-auto max-w-site">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-white/90 to-transparent md:hidden" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-white/90 to-transparent md:hidden" />
-          <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max items-stretch md:min-w-0 md:flex-wrap md:justify-center">
-              {sections.map((section) => {
-                const hasDests = section.destinations.length > 0;
-                return (
-                  <div
-                    key={section.id}
-                    className="relative"
-                    onMouseEnter={() => {
-                      if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
-                      setHoveredNavId(section.id);
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => { scrollToSection(section.id); setHoveredNavId(null); }}
-                      className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
-                        hoveredNavId === section.id ? "text-sky-600" : "text-gray-500 hover:text-sky-600"
-                      }`}
+        {/* 深藍導航列 */}
+        <div className="bg-[#2a3a4e]">
+          <div className="relative mx-auto max-w-site">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#2a3a4e] to-transparent md:hidden" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[#2a3a4e] to-transparent md:hidden" />
+            <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex min-w-max items-stretch md:min-w-0 md:flex-wrap md:justify-center">
+                {sections.map((section) => {
+                  const hasDests = section.destinations.length > 0;
+                  return (
+                    <div
+                      key={section.id}
+                      className="relative"
+                      onMouseEnter={() => {
+                        if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
+                        setHoveredNavId(section.id);
+                      }}
                     >
-                      {section.categoryLabel}
-                      {hasDests && (
-                        <svg className="h-3 w-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-              <Link
-                href="/mini-transit-tickets"
-                className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-500 transition hover:text-sky-600"
-                onMouseEnter={() => setHoveredNavId(null)}
-              >
-                小三通套票
-              </Link>
-              <Link
-                href="/document-services"
-                className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-500 transition hover:text-sky-600"
-                onMouseEnter={() => setHoveredNavId(null)}
-              >
-                證件票券
-              </Link>
-            </div>
-          </nav>
+                      <button
+                        type="button"
+                        onClick={() => { scrollToSection(section.id); setHoveredNavId(null); }}
+                        className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
+                          hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"
+                        }`}
+                      >
+                        {section.categoryLabel}
+                        {hasDests && (
+                          <svg className="h-3 w-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+                <Link
+                  href="/mini-transit-tickets"
+                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
+                  onMouseEnter={() => setHoveredNavId(null)}
+                >
+                  小三通套票
+                </Link>
+                <Link
+                  href="/document-services"
+                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
+                  onMouseEnter={() => setHoveredNavId(null)}
+                >
+                  證件票券
+                </Link>
+              </div>
+            </nav>
+          </div>
         </div>
 
-        {/* Hover 下拉選單 */}
+        {/* Hover 下拉選單 — 半透明深色遮罩 */}
         {hoveredNavId && (() => {
           const section = sections.find((s) => s.id === hoveredNavId);
           if (!section || section.destinations.length === 0) return null;
 
-          // 檢查是否有 sub_region 分組
           const hasSubRegion = section.destinations.some((d) => d.sub_region);
 
-          if (!hasSubRegion) {
-            // 無 sub_region → 顯示地區標題 + destination 連結
+          const dropdownContent = !hasSubRegion ? (
+            <div className="mx-auto max-w-site px-6 py-5">
+              <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+                {section.destinations.map((d, i) => (
+                  <span key={d.id} className="flex items-center gap-1">
+                    {i > 0 && <span className="text-white/20">｜</span>}
+                    <Link
+                      href={`/destination/${d.id}`}
+                      onClick={() => setHoveredNavId(null)}
+                      className="text-sm text-white/70 transition hover:text-[#d4a853]"
+                    >
+                      {d.title}
+                    </Link>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (() => {
+            const grouped = new Map<string, typeof section.destinations>();
+            for (const d of section.destinations) {
+              const key = d.sub_region || d.title;
+              const list = grouped.get(key) || [];
+              list.push(d);
+              grouped.set(key, list);
+            }
             return (
-              <div
-                className="absolute inset-x-0 top-full z-50 border-t-2 border-t-sky-400 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-                onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
-                onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
-              >
-                <div className="mx-auto max-w-site px-6 py-5">
-                  <p className="mb-1.5 text-center text-sm font-bold text-gray-800">{section.categoryLabel}</p>
-                  <div className="mx-auto mb-3 h-px w-24 bg-amber-400/60" />
-                  <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
-                    {section.destinations.map((d, i) => (
-                      <span key={d.id} className="flex items-center gap-1">
-                        {i > 0 && <span className="text-gray-300">｜</span>}
-                        <Link
-                          href={`/destination/${d.id}`}
-                          onClick={() => setHoveredNavId(null)}
-                          className="text-sm text-gray-600 transition hover:text-sky-600"
-                        >
-                          {d.title}
-                        </Link>
-                      </span>
-                    ))}
-                  </div>
+              <div className="mx-auto max-w-site px-6 py-5">
+                <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {Array.from(grouped.entries()).map(([subRegion, dests]) => (
+                    <div key={subRegion}>
+                      <p className="mb-1.5 text-sm font-bold text-white">{subRegion}</p>
+                      <div className="h-px bg-amber-500/50" />
+                      <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+                        {dests.map((d, i) => (
+                          <span key={d.id} className="flex items-center gap-1">
+                            {i > 0 && <span className="text-white/20">｜</span>}
+                            <Link
+                              href={`/destination/${d.id}`}
+                              onClick={() => setHoveredNavId(null)}
+                              className="text-sm text-white/70 transition hover:text-[#d4a853]"
+                            >
+                              {d.title}
+                            </Link>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
-          }
-
-          // 有 sub_region → 分組顯示
-          const grouped = new Map<string, typeof section.destinations>();
-          for (const d of section.destinations) {
-            const key = d.sub_region || d.title;
-            const list = grouped.get(key) || [];
-            list.push(d);
-            grouped.set(key, list);
-          }
+          })();
 
           return (
             <div
-              className="absolute inset-x-0 top-full z-50 border-t-2 border-t-sky-400 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+              className="absolute inset-x-0 top-full z-50 bg-[#2a3a4e]/95 shadow-[0_12px_32px_rgba(0,0,0,0.3)] backdrop-blur-sm"
               onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
               onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
             >
-              <div className="mx-auto max-w-site px-6 py-5">
-                <p className="mb-1.5 text-center text-sm font-bold text-gray-800">{section.categoryLabel}</p>
-                <div className="mx-auto mb-4 h-px w-24 bg-amber-400/60" />
-              <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {Array.from(grouped.entries()).map(([subRegion, dests]) => (
-                  <div key={subRegion}>
-                    <p className="mb-1.5 text-sm font-bold text-gray-800">{subRegion}</p>
-                    <div className="h-px bg-amber-400/60" />
-                    <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
-                      {dests.map((d, i) => (
-                        <span key={d.id} className="flex items-center gap-1">
-                          {i > 0 && <span className="text-gray-300">｜</span>}
-                          <Link
-                            href={`/destination/${d.id}`}
-                            onClick={() => setHoveredNavId(null)}
-                            className="text-sm text-gray-500 transition hover:text-sky-600"
-                          >
-                            {d.title}
-                          </Link>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              </div>
+              {dropdownContent}
             </div>
           );
         })()}
