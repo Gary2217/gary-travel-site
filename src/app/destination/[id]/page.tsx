@@ -145,7 +145,8 @@ export default function DestinationPage() {
           } catch { /* 靜默 */ }
         }
 
-        if (tripsData.length === 0 && destData.region_id && destData.regions?.category_label) {
+        // 載入同區域推薦行程（不管有沒有行程都載）
+        if (destData.region_id && destData.regions?.category_label) {
           setRelatedLoading(true);
           try {
             const related = await getRelatedTrips(
@@ -172,33 +173,7 @@ export default function DestinationPage() {
     return () => { isMounted = false; };
   }, [destinationId]);
 
-  // 有行程時，懶載入推薦行程（滾動到底部附近才觸發）
-  useEffect(() => {
-    if (trips.length === 0) return;
-    if (!destination?.region_id || !destination?.regions?.category_label) return;
-    if (relatedFetched.current || relatedTrips) return;
-
-    const el = recommendRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !relatedFetched.current) {
-          relatedFetched.current = true;
-          setRelatedLoading(true);
-          getRelatedTrips(destination.region_id, destination.regions!.category_label, destinationId)
-            .then(setRelatedTrips)
-            .catch(() => {})
-            .finally(() => setRelatedLoading(false));
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '300px' }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [destination, destinationId, trips.length, relatedTrips]);
+  // lazy loading observer 已移除 — 推薦行程在 loadData 中直接載入
 
   useEffect(() => {
     async function loadSiteLogo() {
@@ -793,11 +768,8 @@ export default function DestinationPage() {
           </>
         )}
 
-        {/* 懶載入偵測哨兵 */}
-        {trips.length > 0 && <div ref={recommendRef} />}
-
-        {/* 熱門行程推薦（有行程時顯示同區域推薦） */}
-        {trips.length > 0 && relatedTrips && relatedTrips.regionTrips.length > 0 && (
+        {/* 熱門行程推薦（直接顯示同區域推薦） */}
+        {relatedTrips && relatedTrips.regionTrips.length > 0 && (
           <section className="mt-10">
             <div className="-mx-3 mb-4 rounded-xl bg-gradient-to-r from-red-700 via-amber-600 to-yellow-500 px-4 py-5 shadow-lg sm:-mx-4 sm:mb-6 sm:px-5 sm:py-6">
               <div className="flex flex-col items-center gap-1">
