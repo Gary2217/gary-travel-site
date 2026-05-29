@@ -16,6 +16,11 @@ const REGION_PAGES = [
   { key: 'china', url: '/china/', tabs: ['東北', '華東', '華中', '華南', '西南', '西北'] },
   { key: 'southasia', url: '/southasia/', tabs: ['不丹', '馬爾地夫', '斯里蘭卡'] },
   { key: 'new', url: '/new/', tabs: ['紐澳', '美加'] },
+  { key: 'kinmen', url: '/kinmen/', tabs: ['金門'] },
+  { key: 'mazu', url: '/mazu/', tabs: ['馬祖'] },
+  { key: 'penghu', url: '/penghu/', tabs: ['澎湖'] },
+  { key: 'freetour', url: '/freetour/', tabs: [] },
+  { key: 'golf', url: '/golf/', tabs: [] },
 ];
 
 const CITY_BY_AIRPORT = {
