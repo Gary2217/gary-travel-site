@@ -71,6 +71,43 @@ const CHANGE_TYPE_CONFIG: Record<
   },
 };
 
+const REGION_LABELS: Record<string, string> = {
+  asia: "中東亞非",
+  japan: "日本",
+  "south-korea": "韓國",
+  thailand: "泰國",
+  vietnam: "越南",
+  indonesia: "印尼",
+  malaysia: "馬新",
+  philippines: "菲律賓",
+  europe: "歐洲",
+  china: "港澳大陸",
+  southasia: "南亞",
+  new: "紐澳美加",
+};
+
+function getRegionDisplay(change: ScrapeChangeItem): string {
+  const raw = change.region_label || "";
+  return REGION_LABELS[raw] || raw || "未分類";
+}
+
+function getTripCoverUrl(change: ScrapeChangeItem): string {
+  const scraped = change.scraped_data;
+  if (!scraped) return "";
+  return String(scraped.cover_image_url || "");
+}
+
+function groupByRegion(changes: ScrapeChangeItem[]): Map<string, ScrapeChangeItem[]> {
+  const map = new Map<string, ScrapeChangeItem[]>();
+  for (const change of changes) {
+    const region = getRegionDisplay(change);
+    const list = map.get(region) || [];
+    list.push(change);
+    map.set(region, list);
+  }
+  return map;
+}
+
 function getAlertMessage(change: ScrapeChangeItem): string | null {
   if (change.change_type !== "new_tab" && change.change_type !== "warning") return null;
   const msg = change.scraped_data?.message;
@@ -432,73 +469,98 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
           </div>
         ) : (
           <>
-            <div className="divide-y divide-white/5">
-              {changes.map((change) => {
-                const config = getTypeConfig(change.change_type);
-                const isChecked = checkedIds.has(change.id);
-                return (
-                  <div
-                    key={change.id}
-                    className={`flex items-center gap-3 px-4 py-3 transition hover:bg-white/5 ${isChecked ? "bg-sky-500/5" : ""}`}
-                  >
-                    <button
-                      onClick={() => toggleCheck(change.id)}
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked ? "border-sky-500 bg-sky-500/20" : "border-white/20 hover:border-white/40"}`}
-                    >
-                      {isChecked && <span className="text-[10px] text-sky-400">✓</span>}
-                    </button>
-                    <span className="text-base">{config.icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium text-white/90">
-                          {change.trip_title}
-                        </span>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${config.badgeClass}`}
-                        >
-                          {config.label}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-[11px] text-white/40">
-                        {getAlertSummary(change)}
-                      </p>
-                      {getAlertMessage(change) && (
-                        <pre className="mt-1 max-w-full overflow-x-auto whitespace-pre-wrap rounded bg-white/5 p-2 text-[10px] text-white/50">
-                          {getAlertMessage(change)}
-                        </pre>
-                      )}
-                      <p className="mt-0.5 text-[10px] text-white/25">
-                        {relativeTime(change.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        onClick={() => handleIgnore(change.id)}
-                        className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/40 transition hover:bg-white/5 hover:text-white/70"
-                      >
-                        忽略
-                      </button>
-                      {change.change_type !== "new_tab" && change.change_type !== "warning" ? (
-                        <button
-                          onClick={() => setSelectedChange(change)}
-                          className="rounded-full bg-sky-600/20 px-3 py-1.5 text-[11px] font-semibold text-sky-400 transition hover:bg-sky-600/30"
-                        >
-                          查看詳情
-                        </button>
-                      ) : (
-                        <a
-                          href={change.source_url || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-full bg-purple-600/20 px-3 py-1.5 text-[11px] font-semibold text-purple-400 transition hover:bg-purple-600/30"
-                        >
-                          開啟來源
-                        </a>
-                      )}
+            <div>
+              {Array.from(groupByRegion(changes).entries()).map(([region, regionChanges]) => (
+                <div key={region}>
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-white/[0.03] px-4 py-2 backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-sky-400">{region}</span>
+                      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/40">
+                        {regionChanges.length}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="divide-y divide-white/5">
+                    {regionChanges.map((change) => {
+                      const config = getTypeConfig(change.change_type);
+                      const isChecked = checkedIds.has(change.id);
+                      const coverUrl = getTripCoverUrl(change);
+                      return (
+                        <div
+                          key={change.id}
+                          className={`flex items-center gap-3 px-4 py-3 transition hover:bg-white/5 ${isChecked ? "bg-sky-500/5" : ""}`}
+                        >
+                          <button
+                            onClick={() => toggleCheck(change.id)}
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked ? "border-sky-500 bg-sky-500/20" : "border-white/20 hover:border-white/40"}`}
+                          >
+                            {isChecked && <span className="text-[10px] text-sky-400">✓</span>}
+                          </button>
+                          {coverUrl ? (
+                            <img
+                              src={coverUrl}
+                              alt=""
+                              className="h-10 w-14 shrink-0 rounded-md object-cover"
+                              loading="lazy"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                          ) : (
+                            <span className="text-base">{config.icon}</span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate text-sm font-medium text-white/90">
+                                {change.trip_title}
+                              </span>
+                              <span
+                                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${config.badgeClass}`}
+                              >
+                                {config.label}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-[11px] text-white/40">
+                              {getAlertSummary(change)}
+                            </p>
+                            {getAlertMessage(change) && (
+                              <pre className="mt-1 max-w-full overflow-x-auto whitespace-pre-wrap rounded bg-white/5 p-2 text-[10px] text-white/50">
+                                {getAlertMessage(change)}
+                              </pre>
+                            )}
+                            <p className="mt-0.5 text-[10px] text-white/25">
+                              {relativeTime(change.created_at)}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            <button
+                              onClick={() => handleIgnore(change.id)}
+                              className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/40 transition hover:bg-white/5 hover:text-white/70"
+                            >
+                              忽略
+                            </button>
+                            {change.change_type !== "new_tab" && change.change_type !== "warning" ? (
+                              <button
+                                onClick={() => setSelectedChange(change)}
+                                className="rounded-full bg-sky-600/20 px-3 py-1.5 text-[11px] font-semibold text-sky-400 transition hover:bg-sky-600/30"
+                              >
+                                查看詳情
+                              </button>
+                            ) : (
+                              <a
+                                href={change.source_url || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full bg-purple-600/20 px-3 py-1.5 text-[11px] font-semibold text-purple-400 transition hover:bg-purple-600/30"
+                              >
+                                開啟來源
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-4 py-3">

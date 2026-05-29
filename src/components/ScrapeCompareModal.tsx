@@ -64,6 +64,8 @@ export interface ScrapeChangeItem {
   status: string;
   created_at: string;
   source_url?: string;
+  region_label?: string;
+  destination_id?: string | null;
   scraped_data?: Record<string, unknown>;
   details: ScrapeChangeDetails;
 }
