@@ -103,10 +103,28 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   const [selectedChange, setSelectedChange] = useState<ScrapeChangeItem | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{
     message: string;
     type?: "success" | "error" | "warning";
   } | null>(null);
+
+  const toggleCheck = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleCheckAll = () => {
+    if (checkedIds.size === changes.length) {
+      setCheckedIds(new Set());
+    } else {
+      setCheckedIds(new Set(changes.map((c) => c.id)));
+    }
+  };
 
   const removeChange = useCallback(
     (id: string) => {
@@ -223,6 +241,33 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
     }
   };
 
+  const handleSelectedIgnore = async () => {
+    if (checkedIds.size === 0) return;
+    setBulkLoading(true);
+    try {
+      const ids = Array.from(checkedIds);
+      const res = await fetch("/api/scrape/changes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ids, status: "dismissed" }),
+      });
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, "操作失敗"));
+      }
+      removeChanges(ids);
+      setCheckedIds(new Set());
+      setToast({ message: `已忽略 ${ids.length} 筆`, type: "success" });
+    } catch (error) {
+      setToast({
+        message: `操作失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
+        type: "error",
+      });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const handleBulkIgnore = async () => {
     setBulkLoading(true);
     try {
@@ -237,6 +282,7 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
         throw new Error(await getErrorMessage(res, "操作失敗"));
       }
       removeChanges(ids);
+      setCheckedIds(new Set());
       setToast({ message: `已忽略 ${ids.length} 筆`, type: "success" });
     } catch (error) {
       setToast({
@@ -274,6 +320,11 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
 
       if (successIds.length > 0) {
         removeChanges(successIds);
+        setCheckedIds((prev) => {
+          const next = new Set(prev);
+          for (const id of successIds) next.delete(id);
+          return next;
+        });
       }
 
       if (failCount > 0) {
@@ -320,10 +371,28 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
       <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <div className="flex items-center gap-2">
+            {changes.length > 0 && (
+              <button
+                onClick={toggleCheckAll}
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-white/20 transition hover:border-white/40"
+                title={checkedIds.size === changes.length ? "取消全選" : "全選"}
+              >
+                {checkedIds.size === changes.length && changes.length > 0 ? (
+                  <span className="text-[10px] text-sky-400">✓</span>
+                ) : checkedIds.size > 0 ? (
+                  <span className="text-[10px] text-white/40">—</span>
+                ) : null}
+              </button>
+            )}
             <h2 className="text-sm font-bold text-white">待確認變更</h2>
             {changes.length > 0 && (
               <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
                 {changes.length}
+              </span>
+            )}
+            {checkedIds.size > 0 && (
+              <span className="text-[11px] text-white/40">
+                （已選 {checkedIds.size} 筆）
               </span>
             )}
           </div>
@@ -366,11 +435,18 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
             <div className="divide-y divide-white/5">
               {changes.map((change) => {
                 const config = getTypeConfig(change.change_type);
+                const isChecked = checkedIds.has(change.id);
                 return (
                   <div
                     key={change.id}
-                    className="flex items-center gap-3 px-4 py-3 transition hover:bg-white/5"
+                    className={`flex items-center gap-3 px-4 py-3 transition hover:bg-white/5 ${isChecked ? "bg-sky-500/5" : ""}`}
                   >
+                    <button
+                      onClick={() => toggleCheck(change.id)}
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked ? "border-sky-500 bg-sky-500/20" : "border-white/20 hover:border-white/40"}`}
+                    >
+                      {isChecked && <span className="text-[10px] text-sky-400">✓</span>}
+                    </button>
                     <span className="text-base">{config.icon}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -426,6 +502,15 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-4 py-3">
+              {checkedIds.size > 0 && (
+                <button
+                  onClick={handleSelectedIgnore}
+                  disabled={bulkLoading}
+                  className="rounded-full bg-red-500/15 px-4 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
+                >
+                  {bulkLoading ? "處理中..." : `忽略已選（${checkedIds.size}）`}
+                </button>
+              )}
               <button
                 onClick={handleBulkIgnore}
                 disabled={bulkLoading}

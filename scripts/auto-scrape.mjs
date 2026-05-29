@@ -1089,7 +1089,8 @@ async function main() {
             },
             status: 'pending',
           };
-          await supabase.from('pending_changes').insert(alertChange).catch(() => {});
+          const { error: alertErr } = await supabase.from('pending_changes').insert(alertChange);
+          if (alertErr) console.log(`  ⚠️ 寫入 new_tab 通知失敗：${alertErr.message}`);
           changesFound += 1;
           completedTrips += 1;
           continue;

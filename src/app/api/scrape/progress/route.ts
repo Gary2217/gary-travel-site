@@ -76,3 +76,41 @@ export async function GET() {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// DELETE: 清除最新的失敗紀錄（標記為 cleared，不再顯示）
+export async function DELETE() {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
+  try {
+    const supabase = createSupabase();
+
+    const { data: log, error: fetchErr } = await supabase
+      .from('scrape_logs')
+      .select('id, status')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchErr || !log) {
+      return NextResponse.json({ error: '找不到抓取紀錄' }, { status: 404 });
+    }
+
+    if (log.status === 'running') {
+      return NextResponse.json({ error: '抓取進行中，無法清除' }, { status: 400 });
+    }
+
+    const { error: updateErr } = await supabase
+      .from('scrape_logs')
+      .update({ status: 'cleared' })
+      .eq('id', log.id);
+
+    if (updateErr) {
+      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ cleared: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -325,26 +325,48 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
                 </p>
               </div>
             )}
-            <button
-              onClick={async () => {
-                setRetrying(true);
-                try {
-                  if (onRetry) {
-                    await onRetry();
-                    setWaitingForStart(true);
-                    setToast({ message: "🔄 已觸發，等待 GitHub Actions 啟動...", type: "success" });
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/scrape/progress", {
+                      method: "DELETE",
+                      credentials: "include",
+                    });
+                    if (!res.ok) {
+                      throw new Error("清除失敗");
+                    }
+                    setProgress((prev) => prev ? { ...prev, latest: null } : prev);
+                    setToast({ message: "已清除錯誤紀錄", type: "success" });
+                  } catch {
+                    setToast({ message: "清除失敗，請稍後再試", type: "error" });
                   }
-                } catch {
-                  setToast({ message: "觸發失敗，請稍後再試", type: "error" });
-                } finally {
-                  setRetrying(false);
-                }
-              }}
-              disabled={retrying}
-              className="w-full rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-            >
-              {retrying ? "⏳ 觸發中..." : "🔄 重新抓取"}
-            </button>
+                }}
+                className="flex-1 rounded-full border border-white/10 py-2.5 text-sm font-semibold text-white/50 transition hover:bg-white/5 hover:text-white/70"
+              >
+                清除
+              </button>
+              <button
+                onClick={async () => {
+                  setRetrying(true);
+                  try {
+                    if (onRetry) {
+                      await onRetry();
+                      setWaitingForStart(true);
+                      setToast({ message: "🔄 已觸發，等待 GitHub Actions 啟動...", type: "success" });
+                    }
+                  } catch {
+                    setToast({ message: "觸發失敗，請稍後再試", type: "error" });
+                  } finally {
+                    setRetrying(false);
+                  }
+                }}
+                disabled={retrying}
+                className="flex-[2] rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+              >
+                {retrying ? "⏳ 觸發中..." : "🔄 重新抓取"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
