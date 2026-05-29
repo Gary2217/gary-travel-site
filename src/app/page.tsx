@@ -795,13 +795,13 @@ export default function HomePage() {
           navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150);
         }}
       >
-        {/* 深藍導航列 */}
-        <div className="bg-[#2a3a4e]">
+        {/* 半透明深色導航列 */}
+        <div className="bg-[#354559]/85 backdrop-blur-md">
           <div className="relative mx-auto max-w-site">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#2a3a4e] to-transparent md:hidden" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[#2a3a4e] to-transparent md:hidden" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#354559]/85 to-transparent md:hidden" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[#354559]/85 to-transparent md:hidden" />
             <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-stretch md:min-w-0 md:flex-wrap md:justify-center">
+              <div className="flex min-w-max items-stretch justify-center">
                 {sections.map((section) => {
                   const hasDests = section.destinations.length > 0;
                   return (
@@ -909,7 +909,7 @@ export default function HomePage() {
 
           return (
             <div
-              className="absolute inset-x-0 top-full z-50 bg-[#2a3a4e]/95 shadow-[0_12px_32px_rgba(0,0,0,0.3)] backdrop-blur-sm"
+              className="absolute inset-x-0 top-full z-50 bg-[#354559]/80 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md"
               onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
               onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
             >
