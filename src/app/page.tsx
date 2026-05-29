@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -269,6 +269,8 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
+  const [hoveredNavId, setHoveredNavId] = useState<string | null>(null);
+  const navTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
   const [filterDestId, setFilterDestId] = useState<string | null>(null);
   const [filterDate, setFilterDate] = useState('');
@@ -786,32 +788,97 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Region Tabs */}
-      <div className="sticky top-20 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]">
+      {/* Region Tabs — 導航列 + hover 下拉 */}
+      <div
+        className="sticky top-20 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-[8px]"
+        onMouseLeave={() => {
+          navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150);
+        }}
+      >
         <div className="relative mx-auto max-w-site">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-white/90 to-transparent md:hidden" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-white/90 to-transparent md:hidden" />
-          <div className="overflow-x-auto px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max justify-start gap-2 md:min-w-0 md:flex-wrap md:justify-center">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => scrollToSection(section.id)}
-                  className="rounded-full border border-gray-200 bg-transparent px-4 py-3 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
-                >
-                  {section.categoryLabel}
-                </button>
-              ))}
+          <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-max items-stretch md:min-w-0 md:flex-wrap md:justify-center">
+              {sections.map((section) => {
+                const hasDests = section.destinations.length > 0;
+                return (
+                  <div
+                    key={section.id}
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
+                      setHoveredNavId(section.id);
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { scrollToSection(section.id); setHoveredNavId(null); }}
+                      className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
+                        hoveredNavId === section.id ? "text-sky-600" : "text-gray-500 hover:text-sky-600"
+                      }`}
+                    >
+                      {section.categoryLabel}
+                      {hasDests && (
+                        <svg className="h-3 w-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
               <Link
                 href="/flights"
-                className="rounded-full border border-gray-200 bg-transparent px-4 py-3 text-sm font-medium text-gray-600 transition hover:border-[#00b4d8] hover:bg-sky-50 hover:text-[#0096c7]"
+                className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-500 transition hover:text-sky-600"
+                onMouseEnter={() => setHoveredNavId(null)}
               >
                 機票
               </Link>
             </div>
-          </div>
+          </nav>
         </div>
+
+        {/* Hover 下拉選單 */}
+        {hoveredNavId && (() => {
+          const section = sections.find((s) => s.id === hoveredNavId);
+          if (!section || section.destinations.length === 0) return null;
+
+          const grouped = new Map<string, typeof section.destinations>();
+          for (const d of section.destinations) {
+            const key = d.sub_region || d.title;
+            const list = grouped.get(key) || [];
+            list.push(d);
+            grouped.set(key, list);
+          }
+
+          return (
+            <div
+              className="absolute left-0 right-0 z-50 border-b border-gray-200 bg-white/98 shadow-lg backdrop-blur-sm"
+              onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
+              onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
+            >
+              <div className="mx-auto grid max-w-site gap-x-8 gap-y-4 px-6 py-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {Array.from(grouped.entries()).map(([subRegion, dests]) => (
+                  <div key={subRegion}>
+                    <p className="mb-1.5 text-sm font-bold text-gray-800">{subRegion}</p>
+                    <div className="h-px bg-amber-400/60" />
+                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
+                      {dests.map((d) => (
+                        <Link
+                          key={d.id}
+                          href={`/destination/${d.id}`}
+                          onClick={() => setHoveredNavId(null)}
+                          className="text-sm text-gray-500 transition hover:text-sky-600"
+                        >
+                          {d.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Content */}

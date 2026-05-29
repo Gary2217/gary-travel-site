@@ -57,6 +57,8 @@ export default function DestinationPage() {
   const destinationId = params.id as string;
 
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(null);
+  const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
+  const [currentTabLabel, setCurrentTabLabel] = useState("");
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +118,32 @@ export default function DestinationPage() {
         }
         setDestination(destData);
         setTrips(tripsData);
+
+        // 載入同區域的其他目的地，按 sub_region 分組（快速分頁用）
+        if (destData.region_id) {
+          try {
+            const allDests = await fetch('/api/destinations', { cache: 'no-store' });
+            if (allDests.ok) {
+              const destsData = await allDests.json();
+              const siblings = (destsData as { id: string; title: string; region_id: string; display_order: number; sub_region?: string }[])
+                .filter((d) => d.region_id === destData.region_id)
+                .sort((a, b) => a.display_order - b.display_order);
+
+              // 按 sub_region 分組：每個 sub_region 只顯示一個 tab
+              const tabMap = new Map<string, string>();
+              let myTab = "";
+              for (const d of siblings) {
+                const label = d.sub_region || d.title;
+                if (!tabMap.has(label)) tabMap.set(label, d.id);
+                if (d.id === destinationId) myTab = label;
+              }
+              if (isMounted) {
+                setRegionTabs(Array.from(tabMap.entries()).map(([label, destId]) => ({ label, destId })));
+                setCurrentTabLabel(myTab);
+              }
+            }
+          } catch { /* 靜默 */ }
+        }
 
         if (tripsData.length === 0 && destData.region_id && destData.regions?.category_label) {
           setRelatedLoading(true);
@@ -457,6 +485,33 @@ export default function DestinationPage() {
           </div>
         </div>
       </div>
+
+      {/* 同區域快速分頁（按 sub_region 分組，像朋威的 中東/中亞/西伯利亞 tabs） */}
+      {regionTabs.length > 1 && (
+        <div className="mx-auto max-w-site px-3 pt-5 sm:px-4 md:px-8">
+          {destination.regions && (
+            <h2 className="mb-3 text-center text-xl font-bold text-gray-800 sm:text-2xl">
+              {destination.regions.title}
+            </h2>
+          )}
+          <div className="flex flex-wrap justify-center gap-2">
+            {regionTabs.map((tab) => (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={() => { if (tab.label !== currentTabLabel) router.push(`/destination/${tab.destId}`); }}
+                className={`rounded-full border-2 px-4 py-1.5 text-sm font-semibold transition ${
+                  tab.label === currentTabLabel
+                    ? "border-gray-800 bg-gray-800 text-white"
+                    : "border-gray-300 bg-white text-gray-600 hover:border-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 行程列表 */}
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
