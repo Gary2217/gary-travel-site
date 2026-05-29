@@ -383,18 +383,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             </svg>
             旅遊行程
           </button>
-          <Link
-            href="/mini-transit-tickets"
-            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-white hover:text-gray-900 hover:shadow sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
-          >
-            小三通
-          </Link>
-          <Link
-            href="/document-services"
-            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-white hover:text-gray-900 hover:shadow sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
-          >
-            證件代辦
-          </Link>
+
           <button
             type="button"
             onClick={() => {
