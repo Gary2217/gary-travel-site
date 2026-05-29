@@ -797,9 +797,7 @@ export default function HomePage() {
       >
         {/* 半透明深色導航列 */}
         <div className="bg-[#354559]/85 backdrop-blur-md">
-          <div className="relative mx-auto max-w-site">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#354559]/85 to-transparent md:hidden" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[#354559]/85 to-transparent md:hidden" />
+          <div className="relative">
             <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-stretch justify-center">
                 {sections.map((section) => {
@@ -816,7 +814,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => { scrollToSection(section.id); setHoveredNavId(null); }}
-                      className={`flex items-center gap-0.5 whitespace-nowrap px-2.5 py-2.5 text-[13px] font-semibold transition ${
+                      className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
                         hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"
                       }`}
                       >
@@ -830,14 +828,14 @@ export default function HomePage() {
                 })}
                 <Link
                   href="/mini-transit-tickets"
-                  className="whitespace-nowrap px-2.5 py-2.5 text-[13px] font-semibold text-white/80 transition hover:text-[#d4a853]"
+                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
                   onMouseEnter={() => setHoveredNavId(null)}
                 >
                   小三通套票
                 </Link>
                 <Link
                   href="/document-services"
-                  className="whitespace-nowrap px-2.5 py-2.5 text-[13px] font-semibold text-white/80 transition hover:text-[#d4a853]"
+                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
                   onMouseEnter={() => setHoveredNavId(null)}
                 >
                   證件票券
