@@ -842,6 +842,34 @@ export default function HomePage() {
           const section = sections.find((s) => s.id === hoveredNavId);
           if (!section || section.destinations.length === 0) return null;
 
+          // 檢查是否有 sub_region 分組
+          const hasSubRegion = section.destinations.some((d) => d.sub_region);
+
+          if (!hasSubRegion) {
+            // 無 sub_region → 單純列出 destination 連結
+            return (
+              <div
+                className="absolute inset-x-0 top-full z-50 border-b border-gray-200 bg-white shadow-lg"
+                onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
+                onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
+              >
+                <div className="mx-auto flex max-w-site flex-wrap gap-x-3 gap-y-1.5 px-6 py-4">
+                  {section.destinations.map((d) => (
+                    <Link
+                      key={d.id}
+                      href={`/destination/${d.id}`}
+                      onClick={() => setHoveredNavId(null)}
+                      className="text-sm text-gray-600 transition hover:text-sky-600"
+                    >
+                      {d.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          // 有 sub_region → 分組顯示
           const grouped = new Map<string, typeof section.destinations>();
           for (const d of section.destinations) {
             const key = d.sub_region || d.title;
@@ -852,7 +880,7 @@ export default function HomePage() {
 
           return (
             <div
-              className="absolute left-0 right-0 z-50 border-b border-gray-200 bg-white/98 shadow-lg backdrop-blur-sm"
+              className="absolute inset-x-0 top-full z-50 border-b border-gray-200 bg-white shadow-lg"
               onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
               onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
             >
@@ -861,16 +889,18 @@ export default function HomePage() {
                   <div key={subRegion}>
                     <p className="mb-1.5 text-sm font-bold text-gray-800">{subRegion}</p>
                     <div className="h-px bg-amber-400/60" />
-                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
-                      {dests.map((d) => (
-                        <Link
-                          key={d.id}
-                          href={`/destination/${d.id}`}
-                          onClick={() => setHoveredNavId(null)}
-                          className="text-sm text-gray-500 transition hover:text-sky-600"
-                        >
-                          {d.title}
-                        </Link>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+                      {dests.map((d, i) => (
+                        <span key={d.id} className="flex items-center gap-1">
+                          {i > 0 && <span className="text-gray-300">｜</span>}
+                          <Link
+                            href={`/destination/${d.id}`}
+                            onClick={() => setHoveredNavId(null)}
+                            className="text-sm text-gray-500 transition hover:text-sky-600"
+                          >
+                            {d.title}
+                          </Link>
+                        </span>
                       ))}
                     </div>
                   </div>
