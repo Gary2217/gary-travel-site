@@ -846,26 +846,30 @@ export default function HomePage() {
           const hasSubRegion = section.destinations.some((d) => d.sub_region);
 
           if (!hasSubRegion) {
-            // 無 sub_region → 單純列出 destination 連結
+            // 無 sub_region → 顯示地區標題 + destination 連結
             return (
               <div
                 className="absolute inset-x-0 top-full z-50 border-t-2 border-t-sky-400 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
                 onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
                 onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
               >
-                <div className="mx-auto flex max-w-site flex-wrap items-center gap-x-1 px-6 py-4">
-                  {section.destinations.map((d, i) => (
-                    <span key={d.id} className="flex items-center gap-1">
-                      {i > 0 && <span className="text-gray-300">｜</span>}
-                      <Link
-                        href={`/destination/${d.id}`}
-                        onClick={() => setHoveredNavId(null)}
-                        className="text-sm text-gray-600 transition hover:text-sky-600"
-                      >
-                        {d.title}
-                      </Link>
-                    </span>
-                  ))}
+                <div className="mx-auto max-w-site px-6 py-5">
+                  <p className="mb-1.5 text-center text-sm font-bold text-gray-800">{section.categoryLabel}</p>
+                  <div className="mx-auto mb-3 h-px w-24 bg-amber-400/60" />
+                  <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+                    {section.destinations.map((d, i) => (
+                      <span key={d.id} className="flex items-center gap-1">
+                        {i > 0 && <span className="text-gray-300">｜</span>}
+                        <Link
+                          href={`/destination/${d.id}`}
+                          onClick={() => setHoveredNavId(null)}
+                          className="text-sm text-gray-600 transition hover:text-sky-600"
+                        >
+                          {d.title}
+                        </Link>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             );
@@ -886,7 +890,10 @@ export default function HomePage() {
               onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
               onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
             >
-              <div className="mx-auto grid max-w-site gap-x-8 gap-y-4 px-6 py-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="mx-auto max-w-site px-6 py-5">
+                <p className="mb-1.5 text-center text-sm font-bold text-gray-800">{section.categoryLabel}</p>
+                <div className="mx-auto mb-4 h-px w-24 bg-amber-400/60" />
+              <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {Array.from(grouped.entries()).map(([subRegion, dests]) => (
                   <div key={subRegion}>
                     <p className="mb-1.5 text-sm font-bold text-gray-800">{subRegion}</p>
@@ -907,6 +914,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           );
