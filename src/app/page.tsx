@@ -826,20 +826,7 @@ export default function HomePage() {
                     </div>
                   );
                 })}
-                <Link
-                  href="/mini-transit-tickets"
-                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
-                  onMouseEnter={() => setHoveredNavId(null)}
-                >
-                  小三通套票
-                </Link>
-                <Link
-                  href="/document-services"
-                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
-                  onMouseEnter={() => setHoveredNavId(null)}
-                >
-                  證件票券
-                </Link>
+
               </div>
             </nav>
           </div>
