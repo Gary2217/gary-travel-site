@@ -964,11 +964,30 @@ async function main() {
     let targetDestination = null;
     if (destinationId) {
       targetDestination = destinations.find((destination) => destination.id === destinationId) || null;
-      if (!targetDestination) {
-        throw new Error(`找不到指定目的地：${destinationId}`);
-      }
-      if (!sanitizeText(targetDestination.source_url)) {
-        throw new Error(`指定目的地缺少 source_url：${targetDestination.title}`);
+
+      // 前置檢查 — 先建 log 再 throw，確保 admin 能看到錯誤
+      const earlyError = !targetDestination
+        ? `找不到指定目的地：${destinationId}`
+        : !sanitizeText(targetDestination.source_url)
+          ? `指定目的地缺少 source_url：${targetDestination?.title || destinationId}。請到 Supabase 設定此目的地的 source_url。`
+          : null;
+
+      if (earlyError) {
+        // 建立 scrape_log 紀錄錯誤，讓 admin 頁面能顯示
+        const { data: earlyLog } = await supabase.from('scrape_logs').insert({
+          status: 'failed',
+          error_message: earlyError,
+          started_at: new Date().toISOString(),
+          finished_at: new Date().toISOString(),
+          total_regions: 0,
+          completed_regions: 0,
+          total_trips: 0,
+          completed_trips: 0,
+          changes_found: 0,
+        }).select('id').single();
+        console.error(`\n❌ ${earlyError}`);
+        if (earlyLog) console.log(`log_id=${earlyLog.id}`);
+        process.exit(1);
       }
 
       const targetRegion = getRegionConfigBySourceUrl(targetDestination.source_url);

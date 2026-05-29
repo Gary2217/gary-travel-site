@@ -1137,19 +1137,19 @@ export default function HomePage() {
                             {group.label && (
                               <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{group.label}</h3>
                             )}
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+                            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
                               {group.destinations.map(renderCard)}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
                           {section.destinations.map(renderCard)}
                         </div>
                       )
                     ) : (
                       // 收合：固定只顯示前 5 張，不分組
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
                         {section.destinations.slice(0, 5).map(renderCard)}
                       </div>
                     )}

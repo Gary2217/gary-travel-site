@@ -398,6 +398,12 @@ export default function DestinationPage() {
   const handleScrapeThisPage = async () => {
     if (scrapeTriggering) return;
 
+    // 先檢查 destination 有沒有 source_url
+    if (!destination?.source_url) {
+      alert('此目的地尚未設定朋威對應 URL（source_url），無法抓取。\n請到 Supabase 設定此目的地的 source_url 後再試。');
+      return;
+    }
+
     setScrapeTriggering(true);
     try {
       const res = await fetch('/api/scrape/trigger', {
