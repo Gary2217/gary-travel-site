@@ -116,7 +116,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-gray-200 bg-white/95 backdrop-blur-[12px]">
+      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-gray-200/50 bg-white/70 backdrop-blur-[16px]">
         <div className="mx-auto flex h-full max-w-site items-center justify-between px-4 md:px-6">
 
           {/* 左側：返回 + Logo */}
