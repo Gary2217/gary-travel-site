@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import ScrapeCompareModal from "./ScrapeCompareModal";
 import type { ScrapeChangeItem } from "./ScrapeCompareModal";
 import Toast from "./Toast";
@@ -141,6 +141,8 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type?: "success" | "error" | "warning";
@@ -216,6 +218,18 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   useEffect(() => {
     fetchChanges();
   }, [fetchChanges]);
+
+  // 自動刷新：開啟時每 5 秒拉一次
+  useEffect(() => {
+    if (autoRefresh) {
+      autoRefreshRef.current = setInterval(fetchChanges, 5000);
+    } else {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
+    }
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
+    };
+  }, [autoRefresh, fetchChanges]);
 
   const handleIgnore = async (id: string) => {
     try {
@@ -433,6 +447,16 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
               </span>
             )}
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAutoRefresh((v) => !v)}
+              className={`relative h-5 w-9 shrink-0 rounded-full transition ${autoRefresh ? "bg-sky-600" : "bg-white/15"}`}
+              title={autoRefresh ? "關閉自動刷新" : "開啟自動刷新"}
+            >
+              <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${autoRefresh ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+            <span className="text-[10px] text-white/40">{autoRefresh ? "自動刷新中" : "自動刷新"}</span>
+          </div>
           <button
             onClick={fetchChanges}
             disabled={loading}
@@ -510,7 +534,7 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <span className="truncate text-sm font-medium text-white/90">
-                                {change.trip_title}
+                                {change.trip_title || (change.scraped_data?.title as string) || "（未知行程）"}
                               </span>
                               <span
                                 className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${config.badgeClass}`}
