@@ -816,9 +816,9 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => { scrollToSection(section.id); setHoveredNavId(null); }}
-                        className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
-                          hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"
-                        }`}
+                      className={`flex items-center gap-0.5 whitespace-nowrap px-2.5 py-2.5 text-[13px] font-semibold transition ${
+                        hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"
+                      }`}
                       >
                         {section.categoryLabel}
                         {hasDests && (
@@ -830,14 +830,14 @@ export default function HomePage() {
                 })}
                 <Link
                   href="/mini-transit-tickets"
-                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
+                  className="whitespace-nowrap px-2.5 py-2.5 text-[13px] font-semibold text-white/80 transition hover:text-[#d4a853]"
                   onMouseEnter={() => setHoveredNavId(null)}
                 >
                   小三通套票
                 </Link>
                 <Link
                   href="/document-services"
-                  className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-white/80 transition hover:text-[#d4a853]"
+                  className="whitespace-nowrap px-2.5 py-2.5 text-[13px] font-semibold text-white/80 transition hover:text-[#d4a853]"
                   onMouseEnter={() => setHoveredNavId(null)}
                 >
                   證件票券
