@@ -827,11 +827,18 @@ export default function HomePage() {
                 );
               })}
               <Link
-                href="/flights"
+                href="/mini-transit-tickets"
                 className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-500 transition hover:text-sky-600"
                 onMouseEnter={() => setHoveredNavId(null)}
               >
-                機票
+                小三通套票
+              </Link>
+              <Link
+                href="/document-services"
+                className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-500 transition hover:text-sky-600"
+                onMouseEnter={() => setHoveredNavId(null)}
+              >
+                證件票券
               </Link>
             </div>
           </nav>
