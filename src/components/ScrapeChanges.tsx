@@ -535,8 +535,8 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                               onClick={() => handleIgnore(change.id)}
                               className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/40 transition hover:bg-white/5 hover:text-white/70"
                             >
-                              忽略
-                            </button>
+                        清除
+                      </button>
                             {change.change_type !== "new_tab" && change.change_type !== "warning" ? (
                               <button
                                 onClick={() => setSelectedChange(change)}
@@ -565,20 +565,49 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
 
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-4 py-3">
               {checkedIds.size > 0 && (
-                <button
-                  onClick={handleSelectedIgnore}
-                  disabled={bulkLoading}
-                  className="rounded-full bg-red-500/15 px-4 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
-                >
-                  {bulkLoading ? "處理中..." : `忽略已選（${checkedIds.size}）`}
-                </button>
+                <>
+                  <button
+                    onClick={handleSelectedIgnore}
+                    disabled={bulkLoading}
+                    className="rounded-full bg-red-500/15 px-4 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
+                  >
+                    {bulkLoading ? "處理中..." : `清除已選（${checkedIds.size}）`}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setBulkLoading(true);
+                      try {
+                        const ids = Array.from(checkedIds);
+                        const res = await fetch("/api/scrape/apply", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          credentials: "include",
+                          body: JSON.stringify({ changeIds: ids }),
+                        });
+                        if (!res.ok) throw new Error("更新失敗");
+                        const data = await res.json();
+                        const successIds = (data.results || []).filter((r: { success: boolean }) => r.success).map((r: { id: string }) => r.id);
+                        if (successIds.length > 0) {
+                          removeChanges(successIds);
+                          setCheckedIds((prev) => { const next = new Set(prev); for (const id of successIds) next.delete(id); return next; });
+                        }
+                        setToast({ message: `已更新 ${successIds.length} 筆`, type: "success" });
+                      } catch { setToast({ message: "更新失敗", type: "error" }); }
+                      finally { setBulkLoading(false); }
+                    }}
+                    disabled={bulkLoading}
+                    className="rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+                  >
+                    {bulkLoading ? "處理中..." : `更新已選（${checkedIds.size}）`}
+                  </button>
+                </>
               )}
               <button
                 onClick={handleBulkIgnore}
                 disabled={bulkLoading}
                 className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white/40 transition hover:bg-white/5 hover:text-white/70 disabled:opacity-50"
               >
-                全部忽略
+                全部清除
               </button>
               <button
                 onClick={handleBulkApply}

@@ -150,7 +150,7 @@ export default function ScrapeCompareModal({
   onIgnore,
 }: ScrapeCompareModalProps) {
   const [applying, setApplying] = useState(false);
-  const details = change.details;
+  const details = change.details || {} as ScrapeChangeDetails;
 
   const handleApply = async () => {
     setApplying(true);
