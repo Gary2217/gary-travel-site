@@ -444,7 +444,7 @@ async function updateLog(supabase, logId, patch) {
 async function loadDestinations(supabase) {
   const { data, error } = await supabase
     .from('destinations')
-    .select('id, title, subtitle, display_order, is_active, source_url')
+    .select('id, title, subtitle, display_order, is_active, source_url, sub_region')
     .eq('is_active', true);
 
   if (error) throw new Error(`讀取 destinations 失敗：${error.message}`);
@@ -580,7 +580,7 @@ function findExistingTripForScrapedTrip(scrapedTrip, destinationTrips, consumedT
   return bestScore >= 0.7 ? bestMatch : null;
 }
 
-async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', targetDestinationTitle = '') {
+async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', targetDestinationTitle = '', targetSubRegion = '') {
   const url = `${BASE_URL}${regionConfig.url}`;
   console.log(`\n🌐 區域頁：${url}`);
 
@@ -635,18 +635,21 @@ async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', ta
       .filter(Boolean);
   }, { baseUrl: BASE_URL, targetBlockId });
 
-  // 若有指定 destination title，用 label 比對進一步篩選
-  if (targetDestinationTitle && !targetBlockId) {
-    const normalizedTarget = normalizeTitle(targetDestinationTitle);
-    const matched = sections.filter((s) => {
-      const normalizedLabel = normalizeTitle(s.label);
-      return normalizedLabel === normalizedTarget || normalizedLabel.includes(normalizedTarget) || normalizedTarget.includes(normalizedLabel);
-    });
-    if (matched.length > 0) {
-      console.log(`  🎯 用目的地名稱「${targetDestinationTitle}」篩選到 ${matched.length} 個區塊`);
-      return matched;
+  // 若有指定 destination，用 title 或 sub_region 比對 section label
+  if (!targetBlockId && (targetDestinationTitle || targetSubRegion)) {
+    const candidates = [targetSubRegion, targetDestinationTitle].filter(Boolean);
+    for (const candidate of candidates) {
+      const normalized = normalizeTitle(candidate);
+      const matched = sections.filter((s) => {
+        const normalizedLabel = normalizeTitle(s.label);
+        return normalizedLabel === normalized || normalizedLabel.includes(normalized) || normalized.includes(normalizedLabel);
+      });
+      if (matched.length > 0) {
+        console.log(`  🎯 用「${candidate}」篩選到 ${matched.length} 個區塊`);
+        return matched;
+      }
     }
-    console.log(`  ⚠️ 找不到完全匹配「${targetDestinationTitle}」的區塊，使用全部 ${sections.length} 個`);
+    console.log(`  ⚠️ 找不到匹配「${targetSubRegion || targetDestinationTitle}」的區塊，使用全部 ${sections.length} 個`);
   }
 
   const allTrips = sections.flatMap((section) => section.trips);
@@ -1059,7 +1062,7 @@ async function main() {
         region_details: regionDetails,
       });
 
-      const sections = await scrapeRegionListings(page, regionConfig, targetDestination?.source_url || '', targetDestination?.title || '');
+      const sections = await scrapeRegionListings(page, regionConfig, targetDestination?.source_url || '', targetDestination?.title || '', targetDestination?.sub_region || '');
       const tripSummaries = sections.flatMap((section) => section.trips);
       totalTrips += tripSummaries.length;
       regionDetails = mergeRegionDetail(regionDetails, regionConfig.key, {
