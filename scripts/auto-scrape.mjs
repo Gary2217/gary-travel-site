@@ -1001,11 +1001,44 @@ async function insertPendingChanges(supabase, changes) {
   return deduped.length;
 }
 
+const BATCH_SIZE = 4; // 每次自動抓取最多處理幾個區域
+
+async function getNextBatchStart(supabase) {
+  const { data } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'scrape_next_region_index')
+    .single();
+  return Number(data?.value) || 0;
+}
+
+async function saveNextBatchStart(supabase, index) {
+  await supabase
+    .from('site_settings')
+    .upsert({ key: 'scrape_next_region_index', value: String(index) });
+}
+
 async function main() {
   const { supabaseUrl, serviceRoleKey } = loadEnv();
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const { regions, logId: requestedLogId, destinationId } = parseArgs(process.argv.slice(2));
   let selectedRegions = selectRegions(regions);
+
+  // 自動排程（無指定區域/目的地）時啟用輪流抓取
+  const isFullAuto = !regions && !destinationId;
+  if (isFullAuto && selectedRegions.length > BATCH_SIZE) {
+    const startIdx = await getNextBatchStart(supabase);
+    const total = selectedRegions.length;
+    const batch = [];
+    for (let i = 0; i < BATCH_SIZE; i++) {
+      batch.push(selectedRegions[(startIdx + i) % total]);
+    }
+    const nextIdx = (startIdx + BATCH_SIZE) % total;
+    await saveNextBatchStart(supabase, nextIdx);
+    console.log(`🔄 輪流抓取：從第 ${startIdx + 1} 個開始，抓 ${BATCH_SIZE} 個區域（${batch.map(r => r.key).join(', ')}）`);
+    console.log(`   下次從第 ${nextIdx + 1} 個開始`);
+    selectedRegions = batch;
+  }
 
   let browser = null;
   let logId = null;
