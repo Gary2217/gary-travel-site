@@ -693,6 +693,9 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                 <option value="晚去早回">晚去早回</option>
                 <option value="晚去午回">晚去午回</option>
                 <option value="晚去晚回">晚去晚回</option>
+                <option value="早去夜回">早去夜回</option>
+                <option value="午去夜回">午去夜回</option>
+                <option value="晚去夜回">晚去夜回</option>
               </select>
             </div>
           </div>

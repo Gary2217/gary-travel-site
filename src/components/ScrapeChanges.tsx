@@ -59,6 +59,11 @@ const CHANGE_TYPE_CONFIG: Record<
     label: "航班變更",
     badgeClass: "bg-cyan-500/20 text-cyan-400",
   },
+  promotion: {
+    icon: "🎁",
+    label: "優惠方案",
+    badgeClass: "bg-pink-500/20 text-pink-400",
+  },
   new_tab: {
     icon: "🟣",
     label: "新分頁/區域",

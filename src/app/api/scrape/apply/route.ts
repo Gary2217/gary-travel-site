@@ -24,6 +24,7 @@ interface ScrapedTrip {
   display_order: number;
   destination_id: string;
   cover_image_url?: string;
+  promo_text?: string;
   trip_banner: Record<string, unknown>;
   departures: Array<{
     date: string;
@@ -51,6 +52,49 @@ interface FlightSegment {
 interface DepartureInfoMapValue {
   group_code: string;
   price_detail: string;
+}
+
+/**
+ * 從優惠文字解析出對應的月/日組合
+ * 支援格式：
+ *   "6/17.23" → [{ month:6, day:17 }, { month:6, day:23 }]
+ *   "6/17、23" → 同上
+ *   "6/17,23" → 同上
+ *   "6/17.6/23" → 同上
+ *   "6/17" → [{ month:6, day:17 }]
+ */
+function parsePromoDates(promoText: string): { month: number; day: number }[] {
+  if (!promoText) return [];
+  const results: { month: number; day: number }[] = [];
+
+  // 匹配 M/D 開頭的日期模式，後面可能跟著 .D 或 、D 或 ,D 表示同月份其他日期
+  const pattern = /(\d{1,2})\/(\d{1,2})(?:[.、,](\d{1,2})(?:[.、,](\d{1,2}))?)?/g;
+  let m;
+  while ((m = pattern.exec(promoText)) !== null) {
+    const month = parseInt(m[1], 10);
+    const day1 = parseInt(m[2], 10);
+    if (month >= 1 && month <= 12 && day1 >= 1 && day1 <= 31) {
+      results.push({ month, day: day1 });
+    }
+    if (m[3]) {
+      const day2 = parseInt(m[3], 10);
+      // 判斷 m[3] 是同月其他日還是新的月份（看有沒有 /）
+      const afterDay1 = promoText.substring(m.index! + m[1].length + 1 + m[2].length);
+      if (afterDay1.match(/^[.、,]\d{1,2}\//) && m[3].length <= 2) {
+        // 下一組是 M/D 格式，跳過（pattern 會在下一輪 match）
+      } else if (day2 >= 1 && day2 <= 31) {
+        results.push({ month, day: day2 });
+      }
+    }
+    if (m[4]) {
+      const day3 = parseInt(m[4], 10);
+      if (day3 >= 1 && day3 <= 31) {
+        results.push({ month, day: day3 });
+      }
+    }
+  }
+
+  return results;
 }
 
 function extractPriceColumn(priceDetailStr: unknown, index: number) {
@@ -155,7 +199,8 @@ export async function POST(req: NextRequest) {
           case 'price':
           case 'info':
           case 'price_detail':
-          case 'flight': {
+          case 'flight':
+          case 'promotion': {
             // 更新既有行程欄位
             if (!change.trip_id || !scraped) {
               results.push({ id: changeId, success: false, error: '缺少 trip_id 或 scraped_data' });
@@ -178,6 +223,36 @@ export async function POST(req: NextRequest) {
             if ((existing?.trip_banner as Record<string, unknown>)?.side_image_url) {
               (mergedBanner as Record<string, unknown>).side_image_url =
                 (existing?.trip_banner as Record<string, unknown>).side_image_url;
+            }
+
+            if (change.change_type === 'promotion') {
+              const promoText = (scraped as any).promo_text || change.new_value || '';
+              (mergedBanner as Record<string, unknown>).promo_content = promoText;
+              (mergedBanner as Record<string, unknown>).promo_enabled = Boolean(promoText);
+
+              // 解析優惠文字裡的日期，對符合的出發日期加上「限時優惠」標籤
+              if (promoText && change.trip_id) {
+                const promoDates = parsePromoDates(promoText);
+                if (promoDates.length > 0) {
+                  const { data: deps } = await supabase
+                    .from('trip_departure_dates')
+                    .select('id, departure_date')
+                    .eq('trip_id', change.trip_id);
+
+                  for (const dep of deps || []) {
+                    const dt = new Date(dep.departure_date + 'T00:00:00');
+                    const matched = promoDates.some(
+                      (pd) => pd.month === dt.getMonth() + 1 && pd.day === dt.getDate(),
+                    );
+                    if (matched) {
+                      await supabase
+                        .from('trip_departure_dates')
+                        .update({ label: '限時優惠' })
+                        .eq('id', dep.id);
+                    }
+                  }
+                }
+              }
             }
 
             const { error: updateErr } = await supabase
