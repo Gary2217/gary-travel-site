@@ -910,7 +910,7 @@ export default function TripPage() {
       <div id="trip-content" />
 
       {/* 標題區塊 */}
-      <div className="mx-auto max-w-site px-3 pt-[88px] sm:px-4 md:px-6 lg:px-6">
+      <div className="mx-auto max-w-site px-3 pt-[9.5rem] sm:px-4 md:px-6 lg:px-6">
         {/* 麵包屑導覽 */}
         {trip.destinations && (
           <div className="mb-3 flex items-center gap-1 text-xs text-gray-400">

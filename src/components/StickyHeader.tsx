@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { lineHref, fbHref, igHref } from "@/lib/supabase";
+import { lineHref, fbHref, igHref, getRegionsWithDestinations } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 import { getFavorites, toggleFavorite } from "@/lib/favorites";
 
@@ -31,6 +31,21 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
   const [showContactForm, setShowContactForm] = useState(false);
   const [displayLogoUrl, setDisplayLogoUrl] = useState(logoUrl);
   const [logoReady, setLogoReady] = useState(false);
+
+  // ── 導航列 ──
+  const [navSections, setNavSections] = useState<{ id: string; categoryLabel: string; destinations: { id: string; title: string; sub_region: string }[] }[]>([]);
+  const [hoveredNavId, setHoveredNavId] = useState<string | null>(null);
+  const navTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    getRegionsWithDestinations().then((data: any[]) => {
+      setNavSections(data.map((r: any) => ({
+        id: r.id,
+        categoryLabel: r.category_label,
+        destinations: (r.destinations || []).map((d: any) => ({ id: d.id, title: d.title, sub_region: d.sub_region || '' })),
+      })));
+    }).catch(() => {});
+  }, []);
 
   // ── 收藏 ──
   const [favIds, setFavIds] = useState<string[]>([]);
@@ -267,6 +282,93 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
           </div>
         </div>
       </header>
+
+      {/* 深色導航列（所有頁面） */}
+      {navSections.length > 0 && (
+        <div
+          className="fixed inset-x-0 z-[99] bg-[#354559]/85 backdrop-blur-md"
+          style={{ top: '5rem' }}
+          onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
+        >
+          <div className="relative">
+            <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex min-w-max items-stretch justify-center">
+                {navSections.map((section) => {
+                  const hasDests = section.destinations.length > 0;
+                  return (
+                    <div key={section.id} className="relative" onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); setHoveredNavId(section.id); }}>
+                      <Link
+                        href={`/#section-${section.id}`}
+                        className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"}`}
+                      >
+                        {section.categoryLabel}
+                        {hasDests && <svg className="h-3 w-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>}
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+
+          {/* Hover 下拉 */}
+          {hoveredNavId && (() => {
+            const section = navSections.find((s) => s.id === hoveredNavId);
+            if (!section || section.destinations.length === 0) return null;
+            const hasSubRegion = section.destinations.some((d) => d.sub_region);
+
+            const content = !hasSubRegion ? (
+              <div className="mx-auto max-w-site px-6 py-5">
+                <p className="mb-1.5 text-center text-sm font-bold text-white">{section.categoryLabel}</p>
+                <div className="mx-auto mb-3 h-px w-24 bg-amber-400/60" />
+                <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+                  {section.destinations.map((d, i) => (
+                    <span key={d.id} className="flex items-center gap-1">
+                      {i > 0 && <span className="text-white/20">｜</span>}
+                      <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm text-white/70 transition hover:text-[#d4a853]">{d.title}</Link>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (() => {
+              const grouped = new Map<string, typeof section.destinations>();
+              for (const d of section.destinations) { const key = d.sub_region || d.title; const list = grouped.get(key) || []; list.push(d); grouped.set(key, list); }
+              return (
+                <div className="mx-auto max-w-site px-6 py-5">
+                  <p className="mb-1.5 text-center text-sm font-bold text-white">{section.categoryLabel}</p>
+                  <div className="mx-auto mb-4 h-px w-24 bg-amber-400/60" />
+                  <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {Array.from(grouped.entries()).map(([sub, dests]) => (
+                      <div key={sub}>
+                        <p className="mb-1.5 text-sm font-bold text-white">{sub}</p>
+                        <div className="h-px bg-amber-500/50" />
+                        <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+                          {dests.map((d, i) => (
+                            <span key={d.id} className="flex items-center gap-1">
+                              {i > 0 && <span className="text-white/20">｜</span>}
+                              <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm text-white/70 transition hover:text-[#d4a853]">{d.title}</Link>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })();
+
+            return (
+              <div
+                className="absolute inset-x-0 top-full z-50 bg-[#354559]/80 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md"
+                onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
+                onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
+              >
+                {content}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <ContactFormModal isOpen={showContactForm} onClose={() => setShowContactForm(false)} />
     </>

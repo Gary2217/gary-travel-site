@@ -440,7 +440,7 @@ export default function DestinationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-[8.5rem] text-gray-900">
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
