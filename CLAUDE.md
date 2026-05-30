@@ -410,20 +410,34 @@ export async function GET(
 
 ### 來源頁面 URL 對照
 
-| 朋威頁面 | URL | 分頁 tab 結構 |
+| 朋威頁面 | URL | 分頁 tab 結構（= 我們的 destination 名稱）|
 |---------|-----|-------------|
 | 日本 | `/japan/` | 北海道、東北、關東、中部、關西、四國、九州、沖繩 |
-| 韓國 | `/south-korea/` | 首爾、釜山、濟州島 |
-| 泰國 | `/thailand/` | 曼谷、泰北、普吉 |
-| 越南 | `/vietnam/` | 富國島、芽莊、中越、北越 |
-| 印尼 | `/indonesia/` | 峇里島、雅加達 |
-| 馬新 | `/malaysia/` | 馬來西亞/新加坡 |
-| 菲律賓 | `/philippines/` | 長灘島、宿霧薄荷島 |
+| 韓國 | `/south-korea/` | 首爾、釜山、濟州 |
+| 泰國 | `/thailand/` | 泰國（曼谷、泰北、普吉合併） |
+| 越南 | `/vietnam/` | 越南（富國島、芽莊、中越、北越合併） |
+| 印尼 | `/indonesia/` | 印尼（峇里島、雅加達合併） |
+| 馬新 | `/malaysia/` | 馬新 |
+| 菲律賓 | `/philippines/` | 菲律賓（長灘島、宿霧合併） |
 | 歐洲 | `/europe/` | 中西歐、東歐、南歐、北歐 |
 | 港澳大陸 | `/china/` | 東北、華東、華中、華南、西南、西北 |
 | 中東亞非 | `/asia/` | 中東、中亞、西伯利亞、高雄出發 |
 | 南亞 | `/southasia/` | 不丹、馬爾地夫、斯里蘭卡 |
 | 紐澳美加 | `/new/` | 紐澳、美加 |
+| 金門 | `/kinmen/` | 金門 |
+| 馬祖 | `/mazu/` | 馬祖 |
+| 澎湖 | `/penghu/` | 澎湖 |
+| 自由行 | `/freetour/` | （無 tab 分頁） |
+| 高爾夫 | `/golf/` | （無 tab 分頁） |
+
+> **重要**：我們的 destination 名稱必須與朋威的 tab 名稱一致（如「中東」非「杜拜」），這樣自動抓取器才能正確配對。
+
+### 不抓取的區域
+
+| 區域 | 原因 |
+|------|------|
+| 郵輪旅遊 | 朋威頁面是搜尋結果頁，非標準區域頁，手動管理 |
+| 客製旅遊 | 無朋威對應頁，不需抓取 |
 
 ### 抓取欄位完整清單（按來源頁面位置）
 
@@ -574,6 +588,122 @@ const DESTINATIONS = {
 7. **驗證結果** — 打 API 確認：行程數、價格、排序、售價明細是否正確
 8. **抓取圖片** — 執行圖片爬蟲或手動上傳
 9. **最終比對** — 開啟我們的頁面與朋威頁面並排，逐一比對（含售價彈窗）
+
+---
+
+## 16. 自動抓取系統（Auto-Scrape）
+
+### 系統架構
+
+```
+Admin 頁面「🔄 更新抓取此頁」按鈕
+  ↓
+POST /api/scrape/trigger（觸發 GitHub Actions）
+  ↓
+GitHub Actions workflow: scrape-trips.yml
+  ↓
+scripts/auto-scrape.mjs（Puppeteer 爬蟲）
+  ↓
+比對現有 DB 資料 → 產生 pending_changes
+  ↓
+Admin 頁面「待確認變更」列表
+  ↓
+使用者手動勾選 → 按「更新已選」確認寫入 DB
+```
+
+### 核心規則
+
+- **所有更新都是手動確認**：抓取器只產生 `pending_changes`，不自動寫入正式資料
+- **每個 destination 必須有 `source_url`**：指向朋威對應的區域頁面 URL，沒有就無法抓取
+- **destination 名稱必須跟朋威 tab 一致**：如「中東」非「杜拜」，這樣抓取器才能正確配對 section
+- **抓取精準度**：指定 destination 時，用 `sub_region` 和 `title` 比對朋威頁面的 section label，只抓對應區塊
+- **郵輪旅遊和客製旅遊不抓取**：郵輪是搜尋頁面結構不同，客製無朋威對應
+
+### 相關檔案
+
+| 檔案 | 用途 |
+|------|------|
+| `scripts/auto-scrape.mjs` | 核心爬蟲（GitHub Actions 執行） |
+| `.github/workflows/scrape-trips.yml` | GitHub Actions workflow |
+| `src/app/api/scrape/trigger/route.ts` | 觸發抓取 API |
+| `src/app/api/scrape/progress/route.ts` | 抓取進度 API |
+| `src/app/api/scrape/changes/route.ts` | 待確認變更 CRUD |
+| `src/app/api/scrape/apply/route.ts` | 確認變更寫入 DB |
+| `src/app/api/scrape/settings/route.ts` | 抓取設定（自動頻率等） |
+| `src/components/ScrapeChanges.tsx` | 待確認變更列表 UI |
+| `src/components/ScrapeProgress.tsx` | 抓取進度 UI |
+| `src/components/ScrapeCompareModal.tsx` | 變更比對 Modal |
+| `src/components/ScrapeSettings.tsx` | 抓取設定 UI |
+
+### 變更類型
+
+| change_type | 說明 | 套用行為 |
+|---|---|---|
+| `new_trip` | 朋威有、我們沒有 | 新增行程到 DB |
+| `removed` | 我們有、朋威沒有 | 標記 `is_active=false` |
+| `price` | 價格變更 | 更新 `price_range` |
+| `price_detail` | 售價明細 5 欄 | 更新 `trip_banner.price_detail` |
+| `flight` | 航班變更 | 更新航段資訊 |
+| `departure` | 出發日期/機位 | 重建 `trip_departure_dates` |
+| `info` | 標題/天數/標籤等 | 更新對應欄位 |
+
+### 待確認變更 UI
+
+- **勾選機制**：checkbox 多選 + 全選/取消全選
+- **自動刷新開關**：打開後每 5 秒自動拉取最新 pending changes
+- **按鈕**：清除已選、更新已選、全部清除、全部更新、清除已處理紀錄
+- **分組**：按 `region_label` 分地區顯示
+- **圖片**：從 `scraped_data.cover_image_url` 顯示縮圖
+
+---
+
+## 17. 首頁導航列
+
+### 結構
+
+- **半透明深色導航列**：`bg-[#354559]/85 backdrop-blur-md`，全寬延展
+- **文字色**：`text-white/80`，hover 金色 `text-[#d4a853]`
+- **Hover 下拉選單**：半透明深色 `bg-[#354559]/80 backdrop-blur-md`
+  - 有 sub_region 的區域：分組顯示（北海道/東北/關東...）+ 金色分隔線
+  - 無 sub_region 的區域：直接列出 destination 連結
+- **Header**：`bg-white/50 backdrop-blur-[20px]` 半透明毛玻璃
+
+### 導航列項目（與朋威一致）
+
+台灣旅遊 → 日本 → 韓國 → 東南亞 → 歐洲 → 港澳大陸 → 中東亞非 → 南亞 → 紐澳美加 → 郵輪旅遊 → 自由行 → 高爾夫 → 客製旅遊
+
+> 小三通套票、證件票券在搜尋列裡，不在導航列
+
+---
+
+## 18. 目的地頁快速分頁
+
+- 在 Hero 圖片下方顯示同區域 destination 切換 tabs
+- 按 `sub_region` 分組（如中東/中亞/西伯利亞），不是個別 destination
+- 當前目的地深色填滿，其他淺色邊框
+- 點擊切換到該 sub_region 的第一個 destination
+- 只有一個目的地的區域不顯示 tabs
+- 熱門推薦行程直接載入顯示（不用 lazy loading）
+
+---
+
+## 19. 區域與目的地對照表（DB 現狀）
+
+| 區域 | destinations | 自動抓取 |
+|---|---|---|
+| 台灣旅遊 | 澎湖、花蓮台東、金門、馬祖 | ✅ |
+| 日本 | 北海道、東北、關東、中部、關西、四國、九州、沖繩 | ✅ |
+| 韓國 | 首爾、釜山、濟州 | ✅ |
+| 東南亞 | 泰國、馬新、印尼、越南、菲律賓 | ✅ |
+| 歐洲 | 中西歐、東歐、南歐、北歐 | ✅ |
+| 港澳大陸 | 東北、華東、華中、華南、西南、西北 | ✅ |
+| 中東亞非 | 中亞、中東、西伯利亞、高雄出發 | ✅ |
+| 南亞 | 斯里蘭卡、不丹、馬爾地夫 | ✅ |
+| 紐澳美加 | 紐約、雪梨、墨爾本等（待合併為紐澳/美加） | ✅ |
+| 郵輪旅遊 | 沖繩、石垣島等 | ❌ 手動管理 |
+| 自由行 | 東京、大阪、首爾等 | ✅ |
+| 高爾夫 | 泰國高爾夫、日本高爾夫、越南高爾夫 | ✅ |
+| 客製旅遊 | 家庭旅遊、蜜月旅遊、公司旅遊、小團包車 | ❌ 不需抓取 |
 
 ---
 
