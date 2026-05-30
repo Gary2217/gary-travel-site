@@ -241,10 +241,11 @@ export default function TripPage() {
       ...(trip?.trip_banner || {}),
       departure_info_map: trip?.trip_banner?.departure_info_map || {},
     });
-    const rawDays = (trip?.trip_banner?.code_label || '').replace(/\D/g, '');
-    const rawNights = (trip?.trip_banner?.duration_label || '').replace(/\D/g, '');
-    setEditDayCount(rawDays.slice(0, 2));
-    setEditNightCount(rawNights.slice(0, 2));
+    const editorDurationStr = trip?.trip_banner?.duration_label || trip?.duration || '';
+    const editorDayParsed = editorDurationStr.match(/(\d+)\s*天/);
+    const editorNightParsed = editorDurationStr.match(/(\d+)\s*夜/);
+    setEditDayCount(editorDayParsed ? editorDayParsed[1] : '');
+    setEditNightCount(editorNightParsed ? editorNightParsed[1] : '');
     setEditBannerTagInput('');
   };
 
@@ -489,8 +490,11 @@ export default function TripPage() {
     };
 
     setEditTripBanner(nextBanner);
-    setEditDayCount((trip.trip_banner?.code_label || '').replace(/\D/g, '').slice(0, 2));
-    setEditNightCount((trip.trip_banner?.duration_label || '').replace(/\D/g, '').slice(0, 2));
+    const durationStr = trip.trip_banner?.duration_label || trip.duration || '';
+    const dayParsed = durationStr.match(/(\d+)\s*天/);
+    const nightParsed = durationStr.match(/(\d+)\s*夜/);
+    setEditDayCount(dayParsed ? dayParsed[1] : '');
+    setEditNightCount(nightParsed ? nightParsed[1] : '');
     setPromoEnabled(trip.trip_banner?.promo_enabled ?? false);
     setPromoContent(trip.trip_banner?.promo_content ?? '');
   }, [trip]);
@@ -639,8 +643,7 @@ export default function TripPage() {
     const bannerPayload: TripBanner = {
       ...EMPTY_TRIP_BANNER,
       ...editTripBanner,
-      code_label: previewDayText,
-      duration_label: previewNightText,
+      duration_label: renderDaysNights(previewDayText, previewNightText),
       departure_info_map: {
         ...getDepartureBannerInfoMap(editTripBanner),
         [selectedDepartureId]: buildDepartureInfoPayload(),
@@ -726,8 +729,7 @@ export default function TripPage() {
     const bannerPayload: TripBanner = {
       ...EMPTY_TRIP_BANNER,
       ...editTripBanner,
-      code_label: previewDayText,
-      duration_label: previewNightText,
+      duration_label: renderDaysNights(previewDayText, previewNightText),
     };
 
     try {
@@ -780,8 +782,7 @@ export default function TripPage() {
       const bannerPayload: TripBanner = {
         ...EMPTY_TRIP_BANNER,
         ...editTripBanner,
-        code_label: previewDayText,
-        duration_label: previewNightText,
+        duration_label: renderDaysNights(previewDayText, previewNightText),
         departure_info_map: {
           ...getDepartureBannerInfoMap(editTripBanner),
           [createdDeparture.id]: buildDepartureInfoPayload(),
