@@ -906,8 +906,19 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   const changes = [];
   const existingBanner = existingTrip.trip_banner || {};
 
+  // 正規化比對：統一格式後才比較，避免假陽性
+  const normalize = (v) => sanitizeText(String(v ?? '')).replace(/\t/g, ' ').replace(/\s+/g, ' ').trim();
+  const normalizeTags = (tags) => JSON.stringify((Array.isArray(tags) ? tags : []).map(t => normalizeTag(t)).filter(Boolean).sort());
+
   const pushChange = (changeType, fieldName, oldValue, newValue) => {
-    if (String(oldValue ?? '') === String(newValue ?? '')) return;
+    // 用正規化後的值比較
+    const oldNorm = typeof oldValue === 'object' ? stableStringify(oldValue) : normalize(oldValue);
+    const newNorm = typeof newValue === 'object' ? stableStringify(newValue) : normalize(newValue);
+    if (oldNorm === newNorm) return;
+    // 兩邊都是空值也跳過
+    if (!oldNorm && !newNorm) return;
+    // 新值是空的（朋威沒抓到）→ 跳過，不要清掉我們已有的資料
+    if (!newNorm && oldNorm) return;
     changes.push({
       ...buildPendingChangeBase(context),
       change_type: changeType,
@@ -917,20 +928,42 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     });
   };
 
-  pushChange('price', 'price_range', sanitizeText(existingTrip.price_range), scrapedTrip.price_range);
+  // 價格：只比較數字部分
+  const oldPriceNum = normalize(existingTrip.price_range).replace(/[^\d]/g, '');
+  const newPriceNum = normalize(scrapedTrip.price_range).replace(/[^\d]/g, '');
+  if (oldPriceNum !== newPriceNum && newPriceNum) {
+    pushChange('price', 'price_range', sanitizeText(existingTrip.price_range), scrapedTrip.price_range);
+  }
+
+  // 標題：核心欄位，嚴格比對
   pushChange('info', 'title', sanitizeText(existingTrip.title), scrapedTrip.title);
-  pushChange('info', 'subtitle', sanitizeText(existingTrip.subtitle), scrapedTrip.subtitle);
+  // subtitle：跳過（每次自動生成不同，不重要）
+  // display_order：跳過（合併後會不一致，手動排序為準）
+  // departure_label：跳過（不影響顯示）
+  // duration_label：跳過（跟 duration 重複）
+
   pushChange('info', 'duration', sanitizeText(existingTrip.duration), scrapedTrip.duration);
-  pushChange('info', 'display_order', existingTrip.display_order, scrapedTrip.display_order);
   pushChange('info', 'code_label', sanitizeText(existingBanner.code_label), scrapedTrip.code_label);
-  pushChange('info', 'departure_label', sanitizeText(existingBanner.departure_label), scrapedTrip.departure_label);
-  pushChange('info', 'duration_label', sanitizeText(existingBanner.duration_label), scrapedTrip.duration);
   pushChange('info', 'airport', sanitizeText(existingBanner.airport), scrapedTrip.airport);
   pushChange('info', 'airline', sanitizeText(existingBanner.airline), scrapedTrip.airline);
   pushChange('info', 'min_group_size', existingBanner.min_group_size, scrapedTrip.min_group_size);
-  pushChange('info', 'tags', existingBanner.tags || [], scrapedTrip.tags);
-  pushChange('info', 'custom_tour', Boolean(existingBanner.custom_tour), Boolean(scrapedTrip.custom_tour));
-  pushChange('price_detail', 'price_detail', sanitizeText(existingBanner.price_detail), scrapedTrip.price_detail);
+
+  // 標籤：排序後比較，忽略順序差異和 (國外)/(國內) 前綴
+  if (normalizeTags(existingBanner.tags) !== normalizeTags(scrapedTrip.tags)) {
+    pushChange('info', 'tags', existingBanner.tags || [], scrapedTrip.tags);
+  }
+
+  // custom_tour：只在從 false→true 時通知（有出發日變無出發日）
+  if (!Boolean(existingBanner.custom_tour) && Boolean(scrapedTrip.custom_tour)) {
+    pushChange('info', 'custom_tour', false, true);
+  }
+
+  // 售價明細：統一用 tab 分隔後比較
+  const oldPD = normalize(existingBanner.price_detail);
+  const newPD = normalize(scrapedTrip.price_detail);
+  if (oldPD !== newPD && newPD && newPD !== '    ') {
+    pushChange('price_detail', 'price_detail', sanitizeText(existingBanner.price_detail), scrapedTrip.price_detail);
+  }
 
   const existingFlights = extractExistingFlightSegments(existingTrip);
   if (stableStringify(existingFlights) !== stableStringify(scrapedTrip.flight_segments)) {
@@ -1099,6 +1132,13 @@ async function main() {
           continue;
         }
         await detailPage.close().catch(() => {});
+
+        // 過濾垃圾資料（頁面載入失敗、空標題等）
+        if (!scrapedTrip.title || scrapedTrip.title.includes('can\'t be reached') || scrapedTrip.title.includes('not found') || scrapedTrip.title.length < 3) {
+          console.log(`  ⚠️ 無效資料，跳過：${scrapedTrip.title || '(空標題)'}`);
+          completedTrips += 1;
+          continue;
+        }
 
         const destination = targetDestination || resolveDestination(scrapedTrip.destination_label) || resolveDestination(tripSummary.section_label);
         if (!destination) {
