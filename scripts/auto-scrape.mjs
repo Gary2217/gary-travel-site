@@ -702,9 +702,10 @@ async function scrapeTripDetail(page, tripSummary) {
 
     const flightSegments = Array.from(document.querySelectorAll('#flightModal li'))
       .map((item) => {
-        const airlineLines = clean(item.querySelector('.detail_airline span')?.textContent || '')
-          .split(/\s+/)
-          .filter(Boolean);
+        const fullText = clean(item.querySelector('.detail_airline span')?.textContent || '');
+        const flightMatch = fullText.match(/^(.+?)([A-Z]{2}\d{1,4}[A-Z]?)$/i);
+        const airline = flightMatch ? flightMatch[1].trim() : fullText;
+        const flightNumber = flightMatch ? flightMatch[2].trim() : '';
         const goText = clean(item.querySelector('.go')?.textContent || '');
         const toText = clean(item.querySelector('.to')?.textContent || '');
         const dayMatch = goText.match(/第\s*(\d+)\s*天/);
@@ -713,12 +714,12 @@ async function scrapeTripDetail(page, tripSummary) {
         const depAirport = clean(item.querySelector('.go div')?.textContent || '');
         const arrAirport = clean(item.querySelector('.to div')?.textContent || '');
 
-        if (!airlineLines.length && !depAirport && !arrAirport) return null;
+        if (!airline && !flightNumber && !depAirport && !arrAirport) return null;
 
         return {
           day_text: dayMatch ? `第${dayMatch[1]}天` : '',
-          airline: airlineLines[0] || '',
-          flight_number: airlineLines[1] || '',
+          airline,
+          flight_number: flightNumber,
           dep_time: depTimeMatch ? depTimeMatch[1] : '',
           dep_airport: depAirport,
           arr_time: arrTimeMatch ? arrTimeMatch[1] : '',
@@ -727,6 +728,9 @@ async function scrapeTripDetail(page, tripSummary) {
         };
       })
       .filter(Boolean);
+
+    const promoEl = document.querySelector('#marketing .MarketingContent');
+    const promoText = promoEl ? clean(promoEl.textContent || '') : '';
 
     const departures = Array.from(document.querySelectorAll('#search-table tbody tr'))
       .map((row) => {
@@ -763,6 +767,7 @@ async function scrapeTripDetail(page, tripSummary) {
       tags,
       flight_segments: flightSegments,
       departures,
+      promo_text: promoText,
     };
   }, tripSummary.href, tripSummary.section_label);
 
@@ -827,6 +832,7 @@ async function scrapeTripDetail(page, tripSummary) {
     departure_label: getDepartureLabel(data.airport),
     display_order: tripSummary.display_order,
     custom_tour: customTour,
+    promo_text: sanitizeText(data.promo_text),
     trip_banner: {
       code_label: sanitizeText(data.code_label),
       price_label: priceRange,
@@ -841,6 +847,7 @@ async function scrapeTripDetail(page, tripSummary) {
       airport: sanitizeText(data.airport),
       airline: primaryAirline,
       price_detail: priceDetail,
+      promo_text: sanitizeText(data.promo_text),
     },
   };
 }
@@ -963,6 +970,12 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   const newPD = normalize(scrapedTrip.price_detail);
   if (oldPD !== newPD && newPD && newPD !== '    ') {
     pushChange('price_detail', 'price_detail', sanitizeText(existingBanner.price_detail), scrapedTrip.price_detail);
+  }
+
+  const oldPromo = sanitizeText(existingBanner.promo_content || existingBanner.promo_text || '');
+  const newPromo = sanitizeText(scrapedTrip.promo_text || '');
+  if (oldPromo !== newPromo) {
+    pushChange('promotion', 'promo_text', oldPromo || null, newPromo || null);
   }
 
   const existingFlights = extractExistingFlightSegments(existingTrip);
