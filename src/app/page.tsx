@@ -269,8 +269,6 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
-  const [hoveredNavId, setHoveredNavId] = useState<string | null>(null);
-  const navTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
   const [filterDestId, setFilterDestId] = useState<string | null>(null);
   const [filterDate, setFilterDate] = useState('');
@@ -787,122 +785,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      {/* Region Tabs — 深藍導航列 + hover 下拉 */}
-      <div
-        className="sticky top-20 z-40"
-        onMouseLeave={() => {
-          navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150);
-        }}
-      >
-        {/* 半透明深色導航列 */}
-        <div className="bg-[#354559]/85 backdrop-blur-md">
-          <div className="relative">
-            <nav className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-stretch justify-center">
-                {sections.map((section) => {
-                  const hasDests = section.destinations.length > 0;
-                  return (
-                    <div
-                      key={section.id}
-                      className="relative"
-                      onMouseEnter={() => {
-                        if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
-                        setHoveredNavId(section.id);
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => { scrollToSection(section.id); setHoveredNavId(null); }}
-                      className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
-                        hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"
-                      }`}
-                      >
-                        {section.categoryLabel}
-                        {hasDests && (
-                          <svg className="h-3 w-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-
-              </div>
-            </nav>
-          </div>
-        </div>
-
-        {/* Hover 下拉選單 — 半透明深色遮罩 */}
-        {hoveredNavId && (() => {
-          const section = sections.find((s) => s.id === hoveredNavId);
-          if (!section || section.destinations.length === 0) return null;
-
-          const hasSubRegion = section.destinations.some((d) => d.sub_region);
-
-          const dropdownContent = !hasSubRegion ? (
-            <div className="mx-auto max-w-site px-6 py-5">
-              <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
-                {section.destinations.map((d, i) => (
-                  <span key={d.id} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-white/20">｜</span>}
-                    <Link
-                      href={`/destination/${d.id}`}
-                      onClick={() => setHoveredNavId(null)}
-                      className="text-sm text-white/70 transition hover:text-[#d4a853]"
-                    >
-                      {d.title}
-                    </Link>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : (() => {
-            const grouped = new Map<string, typeof section.destinations>();
-            for (const d of section.destinations) {
-              const key = d.sub_region || d.title;
-              const list = grouped.get(key) || [];
-              list.push(d);
-              grouped.set(key, list);
-            }
-            return (
-              <div className="mx-auto max-w-site px-6 py-5">
-                <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {Array.from(grouped.entries()).map(([subRegion, dests]) => (
-                    <div key={subRegion}>
-                      <p className="mb-1.5 text-sm font-bold text-white">{subRegion}</p>
-                      <div className="h-px bg-amber-500/50" />
-                      <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
-                        {dests.map((d, i) => (
-                          <span key={d.id} className="flex items-center gap-1">
-                            {i > 0 && <span className="text-white/20">｜</span>}
-                            <Link
-                              href={`/destination/${d.id}`}
-                              onClick={() => setHoveredNavId(null)}
-                              className="text-sm text-white/70 transition hover:text-[#d4a853]"
-                            >
-                              {d.title}
-                            </Link>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })();
-
-          return (
-            <div
-              className="absolute inset-x-0 top-full z-50 bg-[#354559]/80 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md"
-              onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
-              onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
-            >
-              {dropdownContent}
-            </div>
-          );
-        })()}
-      </div>
 
       {/* Content */}
       <div className="mx-auto max-w-site px-4 py-6 md:px-5">
