@@ -155,7 +155,8 @@ function parseNumber(value) {
 }
 
 function getAirlineCodeFromFlightNumber(flightNumber) {
-  const matched = String(flightNumber || '').trim().match(/^[A-Z0-9]{2,3}/i);
+  // 航班號碼格式：2-3 碼英文字母 + 數字，如 MH367、CI123、7C1234
+  const matched = String(flightNumber || '').trim().match(/^([A-Z]{2}[A-Z]?|\d[A-Z])/i);
   return matched ? matched[0].toUpperCase() : '';
 }
 

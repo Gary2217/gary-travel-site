@@ -341,6 +341,47 @@ export async function POST(req: NextRequest) {
               results.push({ id: changeId, success: false, error: rebuildErr });
               continue;
             }
+
+            // 出發日期重建後，重新套用優惠標籤（避免被 DELETE+INSERT 洗掉）
+            const promoSource = (scraped as any).promo_text || '';
+            if (promoSource) {
+              const promoDatesForDep = parsePromoDates(promoSource);
+              if (promoDatesForDep.length > 0) {
+                const { data: newDeps } = await supabase
+                  .from('trip_departure_dates')
+                  .select('id, departure_date')
+                  .eq('trip_id', change.trip_id);
+                for (const nd of newDeps || []) {
+                  const ndt = new Date(nd.departure_date + 'T00:00:00');
+                  if (promoDatesForDep.some((pd) => pd.month === ndt.getMonth() + 1 && pd.day === ndt.getDate())) {
+                    await supabase.from('trip_departure_dates').update({ label: '限時優惠' }).eq('id', nd.id);
+                  }
+                }
+              }
+            } else {
+              // scraped_data 沒 promo_text，查現有 trip_banner.promo_content
+              const { data: tripForPromo } = await supabase
+                .from('trips')
+                .select('trip_banner')
+                .eq('id', change.trip_id)
+                .single();
+              const existingPromo = (tripForPromo?.trip_banner as Record<string, unknown>)?.promo_content as string || '';
+              if (existingPromo) {
+                const existingPromoDates = parsePromoDates(existingPromo);
+                if (existingPromoDates.length > 0) {
+                  const { data: newDeps2 } = await supabase
+                    .from('trip_departure_dates')
+                    .select('id, departure_date')
+                    .eq('trip_id', change.trip_id);
+                  for (const nd2 of newDeps2 || []) {
+                    const ndt2 = new Date(nd2.departure_date + 'T00:00:00');
+                    if (existingPromoDates.some((pd) => pd.month === ndt2.getMonth() + 1 && pd.day === ndt2.getDate())) {
+                      await supabase.from('trip_departure_dates').update({ label: '限時優惠' }).eq('id', nd2.id);
+                    }
+                  }
+                }
+              }
+            }
             break;
           }
 
