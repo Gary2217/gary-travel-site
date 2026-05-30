@@ -604,9 +604,12 @@ async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', ta
         const parent = container.parentElement;
         const header = parent?.querySelector('.header-title');
         const sectionLabel = normalize(header?.textContent || '');
+        // 優先使用穩定的 blk-* ID（伺服器產生，不會每次刷新改變）
+        const blkAncestor = container.closest('[id^="blk-"]');
         const blockId = normalize(
-          container.getAttribute('id') ||
+          (blkAncestor ? blkAncestor.getAttribute('id') : '') ||
           parent?.getAttribute('id') ||
+          container.getAttribute('id') ||
           parent?.closest('[id]')?.getAttribute('id') || ''
         );
         const cards = Array.from(container.querySelectorAll('.item-box a[href*="/products/group/"]'));
