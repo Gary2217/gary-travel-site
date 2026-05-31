@@ -68,6 +68,9 @@ export interface ScrapeChangeItem {
   destination_id?: string | null;
   scraped_data?: Record<string, unknown>;
   details: ScrapeChangeDetails;
+  old_value?: string | null;
+  new_value?: string | null;
+  field_name?: string;
 }
 
 interface ScrapeCompareModalProps {
@@ -100,6 +103,16 @@ const COMBINED_FIELD_LABELS: Record<string, string> = {
   custom_tour: "客製行程",
   seats_total: "機位數",
 };
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  if (!value) return null;
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+      <p className="text-[10px] text-white/40">{label}</p>
+      <p className="mt-0.5 text-xs text-white/70">{value}</p>
+    </div>
+  );
+}
 
 function DiffCell({
   ours,
@@ -162,6 +175,24 @@ export default function ScrapeCompareModal({
 
   const oursPrice = details.price_detail?.ours?.split("\t") ?? [];
   const theirsPrice = details.price_detail?.theirs?.split("\t") ?? [];
+
+  const hasDetailsSections = Boolean(
+    details.basic_info || details.price_detail ||
+    details.flight_segments || details.departure_dates ||
+    details.combined_fields
+  );
+  const scraped = change.scraped_data;
+  const scrapedBanner = (scraped?.trip_banner as Record<string, unknown>) || {};
+  const scrapedDepartures = (scraped?.departures as Array<Record<string, unknown>>) || [];
+  const scrapedFlights = (scraped?.flightSegments as FlightSegment[]) || [];
+  const scrapedPriceCols = String(scrapedBanner.price_detail || "").split("\t");
+  const scrapedTags = Array.isArray(scrapedBanner.tags) ? (scrapedBanner.tags as string[]) : [];
+
+  // 按鈕文字根據 change_type 調整
+  const actionLabel =
+    change.change_type === "removed" ? "確認下架" :
+    change.change_type === "new_trip" ? "確認新增" :
+    "確認更新";
 
   return (
     <div
@@ -532,6 +563,256 @@ export default function ScrapeCompareModal({
               </div>
             </section>
           )}
+
+          {/* ── 以下為 details 為空時的 fallback 內容 ── */}
+
+          {/* 行程下架 */}
+          {change.change_type === "removed" && !hasDetailsSections && (
+            <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-base">
+                  🔴
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-red-300">行程下架通知</h3>
+                  <p className="text-[11px] text-white/40">
+                    此行程在朋威網站已找不到對應行程
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-lg bg-white/5 p-3">
+                <p className="text-[10px] text-white/40">行程名稱</p>
+                <p className="mt-1 text-sm font-medium text-white/80">
+                  {change.trip_title}
+                </p>
+              </div>
+              {change.source_url && (
+                <a
+                  href={change.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block text-[11px] text-sky-400 hover:underline"
+                >
+                  查看來源頁面 ↗
+                </a>
+              )}
+              <p className="mt-3 text-[11px] text-white/30">
+                確認後將標記此行程為下架（is_active = false），不會刪除資料
+              </p>
+            </section>
+          )}
+
+          {/* 新行程 */}
+          {change.change_type === "new_trip" && !hasDetailsSections && scraped && (
+            <section>
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-base">
+                  🟢
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-300">新行程</h3>
+                  <p className="text-[11px] text-white/40">
+                    朋威網站新增了此行程，確認後將新增到我們的網站
+                  </p>
+                </div>
+              </div>
+
+              {/* 封面圖 */}
+              {scraped.cover_image_url && (
+                <div className="mb-4 overflow-hidden rounded-xl">
+                  <img
+                    src={String(scraped.cover_image_url)}
+                    alt=""
+                    className="h-40 w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* 基本資訊 */}
+              <div className="mb-4 grid gap-2 sm:grid-cols-2">
+                <InfoRow label="行程標題" value={String(scraped.title || "")} />
+                <InfoRow label="副標題" value={String(scraped.subtitle || "")} />
+                <InfoRow label="旅遊天數" value={String(scraped.duration || "")} />
+                <InfoRow label="售價" value={String(scraped.price_range || "")} />
+                <InfoRow label="團型編號" value={String(scrapedBanner.code_label || "")} />
+                <InfoRow label="航空公司" value={String(scrapedBanner.airline || "")} />
+                <InfoRow label="出發機場" value={String(scrapedBanner.airport || "")} />
+                <InfoRow
+                  label="成團人數"
+                  value={scrapedBanner.min_group_size ? `${scrapedBanner.min_group_size}人` : ""}
+                />
+                {scrapedTags.length > 0 && (
+                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5 sm:col-span-2">
+                    <p className="text-[10px] text-white/40">標籤</p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {scrapedTags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 售價明細 */}
+              {scrapedPriceCols.length > 1 && scrapedPriceCols.some(Boolean) && (
+                <div className="mb-4">
+                  <h4 className="mb-2 text-[11px] font-semibold text-white/50">售價明細</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[500px]">
+                      <thead>
+                        <tr className="border-b border-white/10 text-[11px] text-white/40">
+                          {PRICE_COLS.map((col) => (
+                            <th key={col} className="px-3 py-2 text-center">{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="text-xs">
+                          {PRICE_COLS.map((_, i) => (
+                            <td key={i} className="px-3 py-2 text-center text-emerald-300">
+                              {scrapedPriceCols[i] || "—"}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 航班資訊 */}
+              {scrapedFlights.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="mb-2 text-[11px] font-semibold text-white/50">航班資訊</h4>
+                  <div className="space-y-1.5">
+                    {scrapedFlights.map((seg, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px]"
+                      >
+                        <span className="text-white/40">{seg.day_text}</span>
+                        <span className="text-sky-300/70">{seg.airline}</span>
+                        <span className="font-semibold text-white/80">{seg.flight_number}</span>
+                        <span className="text-white/50">{seg.dep_time}</span>
+                        <span className="text-white/40">{seg.dep_airport}</span>
+                        <span className="text-white/20">→</span>
+                        <span className="text-white/50">{seg.arr_time}</span>
+                        <span className="text-white/40">{seg.arr_airport}</span>
+                        {seg.next_day && (
+                          <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-400">+1天</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 出發日期 */}
+              {scrapedDepartures.length > 0 && (
+                <div>
+                  <h4 className="mb-2 text-[11px] font-semibold text-white/50">
+                    出發日期（{scrapedDepartures.length} 個）
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[500px]">
+                      <thead>
+                        <tr className="border-b border-white/10 text-[11px] text-white/40">
+                          <th className="px-3 py-2 text-left">日期</th>
+                          <th className="px-3 py-2 text-center">售價</th>
+                          <th className="px-3 py-2 text-center">機位</th>
+                          <th className="px-3 py-2 text-center">可售</th>
+                          <th className="px-3 py-2 text-center">時段</th>
+                          <th className="px-3 py-2 text-left">出發地</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scrapedDepartures.map((d, i) => (
+                          <tr key={i} className="border-b border-white/5 text-xs">
+                            <td className="px-3 py-2 text-emerald-300">{String(d.date || "")}</td>
+                            <td className="px-3 py-2 text-center text-emerald-300">
+                              {Number(d.price || 0).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 text-center text-white/50">{String(d.seats_total || "")}</td>
+                            <td className="px-3 py-2 text-center text-white/50">{String(d.seats_available || "")}</td>
+                            <td className="px-3 py-2 text-center text-white/50">{String(d.label || "")}</td>
+                            <td className="px-3 py-2 text-white/50">{String(d.departure_city || "")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 優惠方案 */}
+          {change.change_type === "promotion" && !hasDetailsSections && (
+            <section>
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-500/20 text-base">
+                  🎁
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-pink-300">優惠方案變更</h3>
+                  <p className="text-[11px] text-white/40">優惠文字內容有變更</p>
+                </div>
+              </div>
+              <div className="grid gap-3 lg:grid-cols-2">
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                  <p className="mb-2 text-[10px] font-semibold text-sky-400/70">目前優惠</p>
+                  <p className="whitespace-pre-wrap text-xs text-white/60">
+                    {change.old_value || "（無）"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                  <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
+                  <p className="whitespace-pre-wrap text-xs text-amber-300">
+                    {change.new_value || "（無）"}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* 通用 fallback：其他 change type 有 old_value / new_value 但無 details */}
+          {!hasDetailsSections &&
+            change.change_type !== "removed" &&
+            change.change_type !== "new_trip" &&
+            change.change_type !== "promotion" &&
+            (change.old_value || change.new_value) && (
+            <section>
+              <h3 className="mb-3 text-xs font-bold text-white/70">
+                {change.field_name
+                  ? BASIC_FIELD_LABELS[change.field_name] ||
+                    COMBINED_FIELD_LABELS[change.field_name] ||
+                    change.field_name
+                  : "變更內容"}
+              </h3>
+              <div className="grid gap-3 lg:grid-cols-2">
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                  <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站</p>
+                  <p className="whitespace-pre-wrap text-xs text-white/60">
+                    {change.old_value || "（無）"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                  <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
+                  <p className="whitespace-pre-wrap text-xs font-semibold text-amber-300">
+                    {change.new_value || "（無）"}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Footer */}
@@ -547,7 +828,7 @@ export default function ScrapeCompareModal({
             disabled={applying}
             className="rounded-full bg-sky-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
           >
-            {applying ? "更新中..." : "✓ 確認更新"}
+            {applying ? "處理中..." : `✓ ${actionLabel}`}
           </button>
         </div>
       </div>
