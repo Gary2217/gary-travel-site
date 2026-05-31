@@ -618,7 +618,7 @@ export default function ScrapeCompareModal({
               </div>
 
               {/* 封面圖 */}
-              {scraped.cover_image_url && (
+              {scraped.cover_image_url ? (
                 <div className="mb-4 overflow-hidden rounded-xl">
                   <img
                     src={String(scraped.cover_image_url)}
@@ -629,7 +629,7 @@ export default function ScrapeCompareModal({
                     }}
                   />
                 </div>
-              )}
+              ) : null}
 
               {/* 基本資訊 */}
               <div className="mb-4 grid gap-2 sm:grid-cols-2">
