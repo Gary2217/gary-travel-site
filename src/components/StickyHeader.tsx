@@ -10,24 +10,24 @@ import { getFavorites, toggleFavorite } from "@/lib/favorites";
 
 const ContactFormModal = dynamic(() => import("./ContactFormModal"), { ssr: false });
 
-/** 每個 destination 下的子城市（純展示用） */
+/** 每個 destination 下的子城市（純展示用，key = categoryLabel → destination title / sub_region） */
 const SUB_CITIES: Record<string, Record<string, string[]>> = {
   '日本': {
     '北海道': ['札幌', '函館', '旭川', '釧路'],
     '東北': ['仙台', '青森', '盛岡', '秋田', '山形', '福島'],
-    '關東': ['東京', '橫濱', '埼玉', '千葉'],
+    '關東': ['東京', '橫濱', '埼玉', '千葉', '宇都宮', '水戶', '前橋'],
     '中部': ['名古屋', '新潟', '金澤', '長野', '靜岡', '富山'],
-    '關西': ['大阪', '京都', '神戶', '奈良'],
+    '關西': ['大阪', '京都', '神戶', '奈良', '大津', '和歌山'],
     '四國': ['高松', '松山', '德島', '高知'],
     '九州': ['福岡', '北九州', '熊本', '鹿兒島', '長崎', '大分', '宮崎', '佐賀'],
-    '沖繩': ['那霸', '石垣', '宮古島'],
+    '沖繩': ['那霸', '沖繩', '石垣', '宮古島'],
   },
   '東南亞': {
     '泰國': ['曼谷', '泰北', '普吉'],
     '越南': ['富國島', '芽莊', '中越', '北越'],
     '印尼': ['峇里島', '雅加達'],
     '馬新': ['馬來西亞', '新加坡'],
-    '菲律賓': ['長灘島', '宿霧薄荷島'],
+    '菲律賓': ['長灘島', '宿霧', '薄荷島'],
   },
   '歐洲': {
     '中西歐': ['法國', '英國', '德國', '瑞士', '荷比盧'],
@@ -36,8 +36,8 @@ const SUB_CITIES: Record<string, Record<string, string[]>> = {
     '北歐': ['挪威', '丹麥', '瑞典', '芬蘭', '冰島'],
   },
   '港澳大陸': {
-    '東北': ['遼寧', '吉林', '黑龍江'],
-    '華東': ['江蘇', '浙江', '安徽', '福建', '山東', '上海'],
+    '東北': ['遼寧', '吉林', '黑龍江', '內蒙古東部'],
+    '華東': ['江蘇', '浙江', '安徽', '江西', '福建', '廈門', '山東', '上海'],
     '華中': ['湖南', '湖北', '河南'],
     '華南': ['香港', '澳門', '海南', '廣西', '廣東'],
     '西南': ['四川', '重慶', '雲南', '貴州', '西藏'],
@@ -346,68 +346,29 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             </nav>
           </div>
 
-          {/* Hover 下拉 */}
+          {/* Hover 下拉（白底） */}
           {hoveredNavId && (() => {
             const section = navSections.find((s) => s.id === hoveredNavId);
             if (!section || section.destinations.length === 0) return null;
-            const hasSubRegion = section.destinations.some((d) => d.sub_region);
-
             const regionCities = SUB_CITIES[section.categoryLabel] || {};
+            const hasRegionCityData = Object.keys(regionCities).length > 0;
 
-            const content = !hasSubRegion ? (() => {
-              const hasAnyCities = section.destinations.some(d => (regionCities[d.title] || []).length > 0);
-              if (hasAnyCities) {
-                return (
-                  <div className="mx-auto max-w-site px-6 py-5">
-                    <p className="mb-1.5 text-center text-sm font-bold text-white">{section.categoryLabel}</p>
-                    <div className="mx-auto mb-4 h-px w-24 bg-amber-400/60" />
-                    <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                      {section.destinations.map((d) => {
-                        const cities = regionCities[d.title] || [];
-                        return (
-                          <Link key={d.id} href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="group block">
-                            <p className="mb-1.5 text-sm font-bold text-white transition group-hover:text-[#d4a853]">{d.title}</p>
-                            <div className="h-px bg-amber-500/50" />
-                            {cities.length > 0 && (
-                              <p className="mt-2 text-xs leading-relaxed text-white/50 transition group-hover:text-white/70">{cities.join(' ｜ ')}</p>
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div className="mx-auto max-w-site px-6 py-5">
-                  <p className="mb-1.5 text-center text-sm font-bold text-white">{section.categoryLabel}</p>
-                  <div className="mx-auto mb-3 h-px w-24 bg-amber-400/60" />
-                  <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
-                    {section.destinations.map((d, i) => (
-                      <span key={d.id} className="flex items-center gap-1">
-                        {i > 0 && <span className="text-white/20">｜</span>}
-                        <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm text-white/70 transition hover:text-[#d4a853]">{d.title}</Link>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })() : (() => {
+            /* ── 有子城市資料（日本/東南亞/歐洲/港澳大陸）→ 4 欄 grid ── */
+            /* ── 其餘小區域 → 水平排列 destination 名稱 ── */
+            const content = hasRegionCityData ? (() => {
               const grouped = new Map<string, typeof section.destinations>();
               for (const d of section.destinations) { const key = d.sub_region || d.title; const list = grouped.get(key) || []; list.push(d); grouped.set(key, list); }
               return (
                 <div className="mx-auto max-w-site px-6 py-5">
-                  <p className="mb-1.5 text-center text-sm font-bold text-white">{section.categoryLabel}</p>
-                  <div className="mx-auto mb-4 h-px w-24 bg-amber-400/60" />
-                  <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {Array.from(grouped.entries()).map(([sub, dests]) => {
                       const cities = regionCities[sub] || [];
                       return (
-                        <Link key={sub} href={`/destination/${dests[0].id}`} onClick={() => setHoveredNavId(null)} className="group block">
-                          <p className="mb-1.5 text-sm font-bold text-white transition group-hover:text-[#d4a853]">{sub}</p>
-                          <div className="h-px bg-amber-500/50" />
+                        <Link key={sub} href={`/destination/${dests[0].id}`} onClick={() => setHoveredNavId(null)} className="group block rounded-lg px-2 py-1.5 transition hover:bg-gray-50">
+                          <p className="text-sm font-bold text-gray-900 transition group-hover:text-sky-600">{sub}</p>
+                          <div className="mt-1 border-b-2 border-[#d4a853]" />
                           {cities.length > 0 && (
-                            <p className="mt-2 text-xs leading-relaxed text-white/50 transition group-hover:text-white/70">{cities.join(' ｜ ')}</p>
+                            <p className="mt-2 text-xs leading-relaxed text-gray-500">{cities.join(' ｜ ')}</p>
                           )}
                         </Link>
                       );
@@ -415,11 +376,22 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                   </div>
                 </div>
               );
-            })();
+            })() : (
+              <div className="mx-auto max-w-site px-6 py-5">
+                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
+                  {section.destinations.map((d, i) => (
+                    <span key={d.id} className="flex items-center gap-2">
+                      {i > 0 && <span className="text-gray-300">｜</span>}
+                      <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm font-medium text-gray-700 transition hover:text-sky-600">{d.title}</Link>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
 
             return (
               <div
-                className="absolute inset-x-0 top-full z-50 bg-[#354559]/80 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md"
+                className="absolute inset-x-0 top-full z-50 rounded-b-lg border border-t-0 border-gray-200 bg-white shadow-xl"
                 onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); }}
                 onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
               >
