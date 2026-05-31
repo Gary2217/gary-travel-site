@@ -67,6 +67,7 @@ export default function DestinationPage() {
   const [dateFilter, setDateFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [relatedTrips, setRelatedTrips] = useState<{ regionTrips: Trip[]; categoryTrips: Trip[] } | null>(null);
+  const [popularFallback, setPopularFallback] = useState<Trip[] | null>(null);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -107,6 +108,7 @@ export default function DestinationPage() {
 
     async function loadData() {
       try {
+        setPopularFallback(null);
         const [destData, tripsData] = await Promise.all([
           getDestination(destinationId),
           getDestinationTrips(destinationId),
@@ -156,6 +158,18 @@ export default function DestinationPage() {
             );
             if (!isMounted) return;
             setRelatedTrips(related);
+
+            if (related.regionTrips.length === 0 && related.categoryTrips.length === 0) {
+              try {
+                const res = await fetch('/api/popular-trips', { cache: 'no-store' });
+                if (res.ok) {
+                  const popular = (await res.json()) as Trip[];
+                  if (isMounted) setPopularFallback(popular);
+                }
+              } catch {
+                // 靜默失敗，不影響主頁面
+              }
+            }
           } catch {
             // 靜默失敗，不影響主頁面
           } finally {
@@ -783,6 +797,42 @@ export default function DestinationPage() {
               {relatedTrips.regionTrips.slice(0, 6).map((trip) => (
                 <div key={trip.id} className="relative md:min-w-0">
                   {/* 推薦標籤 */}
+                  <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
+                    <span>👍</span>
+                    <span>推薦</span>
+                  </div>
+                  <TripCard
+                    id={trip.id}
+                    title={trip.title}
+                    duration={trip.duration}
+                    price_range={getTripCardPrice(trip)}
+                    cover_image_url={trip.cover_image_url}
+                    document_url={trip.document_url}
+                    document_is_available={trip.document_is_available}
+                    departure_dates={trip.departure_dates}
+                    tags={trip.trip_banner?.tags}
+                    isDevMode={false}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 熱門行程推薦 fallback */}
+        {relatedTrips && relatedTrips.regionTrips.length === 0 && relatedTrips.categoryTrips.length === 0 && popularFallback && popularFallback.length > 0 && (
+          <section className="mt-10">
+            <div className="-mx-3 mb-4 rounded-xl bg-gradient-to-r from-red-700 via-amber-600 to-yellow-500 px-4 py-5 shadow-lg sm:-mx-4 sm:mb-6 sm:px-5 sm:py-6">
+              <div className="flex flex-col items-center gap-1">
+                <h2 className="text-xl font-black tracking-[0.15em] text-white drop-shadow-md sm:text-2xl">
+                  其他熱門行程推薦
+                </h2>
+                <div className="mt-0.5 h-[2px] w-16 rounded-full bg-gradient-to-r from-transparent via-yellow-300 to-transparent" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {popularFallback.slice(0, 6).map((trip) => (
+                <div key={trip.id} className="relative md:min-w-0">
                   <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
                     <span>👍</span>
                     <span>推薦</span>
