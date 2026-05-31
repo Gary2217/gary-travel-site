@@ -161,6 +161,7 @@ export default function TripPage() {
   const [promoEnabled, setPromoEnabled] = useState(false);
   const [savingPromo, setSavingPromo] = useState(false);
   const [showPromoPopup, setShowPromoPopup] = useState(false);
+  const [showAllDates, setShowAllDates] = useState(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -1205,6 +1206,7 @@ export default function TripPage() {
               )}
 
               {/* 桌面版表頭 — 出團資訊在表頭列 */}
+              <div className={`relative ${!showAllDates && filteredDepartures.length > 10 ? 'max-h-[600px] overflow-hidden' : ''}`}>
               <table className="hidden w-full sm:table">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-sm text-gray-900">
@@ -1242,6 +1244,17 @@ export default function TripPage() {
                   })}
                 </tbody>
               </table>
+              {!showAllDates && filteredDepartures.length > 10 && (
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent" />
+              )}
+              </div>
+              {filteredDepartures.length > 10 && (
+                <div className="hidden justify-center border-t border-gray-100 py-2 sm:flex">
+                  <button type="button" onClick={() => setShowAllDates(v => !v)} className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium text-sky-600 transition hover:bg-sky-50 hover:text-sky-500">
+                    {showAllDates ? '收合 ▲' : `展開全部 ${filteredDepartures.length} 筆出發日期 ▼`}
+                  </button>
+                </div>
+              )}
 
               {/* 手機版：選擇其他日期 + LINE 詢問 按鈕 */}
               {departureDates.length > 1 && (
