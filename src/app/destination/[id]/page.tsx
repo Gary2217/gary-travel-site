@@ -566,7 +566,7 @@ export default function DestinationPage() {
                       {hasSubRegions ? groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
                           {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
-                          <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {g.trips.map((trip) => (
                               <div key={trip.id} className="md:min-w-0">
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
@@ -578,7 +578,7 @@ export default function DestinationPage() {
                           </div>
                         </div>
                       )) : (
-                        <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {trips.map((trip) => (
                             <div key={trip.id} className="md:min-w-0">
                               <TripCard id={trip.id} title={trip.title} duration={trip.duration}
@@ -613,7 +613,7 @@ export default function DestinationPage() {
                       {groups.map((g) => (
                         <div key={g.label || 'ungrouped'} className="mb-5">
                           {g.label && <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{g.label}</h3>}
-                          <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {g.trips.map((trip) => (
                               <div key={trip.id} className="md:min-w-0">
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
@@ -692,7 +692,7 @@ export default function DestinationPage() {
                 : trips;
 
               return (
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sorted.map((trip) => {
                     const hasMatchingDate = Boolean(
                       dateFilter && trip.departure_dates?.some((d) => d.departure_date === dateFilter)
@@ -761,7 +761,7 @@ export default function DestinationPage() {
                   {isDevMode && (
                     <button
                       onClick={handleAddTrip}
-                      className="group/add col-span-2 flex flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-sky-200 bg-gray-50 p-6 transition hover:border-sky-300 hover:bg-sky-50 md:flex-row md:p-8"
+                      className="group/add col-span-full flex flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-sky-200 bg-gray-50 p-6 transition hover:border-sky-300 hover:bg-sky-50 md:flex-row md:p-8"
                     >
                       <div className="flex h-full w-32 shrink-0 items-center justify-center sm:w-40 md:w-48">
                         <svg className="h-10 w-10 text-sky-400 transition group-hover/add:text-sky-500 sm:h-12 sm:w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -793,7 +793,7 @@ export default function DestinationPage() {
                 <div className="mt-0.5 h-[2px] w-16 rounded-full bg-gradient-to-r from-transparent via-yellow-300 to-transparent" />
               </div>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {relatedTrips.regionTrips.slice(0, 6).map((trip) => (
                 <div key={trip.id} className="relative md:min-w-0">
                   {/* 推薦標籤 */}
@@ -830,7 +830,7 @@ export default function DestinationPage() {
                 <div className="mt-0.5 h-[2px] w-16 rounded-full bg-gradient-to-r from-transparent via-yellow-300 to-transparent" />
               </div>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {popularFallback.slice(0, 6).map((trip) => (
                 <div key={trip.id} className="relative md:min-w-0">
                   <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
