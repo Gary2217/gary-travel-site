@@ -394,6 +394,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [datesExpanded, setDatesExpanded] = useState(false);
+  const ROW_LIMIT = 7; // PC 一排顯示幾個日期卡片
 
   const today = new Date().toLocaleDateString("sv-SE");
   const [formDate, setFormDate] = useState(today);
@@ -768,44 +770,81 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
       {filtered.length > 0 ? (
         <div>
           {/* 卡片橫排 */}
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-x-visible sm:pb-0">
-            {Array.from(filteredGrouped.entries()).map(([monthLabel, monthDates]) => (
-              <div key={monthLabel} className="contents">
-                {/* 月份分隔標籤 */}
-                <div className="flex items-center rounded-lg bg-gray-50 px-3 py-2">
-                  <span className="text-xs font-bold text-gray-500">{monthLabel}</span>
+          {(() => {
+            // 把月份標籤 + 日期卡片攤平成一個列表，方便計算顯示數量
+            const allItems: { type: 'month'; label: string } | { type: 'date'; date: DepartureDate } & { type: string }[] = [];
+            let dateCount = 0;
+            Array.from(filteredGrouped.entries()).forEach(([monthLabel, monthDates]) => {
+              (allItems as { type: string; label?: string; date?: DepartureDate }[]).push({ type: 'month', label: monthLabel });
+              monthDates.forEach((d) => {
+                (allItems as { type: string; label?: string; date?: DepartureDate }[]).push({ type: 'date', date: d });
+                dateCount++;
+              });
+            });
+            const needCollapse = dateCount > ROW_LIMIT && !isDevMode;
+            let visibleDateCount = 0;
+
+            return (
+              <>
+                <div className="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-x-visible sm:pb-0">
+                  {(allItems as { type: string; label?: string; date?: DepartureDate }[]).map((item, idx) => {
+                    if (item.type === 'month') {
+                      // 收合模式下，如果已超出限制就隱藏後面的月份標籤
+                      if (needCollapse && !datesExpanded && visibleDateCount >= ROW_LIMIT) return null;
+                      return (
+                        <div key={`m-${idx}`} className="flex items-center rounded-lg bg-gray-50 px-3 py-2">
+                          <span className="text-xs font-bold text-gray-500">{item.label}</span>
+                        </div>
+                      );
+                    }
+                    const d = item.date!;
+                    visibleDateCount++;
+                    if (needCollapse && !datesExpanded && visibleDateCount > ROW_LIMIT) return null;
+                    const info = formatDate(d.departure_date);
+                    const days = daysUntil(d.departure_date);
+                    const isSelected = selectedDateId === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
+                        className={`flex shrink-0 flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition sm:px-3 sm:py-2 ${
+                          isSelected
+                            ? "border-sky-400 bg-sky-50 shadow-sm"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="text-sm font-bold text-gray-900 sm:text-sm">{info.short}（{info.weekday}）</div>
+                        <div className="mt-1 sm:mt-0.5">
+                          {d.price ? (
+                            <span className="text-sm font-bold text-amber-600 sm:text-xs">${d.price.toLocaleString()}</span>
+                          ) : (
+                            <span className="text-xs text-gray-400 sm:text-[10px]">洽詢</span>
+                          )}
+                        </div>
+                        <CountdownBadge days={days} />
+                        <SeatsBadge available={d.seats_available} total={d.seats_total} />
+                      </button>
+                    );
+                  })}
                 </div>
-                {monthDates.map((d) => {
-                  const info = formatDate(d.departure_date);
-                  const days = daysUntil(d.departure_date);
-                  const isSelected = selectedDateId === d.id;
-                  return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
-                      className={`flex shrink-0 flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition sm:px-3 sm:py-2 ${
-                        isSelected
-                          ? "border-sky-400 bg-sky-50 shadow-sm"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="text-sm font-bold text-gray-900 sm:text-sm">{info.short}（{info.weekday}）</div>
-                      <div className="mt-1 sm:mt-0.5">
-                        {d.price ? (
-                          <span className="text-sm font-bold text-amber-600 sm:text-xs">${d.price.toLocaleString()}</span>
-                        ) : (
-                          <span className="text-xs text-gray-400 sm:text-[10px]">洽詢</span>
-                        )}
-                      </div>
-                      <CountdownBadge days={days} />
-                      <SeatsBadge available={d.seats_available} total={d.seats_total} />
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+                {needCollapse && (
+                  <button
+                    type="button"
+                    onClick={() => setDatesExpanded(!datesExpanded)}
+                    className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-medium text-sky-600 transition hover:bg-sky-50 hover:text-sky-700"
+                  >
+                    {datesExpanded ? (
+                      <>收合 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg></>
+                    ) : (
+                      <>顯示更多日期（共 {dateCount} 個）<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></>
+                    )}
+                  </button>
+                )}
+              </>
+            );
+          })()}
+
 
           {/* 選中卡片的展開詳情（Dev mode 才展開編輯，航班已在主頁顯示不重複） */}
           {isDevMode && selectedDateId && (() => {
