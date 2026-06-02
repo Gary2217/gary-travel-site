@@ -772,12 +772,13 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
           {/* 卡片橫排 */}
           {(() => {
             // 把月份標籤 + 日期卡片攤平成一個列表，方便計算顯示數量
-            const allItems: { type: 'month'; label: string } | { type: 'date'; date: DepartureDate } & { type: string }[] = [];
+            type DateItem = { type: 'month'; label: string; date?: undefined } | { type: 'date'; date: DepartureDate; label?: undefined };
+            const allItems: DateItem[] = [];
             let dateCount = 0;
             Array.from(filteredGrouped.entries()).forEach(([monthLabel, monthDates]) => {
-              (allItems as { type: string; label?: string; date?: DepartureDate }[]).push({ type: 'month', label: monthLabel });
+              allItems.push({ type: 'month', label: monthLabel });
               monthDates.forEach((d) => {
-                (allItems as { type: string; label?: string; date?: DepartureDate }[]).push({ type: 'date', date: d });
+                allItems.push({ type: 'date', date: d });
                 dateCount++;
               });
             });
@@ -787,9 +788,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
             return (
               <>
                 <div className="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-x-visible sm:pb-0">
-                  {(allItems as { type: string; label?: string; date?: DepartureDate }[]).map((item, idx) => {
+                  {allItems.map((item, idx) => {
                     if (item.type === 'month') {
-                      // 收合模式下，如果已超出限制就隱藏後面的月份標籤
                       if (needCollapse && !datesExpanded && visibleDateCount >= ROW_LIMIT) return null;
                       return (
                         <div key={`m-${idx}`} className="flex items-center rounded-lg bg-gray-50 px-3 py-2">
@@ -797,7 +797,7 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                         </div>
                       );
                     }
-                    const d = item.date!;
+                    const d = item.date;
                     visibleDateCount++;
                     if (needCollapse && !datesExpanded && visibleDateCount > ROW_LIMIT) return null;
                     const info = formatDate(d.departure_date);
