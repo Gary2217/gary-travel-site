@@ -232,7 +232,7 @@ export default function TripCard({
                 </div>
 
                 {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
-                  <div className="flex items-start justify-between gap-2 md:hidden">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
                       <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
                       {departure_dates.filter(dd => dd.departure_date).slice(0, 6).map((dd, i, arr) => {
@@ -264,16 +264,6 @@ export default function TripCard({
                   </div>
                 )}
 
-                {/* PC 垂直卡片價格 */}
-                {!isDevMode && price_range && (
-                  <div className="hidden md:block">
-                    <div className="border-t border-gray-200" />
-                    <div className="mt-2 text-right">
-                      <span className="text-base font-bold tabular-nums text-amber-600">$ {displayPriceRange?.replace(/NT\s*\$\s*/g, '')}</span>
-                      <span className="ml-0.5 text-[10px] text-gray-500">起</span>
-                    </div>
-                  </div>
-                )}
 
               </div>
             )}
@@ -282,7 +272,7 @@ export default function TripCard({
           {/* 下半區：標籤 + 出發地 + 包團（mt-auto 推到底部） */}
           <div className="mt-2 space-y-5">
             {tags && tags.length > 0 && !isDevMode && (
-              <div className="flex flex-wrap items-center gap-1 md:hidden">
+              <div className="flex flex-wrap items-center gap-1">
                 {tags.map((tag, i) => (
                   <span key={i} className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600 sm:text-xs">{tag}</span>
                 ))}
@@ -291,7 +281,7 @@ export default function TripCard({
 
             {/* 出發地 */}
             {!isDevMode && departurePlace && (
-              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm md:hidden">
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-900 sm:text-sm">
                 <svg className="h-3.5 w-3.5 shrink-0 text-sky-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
