@@ -375,10 +375,14 @@ export default function DestinationPage() {
   };
 
   const getTripCardPrice = (trip: Trip) => {
-    const firstDeparturePrice = trip.departure_dates?.[0]?.price;
+    // 取出發日期中的最低價（對齊朋威的「NT$xx,xxx起」）
+    const prices = (trip.departure_dates || [])
+      .map(d => d.price)
+      .filter((p): p is number => typeof p === 'number' && p > 0);
 
-    if (typeof firstDeparturePrice === 'number' && firstDeparturePrice > 0) {
-      return `NT$ ${firstDeparturePrice.toLocaleString('zh-TW')}`;
+    if (prices.length > 0) {
+      const minPrice = Math.min(...prices);
+      return `NT$ ${minPrice.toLocaleString('zh-TW')}`;
     }
 
     return trip.price_range;
