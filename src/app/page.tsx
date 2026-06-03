@@ -998,8 +998,17 @@ export default function HomePage() {
                   <>
                     {isExpanded ? (
                       // 展開：顯示全部，有子地區則分組顯示
-                      hasSubRegions ? (
-                        subGroups.map((group) => (
+                      hasSubRegions ? (() => {
+                        // 所有 sub_region 都只有 1-2 張卡 → 合併成一個 grid，不分組
+                        const allSmall = subGroups.every((g) => g.destinations.length <= 2);
+                        if (allSmall) {
+                          return (
+                            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
+                              {section.destinations.map(renderCard)}
+                            </div>
+                          );
+                        }
+                        return subGroups.map((group) => (
                           <div key={group.label || 'ungrouped'} className="mb-5">
                             {group.label && (
                               <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{group.label}</h3>
@@ -1008,8 +1017,8 @@ export default function HomePage() {
                               {group.destinations.map(renderCard)}
                             </div>
                           </div>
-                        ))
-                      ) : (
+                        ));
+                      })() : (
                         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
                           {section.destinations.map(renderCard)}
                         </div>
