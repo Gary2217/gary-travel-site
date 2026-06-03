@@ -622,12 +622,16 @@ async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', ta
 
             const title = normalize(link.querySelector('h3')?.textContent || '');
             const priceText = normalize(link.querySelector('h4')?.textContent || '');
+            const listingTags = Array.from(link.querySelectorAll('.item_tag'))
+              .map((tag) => normalize(tag.textContent || ''))
+              .filter(Boolean);
             return {
               title,
               list_price: priceText,
               href: absoluteHref,
               section_label: sectionLabel,
               display_order: index + 1,
+              listing_tags: listingTags,
             };
           })
           .filter(Boolean);
@@ -1182,6 +1186,18 @@ async function main() {
           continue;
         }
         await detailPage.close().catch(() => {});
+
+        // 列表頁 item_tag 標籤優先於詳情頁 KeyFeatures 標籤
+        if (tripSummary.listing_tags?.length) {
+          scrapedTrip.tags = tripSummary.listing_tags;
+          scrapedTrip.trip_banner.tags = tripSummary.listing_tags;
+          // 用列表頁標籤重新產生 subtitle
+          scrapedTrip.subtitle = buildSubtitle({
+            title: scrapedTrip.title,
+            airline: scrapedTrip.airline,
+            tags: tripSummary.listing_tags,
+          });
+        }
 
         // 過濾垃圾資料（頁面載入失敗、空標題等）
         if (!scrapedTrip.title || scrapedTrip.title.includes('can\'t be reached') || scrapedTrip.title.includes('not found') || scrapedTrip.title.length < 3) {
