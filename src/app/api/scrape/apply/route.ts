@@ -16,6 +16,46 @@ function createSupabase() {
   });
 }
 
+/**
+ * 外部圖片自動上傳 Supabase Storage
+ * 如果 URL 已經是 Supabase 的就直接回傳，否則下載後上傳
+ */
+async function ensureSupabaseImage(
+  supabase: ReturnType<typeof createSupabase>,
+  imageUrl: string | null | undefined,
+  tripId: string,
+): Promise<string | null> {
+  if (!imageUrl) return null;
+  // 已經是 Supabase Storage 的 URL → 不需處理
+  if (imageUrl.includes(supabaseUrl) || imageUrl.includes('supabase')) return imageUrl;
+
+  try {
+    const res = await fetch(imageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      redirect: 'follow',
+    });
+    if (!res.ok) return imageUrl; // 下載失敗就保留原 URL
+
+    const ct = res.headers.get('content-type') || 'image/jpeg';
+    const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : 'jpg';
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 1000) return imageUrl; // 太小，可能不是真圖
+
+    const path = `trips/${tripId}-${Date.now()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from('images').upload(path, buf, {
+      contentType: ct,
+      cacheControl: 'public, max-age=31536000',
+      upsert: true,
+    });
+    if (uploadErr) return imageUrl;
+
+    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(path);
+    return `${publicUrl}?v=${Date.now()}`;
+  } catch {
+    return imageUrl; // 任何錯誤都保留原 URL，不中斷套用流程
+  }
+}
+
 interface ScrapedTrip {
   title: string;
   subtitle: string;
@@ -255,6 +295,9 @@ export async function POST(req: NextRequest) {
               }
             }
 
+            // 外部圖片自動上傳 Supabase Storage
+            const resolvedImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, change.trip_id);
+
             const { error: updateErr } = await supabase
               .from('trips')
               .update({
@@ -263,7 +306,7 @@ export async function POST(req: NextRequest) {
                 duration: scraped.duration,
                 price_range: scraped.price_range,
                 display_order: scraped.display_order,
-                cover_image_url: scraped.cover_image_url || null,
+                cover_image_url: resolvedImageUrl,
                 trip_banner: mergedBanner,
               })
               .eq('id', change.trip_id);
@@ -392,6 +435,9 @@ export async function POST(req: NextRequest) {
               continue;
             }
 
+            // 新增行程時，先用 placeholder ID 上傳圖片，插入後再用真正 ID 重新上傳
+            const tempImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, `new-${Date.now()}`);
+
             const { data: inserted, error: insertErr } = await supabase
               .from('trips')
               .insert({
@@ -403,7 +449,7 @@ export async function POST(req: NextRequest) {
                 highlights: [],
                 is_active: true,
                 display_order: scraped.display_order || 99,
-                cover_image_url: scraped.cover_image_url || null,
+                cover_image_url: tempImageUrl,
                 trip_banner: scraped.trip_banner,
               })
               .select('id')

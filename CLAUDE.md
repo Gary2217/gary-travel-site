@@ -174,6 +174,7 @@ src/
 | 社群連結統一管理 | `lineHref`、`fbHref`、`igHref` 從 `src/lib/supabase.ts` import，不在元件裡重新定義 |
 | 環境變數 | 社群連結用 `NEXT_PUBLIC_LINE_ID`、`NEXT_PUBLIC_FB_URL`、`NEXT_PUBLIC_IG_URL`，不硬編碼 |
 | 所有資料來自 Supabase | DB / Storage 為唯一真實來源，不用本地暫存當資料來源 |
+| 圖片必須存 Supabase Storage | 從朋威或任何外部來源抓取的圖片，**必須下載後上傳 Supabase Storage**，`cover_image_url` 只能存 Supabase 的公開 URL，**禁止直接引用外部 CDN 連結**（如 `dcimg.travel.net.tw`）。apply API 已內建 `ensureSupabaseImage()` 自動處理。 |
 | 前端只負責顯示 | 不持有核心資料邏輯 |
 
 ---
