@@ -531,10 +531,21 @@ function buildDestinationResolver(destinations, existingTrips) {
 
   const titleMap = new Map();
   for (const destination of destinations) {
+    // 用 title 索引
     const key = normalizeTitle(destination.title);
     const list = titleMap.get(key) || [];
     list.push(destination);
     titleMap.set(key, list);
+
+    // 也用 sub_region 索引（讓抓取器能透過 sub_region 配對）
+    if (destination.sub_region) {
+      const subKey = normalizeTitle(destination.sub_region);
+      if (subKey !== key) {
+        const subList = titleMap.get(subKey) || [];
+        subList.push(destination);
+        titleMap.set(subKey, subList);
+      }
+    }
   }
 
   const aliases = new Map([
