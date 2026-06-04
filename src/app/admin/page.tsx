@@ -467,11 +467,14 @@ export default function AdminPage() {
       {/* Header */}
       <div className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(10,10,20,0.85)] backdrop-blur-[12px]">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
-          <button onClick={() => router.back()} className="rounded-full p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white">
+          <button onClick={() => { const from = searchParams.get('from'); from ? router.push(decodeURIComponent(from)) : router.back(); }} className="rounded-full p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
+          <a href="/" className="shrink-0" title="回首頁">
+            <img src="/travel-logo.svg" alt="旅行沒有終點" className="h-8 w-auto opacity-80 transition hover:opacity-100" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          </a>
           <div>
             <h1 className="text-sm font-bold text-white sm:text-base">蓋瑞旅遊 後台數據</h1>
             <p className="text-[10px] text-white/40">Gary Travel · Admin Dashboard</p>

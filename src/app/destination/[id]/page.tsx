@@ -413,7 +413,8 @@ export default function DestinationPage() {
 
       setToastMessage('已觸發抓取');
       setTimeout(() => {
-        router.push('/admin?tab=scrape');
+        const from = encodeURIComponent(window.location.pathname + window.location.search);
+        router.push(`/admin?tab=scrape&from=${from}`);
       }, 600);
     } catch (err) {
       alert(err instanceof Error ? err.message : '觸發抓取失敗');
