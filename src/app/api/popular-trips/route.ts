@@ -8,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const FEATURED_DESTINATION_ORDER = ['杜拜', '烏茲別克', '斯里蘭卡', '馬爾地夫'];
+const FEATURED_DESTINATION_ORDER = ['杜拜 / 阿布達比', '烏茲別克', '斯里蘭卡', '馬爾地夫'];
 const POPULAR_ORDER_KEY = 'popular_destination_order';
 
 export async function GET() {
@@ -53,6 +53,7 @@ export async function GET() {
       title: destination.title,
       subtitle: destination.subtitle || '',
       image_url: destination.image_url,
+      cover_image_url: destination.image_url,
       display_order: destination.display_order ?? 0,
       click_count: clickCountMap.get(destination.id) ?? 0,
       isFeatured: FEATURED_DESTINATION_ORDER.includes(destination.title),
