@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireDevAuth } from "@/lib/api-auth";
 
+export const dynamic = 'force-dynamic';
+
 interface AnalyticsRow {
   event_type: string;
   platform: string | null;
