@@ -1830,8 +1830,8 @@ export default function TripPage() {
               </div>
               <h2 className="text-base font-bold text-gray-900 sm:text-lg">更多推薦行程</h2>
             </div>
-            <div className="flex flex-col gap-3">
-              {recommendedTrips.map((rt) => (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {recommendedTrips.slice(0, 6).map((rt) => (
                 <div key={rt.id} className="relative">
                   <div className="absolute -top-1.5 left-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-md sm:text-xs">
                     <span>👍</span>
