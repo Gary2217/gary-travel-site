@@ -206,14 +206,14 @@ export default function ScrapeCompareModal({
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
           <div className="flex items-center gap-3 min-w-0">
-            {scraped?.cover_image_url && (
+            {scraped?.cover_image_url ? (
               <img
                 src={String(scraped.cover_image_url)}
                 alt=""
                 className="h-12 w-16 shrink-0 rounded-lg object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
-            )}
+            ) : null}
             <div className="min-w-0">
               <h2 className="truncate text-sm font-bold text-white">
                 {change.trip_title}
