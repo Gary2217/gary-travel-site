@@ -788,31 +788,169 @@ export default function ScrapeCompareModal({
             change.change_type !== "removed" &&
             change.change_type !== "new_trip" &&
             change.change_type !== "promotion" &&
-            (change.old_value || change.new_value) && (
-            <section>
-              <h3 className="mb-3 text-xs font-bold text-white/70">
-                {change.field_name
-                  ? BASIC_FIELD_LABELS[change.field_name] ||
-                    COMBINED_FIELD_LABELS[change.field_name] ||
-                    change.field_name
-                  : "變更內容"}
-              </h3>
-              <div className="grid gap-3 lg:grid-cols-2">
-                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                  <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站</p>
-                  <p className="whitespace-pre-wrap text-xs text-white/60">
-                    {change.old_value || "（無）"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                  <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
-                  <p className="whitespace-pre-wrap text-xs font-semibold text-amber-300">
-                    {change.new_value || "（無）"}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
+            (change.old_value || change.new_value) && (() => {
+              // 嘗試智能解析 JSON 格式資料
+              const fieldLabel = change.field_name
+                ? BASIC_FIELD_LABELS[change.field_name] || COMBINED_FIELD_LABELS[change.field_name] || change.field_name
+                : "變更內容";
+
+              let parsedOld: unknown = null;
+              let parsedNew: unknown = null;
+              try { parsedOld = change.old_value ? JSON.parse(change.old_value) : null; } catch { /* not JSON */ }
+              try { parsedNew = change.new_value ? JSON.parse(change.new_value) : null; } catch { /* not JSON */ }
+
+              // flight_segments：渲染為航班表格
+              if (change.field_name === 'flight_segments' && (Array.isArray(parsedOld) || Array.isArray(parsedNew))) {
+                const renderFlightList = (segs: FlightSegment[], colorClass: string) => (
+                  segs.length === 0 ? <p className="text-xs text-white/30">無航班資料</p> : (
+                    <div className="space-y-1.5">
+                      {segs.map((seg, i) => (
+                        <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px]">
+                          {seg.day_text && <span className="text-white/40">{seg.day_text}</span>}
+                          <span className={colorClass}>{seg.airline}</span>
+                          <span className="font-semibold text-white/80">{seg.flight_number}</span>
+                          <span className="text-white/50">{seg.dep_time}</span>
+                          <span className="text-white/40">{seg.dep_airport}</span>
+                          <span className="text-white/20">→</span>
+                          <span className="text-white/50">{seg.arr_time}</span>
+                          <span className="text-white/40">{seg.arr_airport}</span>
+                          {seg.next_day && <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-400">+1天</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                );
+                return (
+                  <section>
+                    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
+                      <span className="flex h-5 w-5 items-center justify-center rounded bg-cyan-500/20 text-[10px]">✈️</span>
+                      航班資訊
+                    </h3>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                        <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站</p>
+                        {renderFlightList((parsedOld as FlightSegment[]) || [], "text-sky-300/70")}
+                      </div>
+                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                        <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
+                        {renderFlightList((parsedNew as FlightSegment[]) || [], "text-amber-300/70")}
+                      </div>
+                    </div>
+                  </section>
+                );
+              }
+
+              // departures：渲染為出發日期表
+              if (change.field_name === 'departures' && (Array.isArray(parsedOld) || Array.isArray(parsedNew))) {
+                const renderDepartureTable = (deps: DepartureDate[], colorClass: string) => (
+                  deps.length === 0 ? <p className="text-xs text-white/30">無出發日期</p> : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-white/10 text-[10px] text-white/40">
+                            <th className="px-2 py-1.5 text-left">日期</th>
+                            <th className="px-2 py-1.5 text-center">售價</th>
+                            <th className="px-2 py-1.5 text-center">機位</th>
+                            <th className="px-2 py-1.5 text-center">可售</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {deps.map((d, i) => (
+                            <tr key={i} className="border-b border-white/5 text-[11px]">
+                              <td className={`px-2 py-1.5 ${colorClass}`}>{d.date}</td>
+                              <td className={`px-2 py-1.5 text-center ${colorClass}`}>{d.price?.toLocaleString() || '—'}</td>
+                              <td className="px-2 py-1.5 text-center text-white/50">{d.seats_total || '—'}</td>
+                              <td className="px-2 py-1.5 text-center text-white/50">{d.seats_available || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                );
+                return (
+                  <section>
+                    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
+                      <span className="flex h-5 w-5 items-center justify-center rounded bg-blue-500/20 text-[10px]">🔵</span>
+                      出發日期
+                    </h3>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                        <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站（{(parsedOld as DepartureDate[])?.length || 0} 筆）</p>
+                        {renderDepartureTable((parsedOld as DepartureDate[]) || [], "text-sky-300")}
+                      </div>
+                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                        <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新（{(parsedNew as DepartureDate[])?.length || 0} 筆）</p>
+                        {renderDepartureTable((parsedNew as DepartureDate[]) || [], "text-amber-300")}
+                      </div>
+                    </div>
+                  </section>
+                );
+              }
+
+              // price_detail：渲染為售價表格
+              if (change.field_name === 'price_detail') {
+                const oldCols = (change.old_value || '').split('\t');
+                const newCols = (change.new_value || '').split('\t');
+                if (oldCols.length > 1 || newCols.length > 1) {
+                  return (
+                    <section>
+                      <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
+                        <span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/20 text-[10px]">🟠</span>
+                        售價明細
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[500px]">
+                          <thead>
+                            <tr className="border-b border-white/10 text-[11px] text-white/40">
+                              <th className="px-3 py-2 text-left">來源</th>
+                              {PRICE_COLS.map(col => <th key={col} className="px-3 py-2 text-center">{col}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b border-white/5 text-xs">
+                              <td className="px-3 py-2 text-sky-400/70">我的網站</td>
+                              {PRICE_COLS.map((_, i) => {
+                                const isDiff = (oldCols[i] ?? '') !== (newCols[i] ?? '');
+                                return <td key={i} className={`px-3 py-2 text-center ${isDiff ? 'rounded bg-red-500/10 text-red-300' : 'text-white/60'}`}>{oldCols[i] || '—'}</td>;
+                              })}
+                            </tr>
+                            <tr className="text-xs">
+                              <td className="px-3 py-2 text-amber-400/70">朋威</td>
+                              {PRICE_COLS.map((_, i) => {
+                                const isDiff = (oldCols[i] ?? '') !== (newCols[i] ?? '');
+                                return <td key={i} className={`px-3 py-2 text-center ${isDiff ? 'rounded bg-amber-500/10 font-semibold text-amber-300' : 'text-white/60'}`}>{newCols[i] || '—'}</td>;
+                              })}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  );
+                }
+              }
+
+              // 其他：顯示文字比對
+              return (
+                <section>
+                  <h3 className="mb-3 text-xs font-bold text-white/70">{fieldLabel}</h3>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                      <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站</p>
+                      <p className="whitespace-pre-wrap text-xs text-white/60">
+                        {change.old_value || "（無）"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                      <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
+                      <p className="whitespace-pre-wrap text-xs font-semibold text-amber-300">
+                        {change.new_value || "（無）"}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              );
+            })()}
         </div>
 
         {/* Footer */}
