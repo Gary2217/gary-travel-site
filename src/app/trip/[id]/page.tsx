@@ -164,6 +164,9 @@ export default function TripPage() {
   const [showAllDates, setShowAllDates] = useState(false);
   const [allRegions, setAllRegions] = useState<Region[]>([]);
   const [editDestinationId, setEditDestinationId] = useState('');
+  const [showNewDestInput, setShowNewDestInput] = useState(false);
+  const [newDestName, setNewDestName] = useState('');
+  const [creatingDest, setCreatingDest] = useState(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -1432,13 +1435,16 @@ export default function TripPage() {
                     <div className="text-xs font-semibold text-gray-600">訂金</div>
                     <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
                   </div>
-                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
-                    <div className="text-xs font-semibold text-gray-600">目的地</div>
+                </div>
+
+                <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                  <div className="text-xs font-semibold text-gray-600">目的地</div>
+                  <div className="flex items-center gap-1.5">
                     {allRegions.length > 0 ? (
                       <select
-                        value={editDestinationId || trip.destination_id}
+                        value={editDestinationId || trip?.destination_id}
                         onChange={e => setEditDestinationId(e.target.value)}
-                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
+                        className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
                       >
                         {allRegions.map(region => (
                           <optgroup key={region.id} label={region.title}>
@@ -1449,13 +1455,60 @@ export default function TripPage() {
                         ))}
                       </select>
                     ) : (
-                      <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                      <div className="flex flex-1 items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
                         <div className="h-3 w-3 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
                         載入中...
                       </div>
                     )}
+                    <button type="button" onClick={() => setShowNewDestInput(v => !v)} className={`shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition ${showNewDestInput ? 'bg-sky-100 text-sky-600' : 'border border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}>
+                      {showNewDestInput ? '取消' : '+ 新增'}
+                    </button>
                   </div>
                 </div>
+                {showNewDestInput && (
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">新增</div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={newDestName}
+                        onChange={e => setNewDestName(e.target.value)}
+                        placeholder="輸入新目的地名稱，如：埃及"
+                        className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-create-dest')?.click(); } }}
+                      />
+                      <button
+                        id="btn-create-dest"
+                        type="button"
+                        disabled={creatingDest || !newDestName.trim()}
+                        onClick={async () => {
+                          const name = newDestName.trim();
+                          if (!name) return;
+                          const currentDest = trip?.destinations;
+                          const regionId = currentDest?.region_id;
+                          if (!regionId) { alert('無法取得目前區域 ID'); return; }
+                          setCreatingDest(true);
+                          try {
+                            const res = await fetch('/api/destinations', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ region_id: regionId, title: name }),
+                            });
+                            if (!res.ok) { alert('建立失敗'); return; }
+                            const created = await res.json();
+                            setAllRegions(prev => prev.map(r => r.id === regionId ? { ...r, destinations: [...(r.destinations || []), created] } : r));
+                            setEditDestinationId(created.id);
+                            setNewDestName('');
+                            setShowNewDestInput(false);
+                          } catch { alert('建立失敗'); }
+                          finally { setCreatingDest(false); }
+                        }}
+                        className="shrink-0 rounded-xl bg-emerald-500 px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                      >
+                        {creatingDest ? '建立中...' : '建立'}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="mb-1 text-xs text-gray-500">標籤（Enter 新增）</div>
