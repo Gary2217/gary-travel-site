@@ -205,17 +205,39 @@ export default function ScrapeCompareModal({
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
-          <div>
-            <h2 className="text-sm font-bold text-white">
-              {change.trip_title}
-            </h2>
-            <p className="mt-0.5 text-[11px] text-white/40">
-              變更比對 · 左側為我的網站、右側為朋威最新
-            </p>
+          <div className="flex items-center gap-3 min-w-0">
+            {scraped?.cover_image_url && (
+              <img
+                src={String(scraped.cover_image_url)}
+                alt=""
+                className="h-12 w-16 shrink-0 rounded-lg object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-bold text-white">
+                {change.trip_title}
+              </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-[11px] text-white/40">
+                  變更比對 · 左側為我的網站、右側為朋威最新
+                </p>
+                {change.trip_id && (
+                  <a href={`/trip/${change.trip_id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold text-sky-400 transition hover:bg-sky-500/25">
+                    我的頁面 ↗
+                  </a>
+                )}
+                {change.source_url && (
+                  <a href={change.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400 transition hover:bg-amber-500/25">
+                    朋威原始頁 ↗
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
           >
             <svg
               className="h-5 w-5"
