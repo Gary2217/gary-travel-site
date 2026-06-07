@@ -10,10 +10,17 @@ interface DestinationOption {
   regions?: { title?: string; category_label?: string } | null;
 }
 
+interface RegionStatusEntry {
+  last_scraped?: string | null;
+  last_applied?: string | null;
+}
+
 interface ScrapeSettingsData {
   auto_enabled: boolean;
   frequency_days: number;
   last_scrape_at: string | null;
+  region_status: Record<string, RegionStatusEntry>;
+  next_region_index: number;
 }
 
 interface ScrapeSettingsProps {
@@ -59,6 +66,8 @@ export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeS
           auto_enabled: data.scrape_auto_enabled === true || data.scrape_auto_enabled === 'true',
           frequency_days: Number(data.scrape_interval_days) || 3,
           last_scrape_at: data.scrape_last_run ?? null,
+          region_status: (data.scrape_region_status && typeof data.scrape_region_status === 'object') ? data.scrape_region_status : {},
+          next_region_index: Number(data.scrape_next_region_index) || 0,
         });
       } else {
         setToast({
@@ -310,6 +319,100 @@ export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeS
             </p>
           </div>
         </div>
+
+        {/* 區域排程儀表板 */}
+        {(() => {
+          // 從朋威抓取的區域 key（對應 auto-scrape.mjs REGION_PAGES）
+          const REGION_KEYS = [
+            { key: 'asia', label: '中東亞非' },
+            { key: 'japan', label: '日本' },
+            { key: 'south-korea', label: '韓國' },
+            { key: 'thailand', label: '泰國' },
+            { key: 'vietnam', label: '越南' },
+            { key: 'indonesia', label: '印尼' },
+            { key: 'malaysia', label: '馬新' },
+            { key: 'philippines', label: '菲律賓' },
+            { key: 'europe', label: '歐洲' },
+            { key: 'china', label: '港澳大陸' },
+            { key: 'southasia', label: '南亞' },
+            { key: 'new', label: '紐澳美加' },
+            { key: 'kinmen', label: '金門' },
+            { key: 'mazu', label: '馬祖' },
+            { key: 'penghu', label: '澎湖' },
+            { key: 'freetour', label: '自由行' },
+            { key: 'golf', label: '高爾夫' },
+          ];
+
+          const rs = settings?.region_status || {};
+
+          // 按 last_scraped 排序（最久沒抓的排前面）= 智慧輪轉的下一批
+          const sorted = [...REGION_KEYS].sort((a, b) => {
+            const aTime = rs[a.key]?.last_scraped || '1970-01-01';
+            const bTime = rs[b.key]?.last_scraped || '1970-01-01';
+            return aTime.localeCompare(bTime);
+          });
+          const nextBatch = new Set(sorted.slice(0, 4).map(r => r.key));
+
+          const daysSince = (iso: string | null | undefined) => {
+            if (!iso) return null;
+            const ms = Date.now() - new Date(iso).getTime();
+            return Math.floor(ms / 86400000);
+          };
+
+          const formatShortDate = (iso: string | null | undefined) => {
+            if (!iso) return '從未';
+            const d = new Date(iso);
+            return `${d.getMonth() + 1}/${d.getDate()}`;
+          };
+
+          return (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-bold text-white/80">📅 區域排程總覽</p>
+                <p className="text-[10px] text-white/40">🔵 下次優先抓取</p>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {REGION_KEYS.map(({ key, label }) => {
+                  const status = rs[key];
+                  const days = daysSince(status?.last_scraped);
+                  const isNext = nextBatch.has(key);
+                  const never = days === null;
+                  const stale = days !== null && days >= 3;
+
+                  return (
+                    <div
+                      key={key}
+                      className={`rounded-lg border p-2 text-center transition ${
+                        isNext
+                          ? 'border-sky-500/50 bg-sky-500/10'
+                          : never
+                            ? 'border-red-500/30 bg-red-500/5'
+                            : stale
+                              ? 'border-amber-500/30 bg-amber-500/5'
+                              : 'border-white/10 bg-white/5'
+                      }`}
+                    >
+                      <p className="text-[11px] font-semibold text-white/90">{label}</p>
+                      <p className={`mt-0.5 text-[10px] ${never ? 'text-red-400' : stale ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {never ? '❌ 從未' : `✅ ${formatShortDate(status?.last_scraped)}`}
+                      </p>
+                      {status?.last_applied && (
+                        <p className="text-[9px] text-white/30">
+                          套用 {formatShortDate(status.last_applied)}
+                        </p>
+                      )}
+                      {isNext && (
+                        <span className="mt-1 inline-block rounded-full bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-sky-400">
+                          下次抓
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 立即抓取按鈕 */}
         <button

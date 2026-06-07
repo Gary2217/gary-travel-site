@@ -1051,19 +1051,37 @@ async function insertPendingChanges(supabase, changes) {
 
 const BATCH_SIZE = 4; // 每次自動抓取最多處理幾個區域
 
-async function getNextBatchStart(supabase) {
+/** 讀取每個區域的抓取狀態（last_scraped / last_applied） */
+async function getRegionStatus(supabase) {
   const { data } = await supabase
     .from('site_settings')
     .select('value')
-    .eq('key', 'scrape_next_region_index')
+    .eq('key', 'scrape_region_status')
     .single();
-  return Number(data?.value) || 0;
+  return (data?.value && typeof data.value === 'object') ? data.value : {};
 }
 
-async function saveNextBatchStart(supabase, index) {
+/** 更新單一區域的 last_scraped 時間戳 */
+async function updateRegionScraped(supabase, regionKey) {
+  const status = await getRegionStatus(supabase);
+  if (!status[regionKey]) status[regionKey] = {};
+  status[regionKey].last_scraped = new Date().toISOString();
   await supabase
     .from('site_settings')
-    .upsert({ key: 'scrape_next_region_index', value: String(index) });
+    .upsert({ key: 'scrape_region_status', value: status, updated_at: new Date().toISOString() });
+}
+
+/** 載入已 dismissed 的變更 key，用於去重 */
+async function loadDismissedKeys(supabase) {
+  const { data } = await supabase
+    .from('pending_changes')
+    .select('trip_id, change_type, field_name')
+    .eq('status', 'dismissed');
+  const keys = new Set();
+  (data || []).forEach(c => {
+    keys.add(`${c.trip_id || 'new'}_${c.change_type}_${c.field_name || ''}`);
+  });
+  return keys;
 }
 
 async function main() {
@@ -1072,20 +1090,34 @@ async function main() {
   const { regions, logId: requestedLogId, destinationId } = parseArgs(process.argv.slice(2));
   let selectedRegions = selectRegions(regions);
 
-  // 自動排程（無指定區域/目的地）時啟用輪流抓取
+  // 載入 dismissed 記憶，用於跳過已忽略的相同差異
+  const dismissedKeys = await loadDismissedKeys(supabase);
+  if (dismissedKeys.size > 0) {
+    console.log(`📝 已載入 ${dismissedKeys.size} 筆 dismissed 記憶，相同差異將跳過`);
+    // 注入到全域去重集合
+    for (const key of dismissedKeys) {
+      insertedChangeKeys.add(key);
+    }
+  }
+
+  // 智慧輪轉：自動排程時，按 last_scraped 排序，優先抓最久沒更新的區域
   const isFullAuto = !regions && !destinationId;
   if (isFullAuto && selectedRegions.length > BATCH_SIZE) {
-    const startIdx = await getNextBatchStart(supabase);
-    const total = selectedRegions.length;
-    const batch = [];
-    for (let i = 0; i < BATCH_SIZE; i++) {
-      batch.push(selectedRegions[(startIdx + i) % total]);
-    }
-    const nextIdx = (startIdx + BATCH_SIZE) % total;
-    await saveNextBatchStart(supabase, nextIdx);
-    console.log(`🔄 輪流抓取：從第 ${startIdx + 1} 個開始，抓 ${BATCH_SIZE} 個區域（${batch.map(r => r.key).join(', ')}）`);
-    console.log(`   下次從第 ${nextIdx + 1} 個開始`);
-    selectedRegions = batch;
+    const regionStatus = await getRegionStatus(supabase);
+
+    // 按 last_scraped 時間排序（null/最早的排前面）
+    const sorted = [...selectedRegions].sort((a, b) => {
+      const aTime = regionStatus[a.key]?.last_scraped || '1970-01-01';
+      const bTime = regionStatus[b.key]?.last_scraped || '1970-01-01';
+      return aTime.localeCompare(bTime);
+    });
+
+    selectedRegions = sorted.slice(0, BATCH_SIZE);
+    console.log(`🔄 智慧輪轉：優先抓最久沒更新的 ${BATCH_SIZE} 個區域`);
+    selectedRegions.forEach((r, i) => {
+      const lastTime = regionStatus[r.key]?.last_scraped;
+      console.log(`   ${i + 1}. ${r.key} — 上次抓取: ${lastTime ? new Date(lastTime).toLocaleDateString('zh-TW') : '從未抓過'}`);
+    });
   }
 
   let browser = null;
@@ -1356,6 +1388,9 @@ async function main() {
         status: 'completed',
         completed: tripSummaries.length,
       });
+
+      // 更新此區域的 last_scraped 時間戳
+      await updateRegionScraped(supabase, regionConfig.key).catch(() => {});
 
       await updateLog(supabase, logId, {
         current_region: regionConfig.key,

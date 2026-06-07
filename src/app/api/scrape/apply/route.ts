@@ -557,6 +557,41 @@ export async function POST(req: NextRequest) {
     const successCount = results.filter((r) => r.success).length;
     const failCount = results.filter((r) => !r.success).length;
 
+    // 更新 scrape_region_status：記錄每個受影響區域的 last_applied 時間
+    if (successCount > 0) {
+      try {
+        const appliedIds = results.filter(r => r.success).map(r => r.id);
+        const { data: appliedChanges } = await supabase
+          .from('pending_changes')
+          .select('region_label')
+          .in('id', appliedIds);
+
+        const affectedRegions = new Set((appliedChanges || []).map(c => c.region_label).filter(Boolean));
+
+        if (affectedRegions.size > 0) {
+          const { data: existing } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'scrape_region_status')
+            .single();
+
+          const regionStatus: Record<string, { last_scraped?: string; last_applied?: string }> = (existing?.value as Record<string, { last_scraped?: string; last_applied?: string }>) || {};
+          const now = new Date().toISOString();
+
+          for (const region of affectedRegions) {
+            if (!regionStatus[region]) regionStatus[region] = {};
+            regionStatus[region].last_applied = now;
+          }
+
+          await supabase
+            .from('site_settings')
+            .upsert({ key: 'scrape_region_status', value: regionStatus, updated_at: now });
+        }
+      } catch {
+        // 靜默失敗，不影響主流程
+      }
+    }
+
     return NextResponse.json({
       total: results.length,
       success: successCount,

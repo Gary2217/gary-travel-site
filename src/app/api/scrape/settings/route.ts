@@ -23,6 +23,8 @@ const SCRAPE_KEYS = [
   'scrape_time',
   'scrape_last_run',
   'scrape_regions',
+  'scrape_region_status',
+  'scrape_next_region_index',
 ];
 
 // GET: 讀取所有抓取設定
