@@ -668,11 +668,15 @@ export default function TripPage() {
     }
 
     try {
+      const tripPatchBody: Record<string, unknown> = { trip_banner: bannerPayload };
+      if (editDestinationId && editDestinationId !== trip.destination_id) {
+        tripPatchBody.destination_id = editDestinationId;
+      }
       const [tripRes, departureRes] = await Promise.all([
         fetch(`/api/trips/${tripId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trip_banner: bannerPayload }),
+          body: JSON.stringify(tripPatchBody),
         }),
         fetch(`/api/trips/${tripId}/departure-dates?dateId=${selectedDepartureId}`, {
           method: 'PATCH',
@@ -695,12 +699,20 @@ export default function TripPage() {
         price: typeof updatedDeparture?.price === 'number' ? updatedDeparture.price : fallbackPrice,
       };
 
+      let updatedDest: typeof trip.destinations = undefined;
+      if (editDestinationId && editDestinationId !== trip.destination_id) {
+        for (const region of allRegions) {
+          const found = (region.destinations || []).find(d => d.id === editDestinationId);
+          if (found) { updatedDest = found; break; }
+        }
+      }
       setTrip((prev) => {
         if (!prev) return prev;
         const remoteBanner = updatedTrip?.trip_banner;
         return {
           ...prev,
           ...updatedTrip,
+          ...(updatedDest ? { destinations: updatedDest } : {}),
           trip_banner: remoteBanner
             ? {
                 ...bannerPayload,
@@ -796,10 +808,14 @@ export default function TripPage() {
         },
       };
 
+      const tripPatchBody2: Record<string, unknown> = { trip_banner: bannerPayload };
+      if (editDestinationId && editDestinationId !== trip.destination_id) {
+        tripPatchBody2.destination_id = editDestinationId;
+      }
       const tripRes = await fetch(`/api/trips/${tripId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trip_banner: bannerPayload }),
+        body: JSON.stringify(tripPatchBody2),
       });
 
       if (!tripRes.ok) {
@@ -807,6 +823,13 @@ export default function TripPage() {
         return false;
       }
 
+      let updatedDest2: typeof trip.destinations = undefined;
+      if (editDestinationId && editDestinationId !== trip.destination_id) {
+        for (const region of allRegions) {
+          const found = (region.destinations || []).find(d => d.id === editDestinationId);
+          if (found) { updatedDest2 = found; break; }
+        }
+      }
       const updatedTrip = await tripRes.json();
       setTrip((prev) => {
         if (!prev) return prev;
@@ -814,6 +837,7 @@ export default function TripPage() {
         return {
           ...prev,
           ...updatedTrip,
+          ...(updatedDest2 ? { destinations: updatedDest2 } : {}),
           trip_banner: remoteBanner
             ? {
                 ...bannerPayload,
@@ -1195,8 +1219,8 @@ export default function TripPage() {
               {/* Dev mode 按鈕 */}
               {isDevMode && (
                 <div className="flex justify-end gap-1.5 px-4 pt-2.5 pb-1">
-                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
-                  <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
+                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
+                  <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
                 </div>
               )}
 
@@ -1407,6 +1431,29 @@ export default function TripPage() {
                   <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                     <div className="text-xs font-semibold text-gray-600">訂金</div>
                     <input value={editTripBanner.deposit_label} onChange={e => setEditTripBanner(prev => ({ ...prev, deposit_label: e.target.value.replace(/\D/g, '') }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400" />
+                  </div>
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">目的地</div>
+                    {allRegions.length > 0 ? (
+                      <select
+                        value={editDestinationId || trip.destination_id}
+                        onChange={e => setEditDestinationId(e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
+                      >
+                        {allRegions.map(region => (
+                          <optgroup key={region.id} label={region.title}>
+                            {(region.destinations || []).map(dest => (
+                              <option key={dest.id} value={dest.id}>{dest.title}</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
+                        載入中...
+                      </div>
+                    )}
                   </div>
                 </div>
 
