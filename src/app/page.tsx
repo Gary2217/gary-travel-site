@@ -292,6 +292,7 @@ export default function HomePage() {
   const [isPC, setIsPC] = useState(false);
   const [dragPopularIndex, setDragPopularIndex] = useState<number | null>(null);
   const [dragOverPopularIndex, setDragOverPopularIndex] = useState<number | null>(null);
+  const [showPopularPicker, setShowPopularPicker] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -694,6 +695,44 @@ export default function HomePage() {
     };
   }
 
+  const savePopularOrder = async (ids: string[]) => {
+    try {
+      const res = await fetch('/api/popular-order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: ids }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || '儲存失敗');
+        return false;
+      }
+      return true;
+    } catch {
+      alert('儲存失敗');
+      return false;
+    }
+  };
+
+  const handleRemovePopular = async (destinationId: string) => {
+    const prev = [...popularDestinations];
+    const updated = popularDestinations.filter(d => d.id !== destinationId);
+    setPopularDestinations(updated);
+    const ok = await savePopularOrder(updated.slice(0, 4).map(d => d.id));
+    if (!ok) setPopularDestinations(prev);
+    else showSaveSuccess('已移除');
+  };
+
+  const handleAddPopular = async (destination: Destination) => {
+    if (popularDestinations.some(d => d.id === destination.id)) return;
+    const prev = [...popularDestinations];
+    const updated = [...popularDestinations, { ...destination, cover_image_url: destination.image_url }];
+    setPopularDestinations(updated);
+    const ok = await savePopularOrder(updated.slice(0, 4).map(d => d.id));
+    if (!ok) setPopularDestinations(prev);
+    else { showSaveSuccess('已新增'); setShowPopularPicker(false); }
+  };
+
   return (
     <main className="min-h-screen bg-transparent pt-14 text-gray-900">
       <StickyHeader
@@ -817,6 +856,16 @@ export default function HomePage() {
                        {i + 1}
                      </div>
                    )}
+                    {isDevMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemovePopular(destination.id); }}
+                        className="absolute right-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
+                        title="移除熱門"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    )}
                     <HomeDestinationCard
                       destination={destination}
                       isDevMode={isDevMode}
@@ -841,6 +890,38 @@ export default function HomePage() {
                   </div>
                 ))}
              </div>
+             {isDevMode && (
+               <div className="mt-3 px-1">
+                 {!showPopularPicker ? (
+                   <button
+                     type="button"
+                     onClick={() => setShowPopularPicker(true)}
+                     className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                   >
+                     + 新增熱門目的地
+                   </button>
+                 ) : (
+                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                     <div className="mb-2 flex items-center justify-between">
+                       <p className="text-xs font-semibold text-gray-700">選擇要加入熱門的目的地</p>
+                       <button type="button" onClick={() => setShowPopularPicker(false)} className="text-xs text-gray-400 hover:text-gray-600">取消</button>
+                     </div>
+                     <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
+                       {sections.flatMap(s => s.destinations).filter(d => !popularDestinations.some(p => p.id === d.id)).map(dest => (
+                         <button
+                           key={dest.id}
+                           type="button"
+                           onClick={() => handleAddPopular(dest)}
+                           className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-xs text-gray-700 transition hover:border-sky-300 hover:bg-sky-50"
+                         >
+                           {dest.title}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             )}
              </div>
           </section>
         )}
