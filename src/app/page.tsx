@@ -718,7 +718,7 @@ export default function HomePage() {
     const prev = [...popularDestinations];
     const updated = popularDestinations.filter(d => d.id !== destinationId);
     setPopularDestinations(updated);
-    const ok = await savePopularOrder(updated.slice(0, 4).map(d => d.id));
+    const ok = await savePopularOrder(updated.map(d => d.id));
     if (!ok) setPopularDestinations(prev);
     else showSaveSuccess('已移除');
   };
@@ -726,9 +726,11 @@ export default function HomePage() {
   const handleAddPopular = async (destination: Destination) => {
     if (popularDestinations.some(d => d.id === destination.id)) return;
     const prev = [...popularDestinations];
-    const updated = [...popularDestinations, { ...destination, cover_image_url: destination.image_url }];
+    const newItem = { ...destination, cover_image_url: destination.image_url } as Destination;
+    const insertAt = Math.min(popularDestinations.length, 3);
+    const updated = [...popularDestinations.slice(0, insertAt), newItem, ...popularDestinations.slice(insertAt)];
     setPopularDestinations(updated);
-    const ok = await savePopularOrder(updated.slice(0, 4).map(d => d.id));
+    const ok = await savePopularOrder(updated.map(d => d.id));
     if (!ok) setPopularDestinations(prev);
     else { showSaveSuccess('已新增'); setShowPopularPicker(false); }
   };
