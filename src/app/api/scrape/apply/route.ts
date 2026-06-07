@@ -537,6 +537,15 @@ export async function POST(req: NextRequest) {
             continue;
         }
 
+        // 行程內容有變更 → 清除 PDF 讓下次自動重抓
+        const pdfRefreshTypes = ['price', 'price_detail', 'info', 'departure', 'flight', 'new_trip'];
+        if (change.trip_id && pdfRefreshTypes.includes(change.change_type)) {
+          await supabase
+            .from('trips')
+            .update({ document_url: null })
+            .eq('id', change.trip_id);
+        }
+
         // 標記為已處理
         const { error: approveErr } = await supabase
           .from('pending_changes')
