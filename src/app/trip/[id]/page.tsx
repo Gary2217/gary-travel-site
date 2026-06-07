@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import TripCard from "@/components/TripCard";
 import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
@@ -162,6 +162,8 @@ export default function TripPage() {
   const [savingPromo, setSavingPromo] = useState(false);
   const [showPromoPopup, setShowPromoPopup] = useState(false);
   const [showAllDates, setShowAllDates] = useState(false);
+  const [allRegions, setAllRegions] = useState<Region[]>([]);
+  const [editDestinationId, setEditDestinationId] = useState('');
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -256,8 +258,12 @@ export default function TripPage() {
     setEditSubtitle(trip.subtitle || '');
     setEditPriceRange(trip.price_range || '');
     setEditHighlights((trip.highlights || []).join('、'));
+    setEditDestinationId(trip.destination_id);
     openBannerEditor();
     setShowEditPanel(true);
+    if (allRegions.length === 0) {
+      getRegionsWithDestinations().then((data: Region[]) => setAllRegions(data)).catch(() => {});
+    }
   };
 
   const formatDateInput = (value: string) => {
@@ -1454,6 +1460,29 @@ export default function TripPage() {
             </div>
             <div className="space-y-3">
               <div>
+                <label className="mb-1 block text-xs text-gray-500">目的地</label>
+                {allRegions.length > 0 ? (
+                  <select
+                    value={editDestinationId}
+                    onChange={e => setEditDestinationId(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400"
+                  >
+                    {allRegions.map(region => (
+                      <optgroup key={region.id} label={region.title}>
+                        {(region.destinations || []).map(dest => (
+                          <option key={dest.id} value={dest.id}>{dest.title}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400">
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-400 border-r-transparent" />
+                    載入目的地列表...
+                  </div>
+                )}
+              </div>
+              <div>
                 <label className="mb-1 block text-xs text-gray-500">標題</label>
                 <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400" />
@@ -1475,18 +1504,29 @@ export default function TripPage() {
               disabled={saving}
               onClick={async () => {
                 setSaving(true);
+                const payload: Record<string, string> = {
+                  title: editTitle.trim(),
+                  subtitle: editSubtitle.trim(),
+                  price_range: editPriceRange.trim(),
+                };
+                if (editDestinationId && editDestinationId !== trip.destination_id) {
+                  payload.destination_id = editDestinationId;
+                }
                 const res = await fetch(`/api/trips/${tripId}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    title: editTitle.trim(),
-                    subtitle: editSubtitle.trim(),
-                    price_range: editPriceRange.trim(),
-                  }),
+                  body: JSON.stringify(payload),
                 });
                 if (res.ok) {
                   const updated = await res.json();
-                  setTrip(prev => prev ? { ...prev, ...updated } : prev);
+                  let newDest = trip.destinations;
+                  if (editDestinationId && editDestinationId !== trip.destination_id) {
+                    for (const region of allRegions) {
+                      const found = (region.destinations || []).find(d => d.id === editDestinationId);
+                      if (found) { newDest = found; break; }
+                    }
+                  }
+                  setTrip(prev => prev ? { ...prev, ...updated, destinations: newDest } : prev);
                   setShowEditPanel(false);
                   showSaveSuccess('儲存成功');
                 } else {
