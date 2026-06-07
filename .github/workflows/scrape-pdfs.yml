@@ -12,6 +12,10 @@ on:
         required: false
         default: ''
 
+  # 每日 UTC 19:30 = 台灣凌晨 03:30（行程抓取 03:00 完後自動跑）
+  schedule:
+    - cron: '30 19 * * *'
+
 jobs:
   scrape-pdfs:
     runs-on: ubuntu-latest
