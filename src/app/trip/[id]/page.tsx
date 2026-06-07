@@ -190,23 +190,6 @@ export default function TripPage() {
     return '點瀏覽器的「上一頁」按鈕';
   };
 
-  const triggerNativeShare = () => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    if (navigator.share) {
-      navigator.share({
-        title: trip?.title || "",
-        text: `看看這個行程：${trip?.title || ""}`,
-        url,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url).then(() => {
-        alert("已複製行程連結！可以貼到 LINE、FB、IG 分享給好友");
-      }).catch(() => {
-        alert(`請複製此連結分享給好友：${url}`);
-      });
-    }
-  };
-
   const handleFollowAndShare = async (socialUrl: string) => {
     setShowShareGate(false);
     const pageUrl = typeof window !== "undefined" ? window.location.href : "";

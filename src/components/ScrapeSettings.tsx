@@ -20,7 +20,6 @@ interface ScrapeSettingsData {
   frequency_days: number;
   last_scrape_at: string | null;
   region_status: Record<string, RegionStatusEntry>;
-  next_region_index: number;
 }
 
 interface ScrapeSettingsProps {
@@ -68,7 +67,6 @@ export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeS
           frequency_days: Number(data.scrape_interval_days) || 3,
           last_scrape_at: data.scrape_last_run ?? null,
           region_status: (data.scrape_region_status && typeof data.scrape_region_status === 'object') ? data.scrape_region_status : {},
-          next_region_index: Number(data.scrape_next_region_index) || 0,
         });
       } else {
         setToast({
