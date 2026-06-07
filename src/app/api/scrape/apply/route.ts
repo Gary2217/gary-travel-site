@@ -217,21 +217,21 @@ export async function POST(req: NextRequest) {
 
     for (const changeId of changeIds) {
       try {
-        const { data: change, error: fetchErr } = await supabase
+        // CAS claim：只有 status=pending 才改成 processing，防止並發重複套用
+        const { data: claimed, error: claimErr } = await supabase
           .from('pending_changes')
-          .select('*')
+          .update({ status: 'processing' })
           .eq('id', changeId)
+          .eq('status', 'pending')
+          .select('*')
           .single();
 
-        if (fetchErr || !change) {
-          results.push({ id: changeId, success: false, error: '找不到變更紀錄' });
+        if (claimErr || !claimed) {
+          results.push({ id: changeId, success: false, error: '已被其他請求處理或找不到' });
           continue;
         }
 
-        if (change.status !== 'pending') {
-          results.push({ id: changeId, success: false, error: '已處理過' });
-          continue;
-        }
+        const change = claimed;
 
         const scraped = change.scraped_data as ScrapedTrip | null;
 
@@ -559,6 +559,12 @@ export async function POST(req: NextRequest) {
 
         results.push({ id: changeId, success: true });
       } catch (err) {
+        // 失敗時把 status 回退成 pending，避免卡在 processing
+        await supabase
+          .from('pending_changes')
+          .update({ status: 'pending' })
+          .eq('id', changeId)
+          .eq('status', 'processing');
         results.push({ id: changeId, success: false, error: String(err) });
       }
     }
@@ -575,7 +581,29 @@ export async function POST(req: NextRequest) {
           .select('region_label')
           .in('id', appliedIds);
 
-        const affectedRegions = new Set((appliedChanges || []).map(c => c.region_label).filter(Boolean));
+        // region_label 可能是 tab 名（中東/北海道）或 region key（asia/japan）
+        // 映射成 region key 讓儀表板能正確顯示
+        const LABEL_TO_KEY: Record<string, string> = {
+          '中東': 'asia', '中亞': 'asia', '西伯利亞': 'asia', '高雄出發': 'asia',
+          '北海道': 'japan', '東北': 'japan', '關東': 'japan', '中部': 'japan', '關西': 'japan', '四國': 'japan', '九州': 'japan', '沖繩': 'japan',
+          '首爾': 'south-korea', '釜山': 'south-korea', '濟州': 'south-korea', '濟州島': 'south-korea',
+          '曼谷': 'thailand', '泰國': 'thailand',
+          '越南': 'vietnam', '北越': 'vietnam', '中越': 'vietnam',
+          '印尼': 'indonesia', '菲律賓': 'philippines',
+          '馬新': 'malaysia', 'malaysia': 'malaysia',
+          '中西歐': 'europe', '東歐': 'europe', '南歐': 'europe', '北歐': 'europe',
+          '華東': 'china', '華南': 'china', '華中': 'china', '西南': 'china', '西北': 'china',
+          '斯里蘭卡': 'southasia', '不丹': 'southasia', '馬爾地夫': 'southasia',
+          '紐澳': 'new', '美加': 'new',
+          '金門': 'kinmen', '馬祖': 'mazu', '澎湖': 'penghu',
+          '自由行': 'freetour', '高爾夫': 'golf',
+        };
+        const affectedRegions = new Set(
+          (appliedChanges || [])
+            .map(c => c.region_label)
+            .filter(Boolean)
+            .map(label => LABEL_TO_KEY[label] || label)
+        );
 
         if (affectedRegions.size > 0) {
           const { data: existing } = await supabase

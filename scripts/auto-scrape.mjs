@@ -1032,9 +1032,9 @@ const insertedChangeKeys = new Set();
 async function insertPendingChanges(supabase, changes) {
   if (!changes.length) return 0;
 
-  // 去重：同一個 trip + 同一個 change_type + 同一個 field_name 只建一筆
+  // 去重：同一個 trip/destination + 同一個 change_type + 同一個 field_name 只建一筆
   const deduped = changes.filter((c) => {
-    const key = `${c.trip_id || 'new'}_${c.change_type}_${c.field_name || ''}`;
+    const key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
     if (insertedChangeKeys.has(key)) return false;
     insertedChangeKeys.add(key);
     return true;
@@ -1071,15 +1071,18 @@ async function updateRegionScraped(supabase, regionKey) {
     .upsert({ key: 'scrape_region_status', value: status, updated_at: new Date().toISOString() });
 }
 
-/** 載入已 dismissed 的變更 key，用於去重 */
+/** 載入已 dismissed 的變更 key，用於去重（最近 30 天內的） */
 async function loadDismissedKeys(supabase) {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
   const { data } = await supabase
     .from('pending_changes')
-    .select('trip_id, change_type, field_name')
-    .eq('status', 'dismissed');
+    .select('trip_id, destination_id, change_type, field_name')
+    .eq('status', 'dismissed')
+    .gte('created_at', thirtyDaysAgo);
   const keys = new Set();
   (data || []).forEach(c => {
-    keys.add(`${c.trip_id || 'new'}_${c.change_type}_${c.field_name || ''}`);
+    // key 包含 destination_id，避免 new_trip (trip_id=null) 共用同一個 key
+    keys.add(`${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`);
   });
   return keys;
 }

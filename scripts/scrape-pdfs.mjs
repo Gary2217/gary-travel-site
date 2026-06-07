@@ -140,17 +140,21 @@ async function main() {
       if (pdfUrl) {
         // 有找到 PDF 預覽 URL → 導航到該頁面生成 PDF
         console.log(`  → 找到 PDF URL，導航中...`);
-        const pdfPage = await browser.newPage();
-        pdfPage.setDefaultTimeout(60000);
-        await pdfPage.goto(pdfUrl, { waitUntil: 'networkidle2', timeout: 60000 });
-        await sleep(2000); // 等待渲染完成
+        let pdfPage = null;
+        try {
+          pdfPage = await browser.newPage();
+          pdfPage.setDefaultTimeout(60000);
+          await pdfPage.goto(pdfUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+          await sleep(2000); // 等待渲染完成
 
-        pdfBuffer = await pdfPage.pdf({
-          format: 'A3',
-          printBackground: true,
-          margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
-        });
-        await pdfPage.close();
+          pdfBuffer = await pdfPage.pdf({
+            format: 'A3',
+            printBackground: true,
+            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+          });
+        } finally {
+          if (pdfPage) await pdfPage.close().catch(() => {});
+        }
       } else {
         // 沒找到 PDF URL → 直接把行程頁面存成 PDF
         console.log(`  → 未找到 PDF 連結，直接截取頁面為 PDF`);
