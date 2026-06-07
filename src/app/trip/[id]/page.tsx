@@ -669,7 +669,7 @@ export default function TripPage() {
 
     try {
       const tripPatchBody: Record<string, unknown> = { trip_banner: bannerPayload };
-      if (editDestinationId && editDestinationId !== trip.destination_id) {
+      if (editDestinationId && editDestinationId !== trip?.destination_id) {
         tripPatchBody.destination_id = editDestinationId;
       }
       const [tripRes, departureRes] = await Promise.all([
@@ -699,8 +699,8 @@ export default function TripPage() {
         price: typeof updatedDeparture?.price === 'number' ? updatedDeparture.price : fallbackPrice,
       };
 
-      let updatedDest: typeof trip.destinations = undefined;
-      if (editDestinationId && editDestinationId !== trip.destination_id) {
+      let updatedDest: Trip['destinations'] = undefined;
+      if (editDestinationId && editDestinationId !== trip?.destination_id) {
         for (const region of allRegions) {
           const found = (region.destinations || []).find(d => d.id === editDestinationId);
           if (found) { updatedDest = found; break; }
@@ -809,7 +809,7 @@ export default function TripPage() {
       };
 
       const tripPatchBody2: Record<string, unknown> = { trip_banner: bannerPayload };
-      if (editDestinationId && editDestinationId !== trip.destination_id) {
+      if (editDestinationId && editDestinationId !== trip?.destination_id) {
         tripPatchBody2.destination_id = editDestinationId;
       }
       const tripRes = await fetch(`/api/trips/${tripId}`, {
@@ -823,8 +823,8 @@ export default function TripPage() {
         return false;
       }
 
-      let updatedDest2: typeof trip.destinations = undefined;
-      if (editDestinationId && editDestinationId !== trip.destination_id) {
+      let updatedDest2: Trip['destinations'] = undefined;
+      if (editDestinationId && editDestinationId !== trip?.destination_id) {
         for (const region of allRegions) {
           const found = (region.destinations || []).find(d => d.id === editDestinationId);
           if (found) { updatedDest2 = found; break; }
@@ -1556,7 +1556,7 @@ export default function TripPage() {
                   subtitle: editSubtitle.trim(),
                   price_range: editPriceRange.trim(),
                 };
-                if (editDestinationId && editDestinationId !== trip.destination_id) {
+                if (editDestinationId && editDestinationId !== trip?.destination_id) {
                   payload.destination_id = editDestinationId;
                 }
                 const res = await fetch(`/api/trips/${tripId}`, {
@@ -1567,7 +1567,7 @@ export default function TripPage() {
                 if (res.ok) {
                   const updated = await res.json();
                   let newDest = trip.destinations;
-                  if (editDestinationId && editDestinationId !== trip.destination_id) {
+                  if (editDestinationId && editDestinationId !== trip?.destination_id) {
                     for (const region of allRegions) {
                       const found = (region.destinations || []).find(d => d.id === editDestinationId);
                       if (found) { newDest = found; break; }
