@@ -984,11 +984,11 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   // departure_label：跳過（不影響顯示）
   // duration_label：跳過（跟 duration 重複）
 
-  // 封面圖：比對 URL 是否不同（忽略 Supabase 自家 URL，只偵測朋威端換圖）
+  // 封面圖：只在 DB 完全沒圖片且朋威有圖時通知（已上傳 Supabase 的不比對）
   const oldCover = sanitizeText(existingTrip.cover_image_url);
   const newCover = sanitizeText(scrapedTrip.cover_image_url);
-  if (newCover && !newCover.includes('supabase') && oldCover !== newCover) {
-    pushChange('info', 'cover_image_url', oldCover, newCover);
+  if (!oldCover && newCover) {
+    pushChange('info', 'cover_image_url', null, newCover);
   }
 
   pushChange('info', 'duration', sanitizeText(existingTrip.duration), scrapedTrip.duration);
