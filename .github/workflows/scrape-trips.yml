@@ -73,3 +73,23 @@ jobs:
           else
             node scripts/auto-scrape.mjs --regions=$REGIONS
           fi
+
+      - name: Auto cleanup (30 days)
+        if: github.event_name == 'schedule'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node -e "
+            const{createClient}=require('@supabase/supabase-js');
+            const sb=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY);
+            (async()=>{
+              const{data:s}=await sb.from('site_settings').select('value').eq('key','auto_cleanup_enabled').single();
+              if(s?.value!==true&&s?.value!=='true'){console.log('自動清理未啟用');return;}
+              const cutoff=new Date(Date.now()-30*86400000).toISOString();
+              const{data:d1}=await sb.from('pending_changes').delete().in('status',['approved','dismissed']).lt('created_at',cutoff).select('id');
+              const{data:d2}=await sb.from('scrape_logs').delete().lt('started_at',cutoff).select('id');
+              console.log('清理完成：刪除 '+(d1?.length||0)+' 筆變更紀錄、'+(d2?.length||0)+' 筆抓取日誌');
+            })();
+          "
+
