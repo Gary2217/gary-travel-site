@@ -979,10 +979,17 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
 
   // 標題：核心欄位，嚴格比對
   pushChange('info', 'title', sanitizeText(existingTrip.title), scrapedTrip.title);
-  // subtitle：跳過（每次自動生成不同，不重要）
-  // display_order：跳過（合併後會不一致，手動排序為準）
+  pushChange('info', 'subtitle', sanitizeText(existingTrip.subtitle), scrapedTrip.subtitle);
+  // display_order：跳過（手動排序為準）
   // departure_label：跳過（不影響顯示）
   // duration_label：跳過（跟 duration 重複）
+
+  // 封面圖：比對 URL 是否不同（忽略 Supabase 自家 URL，只偵測朋威端換圖）
+  const oldCover = sanitizeText(existingTrip.cover_image_url);
+  const newCover = sanitizeText(scrapedTrip.cover_image_url);
+  if (newCover && !newCover.includes('supabase') && oldCover !== newCover) {
+    pushChange('info', 'cover_image_url', oldCover, newCover);
+  }
 
   pushChange('info', 'duration', sanitizeText(existingTrip.duration), scrapedTrip.duration);
   pushChange('info', 'code_label', sanitizeText(existingBanner.code_label), scrapedTrip.code_label);
