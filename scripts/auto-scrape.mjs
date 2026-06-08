@@ -1068,7 +1068,7 @@ async function insertPendingChanges(supabase, changes) {
   return deduped.length;
 }
 
-const BATCH_SIZE = 4; // 每次自動抓取最多處理幾個區域
+const BATCH_SIZE = 2; // 每次自動抓取最多處理幾個區域（4 個會超時 30 分鐘）
 
 /** 讀取每個區域的抓取狀態（last_scraped / last_applied） */
 async function getRegionStatus(supabase) {
