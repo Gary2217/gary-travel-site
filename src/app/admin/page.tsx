@@ -876,6 +876,146 @@ export default function AdminPage() {
               </button>
             </div>
 
+            {/* 系統優化（不依賴健康檢查，直接顯示） */}
+            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                <div>
+                  <h2 className="text-sm font-bold text-white">⚡ 系統優化</h2>
+                  <p className="mt-0.5 text-[11px] text-white/40">資料統計、清理舊紀錄、完整性檢查</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setOptimizeLoading(true);
+                    try {
+                      const res = await fetch('/api/admin/optimize', { cache: 'no-store', credentials: 'include' });
+                      if (res.ok) setOptimizeData(await res.json());
+                    } catch { /* */ }
+                    finally { setOptimizeLoading(false); }
+                  }}
+                  disabled={optimizeLoading}
+                  className="rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+                >
+                  {optimizeLoading ? '檢查中...' : '🔍 檢查'}
+                </button>
+              </div>
+              {optimizeData && (
+                <div className="space-y-4 p-4">
+                  <div>
+                    <p className="mb-2 text-[10px] font-semibold tracking-wider text-white/40">📊 資料統計</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                      {[
+                        { label: '啟用行程', value: optimizeData.stats.trips_active, color: 'text-emerald-400' },
+                        { label: '行程總數', value: optimizeData.stats.trips_total, color: 'text-white/70' },
+                        { label: '出發日期', value: optimizeData.stats.departures, color: 'text-white/70' },
+                        { label: '變更紀錄', value: optimizeData.stats.pending_changes_total, color: 'text-white/70' },
+                        { label: '已忽略', value: optimizeData.stats.pending_changes_dismissed, color: 'text-white/50' },
+                      ].map(item => (
+                        <div key={item.label} className="rounded-lg bg-white/5 p-2.5 text-center">
+                          <p className="text-[10px] text-white/40">{item.label}</p>
+                          <p className={`mt-0.5 text-lg font-bold ${item.color}`}>{item.value.toLocaleString()}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {(optimizeData.cleanable.old_pending_changes > 0 || optimizeData.cleanable.old_scrape_logs > 0) && (
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold tracking-wider text-white/40">🗑️ 可清理項目（超過 30 天）</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+                          <span className="text-xs text-amber-300">舊變更紀錄</span>
+                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-400">{optimizeData.cleanable.old_pending_changes}</span>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+                          <span className="text-xs text-amber-300">舊抓取日誌</span>
+                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-400">{optimizeData.cleanable.old_scrape_logs}</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setCleaning(true);
+                            try {
+                              const res = await fetch('/api/admin/optimize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({}) });
+                              if (res.ok) {
+                                const result = await res.json();
+                                alert(`清理完成！刪除 ${result.results.pending_changes_deleted || 0} 筆變更紀錄、${result.results.scrape_logs_deleted || 0} 筆抓取日誌`);
+                                setOptimizeData(prev => prev ? { ...prev, cleanable: { old_pending_changes: 0, old_scrape_logs: 0 } } : prev);
+                              }
+                            } catch { alert('清理失敗'); }
+                            finally { setCleaning(false); }
+                          }}
+                          disabled={cleaning}
+                          className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
+                        >
+                          {cleaning ? '清理中...' : '🗑️ 立即清理'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {(optimizeData.integrity.no_image.length > 0 || optimizeData.integrity.no_code.length > 0 || optimizeData.integrity.no_departure.length > 0) && (
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold tracking-wider text-white/40">⚠️ 資料完整性問題</p>
+                      <div className="space-y-2">
+                        {optimizeData.integrity.no_image.length > 0 && (
+                          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                            <p className="text-xs font-semibold text-amber-300">🖼️ 缺封面圖片（{optimizeData.integrity.no_image.length} 筆）</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {optimizeData.integrity.no_image.map(t => (
+                                <a key={t.id} href={`/trip/${t.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60 hover:text-sky-400">{t.title.substring(0, 20)}</a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {optimizeData.integrity.no_code.length > 0 && (
+                          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                            <p className="text-xs font-semibold text-amber-300">🏷️ 缺團號（{optimizeData.integrity.no_code.length} 筆）</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {optimizeData.integrity.no_code.map(t => (
+                                <a key={t.id} href={`/trip/${t.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60 hover:text-sky-400">{t.title.substring(0, 20)}</a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {optimizeData.integrity.no_departure.length > 0 && (
+                          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                            <p className="text-xs font-semibold text-amber-300">📅 缺出發日期（{optimizeData.integrity.no_departure.length} 筆，非客製行程）</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {optimizeData.integrity.no_departure.map(t => (
+                                <a key={t.id} href={`/trip/${t.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60 hover:text-sky-400">{t.title.substring(0, 20)}</a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div>
+                      <p className="text-sm text-white/90">🔄 30 天自動清理</p>
+                      <p className="mt-0.5 text-[11px] text-white/40">每天凌晨自動刪除超過 30 天的舊變更紀錄和抓取日誌</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const next = !optimizeData.auto_cleanup_enabled;
+                        try {
+                          const res = await fetch('/api/admin/optimize', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ auto_cleanup_enabled: next }) });
+                          if (res.ok) setOptimizeData(prev => prev ? { ...prev, auto_cleanup_enabled: next } : prev);
+                        } catch { /* */ }
+                      }}
+                      className={`relative h-6 w-11 shrink-0 rounded-full transition ${optimizeData.auto_cleanup_enabled ? 'bg-sky-600' : 'bg-white/15'}`}
+                    >
+                      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${optimizeData.auto_cleanup_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                  {optimizeData.cleanable.old_pending_changes === 0 && optimizeData.cleanable.old_scrape_logs === 0 &&
+                   optimizeData.integrity.no_image.length === 0 && optimizeData.integrity.no_code.length === 0 && optimizeData.integrity.no_departure.length === 0 && (
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-3">
+                      <span className="text-emerald-400">✅</span>
+                      <span className="text-sm text-emerald-400">系統狀態良好，無需清理</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {healthLoading && !healthResult && (
               <div className="flex items-center justify-center rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-12 backdrop-blur-[12px]">
                 <div className="flex items-center gap-2 text-white/40">
@@ -1114,154 +1254,6 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                {/* 系統優化 */}
-                <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-                  <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                    <div>
-                      <h2 className="text-sm font-bold text-white">⚡ 系統優化</h2>
-                      <p className="mt-0.5 text-[11px] text-white/40">資料統計、清理舊紀錄、完整性檢查</p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        setOptimizeLoading(true);
-                        try {
-                          const res = await fetch('/api/admin/optimize', { cache: 'no-store', credentials: 'include' });
-                          if (res.ok) setOptimizeData(await res.json());
-                        } catch { /* */ }
-                        finally { setOptimizeLoading(false); }
-                      }}
-                      disabled={optimizeLoading}
-                      className="rounded-full bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-                    >
-                      {optimizeLoading ? '檢查中...' : '🔍 檢查'}
-                    </button>
-                  </div>
-
-                  {optimizeData && (
-                    <div className="space-y-4 p-4">
-                      {/* 資料統計 */}
-                      <div>
-                        <p className="mb-2 text-[10px] font-semibold tracking-wider text-white/40">📊 資料統計</p>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-                          {[
-                            { label: '啟用行程', value: optimizeData.stats.trips_active, color: 'text-emerald-400' },
-                            { label: '行程總數', value: optimizeData.stats.trips_total, color: 'text-white/70' },
-                            { label: '出發日期', value: optimizeData.stats.departures, color: 'text-white/70' },
-                            { label: '變更紀錄', value: optimizeData.stats.pending_changes_total, color: 'text-white/70' },
-                            { label: '已忽略', value: optimizeData.stats.pending_changes_dismissed, color: 'text-white/50' },
-                          ].map(item => (
-                            <div key={item.label} className="rounded-lg bg-white/5 p-2.5 text-center">
-                              <p className="text-[10px] text-white/40">{item.label}</p>
-                              <p className={`mt-0.5 text-lg font-bold ${item.color}`}>{item.value.toLocaleString()}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* 可清理項目 */}
-                      {(optimizeData.cleanable.old_pending_changes > 0 || optimizeData.cleanable.old_scrape_logs > 0) && (
-                        <div>
-                          <p className="mb-2 text-[10px] font-semibold tracking-wider text-white/40">🗑️ 可清理項目（超過 30 天）</p>
-                          <div className="flex flex-wrap items-center gap-3">
-                            <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
-                              <span className="text-xs text-amber-300">舊變更紀錄</span>
-                              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-400">{optimizeData.cleanable.old_pending_changes}</span>
-                            </div>
-                            <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
-                              <span className="text-xs text-amber-300">舊抓取日誌</span>
-                              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-400">{optimizeData.cleanable.old_scrape_logs}</span>
-                            </div>
-                            <button
-                              onClick={async () => {
-                                setCleaning(true);
-                                try {
-                                  const res = await fetch('/api/admin/optimize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({}) });
-                                  if (res.ok) {
-                                    const result = await res.json();
-                                    alert(`清理完成！刪除 ${result.results.pending_changes_deleted || 0} 筆變更紀錄、${result.results.scrape_logs_deleted || 0} 筆抓取日誌`);
-                                    setOptimizeData(prev => prev ? { ...prev, cleanable: { old_pending_changes: 0, old_scrape_logs: 0 } } : prev);
-                                  }
-                                } catch { alert('清理失敗'); }
-                                finally { setCleaning(false); }
-                              }}
-                              disabled={cleaning}
-                              className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
-                            >
-                              {cleaning ? '清理中...' : '🗑️ 立即清理'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 資料完整性問題 */}
-                      {(optimizeData.integrity.no_image.length > 0 || optimizeData.integrity.no_code.length > 0 || optimizeData.integrity.no_departure.length > 0) && (
-                        <div>
-                          <p className="mb-2 text-[10px] font-semibold tracking-wider text-white/40">⚠️ 資料完整性問題</p>
-                          <div className="space-y-2">
-                            {optimizeData.integrity.no_image.length > 0 && (
-                              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-                                <p className="text-xs font-semibold text-amber-300">🖼️ 缺封面圖片（{optimizeData.integrity.no_image.length} 筆）</p>
-                                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                  {optimizeData.integrity.no_image.map(t => (
-                                    <a key={t.id} href={`/trip/${t.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60 hover:text-sky-400">{t.title.substring(0, 20)}</a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {optimizeData.integrity.no_code.length > 0 && (
-                              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-                                <p className="text-xs font-semibold text-amber-300">🏷️ 缺團號（{optimizeData.integrity.no_code.length} 筆）</p>
-                                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                  {optimizeData.integrity.no_code.map(t => (
-                                    <a key={t.id} href={`/trip/${t.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60 hover:text-sky-400">{t.title.substring(0, 20)}</a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {optimizeData.integrity.no_departure.length > 0 && (
-                              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-                                <p className="text-xs font-semibold text-amber-300">📅 缺出發日期（{optimizeData.integrity.no_departure.length} 筆，非客製行程）</p>
-                                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                  {optimizeData.integrity.no_departure.map(t => (
-                                    <a key={t.id} href={`/trip/${t.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60 hover:text-sky-400">{t.title.substring(0, 20)}</a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 30天自動清理開關 */}
-                      <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div>
-                          <p className="text-sm text-white/90">🔄 30 天自動清理</p>
-                          <p className="mt-0.5 text-[11px] text-white/40">每天凌晨自動刪除超過 30 天的舊變更紀錄和抓取日誌</p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            const next = !optimizeData.auto_cleanup_enabled;
-                            try {
-                              const res = await fetch('/api/admin/optimize', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ auto_cleanup_enabled: next }) });
-                              if (res.ok) setOptimizeData(prev => prev ? { ...prev, auto_cleanup_enabled: next } : prev);
-                            } catch { /* */ }
-                          }}
-                          className={`relative h-6 w-11 shrink-0 rounded-full transition ${optimizeData.auto_cleanup_enabled ? 'bg-sky-600' : 'bg-white/15'}`}
-                        >
-                          <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${optimizeData.auto_cleanup_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </button>
-                      </div>
-
-                      {optimizeData.cleanable.old_pending_changes === 0 && optimizeData.cleanable.old_scrape_logs === 0 &&
-                       optimizeData.integrity.no_image.length === 0 && optimizeData.integrity.no_code.length === 0 && optimizeData.integrity.no_departure.length === 0 && (
-                        <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-3">
-                          <span className="text-emerald-400">✅</span>
-                          <span className="text-sm text-emerald-400">系統狀態良好，無需清理</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </div>
