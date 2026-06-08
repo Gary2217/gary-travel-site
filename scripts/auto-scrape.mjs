@@ -1013,8 +1013,20 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushChange('promotion', 'promo_text', oldPromo || null, newPromo || null);
   }
 
+  // 航班比對：只比核心欄位（忽略 day_text/date 等 metadata）
+  const normalizeFlightForCompare = (seg) => ({
+    airline: sanitizeText(seg.airline),
+    flight_number: sanitizeText(seg.flight_number),
+    dep_time: sanitizeText(seg.dep_time),
+    dep_airport: sanitizeText(seg.dep_airport),
+    arr_time: sanitizeText(seg.arr_time),
+    arr_airport: sanitizeText(seg.arr_airport),
+    next_day: Boolean(seg.next_day),
+  });
   const existingFlights = extractExistingFlightSegments(existingTrip);
-  if (stableStringify(existingFlights) !== stableStringify(scrapedTrip.flight_segments)) {
+  const existingFlightsNorm = existingFlights.map(normalizeFlightForCompare);
+  const scrapedFlightsNorm = (scrapedTrip.flight_segments || []).map(normalizeFlightForCompare);
+  if (stableStringify(existingFlightsNorm) !== stableStringify(scrapedFlightsNorm)) {
     pushChange('flight', 'flight_segments', existingFlights, scrapedTrip.flight_segments);
   }
 
