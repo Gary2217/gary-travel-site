@@ -350,7 +350,7 @@ export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeS
             const bTime = rs[b.key]?.last_scraped || '1970-01-01';
             return aTime.localeCompare(bTime);
           });
-          const nextBatch = new Set(sorted.slice(0, 2).map(r => r.key));
+          const nextBatch = new Set(sorted.slice(0, 1).map(r => r.key));
 
           const daysSince = (iso: string | null | undefined) => {
             if (!iso) return null;
