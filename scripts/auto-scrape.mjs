@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import puppeteer from 'puppeteer';
+import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
 
 const BASE_URL = 'https://www.pwgotravel.com.tw';
@@ -32,6 +32,14 @@ const CITY_BY_AIRPORT = {
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+async function fetchHTML(url) {
+  const response = await fetch(url, { headers: { 'User-Agent': FETCH_UA } });
+  if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+  return response.text();
+}
 
 function loadEnv() {
   // 優先讀 process.env（GitHub Actions），fallback 讀 .env.local（本機）
@@ -383,29 +391,7 @@ function mergeRegionDetail(regionDetails, key, patch) {
   );
 }
 
-async function scrollToLoadLazyContent(page) {
-  await page.evaluate(async () => {
-    await new Promise((resolve) => {
-      let totalHeight = 0;
-      const distance = 500;
-      const timer = setInterval(() => {
-        window.scrollBy(0, distance);
-        totalHeight += distance;
-        if (totalHeight >= document.body.scrollHeight) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 100);
 
-      setTimeout(() => {
-        clearInterval(timer);
-        resolve();
-      }, 12000);
-    });
-  });
-
-  await sleep(1500);
-}
 
 async function createOrResetLog(supabase, requestedLogId, totalRegions, regionDetails) {
   const payload = {
@@ -608,67 +594,70 @@ function findExistingTripForScrapedTrip(scrapedTrip, destinationTrips, consumedT
   return bestScore >= 0.7 ? bestMatch : null;
 }
 
-async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', targetDestinationTitle = '', targetSubRegion = '') {
+async function scrapeRegionListings(regionConfig, targetSourceUrl = '', targetDestinationTitle = '', targetSubRegion = '') {
   const url = `${BASE_URL}${regionConfig.url}`;
   console.log(`\n🌐 區域頁：${url}`);
 
+  let html;
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await sleep(3000);
-  } catch {
-    console.log('  ⚠️ 區域頁載入逾時，改用目前內容繼續');
+    html = await fetchHTML(url);
+  } catch (fetchErr) {
+    console.log(`  ⚠️ 區域頁載入失敗：${fetchErr.message}`);
+    return [];
   }
 
-  await scrollToLoadLazyContent(page);
-
+  const $ = cheerio.load(html);
   const targetBlockId = getSourceBlockId(targetSourceUrl);
-  const sections = await page.$$eval('.row.expand-graphics', (containers, { baseUrl, targetBlockId }) => {
-    const normalize = (value) => String(value || '').replace(/\s+/g, ' ').trim();
-    const seenHref = new Set();
+  const seenHref = new Set();
+  const sections = [];
 
-    return containers
-      .map((container) => {
-        const parent = container.parentElement;
-        const header = parent?.querySelector('.header-title');
-        const sectionLabel = normalize(header?.textContent || '');
-        // 優先使用穩定的 blk-* ID（伺服器產生，不會每次刷新改變）
-        const blkAncestor = container.closest('[id^="blk-"]');
-        const blockId = normalize(
-          (blkAncestor ? blkAncestor.getAttribute('id') : '') ||
-          parent?.getAttribute('id') ||
-          container.getAttribute('id') ||
-          parent?.closest('[id]')?.getAttribute('id') || ''
-        );
-        const cards = Array.from(container.querySelectorAll('.item-box a[href*="/products/group/"]'));
-        const trips = cards
-          .map((link, index) => {
-            const href = link.getAttribute('href') || '';
-            const absoluteHref = href.startsWith('http') ? href : `${baseUrl}${href}`;
-            if (!href || seenHref.has(absoluteHref)) return null;
-            seenHref.add(absoluteHref);
+  $('.row.expand-graphics').each((_, container) => {
+    const $container = $(container);
+    const $parent = $container.parent();
+    const sectionLabel = sanitizeText($parent.find('.header-title').first().text());
 
-            const title = normalize(link.querySelector('h3')?.textContent || '');
-            const priceText = normalize(link.querySelector('h4')?.textContent || '');
-            const listingTags = Array.from(link.querySelectorAll('.item_tag'))
-              .map((tag) => normalize(tag.textContent || ''))
-              .filter(Boolean);
-            return {
-              title,
-              list_price: priceText,
-              href: absoluteHref,
-              section_label: sectionLabel,
-              display_order: index + 1,
-              listing_tags: listingTags,
-            };
-          })
-          .filter(Boolean);
+    // 優先使用穩定的 blk-* ID（伺服器產生，不會每次刷新改變）
+    const $blkAncestor = $container.closest('[id^="blk-"]');
+    const blockId = sanitizeText(
+      ($blkAncestor.length ? $blkAncestor.attr('id') : '') ||
+      $parent.attr('id') ||
+      $container.attr('id') ||
+      $parent.closest('[id]').attr('id') || ''
+    );
 
-        if (!trips.length) return null;
-        return { label: sectionLabel, block_id: blockId, trips };
-      })
-      .filter((section) => !targetBlockId || section?.block_id === targetBlockId)
-      .filter(Boolean);
-  }, { baseUrl: BASE_URL, targetBlockId });
+    // 如果有指定 blockId，只取匹配的
+    if (targetBlockId && blockId !== targetBlockId) return;
+
+    const trips = [];
+    // 支援 group 和 domestic（國內行程：金門/澎湖/馬祖）
+    $container.find('.item-box a[href*="/products/group/"], .item-box a[href*="/products/domestic/"]').each((index, link) => {
+      const href = $(link).attr('href') || '';
+      const absoluteHref = href.startsWith('http') ? href : `${BASE_URL}${href}`;
+      if (!href || seenHref.has(absoluteHref)) return;
+      seenHref.add(absoluteHref);
+
+      const title = sanitizeText($(link).find('h3').text());
+      const priceText = sanitizeText($(link).find('h4').text());
+      const listingTags = [];
+      $(link).find('.item_tag').each((_, tag) => {
+        const t = sanitizeText($(tag).text());
+        if (t) listingTags.push(t);
+      });
+
+      trips.push({
+        title,
+        list_price: priceText,
+        href: absoluteHref,
+        section_label: sectionLabel,
+        display_order: index + 1,
+        listing_tags: listingTags,
+      });
+    });
+
+    if (trips.length > 0) {
+      sections.push({ label: sectionLabel, block_id: blockId, trips });
+    }
+  });
 
   // 若有指定 destination，用 title 或 sub_region 比對 section label
   if (!targetBlockId && (targetDestinationTitle || targetSubRegion)) {
@@ -693,120 +682,101 @@ async function scrapeRegionListings(page, regionConfig, targetSourceUrl = '', ta
   return sections;
 }
 
-async function scrapeTripDetail(page, tripSummary) {
+async function scrapeTripDetail(tripSummary) {
+  let html;
   try {
-    await page.goto(tripSummary.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await sleep(2000);
-  } catch {
-    console.log(`  ⚠️ 詳情頁載入逾時，繼續解析：${tripSummary.title}`);
+    html = await fetchHTML(tripSummary.href);
+  } catch (fetchErr) {
+    throw new Error(`詳情頁載入失敗：${fetchErr.message}`);
   }
 
-  const data = await page.evaluate((sourceUrl, sectionLabel) => {
-    const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
-    const padDate = (dateStr) => {
-      const parts = String(dateStr || '').replace(/\//g, '-').split('-');
-      if (parts.length !== 3) return dateStr;
-      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-    };
-    const absolute = (value) => {
-      const url = String(value || '').trim();
-      if (!url) return '';
-      if (url.startsWith('http://') || url.startsWith('https://')) return url;
-      if (url.startsWith('//')) return `https:${url}`;
-      if (url.startsWith('/')) return `${location.origin}${url}`;
-      return `${location.origin}/${url.replace(/^\//, '')}`;
-    };
+  const $ = cheerio.load(html);
 
-    const breadcrumbLinks = Array.from(document.querySelectorAll('.breadcrumb-item a')).map((node) => clean(node.textContent));
-    const destinationLabel = breadcrumbLinks[breadcrumbLinks.length - 1] || sectionLabel || '';
+  // breadcrumb → destination label
+  const breadcrumbLinks = [];
+  $('.breadcrumb-item a').each((_, node) => breadcrumbLinks.push(sanitizeText($(node).text())));
+  const destinationLabel = breadcrumbLinks[breadcrumbLinks.length - 1] || tripSummary.section_label || '';
 
-    const basicInfo = {};
-    document.querySelectorAll('.PriceBlock li').forEach((item) => {
-      const key = clean(item.querySelector('strong')?.textContent || '');
-      if (!key) return;
-      const spans = Array.from(item.querySelectorAll('.fontEg'))
-        .map((node) => clean(node.textContent))
-        .filter(Boolean)
-        .filter((text) => text !== '航班資訊');
-      const joined = spans.length ? spans.join(' ') : clean(item.textContent.replace(key, ''));
-      basicInfo[key] = joined;
+  // ① 基本資訊
+  const basicInfo = {};
+  $('.PriceBlock li').each((_, item) => {
+    const key = sanitizeText($(item).find('strong').text());
+    if (!key) return;
+    const spans = [];
+    $(item).find('.fontEg').each((_, s) => {
+      const t = sanitizeText($(s).text());
+      if (t && t !== '航班資訊') spans.push(t);
     });
+    basicInfo[key] = spans.length ? spans.join(' ') : sanitizeText($(item).text().replace(key, ''));
+  });
 
-    const priceDetails = Array.from(document.querySelectorAll('.LowestPrice table tbody tr td')).map((cell) => clean(cell.textContent));
-    const tags = Array.from(document.querySelectorAll('.KeyFeatures li a')).map((node) => clean(node.textContent));
+  // ② 售價明細
+  const priceDetails = [];
+  $('.LowestPrice table tbody tr td').each((_, cell) => priceDetails.push(sanitizeText($(cell).text())));
 
-    const flightSegments = Array.from(document.querySelectorAll('#flightModal li'))
-      .map((item) => {
-        const fullText = clean(item.querySelector('.detail_airline span')?.textContent || '');
-        const flightMatch = fullText.match(/^(.+?)([A-Z]{2}\d{1,4}[A-Z]?)$/i);
-        const airline = flightMatch ? flightMatch[1].trim() : fullText;
-        const flightNumber = flightMatch ? flightMatch[2].trim() : '';
-        const goText = clean(item.querySelector('.go')?.textContent || '');
-        const toText = clean(item.querySelector('.to')?.textContent || '');
-        const dayMatch = goText.match(/第\s*(\d+)\s*天/);
-        const depTimeMatch = goText.match(/(\d{1,2}:\d{2})/);
-        const arrTimeMatch = toText.match(/(\d{1,2}:\d{2})/);
-        const depAirport = clean(item.querySelector('.go div')?.textContent || '');
-        const arrAirport = clean(item.querySelector('.to div')?.textContent || '');
+  // ③ 標籤
+  const rawTags = [];
+  $('.KeyFeatures li a').each((_, a) => rawTags.push(sanitizeText($(a).text())));
 
-        if (!airline && !flightNumber && !depAirport && !arrAirport) return null;
+  // ④ 航班資訊
+  const rawFlightSegments = [];
+  $('#flightModal li').each((_, item) => {
+    const fullText = sanitizeText($(item).find('.detail_airline span').text());
+    const flightMatch = fullText.match(/^(.+?)([A-Z]{2}\d{1,4}[A-Z]?)$/i);
+    const airline = flightMatch ? flightMatch[1].trim() : fullText;
+    const flightNumber = flightMatch ? flightMatch[2].trim() : '';
+    const goText = sanitizeText($(item).find('.go').text());
+    const toText = sanitizeText($(item).find('.to').text());
+    const dayMatch = goText.match(/第\s*(\d+)\s*天/);
+    const depTimeMatch = goText.match(/(\d{1,2}:\d{2})/);
+    const arrTimeMatch = toText.match(/(\d{1,2}:\d{2})/);
+    const depAirport = sanitizeText($(item).find('.go div').text());
+    const arrAirport = sanitizeText($(item).find('.to div').text());
 
-        return {
-          day_text: dayMatch ? `第${dayMatch[1]}天` : '',
-          airline,
-          flight_number: flightNumber,
-          dep_time: depTimeMatch ? depTimeMatch[1] : '',
-          dep_airport: depAirport,
-          arr_time: arrTimeMatch ? arrTimeMatch[1] : '',
-          arr_airport: arrAirport,
-          next_day: /\+\s*1天/.test(toText),
-        };
-      })
-      .filter(Boolean);
+    if (!airline && !flightNumber && !depAirport && !arrAirport) return;
 
-    const promoEl = document.querySelector('#marketing .MarketingContent');
-    const promoText = promoEl ? clean(promoEl.textContent || '') : '';
+    rawFlightSegments.push({
+      day_text: dayMatch ? `第${dayMatch[1]}天` : '',
+      airline,
+      flight_number: flightNumber,
+      dep_time: depTimeMatch ? depTimeMatch[1] : '',
+      dep_airport: depAirport,
+      arr_time: arrTimeMatch ? arrTimeMatch[1] : '',
+      arr_airport: arrAirport,
+      next_day: /\+\s*1天/.test(toText),
+    });
+  });
 
-    const departures = Array.from(document.querySelectorAll('#search-table tbody tr'))
-      .map((row) => {
-        const date = padDate(clean(row.querySelector('.YMD')?.textContent || ''));
-        if (!date) return null;
+  // ⑤ 促銷資訊
+  const $promoEl = $('#marketing .MarketingContent');
+  const promoText = $promoEl.length ? sanitizeText($promoEl.text()) : '';
 
-        return {
-          date,
-          departure_airport: clean(row.querySelector('.airport')?.textContent || ''),
-          airline: clean(row.querySelector('.plane-abbr')?.textContent || ''),
-          label: clean(row.querySelector('.plane-sche')?.textContent || ''),
-          seats_total: Number(String(row.querySelector('.TotalSeat')?.textContent || '').replace(/[^\d]/g, '') || 0),
-          seats_available: Number(String(row.querySelector('.AvailableSeat')?.textContent || '').replace(/[^\d]/g, '') || 0),
-          price: Number(String(row.querySelector('.TourPrice')?.textContent || '').replace(/[^\d]/g, '') || 0),
-        };
-      })
-      .filter(Boolean);
+  // ⑥ 出發日期
+  const rawDepartures = [];
+  $('#search-table tbody tr').each((_, row) => {
+    const date = padDate(sanitizeText($(row).find('.YMD').text()));
+    if (!date) return;
+    rawDepartures.push({
+      date,
+      departure_airport: sanitizeText($(row).find('.airport').text()),
+      airline: sanitizeText($(row).find('.plane-abbr').text()),
+      label: sanitizeText($(row).find('.plane-sche').text()),
+      seats_total: Number(String($(row).find('.TotalSeat').text() || '').replace(/[^\d]/g, '') || 0),
+      seats_available: Number(String($(row).find('.AvailableSeat').text() || '').replace(/[^\d]/g, '') || 0),
+      price: Number(String($(row).find('.TourPrice').text() || '').replace(/[^\d]/g, '') || 0),
+    });
+  });
 
-    const rawCode = clean(document.querySelector('.GroupNumber')?.textContent || '');
-    const codeMatch = rawCode.match(/[A-Z][A-Z0-9]{4,}/);
+  // 頁面標題和封面圖
+  const title = sanitizeText($('h1').first().text());
+  const coverImg = $('#BasicCarousel img').first().attr('src') || '';
+  const coverUrl = toAbsoluteUrl(coverImg);
+  const rawCode = sanitizeText($('.GroupNumber').text());
+  const codeMatch = rawCode.match(/[A-Z][A-Z0-9]{4,}/);
+  const codeLabel = codeMatch ? codeMatch[0] : rawCode;
 
-    return {
-      source_url: sourceUrl,
-      source_section_label: sectionLabel,
-      destination_label: destinationLabel,
-      title: clean(document.querySelector('h1')?.textContent || ''),
-      cover_image_url: absolute(document.querySelector('#BasicCarousel img')?.getAttribute('src') || ''),
-      code_label: codeMatch ? codeMatch[0] : rawCode,
-      duration_text: basicInfo['旅遊天數'] || '',
-      min_group_size_text: basicInfo['成團人數'] || '',
-      airport: basicInfo['出發機場'] || '',
-      airline: basicInfo['航空公司'] || '',
-      price_details: priceDetails,
-      tags,
-      flight_segments: flightSegments,
-      departures,
-      promo_text: promoText,
-    };
-  }, tripSummary.href, tripSummary.section_label);
-
-  const durationRaw = sanitizeText(data.duration_text);
+  // === 後處理（與原版一致）===
+  const durationRaw = sanitizeText(basicInfo['旅遊天數'] || '');
   const durationMatch = durationRaw.match(/(\d+)\s*天?\s*(\d+)\s*夜?/) || durationRaw.match(/(\d+)\D+(\d+)/);
   let duration = durationMatch ? `${durationMatch[1]}天${durationMatch[2]}夜` : (durationRaw.includes('天') ? durationRaw : '');
   if (!durationMatch) {
@@ -814,8 +784,8 @@ async function scrapeTripDetail(page, tripSummary) {
     if (nums && nums.length >= 2) duration = `${nums[0]}天${nums[1]}夜`;
     else if (nums && nums.length === 1) duration = `${nums[0]}天${Number(nums[0]) - 1}夜`;
   }
-  const minGroupSize = parseNumber(data.min_group_size_text);
-  const enrichedFlightSegments = (data.flight_segments || []).map((segment) => ({
+  const minGroupSize = parseNumber(basicInfo['成團人數'] || '');
+  const enrichedFlightSegments = rawFlightSegments.map((segment) => ({
     day_text: sanitizeText(segment.day_text || ''),
     airline: formatAirlineLabel(segment.airline, segment.flight_number),
     flight_number: sanitizeText(segment.flight_number),
@@ -826,14 +796,14 @@ async function scrapeTripDetail(page, tripSummary) {
     next_day: Boolean(segment.next_day),
   }));
 
-  const primaryAirline = formatAirlineLabel(data.airline, enrichedFlightSegments[0]?.flight_number || '');
-  const tags = (data.tags || []).map(normalizeTag).filter(Boolean);
-  const priceDetail = buildPriceDetailText(data.price_details || []);
-  const adultPrice = normalizePriceText(data.price_details?.[0] || '');
+  const primaryAirline = formatAirlineLabel(basicInfo['航空公司'] || '', enrichedFlightSegments[0]?.flight_number || '');
+  const tags = rawTags.map(normalizeTag).filter(Boolean);
+  const priceDetail = buildPriceDetailText(priceDetails);
+  const adultPrice = normalizePriceText(priceDetails[0] || '');
   const priceRange = formatPriceRange(adultPrice);
-  const departures = (data.departures || []).map((departure) => ({
+  const departures = rawDepartures.map((departure) => ({
     date: sanitizeText(departure.date),
-    departure_city: getDepartureCity(departure.departure_airport || data.airport),
+    departure_city: getDepartureCity(departure.departure_airport || basicInfo['出發機場'] || ''),
     airline: formatAirlineLabel(departure.airline || primaryAirline, enrichedFlightSegments[0]?.flight_number || ''),
     price: departure.price || null,
     seats_total: departure.seats_total ?? null,
@@ -841,48 +811,48 @@ async function scrapeTripDetail(page, tripSummary) {
     label: sanitizeText(departure.label),
   }));
 
-  const subtitle = buildSubtitle({ title: data.title, airline: primaryAirline, tags });
+  const subtitle = buildSubtitle({ title, airline: primaryAirline, tags });
   const seatsTotal = departures.find((departure) => departure.seats_total)?.seats_total ?? null;
   const seatsAvailable = departures.find((departure) => departure.seats_available != null)?.seats_available ?? null;
   const customTour = departures.length === 0;
 
   return {
-    destination_label: sanitizeText(data.destination_label || tripSummary.section_label),
-    region_label: sanitizeText(data.source_section_label || tripSummary.section_label),
+    destination_label: sanitizeText(destinationLabel || tripSummary.section_label),
+    region_label: sanitizeText(tripSummary.section_label),
     source_url: tripSummary.href,
-    title: sanitizeText(data.title),
+    title: sanitizeText(title),
     subtitle,
     duration,
     price_range: priceRange,
-    cover_image_url: sanitizeText(data.cover_image_url),
-    code_label: sanitizeText(data.code_label),
+    cover_image_url: sanitizeText(coverUrl),
+    code_label: sanitizeText(codeLabel),
     min_group_size: minGroupSize,
-    airport: sanitizeText(data.airport),
+    airport: sanitizeText(basicInfo['出發機場'] || ''),
     airline: primaryAirline,
     tags,
     price_detail: priceDetail,
     flight_segments: enrichedFlightSegments,
     flightSegments: enrichedFlightSegments,
     departures,
-    departure_label: getDepartureLabel(data.airport),
+    departure_label: getDepartureLabel(basicInfo['出發機場'] || ''),
     display_order: tripSummary.display_order,
     custom_tour: customTour,
-    promo_text: sanitizeText(data.promo_text),
+    promo_text: sanitizeText(promoText),
     trip_banner: {
-      code_label: sanitizeText(data.code_label),
+      code_label: sanitizeText(codeLabel),
       price_label: priceRange,
       tags,
-      departure_label: getDepartureLabel(data.airport),
+      departure_label: getDepartureLabel(basicInfo['出發機場'] || ''),
       duration_label: duration,
       seats_total: seatsTotal,
       seats_available: seatsAvailable,
       deposit_label: '',
       custom_tour: customTour,
       min_group_size: minGroupSize,
-      airport: sanitizeText(data.airport),
+      airport: sanitizeText(basicInfo['出發機場'] || ''),
       airline: primaryAirline,
       price_detail: priceDetail,
-      promo_text: sanitizeText(data.promo_text),
+      promo_text: sanitizeText(promoText),
     },
   };
 }
@@ -1142,7 +1112,6 @@ async function main() {
     });
   }
 
-  let browser = null;
   let logId = null;
 
   try {
@@ -1207,19 +1176,6 @@ async function main() {
     let completedRegions = 0;
     let changesFound = 0;
 
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      protocolTimeout: 300000,
-    });
-
-    const page = await browser.newPage();
-    page.setDefaultTimeout(60000);
-    page.setDefaultNavigationTimeout(60000);
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    );
-
     for (const regionConfig of selectedRegions) {
       regionDetails = mergeRegionDetail(regionDetails, regionConfig.key, {
         status: 'running',
@@ -1230,7 +1186,7 @@ async function main() {
         region_details: regionDetails,
       });
 
-      const sections = await scrapeRegionListings(page, regionConfig, targetDestination?.source_url || '', targetDestination?.title || '', targetDestination?.sub_region || '');
+      const sections = await scrapeRegionListings(regionConfig, targetDestination?.source_url || '', targetDestination?.title || '', targetDestination?.sub_region || '');
       const tripSummaries = sections.flatMap((section) => section.trips);
       totalTrips += tripSummaries.length;
       regionDetails = mergeRegionDetail(regionDetails, regionConfig.key, {
@@ -1249,24 +1205,14 @@ async function main() {
         const tripSummary = tripSummaries[index];
         console.log(`  🔍 [${index + 1}/${tripSummaries.length}] ${tripSummary.title}`);
 
-        // 每筆行程用獨立 page 避免記憶體累積
-        const detailPage = await browser.newPage();
-        detailPage.setDefaultTimeout(60000);
-        detailPage.setDefaultNavigationTimeout(60000);
-        await detailPage.setUserAgent(
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        );
-
         let scrapedTrip;
         try {
-          scrapedTrip = await scrapeTripDetail(detailPage, tripSummary);
+          scrapedTrip = await scrapeTripDetail(tripSummary);
         } catch (detailErr) {
           console.log(`  ⚠️ 抓取失敗，跳過：${tripSummary.title} (${detailErr.message})`);
-          await detailPage.close().catch(() => {});
           completedTrips += 1;
           continue;
         }
-        await detailPage.close().catch(() => {});
 
         // 列表頁 item_tag 標籤優先於詳情頁 KeyFeatures 標籤
         if (tripSummary.listing_tags?.length) {
@@ -1435,10 +1381,6 @@ async function main() {
     console.log(`\n✅ 抓取完成，共 ${completedTrips} 筆行程，發現 ${changesFound} 筆待確認變更`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (browser) {
-      await browser.close();
-      browser = null;
-    }
 
     if (logId) {
       await updateLog(supabase, logId, {
@@ -1451,10 +1393,6 @@ async function main() {
     console.error('\n❌ 自動抓取失敗');
     console.error(message);
     process.exit(1);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
 

@@ -34,9 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Puppeteer
-        run: npx puppeteer browsers install chrome
-
       - name: Check auto-scrape setting
         if: github.event_name == 'schedule'
         id: check-auto
