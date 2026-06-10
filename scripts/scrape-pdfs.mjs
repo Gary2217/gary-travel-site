@@ -1,6 +1,6 @@
 /**
  * 自動抓取朋威行程 PDF 並上傳 Supabase Storage
- * 改版：fetch HTML + 本地 Puppeteer 渲染，不再遠端導航（避免逾時）
+ * fetch HTML + Puppeteer page.setContent() 渲染 PDF（保留外部 CSS/字型載入）
  *
  * 用法：
  *   node scripts/scrape-pdfs.mjs                    # 抓取所有缺 PDF 的行程
@@ -8,9 +8,7 @@
  *   node scripts/scrape-pdfs.mjs --trip-id=UUID     # 指定單一行程
  */
 
-import { readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { readFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import puppeteer from 'puppeteer';
 
@@ -18,7 +16,6 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const PWGO_GROUP = 'https://www.pwgotravel.com.tw/products/group/mold-new/';
 const PWGO_DOMESTIC = 'https://www.pwgotravel.com.tw/products/domestic/mold/';
 const DOMESTIC_PREFIXES = ['KM', 'KNH', 'PPH', 'PMZ'];
-const TEMP_DIR = join(tmpdir(), 'scrape-pdfs');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── 環境變數 ──
@@ -123,12 +120,10 @@ async function main() {
 
   console.log(`📄 找到 ${eligible.length} 筆需要抓取 PDF 的行程`);
 
-  mkdirSync(TEMP_DIR, { recursive: true });
-
-  // Puppeteer 只用於本地 HTML→PDF 渲染，不連外
+  // Puppeteer 用 setContent 渲染 HTML（保留網路存取以載入外部 CSS/字型）
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-web-security'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
 
   let success = 0;
@@ -141,7 +136,7 @@ async function main() {
     console.log(`\n[${success + failed + 1}/${eligible.length}] ${code} — ${trip.title.substring(0, 40)}`);
 
     try {
-      // Step 1: fetch HTML（不用 Puppeteer 遠端導航）
+      // Step 1: fetch HTML（快速取得，不靠 Puppeteer 遠端導航）
       console.log(`  → fetch HTML...`);
       let html = await fetchHTML(pageUrl);
 
@@ -154,15 +149,10 @@ async function main() {
         html = makeAbsoluteUrls(html, 'https://www.pwgotravel.com.tw');
       }
 
-      // Step 2: 存為本地 HTML
-      const tempFile = join(TEMP_DIR, `${code}.html`);
-      writeFileSync(tempFile, html, 'utf8');
-
-      // Step 3: Puppeteer 渲染本地 HTML → PDF
+      // Step 2: Puppeteer setContent → 渲染 PDF（保留網路存取載入外部 CSS/字型）
       console.log(`  → 渲染 PDF...`);
       const page = await browser.newPage();
-      await page.goto(`file:///${tempFile.replace(/\\/g, '/')}`, { waitUntil: 'load', timeout: 30000 });
-      await sleep(1000);
+      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
 
       const pdfBuffer = await page.pdf({
         format: 'A3',
@@ -170,9 +160,6 @@ async function main() {
         margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
       });
       await page.close();
-
-      // 清理 temp
-      try { unlinkSync(tempFile); } catch {}
 
       // Step 4: 上傳到 Supabase Storage
       const fileName = `trip-documents/${trip.id}/${code}.pdf`;
