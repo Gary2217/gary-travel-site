@@ -20,19 +20,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const mode = body.mode || 'trips'; // 'trips' | 'pdfs'
     const regions = body.regions || []; // 空 = 全部抓
     const destinationId = typeof body.destinationId === 'string' ? body.destinationId.trim() : '';
 
-    // 依模式選擇 workflow
-    const workflowFile = mode === 'pdfs' ? 'scrape-pdfs.yml' : 'scrape-trips.yml';
-    const inputs = mode === 'pdfs'
-      ? { batch_size: String(body.batchSize || 30), trip_id: body.tripId || '' }
-      : { regions: regions.length > 0 ? regions.join(',') : 'all', destination_id: destinationId || '' };
+    const inputs = { regions: regions.length > 0 ? regions.join(',') : 'all', destination_id: destinationId || '' };
 
     // 觸發 GitHub Actions workflow_dispatch
     const response = await fetch(
-      `https://api.github.com/repos/${repo}/actions/workflows/${workflowFile}/dispatches`,
+      `https://api.github.com/repos/${repo}/actions/workflows/scrape-trips.yml/dispatches`,
       {
         method: 'POST',
         headers: {
@@ -54,9 +49,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       triggered: true,
-      mode,
-      regions: mode === 'trips' ? (regions.length > 0 ? regions : 'all') : undefined,
-      destinationId: mode === 'trips' ? (destinationId || null) : undefined,
+      regions: regions.length > 0 ? regions : 'all',
+      destinationId: destinationId || null,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

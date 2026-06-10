@@ -47,7 +47,7 @@ export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeS
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
   const [destinationLoading, setDestinationLoading] = useState(true);
   const [pageTriggering, setPageTriggering] = useState(false);
-  const [pdfTriggering, setPdfTriggering] = useState(false);
+
   const [toast, setToast] = useState<{
     message: string;
     type?: "success" | "error" | "warning";
@@ -478,38 +478,7 @@ export default function ScrapeSettings({ onTrigger, isRunning = false }: ScrapeS
           )}
         </div>
 
-        {/* 抓取 PDF 行程檔 */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="mb-1 text-xs font-bold text-white/80">📄 抓取 PDF 行程檔</p>
-          <p className="mb-2 text-[10px] text-white/40">自動從朋威下載行程 PDF，上傳到對應行程。只抓缺 PDF 的行程，已有的不重抓。</p>
-          <button
-            onClick={async () => {
-              setPdfTriggering(true);
-              try {
-                const res = await fetch("/api/scrape/trigger", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "include",
-                  body: JSON.stringify({ mode: "pdfs", batchSize: 30 }),
-                });
-                if (res.ok) {
-                  onTrigger?.();
-                  setToast({ message: "已觸發 PDF 抓取（每次最多 30 筆）", type: "success" });
-                } else {
-                  setToast({ message: `觸發失敗：${await getErrorMessage(res, "請稍後再試")}`, type: "error" });
-                }
-              } catch (error) {
-                setToast({ message: `觸發失敗：${error instanceof Error ? error.message : "請稍後再試"}`, type: "error" });
-              } finally {
-                setPdfTriggering(false);
-              }
-            }}
-            disabled={pdfTriggering || isRunning}
-            className="w-full rounded-full bg-emerald-600 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-          >
-            {isRunning ? "⏳ 進行中..." : pdfTriggering ? "啟動中..." : "📄 抓取 PDF 行程檔"}
-          </button>
-        </div>
+
         </div>
       </div>
 
