@@ -587,8 +587,9 @@ export default function TripPage() {
               const dest = await getDestination(trip.destination_id);
               if (!dest.region_id || !dest.regions?.category_label) return;
               const related = await getRelatedTrips(dest.region_id, dest.regions.category_label, trip.destination_id);
-              const regionFiltered = (related.regionTrips || []).filter((t: Trip) => t.id !== tripId);
-              const categoryFiltered = (related.categoryTrips || []).filter((t: Trip) => t.id !== tripId && !regionFiltered.some((r: Trip) => r.id === t.id));
+              const hasDates = (t: Trip) => t.departure_dates && t.departure_dates.length > 0 && !t.trip_banner?.custom_tour;
+              const regionFiltered = (related.regionTrips || []).filter((t: Trip) => t.id !== tripId && hasDates(t));
+              const categoryFiltered = (related.categoryTrips || []).filter((t: Trip) => t.id !== tripId && hasDates(t) && !regionFiltered.some((r: Trip) => r.id === t.id));
               let combined = [...regionFiltered, ...categoryFiltered].slice(0, 6);
 
               // 不足 6 筆時從熱門行程補足
@@ -606,6 +607,7 @@ export default function TripPage() {
                       for (const dt of destTrips) {
                         if (combined.length >= 6) break;
                         if (usedIds.has(dt.id)) continue;
+                        if (!dt.departure_dates?.length || dt.trip_banner?.custom_tour) continue;
                         usedIds.add(dt.id);
                         combined.push(dt);
                       }
