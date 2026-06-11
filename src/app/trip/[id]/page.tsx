@@ -1947,12 +1947,33 @@ export default function TripPage() {
         </div>
       )}
 
-      {/* PDF 全版面嵌入（canvas 渲染，防止直接下載） */}
-      {days.length === 0 && trip.document_url && (
-        <div id="trip-document" className="mx-auto w-full max-w-[800px] px-3 sm:px-4">
-          <PdfViewer url={trip.document_url} title={`${trip.title} 行程表`} isDevMode={isDevMode} />
-        </div>
-      )}
+      {/* PDF 全版面嵌入（canvas 渲染，防止直接下載）— 滾動到才載入 */}
+      {days.length === 0 && trip.document_url && (() => {
+        const [pdfVisible, setPdfVisible] = useState(false);
+        const pdfSentinelRef = useRef<HTMLDivElement>(null);
+        useEffect(() => {
+          const el = pdfSentinelRef.current;
+          if (!el || pdfVisible) return;
+          const obs = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) { setPdfVisible(true); obs.disconnect(); }
+          }, { rootMargin: '600px' });
+          obs.observe(el);
+          return () => obs.disconnect();
+        }, [pdfVisible]);
+        return (
+          <div id="trip-document" className="mx-auto w-full max-w-[800px] px-3 sm:px-4">
+            <div ref={pdfSentinelRef} />
+            {pdfVisible ? (
+              <PdfViewer url={trip.document_url!} title={`${trip.title} 行程表`} isDevMode={isDevMode} />
+            ) : (
+              <div className="flex items-center justify-center py-16">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
+                <span className="ml-3 text-sm text-gray-500">載入行程檔案...</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 按鈕區 */}
       <div className="mx-auto max-w-[1000px] px-3 py-6 sm:px-4 md:px-8">

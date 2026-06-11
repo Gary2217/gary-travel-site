@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -84,18 +85,19 @@ export default function TripCard({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showPromo, setShowPromo] = useState(false);
+  const router = useRouter();
 
   const handleCoverClick = () => {
     if (!isDevMode && !isCustomTour) {
       const from = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/trip/${id}?from=${from}`;
+      router.push(`/trip/${id}?from=${from}`);
     }
   };
 
   const navigateToTrip = (departureId?: string) => {
     const from = encodeURIComponent(window.location.pathname + window.location.search);
     const departureQuery = departureId ? `&departureId=${encodeURIComponent(departureId)}` : '';
-    window.location.href = `/trip/${id}?from=${from}${departureQuery}`;
+    router.push(`/trip/${id}?from=${from}${departureQuery}`);
   };
 
   const handleFollowAndDownload = (socialUrl: string) => {
