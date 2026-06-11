@@ -640,13 +640,45 @@ Admin 頁面「待確認變更」列表
 
 | change_type | 說明 | 套用行為 |
 |---|---|---|
-| `new_trip` | 朋威有、我們沒有 | 新增行程到 DB |
+| `new_trip` | 朋威有、我們沒有 | 新增行程 + 出發日期 + 重建 `departure_info_map` + 轉換 `promo_text` → `promo_content`/`promo_enabled` |
 | `removed` | 我們有、朋威沒有 | 標記 `is_active=false` |
-| `price` | 價格變更 | 更新 `price_range` |
-| `price_detail` | 售價明細 5 欄 | 更新 `trip_banner.price_detail` |
-| `flight` | 航班變更 | 更新航段資訊 |
-| `departure` | 出發日期/機位 | 重建 `trip_departure_dates` |
-| `info` | 標題/天數/標籤等 | 更新對應欄位 |
+| `price` | 價格變更 | 更新 `price_range` + 重建 `departure_info_map` |
+| `price_detail` | 售價明細 5 欄 | 更新 `trip_banner.price_detail` + 重建 `departure_info_map` |
+| `flight` | 航班變更 | 更新航段資訊（trip_banner 合併） |
+| `departure` | 出發日期/機位 | DELETE + INSERT `trip_departure_dates` + 重建 `departure_info_map` + 重新套用優惠標籤 |
+| `info` | 標題/天數/標籤等 | 更新對應欄位（`display_order` 僅在 field_name 為 display_order 時寫入） |
+| `promotion` | 優惠方案文字 | 更新 `trip_banner.promo_content`/`promo_enabled` + 對符合日期的出發梯次加上「限時優惠」標籤 |
+| `new_tab` | 朋威新增的 tab/區域 | 僅通知（需手動新增 destination） |
+
+### 套用邏輯注意事項
+
+- **`departure_info_map` 重建**：`price`、`price_detail`、`departure`、`new_trip` 變更都會觸發重建，確保前端售價 Modal 顯示最新資料
+- **`display_order` 保護**：套用 `price`/`flight`/`promotion` 等非排序變更時，不會覆寫手動調整的排序
+- **`promo_text` 轉換**：新行程自動將 `promo_text` 轉為 `promo_content`/`promo_enabled`；既有行程走 `promotion` 變更類型處理
+- **圖片自動上傳**：`cover_image_url` 若為外部 URL，套用時自動下載並上傳 Supabase Storage
+- **`side_image_url` 保留**：合併 trip_banner 時，既有的 `side_image_url` 和 `departure_info_map` 不被覆蓋
+- **PDF 自動清除**：套用 `price`/`price_detail`/`info`/`departure`/`flight`/`new_trip` 變更後，清除 `document_url` 讓下次自動重抓
+
+### 抓取欄位 → 前端欄位對應表
+
+| 抓取欄位 | 寫入位置 | 前端使用處 |
+|---------|---------|-----------|
+| title | `trips.title` | TripCard 標題、行程詳情頁標題 |
+| subtitle | `trips.subtitle` | 行程詳情頁副標題 |
+| duration | `trips.duration` | TripCard 天數標籤 |
+| price_range | `trips.price_range` | TripCard 價格、Banner 價格 |
+| cover_image_url | `trips.cover_image_url` | TripCard 封面、行程頁主圖 |
+| code_label | `trip_banner.code_label` | 行程詳情頁 Banner（團型編號） |
+| tags | `trip_banner.tags` | TripCard 標籤、行程頁標籤 |
+| departure_label | `trip_banner.departure_label` | 行程頁 Banner（出發地） |
+| duration_label | `trip_banner.duration_label` | 行程頁 Banner（天數標示） |
+| min_group_size | `trip_banner.min_group_size` | 行程頁（成團人數） |
+| price_detail (tab分隔) | `trip_banner.price_detail` → 經 `rebuildDepartureInfoMap` 轉為 `departure_info_map[depId].price_detail` (JSON) | 行程頁售價明細 Modal |
+| promo_text | `trip_banner.promo_content` / `promo_enabled` | TripCard 限時優惠標籤、行程頁優惠區塊 |
+| departures[] | `trip_departure_dates` | 出發日期卡片、日期選擇器 |
+| flight_segments[] | `trip_departure_dates.flight_segments` + `outbound_*` / `return_*` | 行程頁航班資訊區塊 |
+| airport | `trip_banner.airport`（額外欄位） | 僅 ScrapeCompareModal 比對用，前端頁面不直接顯示 |
+| airline | `trip_banner.airline`（額外欄位） | 僅 ScrapeCompareModal 比對用，前端從 `departure_dates[].airline` 取 |
 
 ### 待確認變更 UI
 

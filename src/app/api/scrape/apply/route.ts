@@ -298,22 +298,37 @@ export async function POST(req: NextRequest) {
             // 外部圖片自動上傳 Supabase Storage
             const resolvedImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, change.trip_id);
 
+            // 組合更新欄位：display_order 只在 info 類型且 field_name 明確變更時才寫入
+            // 避免套用 price/flight 等變更時覆蓋手動調整的排序
+            const tripUpdateFields: Record<string, unknown> = {
+              title: scraped.title,
+              subtitle: scraped.subtitle,
+              duration: scraped.duration,
+              price_range: scraped.price_range,
+              cover_image_url: resolvedImageUrl,
+              trip_banner: mergedBanner,
+            };
+            if (change.change_type === 'info' && change.field_name === 'display_order') {
+              tripUpdateFields.display_order = scraped.display_order;
+            }
+
             const { error: updateErr } = await supabase
               .from('trips')
-              .update({
-                title: scraped.title,
-                subtitle: scraped.subtitle,
-                duration: scraped.duration,
-                price_range: scraped.price_range,
-                display_order: scraped.display_order,
-                cover_image_url: resolvedImageUrl,
-                trip_banner: mergedBanner,
-              })
+              .update(tripUpdateFields)
               .eq('id', change.trip_id);
 
             if (updateErr) {
               results.push({ id: changeId, success: false, error: updateErr.message });
               continue;
+            }
+
+            // price_detail 變更時，同步重建 departure_info_map（前端讀的是 JSON 版本）
+            if (change.change_type === 'price_detail' || change.change_type === 'price') {
+              const rebuildErr = await rebuildDepartureInfoMap(supabase, change.trip_id, scraped);
+              if (rebuildErr) {
+                results.push({ id: changeId, success: false, error: rebuildErr });
+                continue;
+              }
             }
             break;
           }
@@ -438,6 +453,14 @@ export async function POST(req: NextRequest) {
             // 新增行程時，先用 placeholder ID 上傳圖片，插入後再用真正 ID 重新上傳
             const tempImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, `new-${Date.now()}`);
 
+            // 新行程：將 promo_text 轉換為前端讀取的 promo_content / promo_enabled
+            const newTripBanner = { ...scraped.trip_banner };
+            const newPromoText = (scraped as any).promo_text || (newTripBanner as Record<string, unknown>).promo_text || '';
+            if (newPromoText) {
+              (newTripBanner as Record<string, unknown>).promo_content = newPromoText;
+              (newTripBanner as Record<string, unknown>).promo_enabled = true;
+            }
+
             const { data: inserted, error: insertErr } = await supabase
               .from('trips')
               .insert({
@@ -450,7 +473,7 @@ export async function POST(req: NextRequest) {
                 is_active: true,
                 display_order: scraped.display_order || 99,
                 cover_image_url: tempImageUrl,
-                trip_banner: scraped.trip_banner,
+                trip_banner: newTripBanner,
               })
               .select('id')
               .single();

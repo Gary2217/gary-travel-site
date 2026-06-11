@@ -39,7 +39,7 @@ const CHANGE_TYPE_CONFIG: Record<
     label: "行程下架",
     badgeClass: "bg-red-500/20 text-red-400",
   },
-  departure_dates: {
+  departure: {
     icon: "🔵",
     label: "出發日期",
     badgeClass: "bg-blue-500/20 text-blue-400",
