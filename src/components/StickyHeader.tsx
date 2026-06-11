@@ -207,8 +207,10 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
       }
       return;
     }
-    if (backHref) { router.push(backHref); return; }
-    router.back();
+    // 優先用瀏覽器原生返回（瞬間恢復上一頁快取），無歷史時才用 href 導航
+    if (window.history.length > 1) { window.history.back(); return; }
+    if (backHref) { window.location.href = backHref; return; }
+    window.location.href = '/';
   };
 
   return (
