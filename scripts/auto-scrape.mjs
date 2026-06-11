@@ -866,6 +866,7 @@ async function scrapeTripDetail(tripSummary) {
       airline: primaryAirline,
       price_detail: priceDetail,
       promo_text: sanitizeText(promoText),
+      sub_area: sanitizeText(tripSummary.section_label || ''),
     },
   };
 }

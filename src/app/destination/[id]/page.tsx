@@ -75,6 +75,7 @@ export default function DestinationPage() {
   const [scrapeTriggering, setScrapeTriggering] = useState(false);
   const [scrapeRunning, setScrapeRunning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
 
@@ -120,6 +121,7 @@ export default function DestinationPage() {
         }
         setDestination(destData);
         setTrips(tripsData);
+        setSubAreaFilter("");
 
         // 載入同區域的其他目的地，按 sub_region 分組（快速分頁用）
         if (destData.region_id) {
@@ -513,6 +515,47 @@ export default function DestinationPage() {
         </div>
       )}
 
+      {/* 子區域篩選（如越南的富國島/芽莊/中越/北越） */}
+      {(() => {
+        const areas = Array.from(new Set(
+          trips
+            .map((t) => t.trip_banner?.sub_area || "")
+            .filter(Boolean)
+        ));
+        if (areas.length < 2) return null;
+        return (
+          <div className="mx-auto max-w-site px-3 pt-3 sm:px-4 md:px-8">
+            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => setSubAreaFilter("")}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition sm:text-sm ${
+                  !subAreaFilter
+                    ? "border-sky-600 bg-sky-600 text-white"
+                    : "border-gray-200 bg-white text-gray-600 hover:border-sky-400 hover:text-sky-600"
+                }`}
+              >
+                全部
+              </button>
+              {areas.map((area) => (
+                <button
+                  key={area}
+                  type="button"
+                  onClick={() => setSubAreaFilter(subAreaFilter === area ? "" : area)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition sm:text-sm ${
+                    subAreaFilter === area
+                      ? "border-sky-600 bg-sky-600 text-white"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-sky-400 hover:text-sky-600"
+                  }`}
+                >
+                  {area}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 行程列表 */}
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
 
@@ -684,17 +727,20 @@ export default function DestinationPage() {
             )}
 
             <h2 className="mb-4 text-lg font-bold text-gray-900 sm:mb-6 sm:text-xl md:text-2xl">
-              可選行程（{trips.length}）
+              可選行程（{subAreaFilter ? trips.filter((t) => (t.trip_banner?.sub_area || "") === subAreaFilter).length : trips.length}）
             </h2>
 
             {(() => {
+              const filtered = subAreaFilter
+                ? trips.filter((t) => (t.trip_banner?.sub_area || "") === subAreaFilter)
+                : trips;
               const sorted = dateFilter
-                ? [...trips].sort((a, b) => {
+                ? [...filtered].sort((a, b) => {
                     const aMatch = a.departure_dates?.some((d) => d.departure_date === dateFilter) ? 0 : 1;
                     const bMatch = b.departure_dates?.some((d) => d.departure_date === dateFilter) ? 0 : 1;
                     return aMatch - bMatch;
                   })
-                : trips;
+                : filtered;
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
