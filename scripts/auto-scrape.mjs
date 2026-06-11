@@ -556,12 +556,25 @@ function buildDestinationResolver(destinations, existingTrips) {
     ['名古屋', '中部'],
   ]);
 
-  return (label) => {
+  return (label, regionUrl) => {
     const normalized = normalizeTitle(label);
     const fallback = aliases.get(sanitizeText(label));
-    const candidates = titleMap.get(normalized) || (fallback ? titleMap.get(normalizeTitle(fallback)) || [] : []);
+    let candidates = titleMap.get(normalized) || (fallback ? titleMap.get(normalizeTitle(fallback)) || [] : []);
 
     if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0];
+
+    // 多個候選時，用 region URL 篩選（解決「東北」同時匹配日本東北和港澳大陸東北的問題）
+    if (regionUrl && candidates.length > 1) {
+      const regionPath = regionUrl.replace(/\/$/, '');
+      const regionFiltered = candidates.filter((d) =>
+        d.source_url && d.source_url.includes(regionPath),
+      );
+      if (regionFiltered.length > 0) {
+        candidates = regionFiltered;
+      }
+    }
+
     if (candidates.length === 1) return candidates[0];
 
     return [...candidates].sort((left, right) => {
@@ -1233,7 +1246,7 @@ async function main() {
           continue;
         }
 
-        const destination = targetDestination || resolveDestination(scrapedTrip.destination_label) || resolveDestination(tripSummary.section_label);
+        const destination = targetDestination || resolveDestination(scrapedTrip.destination_label, regionConfig.url) || resolveDestination(tripSummary.section_label, regionConfig.url);
         if (!destination) {
           // 找不到 destination → 可能是朋威新增的 tab/區域，寫通知不中斷
           const missingLabel = scrapedTrip.destination_label || tripSummary.section_label;
@@ -1330,8 +1343,24 @@ async function main() {
         if (!scrapedTrips?.length) continue;
 
         const matchedIds = matchedTripIdsByDestination.get(destinationId) || new Set();
+        // 收集此區域所有已抓取的行程（跨 destination），用於反查防誤判
+        const allScrapedInRegion = [...scrapedByDestination.values()].flat();
+
         for (const trip of destinationTrips) {
           if (matchedIds.has(trip.id)) continue;
+
+          // 下架保護：先跨 destination 反查，確認此行程在整個區域都找不到才標記下架
+          const tripCode = sanitizeText(trip.trip_banner?.code_label);
+          const matchesElsewhere = allScrapedInRegion.some((scraped) => {
+            if (tripCode && sanitizeText(scraped.code_label) === tripCode) return true;
+            return similarity(scraped.title, trip.title) >= 0.7;
+          });
+
+          if (matchesElsewhere) {
+            console.log(`  ⏭️ 跳過下架：${trip.title}（在其他目的地有匹配）`);
+            continue;
+          }
+
           const removedChange = createRemovedTripChange(
             {
               logId,

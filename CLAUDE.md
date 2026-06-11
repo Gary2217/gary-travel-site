@@ -620,6 +620,23 @@ Admin 頁面「待確認變更」列表
 - **抓取精準度**：指定 destination 時，用 `sub_region` 和 `title` 比對朋威頁面的 section label，只抓對應區塊
 - **郵輪旅遊和客製旅遊不抓取**：郵輪是搜尋頁面結構不同，客製無朋威對應
 
+### Destination 解析規則（防止跨區域混淆）
+
+- **Region-aware 解析**：`buildDestinationResolver` 回傳的 resolver 接受 `(label, regionUrl)` 兩個參數
+- 當多個 destination 有相同 `title` 或 `sub_region`（如日本「東北」和港澳大陸「東北」），用 `regionUrl` 篩選 `source_url` 匹配的 destination
+- **已知混淆組**（同名 sub_region，不同區域）：
+  - `東北`：日本東北 vs 港澳大陸東北（哈爾濱）
+  - `沖繩`：日本沖繩 vs 郵輪旅遊沖繩
+  - `大阪`/`關西`：日本關西 vs 自由行大阪
+  - `東京`/`關東`：日本關東 vs 自由行東京
+- **注意**：新增 destination 時，若 `title` 或 `sub_region` 與其他區域的 destination 重名，必須確保 `source_url` 已設定，否則 resolver 無法區分
+
+### 下架保護機制
+
+- **跨 destination 反查**：標記 `removed` 前，先對整個區域所有已抓取行程做 code_label + 標題相似度比對
+- 若行程在其他 destination 有匹配（code_label 相同或標題相似度 ≥ 0.7），跳過不標記下架
+- 這防止 destination 解析偶爾歸錯位置時，將仍在販售的行程誤判為下架
+
 ### 相關檔案
 
 | 檔案 | 用途 |
