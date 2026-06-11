@@ -891,18 +891,22 @@ export default function TripPage() {
   }
 
   if (error || !trip) {
+    const isDeleted = error?.includes("已刪除");
     return (
       <main className="min-h-screen bg-transparent text-gray-900">
         <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
-            <p className="text-lg text-red-400">{error || "找不到此行程"}</p>
-            <button
-              onClick={() => window.history.back()}
-              className="mt-4 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
-            >
-              返回上一頁
-            </button>
+            <p className={`text-lg ${isDeleted ? "text-gray-600" : "text-red-400"}`}>{error || "找不到此行程"}</p>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={() => { window.location.href = from || '/'; }}
+                className="rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+              >
+                返回上一頁
+              </button>
+              <a href="/" className="text-sm text-gray-500 underline hover:text-gray-700">回首頁</a>
+            </div>
           </div>
         </div>
       </main>
@@ -1907,9 +1911,15 @@ export default function TripPage() {
             <button
               onClick={async () => {
                 if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
+                const backUrl = from || `/destination/${trip.destination_id}` || '/';
                 const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-                if (res.ok) window.location.href = from || '/';
-                else alert('刪除失敗，請再試一次');
+                if (res.ok) {
+                  setTrip(null);
+                  setError("行程已刪除，正在返回...");
+                  setTimeout(() => { window.location.href = backUrl; }, 500);
+                } else {
+                  alert('刪除失敗，請再試一次');
+                }
               }}
               className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
             >
