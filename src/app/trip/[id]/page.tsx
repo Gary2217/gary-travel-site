@@ -589,7 +589,30 @@ export default function TripPage() {
               const related = await getRelatedTrips(dest.region_id, dest.regions.category_label, trip.destination_id);
               const regionFiltered = (related.regionTrips || []).filter((t: Trip) => t.id !== tripId);
               const categoryFiltered = (related.categoryTrips || []).filter((t: Trip) => t.id !== tripId && !regionFiltered.some((r: Trip) => r.id === t.id));
-              const combined = [...regionFiltered, ...categoryFiltered].slice(0, 4);
+              let combined = [...regionFiltered, ...categoryFiltered].slice(0, 6);
+
+              // 不足 6 筆時從熱門行程補足
+              if (combined.length < 6) {
+                try {
+                  const popRes = await fetch('/api/popular-trips', { cache: 'no-store' });
+                  if (popRes.ok) {
+                    const popDests = await popRes.json();
+                    const usedIds = new Set([tripId, ...combined.map((t: Trip) => t.id)]);
+                    for (const pd of popDests) {
+                      if (combined.length >= 6) break;
+                      const tripsRes = await fetch(`/api/destinations/${pd.id}/trips`, { cache: 'no-store' });
+                      if (!tripsRes.ok) continue;
+                      const destTrips = (await tripsRes.json()) as Trip[];
+                      for (const dt of destTrips) {
+                        if (combined.length >= 6) break;
+                        if (usedIds.has(dt.id)) continue;
+                        usedIds.add(dt.id);
+                        combined.push(dt);
+                      }
+                    }
+                  }
+                } catch { /* 靜默 */ }
+              }
               setRecommendedTrips(combined);
             } catch { /* 靜默 */ }
             finally { setRecommendedLoading(false); }
