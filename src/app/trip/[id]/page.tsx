@@ -1908,25 +1908,7 @@ export default function TripPage() {
                 刪除 PDF
               </button>
             )}
-            <button
-              onClick={async () => {
-                if (!confirm(`確定要刪除「${trip.title}」嗎？此操作無法復原。`)) return;
-                const backUrl = from || `/destination/${trip.destination_id}` || '/';
-                const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-                if (res.ok) {
-                  setTrip(null);
-                  setError("行程已刪除，正在返回...");
-                  setTimeout(() => { window.location.href = backUrl; }, 500);
-                } else {
-                  alert('刪除失敗，請再試一次');
-                }
-              }}
-              className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white transition hover:bg-red-600"
-            >
-              刪除行程
-            </button>
             </div>
-            <p className="text-[10px] text-gray-400">刪除行程 = 永久刪除整個行程及所有資料，無法復原</p>
           </div>
         </div>
       )}
