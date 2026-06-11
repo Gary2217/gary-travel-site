@@ -295,7 +295,7 @@ export default function TripCard({
             {/* 包團/客製標籤 */}
             {isCustomTour && !isDevMode && (
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-base font-bold text-sky-700 sm:text-lg md:px-3 md:py-1.5 md:text-sm">此團可包團或客製，歡迎詢問</span>
+                <span className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-base font-bold text-sky-700 sm:text-lg md:px-3 md:py-1.5 md:text-sm">此團須詢問出團資訊，歡迎詢問</span>
                 <a
                   href={lineHref}
                   target="_blank"
