@@ -47,6 +47,14 @@ export async function GET(
       };
     });
 
+    // 有出團日期的排前面，沒有的排後面；同組內維持 display_order
+    trips.sort((a: any, b: any) => {
+      const aHasDates = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
+      const bHasDates = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
+      if (aHasDates !== bHasDates) return aHasDates - bHasDates;
+      return (a.display_order || 99) - (b.display_order || 99);
+    });
+
     return NextResponse.json(trips, {
       headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' },
     });
