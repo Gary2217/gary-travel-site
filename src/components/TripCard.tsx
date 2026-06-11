@@ -232,9 +232,17 @@ export default function TripCard({
                 </div>
 
                 {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="shrink-0 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-600 sm:text-xs">日期</span>
+                      {price_range && (
+                        <div className="shrink-0 text-right">
+                          <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">$ {displayPriceRange?.replace(/NT\s*\$\s*/g, '')}</span>
+                          <span className="ml-0.5 text-[10px] text-gray-500">起</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
                       {departure_dates.filter(dd => dd.departure_date).slice(0, 6).map((dd, i, arr) => {
                         const d = new Date(dd.departure_date + 'T00:00:00');
                         const dateStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -255,12 +263,6 @@ export default function TripCard({
                       })}
                       {departure_dates.filter(dd => dd.departure_date).length > 6 && <span className="text-sm text-gray-400">...更多</span>}
                     </div>
-                    {price_range && (
-                      <div className="shrink-0 text-right">
-                        <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">$ {displayPriceRange?.replace(/NT\s*\$\s*/g, '')}</span>
-                        <span className="ml-0.5 text-[10px] text-gray-500">起</span>
-                      </div>
-                    )}
                   </div>
                 )}
 
