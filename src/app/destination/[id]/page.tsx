@@ -76,15 +76,24 @@ export default function DestinationPage() {
   const [scrapeRunning, setScrapeRunning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
+  const updateSubAreaFilter = (area: string) => {
+    setSubAreaFilter(area);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (area) url.searchParams.set('area', area);
+    else url.searchParams.delete('area');
+    window.history.replaceState({}, '', url.toString());
+  };
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
 
-  // 從 URL query params 讀取搜尋條件
+  // 從 URL query params 讀取搜尋條件（含 sub_area 篩選）
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const qs = new URLSearchParams(window.location.search);
     setDateFilter(qs.get('date') || '');
     setCityFilter(qs.get('city') || '');
+    setSubAreaFilter(qs.get('area') || '');
   }, []);
 
   // 檢查是否有抓取進行中（防重複觸發）
@@ -121,7 +130,6 @@ export default function DestinationPage() {
         }
         setDestination(destData);
         setTrips(tripsData);
-        setSubAreaFilter("");
 
         // 載入同區域的其他目的地，按 sub_region 分組（快速分頁用）
         if (destData.region_id) {
@@ -528,7 +536,7 @@ export default function DestinationPage() {
             <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
               <button
                 type="button"
-                onClick={() => setSubAreaFilter("")}
+                onClick={() => updateSubAreaFilter("")}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition sm:text-sm ${
                   !subAreaFilter
                     ? "border-sky-600 bg-sky-600 text-white"
@@ -541,7 +549,7 @@ export default function DestinationPage() {
                 <button
                   key={area}
                   type="button"
-                  onClick={() => setSubAreaFilter(subAreaFilter === area ? "" : area)}
+                  onClick={() => updateSubAreaFilter(subAreaFilter === area ? "" : area)}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition sm:text-sm ${
                     subAreaFilter === area
                       ? "border-sky-600 bg-sky-600 text-white"
