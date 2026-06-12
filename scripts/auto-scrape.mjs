@@ -1027,6 +1027,57 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushChange('departure', 'departures', existingDepartures, scrapedDepartures);
   }
 
+  // 驗證護欄：只加 warning，不影響既有比對結果
+  const pushWarning = (fieldName, oldValue, newValue) => {
+    changes.push({
+      ...buildPendingChangeBase(context),
+      change_type: 'warning',
+      field_name: fieldName,
+      old_value: oldValue == null ? null : typeof oldValue === 'string' ? oldValue : stableStringify(oldValue),
+      new_value: newValue == null ? null : typeof newValue === 'string' ? newValue : stableStringify(newValue),
+    });
+  };
+
+  const scrapedPriceDetail = sanitizeText(scrapedTrip.price_detail || '');
+  const priceDetailColumns = scrapedPriceDetail ? scrapedPriceDetail.split('\t').length : 0;
+  if (scrapedPriceDetail && priceDetailColumns < 5) {
+    pushWarning(
+      'validation_check_price_detail',
+      `售價明細欄位數：${priceDetailColumns}/5`,
+      `⚠️ price_detail 不足 5 欄（目前 ${priceDetailColumns} 欄）`
+    );
+  }
+
+  const scrapedCodeLabel = sanitizeText(scrapedTrip.code_label || '');
+  if (!scrapedCodeLabel) {
+    pushWarning(
+      'validation_check_code_label',
+      sanitizeText(existingBanner.code_label) || '無既有 code_label',
+      '⚠️ code_label 為空'
+    );
+  }
+
+  if (existingDepartures.length > 2 && scrapedDepartures.length === 0) {
+    pushWarning(
+      'validation_check_departures',
+      `原本 ${existingDepartures.length} 筆出發日期`,
+      '⚠️ 出發日期從 N 筆驟減到 0 筆'
+    );
+  }
+
+  const oldPriceValue = Number.parseInt(oldPriceNum, 10);
+  const newPriceValue = Number.parseInt(newPriceNum, 10);
+  if (Number.isFinite(oldPriceValue) && oldPriceValue > 0 && Number.isFinite(newPriceValue)) {
+    const priceChangeRatio = Math.abs(newPriceValue - oldPriceValue) / oldPriceValue;
+    if (priceChangeRatio > 0.5) {
+      pushWarning(
+        'validation_check_price_spike',
+        `原價 ${oldPriceValue.toLocaleString('zh-TW')}、新價 ${newPriceValue.toLocaleString('zh-TW')}`,
+        `⚠️ 價格變動超過 50%（${Math.round(priceChangeRatio * 100)}%）`
+      );
+    }
+  }
+
   return changes;
 }
 

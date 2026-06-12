@@ -959,9 +959,23 @@ export default function TripPage() {
   const flightSource = (selectedDeparture && hasFlight(selectedDeparture)) ? selectedDeparture : flightFallback;
   const selectedFlightSegments = flightSource?.flight_segments;
   const hasFlightData = !!flightSource;
+  const isCustomTour = !!banner.custom_tour;
+  const parsedTripPrice = trip.price_range ? Number(trip.price_range.replace(/\D/g, '')) || null : null;
+  const selectedPriceValue = selectedDeparture?.price ?? null;
+  const ctaPriceText = isCustomTour
+    ? '歡迎詢問出團資訊'
+    : selectedPriceValue
+      ? `NT$ ${selectedPriceValue.toLocaleString('zh-TW')}`
+      : trip.price_range?.trim() || (parsedTripPrice ? `NT$ ${parsedTripPrice.toLocaleString('zh-TW')}` : '歡迎詢問最新價格');
+  const ctaDateText = !isCustomTour && selectedDeparture?.departure_date ? formatFullDate(selectedDeparture.departure_date) : '';
+  const ctaGroupCode = banner.code_label?.trim() || selectedDepartureInfo.group_code?.trim() || '未提供';
+  const ctaLineMessage = isCustomTour
+    ? `您好，我想詢問「${trip.title}」\n團號：${ctaGroupCode}\n歡迎詢問出團資訊`
+    : `您好，我想詢問「${trip.title}」\n團號：${ctaGroupCode}${ctaDateText ? `\n出發日期：${ctaDateText}` : ''}\n價格：${ctaPriceText}`;
+  const ctaLineHref = lineMessageHref(ctaLineMessage);
 
   return (
-    <main className="min-h-screen bg-transparent text-gray-900">
+    <main className="min-h-screen bg-transparent pb-28 text-gray-900 sm:pb-32">
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* 浮動詢問按鈕 */}
@@ -1064,7 +1078,7 @@ export default function TripPage() {
                       <span className="text-sm font-medium text-gray-900">團位 <strong>{selectedDeparture?.seats_total}</strong>　可售 <strong>{selectedDeparture?.seats_available}</strong></span>
                     </div>
                   ) : <div />}
-                  <button type="button" onClick={() => setShowPriceInfoModal(true)} className="shrink-0 inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
+                  <button type="button" onClick={() => setShowPriceInfoModal(true)} aria-label="查看售價明細" className="shrink-0 inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
                     <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
                   </button>
                 </div>
@@ -1198,7 +1212,7 @@ export default function TripPage() {
                   </div>
                 ) : <div />}
                 <div className="flex shrink-0 gap-1.5">
-                  <button type="button" onClick={() => setShowPriceInfoModal(true)} className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
+                  <button type="button" onClick={() => setShowPriceInfoModal(true)} aria-label="查看售價明細" className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-medium text-orange-600 transition hover:bg-orange-100">
                     <span className="font-bold">$</span> 售價說明 / 加床 / 小孩 ..
                   </button>
                   {isDevMode && (
@@ -2492,6 +2506,31 @@ export default function TripPage() {
         </div>,
         document.body
       )}
+
+      <div className="fixed bottom-0 left-0 right-0 z-[55] px-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 sm:pb-4">
+        <div className="mx-auto w-full max-w-[1000px]">
+          <div className="flex items-center justify-between gap-3 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-md border-t border-gray-200 sm:rounded-2xl sm:border sm:px-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-sky-600">立即詢價</p>
+              <div className="mt-1 flex flex-col gap-0.5 sm:flex-row sm:items-end sm:gap-2">
+                <span className="truncate text-lg font-black text-gray-900 sm:text-2xl">{ctaPriceText}</span>
+                {!isCustomTour && ctaDateText && (
+                  <span className="truncate text-xs text-gray-500 sm:mb-0.5">{ctaDateText}</span>
+                )}
+              </div>
+            </div>
+            <a
+              href={ctaLineHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#06C755] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#05b64d] sm:min-w-[140px]"
+            >
+              LINE 諮詢
+            </a>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

@@ -25,6 +25,8 @@ function DayItinerary({
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-label={`第 ${dayNumber} 天：${title}`}
         className="flex w-full items-center justify-between p-4 text-left transition hover:bg-gray-50"
       >
         <div className="flex items-center gap-3">

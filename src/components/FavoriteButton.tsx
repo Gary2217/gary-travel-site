@@ -47,6 +47,7 @@ export default function FavoriteButton({ tripId }: FavoriteButtonProps) {
           liked ? "bg-red-500/90 text-white" : "bg-black/40 text-white/60 hover:bg-black/60 hover:text-white"
         } ${animate ? "scale-125" : ""}`}
         title={liked ? "取消收藏" : "加入收藏"}
+        aria-label={liked ? "取消收藏" : "加入收藏"}
       >
         <svg className="h-5 w-5" fill={liked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

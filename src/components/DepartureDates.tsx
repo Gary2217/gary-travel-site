@@ -808,7 +808,8 @@ export default function DepartureDates({ tripId, tripTitle, dates, isDevMode, on
                         key={d.id}
                         type="button"
                         onClick={() => onSelectedDateChange(isSelected ? null : d.id)}
-                        className={`flex shrink-0 flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition sm:px-3 sm:py-2 ${
+                        aria-label={`選擇 ${info.full} 出發日期`}
+                        className={`flex shrink-0 flex-col items-center rounded-lg border px-3.5 py-2.5 text-center transition min-h-[44px] sm:px-3 sm:py-2 ${
                           isSelected
                             ? "border-sky-400 bg-sky-50 shadow-sm"
                             : "border-gray-200 bg-white hover:border-gray-300"

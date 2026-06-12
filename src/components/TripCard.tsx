@@ -132,6 +132,7 @@ export default function TripCard({
         <div
           className={`relative min-h-[160px] w-[140px] shrink-0 self-stretch overflow-hidden sm:min-h-[200px] sm:w-48 md:w-full md:h-[200px]${!isDevMode ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
+          {...(!isDevMode && !isCustomTour ? { role: 'link', 'aria-label': title } : {})}
         >
           <div className="relative h-full w-full">
             {cover_image_url ? (
