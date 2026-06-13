@@ -40,6 +40,7 @@ interface TripCardProps {
   isCustomTour?: boolean;
   isPromoEnabled?: boolean;
   promoContent?: string;
+  categoryLabel?: string;
   onCustomTourToggle?: (tripId: string, value: boolean) => void;
   onImageUpdate?: (tripId: string, newImageUrl: string) => void;
   onDocumentUpdate?: (tripId: string, newDocUrl: string) => void;
@@ -71,6 +72,7 @@ export default function TripCard({
   isCustomTour = false,
   isPromoEnabled = false,
   promoContent,
+  categoryLabel,
   onCustomTourToggle,
   onImageUpdate,
   onDocumentUpdate,
@@ -225,13 +227,26 @@ export default function TripCard({
               )
             ) : (
               <div className="space-y-2">
+                {categoryLabel && (
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-sky-50 to-emerald-50 border border-sky-200/60 px-2 py-0.5 text-[11px] font-bold text-sky-700 sm:text-xs">
+                      <svg className="h-3 w-3 text-sky-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+                      {categoryLabel}
+                    </span>
+                    <div className="shrink-0">
+                      <ShareButton title={title} url={`/trip/${id}`} small />
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
                     {title}
                   </h3>
-                  <div className="shrink-0">
-                    <ShareButton title={title} url={`/trip/${id}`} small />
-                  </div>
+                  {!categoryLabel && (
+                    <div className="shrink-0">
+                      <ShareButton title={title} url={`/trip/${id}`} small />
+                    </div>
+                  )}
                 </div>
 
                 {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
@@ -297,16 +312,16 @@ export default function TripCard({
 
             {/* 包團/客製標籤 */}
             {isCustomTour && !isDevMode && (
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-base font-bold text-sky-700 sm:text-lg md:px-3 md:py-1.5 md:text-sm">此團須詢問出團資訊，歡迎詢問</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-sky-700">此團請洽詢</span>
                 <a
                   href={lineHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#06C755] px-5 py-2 text-base font-bold text-white transition hover:bg-[#05b64d] sm:text-lg md:px-3 md:py-1.5 md:text-sm"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-1.5 text-sm font-bold text-white transition hover:bg-[#05b64d]"
                 >
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
                   LINE 詢問
                 </a>
               </div>
@@ -323,7 +338,7 @@ export default function TripCard({
                 onClick={() => onCustomTourToggle(id, !isCustomTour)}
                 className={`flex min-h-8 items-center justify-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold shadow transition active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm ${isCustomTour ? 'border-sky-300 bg-sky-100 text-sky-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
               >
-                {isCustomTour ? '✓ 已設包團/客製' : '+ 設為包團/客製'}
+                {isCustomTour ? '✓ 已鎖定洽詢' : '+ 設為洽詢模式'}
               </button>
             )}
 

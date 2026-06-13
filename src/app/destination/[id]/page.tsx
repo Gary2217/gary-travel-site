@@ -131,7 +131,9 @@ export default function DestinationPage() {
         setDestination(destData);
         setTrips(tripsData);
 
-        // 載入同區域的其他目的地，按 sub_region 分組（快速分頁用）
+        // 載入同區域的其他目的地
+        const isChinaRegion = destData.regions?.title === '港澳大陸';
+
         if (destData.region_id) {
           try {
             const allDests = await fetch('/api/destinations', { cache: 'no-store' });
@@ -141,17 +143,40 @@ export default function DestinationPage() {
                 .filter((d) => d.region_id === destData.region_id)
                 .sort((a, b) => a.display_order - b.display_order);
 
-              // 按 sub_region 分組：每個 sub_region 只顯示一個 tab
-              const tabMap = new Map<string, string>();
-              let myTab = "";
-              for (const d of siblings) {
-                const label = d.sub_region || d.title;
-                if (!tabMap.has(label)) tabMap.set(label, d.id);
-                if (d.id === destinationId) myTab = label;
-              }
-              if (isMounted) {
-                setRegionTabs(Array.from(tabMap.entries()).map(([label, destId]) => ({ label, destId })));
-                setCurrentTabLabel(myTab);
+              if (isChinaRegion) {
+                // 港澳大陸合併模式：載入所有子目的地的行程
+                const siblingIds = siblings.map(d => d.id).filter(id => id !== destinationId);
+                const extraTripsArrays = await Promise.all(
+                  siblingIds.map(id => getDestinationTrips(id))
+                );
+                const allTrips = [...tripsData, ...extraTripsArrays.flat()];
+
+                // 去重 by code_label
+                const seen = new Set<string>();
+                const deduped = allTrips.filter(t => {
+                  const key = (t.trip_banner as Record<string, unknown>)?.code_label as string || t.id;
+                  if (seen.has(key)) return false;
+                  seen.add(key);
+                  return true;
+                });
+
+                if (isMounted) {
+                  setTrips(deduped);
+                  setRegionTabs([]); // 隱藏 sub_region tabs
+                }
+              } else {
+                // 正常模式：按 sub_region 分組（快速分頁用）
+                const tabMap = new Map<string, string>();
+                let myTab = "";
+                for (const d of siblings) {
+                  const label = d.sub_region || d.title;
+                  if (!tabMap.has(label)) tabMap.set(label, d.id);
+                  if (d.id === destinationId) myTab = label;
+                }
+                if (isMounted) {
+                  setRegionTabs(Array.from(tabMap.entries()).map(([label, destId]) => ({ label, destId })));
+                  setCurrentTabLabel(myTab);
+                }
               }
             }
           } catch { /* 靜默 */ }
@@ -525,12 +550,26 @@ export default function DestinationPage() {
 
       {/* 子區域篩選（如越南的富國島/芽莊/中越/北越） */}
       {(() => {
+        const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
         const areas = Array.from(new Set(
           trips
             .map((t) => t.trip_banner?.sub_area || "")
             .filter(Boolean)
         ));
         if (areas.length < 2) return null;
+
+        // 港澳大陸：按固定順序排序
+        if (destination.regions?.title === '港澳大陸') {
+          areas.sort((a, b) => {
+            const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
+            const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
+            if (ai === -1 && bi === -1) return a.localeCompare(b);
+            if (ai === -1) return 1;
+            if (bi === -1) return 1;
+            return ai - bi;
+          });
+        }
+
         return (
           <div className="mx-auto max-w-site px-3 pt-3 sm:px-4 md:px-8">
             <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
@@ -806,6 +845,7 @@ export default function DestinationPage() {
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                           promoContent={trip.trip_banner?.promo_content || ''}
+                          categoryLabel={destination.regions?.title === '港澳大陸' ? (trip.trip_banner?.sub_area as string | undefined) : undefined}
                           onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
