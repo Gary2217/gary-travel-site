@@ -146,10 +146,13 @@ export default function DestinationPage() {
               if (isChinaRegion) {
                 // 港澳大陸合併模式：載入所有子目的地的行程
                 const siblingIds = siblings.map(d => d.id).filter(id => id !== destinationId);
-                const extraTripsArrays = await Promise.all(
+                const results = await Promise.allSettled(
                   siblingIds.map(id => getDestinationTrips(id))
                 );
-                const allTrips = [...tripsData, ...extraTripsArrays.flat()];
+                const extraTrips = results
+                  .filter((r): r is PromiseFulfilledResult<typeof tripsData> => r.status === 'fulfilled')
+                  .flatMap(r => r.value);
+                const allTrips = [...tripsData, ...extraTrips];
 
                 // 去重 by code_label
                 const seen = new Set<string>();
