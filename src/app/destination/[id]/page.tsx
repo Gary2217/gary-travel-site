@@ -576,17 +576,6 @@ export default function DestinationPage() {
         return (
           <div className="mx-auto max-w-site px-3 pt-3 sm:px-4 md:px-8">
             <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                onClick={() => updateSubAreaFilter("")}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition sm:text-sm ${
-                  !subAreaFilter
-                    ? "border-sky-600 bg-sky-600 text-white"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-sky-400 hover:text-sky-600"
-                }`}
-              >
-                全部
-              </button>
               {areas.map((area) => (
                 <button
                   key={area}
@@ -848,7 +837,7 @@ export default function DestinationPage() {
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                           promoContent={trip.trip_banner?.promo_content || ''}
-                          categoryLabel={destination.regions?.title === '港澳大陸' ? (subAreaFilter || ((trip.trip_banner?.sub_area as string) || '').split(',')[0].trim() || undefined) : undefined}
+                          categoryLabel={subAreaFilter || ((trip.trip_banner?.sub_area as string) || '').split(',')[0].trim() || undefined}
                           onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
