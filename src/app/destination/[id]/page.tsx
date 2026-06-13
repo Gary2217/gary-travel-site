@@ -556,7 +556,7 @@ export default function DestinationPage() {
         const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
         const areas = Array.from(new Set(
           trips
-            .map((t) => t.trip_banner?.sub_area || "")
+            .flatMap((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()))
             .filter(Boolean)
         ));
         if (areas.length < 2) return null;
@@ -777,12 +777,12 @@ export default function DestinationPage() {
             )}
 
             <h2 className="mb-4 text-lg font-bold text-gray-900 sm:mb-6 sm:text-xl md:text-2xl">
-              可選行程（{subAreaFilter ? trips.filter((t) => (t.trip_banner?.sub_area || "") === subAreaFilter).length : trips.length}）
+              可選行程（{subAreaFilter ? trips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter)).length : trips.length}）
             </h2>
 
             {(() => {
               const filtered = subAreaFilter
-                ? trips.filter((t) => (t.trip_banner?.sub_area || "") === subAreaFilter)
+                ? trips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter))
                 : trips;
               const sorted = dateFilter
                 ? [...filtered].sort((a, b) => {
@@ -848,7 +848,7 @@ export default function DestinationPage() {
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                           promoContent={trip.trip_banner?.promo_content || ''}
-                          categoryLabel={destination.regions?.title === '港澳大陸' ? (trip.trip_banner?.sub_area as string | undefined) : undefined}
+                          categoryLabel={destination.regions?.title === '港澳大陸' ? (subAreaFilter || ((trip.trip_banner?.sub_area as string) || '').split(',')[0].trim() || undefined) : undefined}
                           onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
