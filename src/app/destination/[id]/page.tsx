@@ -351,8 +351,8 @@ export default function DestinationPage() {
       const hidden = trips.find(t => t.id === tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
       if (hidden) {
-        setHiddenTrips(prev => [...prev, hidden]);
         setShowHidden(true);
+        await loadHiddenTrips();
         setTimeout(() => {
           document.getElementById('hidden-trips-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
