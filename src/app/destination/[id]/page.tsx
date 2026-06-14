@@ -353,6 +353,9 @@ export default function DestinationPage() {
       if (hidden) {
         setHiddenTrips(prev => [...prev, hidden]);
         setShowHidden(true);
+        setTimeout(() => {
+          document.getElementById('hidden-trips-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "隱藏失敗";
@@ -935,6 +938,56 @@ export default function DestinationPage() {
                 </div>
               );
             })()}
+
+            {/* Dev mode 已隱藏行程（緊接在行程列表下方） */}
+            {isDevMode && (showHidden || hiddenTrips.length > 0) && (
+              <div className="mt-6" id="hidden-trips-section">
+                <button
+                  type="button"
+                  onClick={() => { if (!showHidden) { setShowHidden(true); void loadHiddenTrips(); } else { setShowHidden(false); } }}
+                  className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
+                  </svg>
+                  {showHidden ? `收起已隱藏行程（${hiddenTrips.length}）` : `顯示已隱藏行程（${hiddenTrips.length}）`}
+                </button>
+                {showHidden && hiddenTrips.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {hiddenTrips.map((trip) => (
+                      <div key={trip.id} className="relative rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/30 p-1">
+                        <div className="absolute left-2 top-2 z-10 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-bold text-white">已隱藏</div>
+                        <div className="pointer-events-none opacity-50">
+                          <TripCard
+                            id={trip.id}
+                            title={trip.title}
+                            duration={trip.duration}
+                            price_range={getTripCardPrice(trip)}
+                            cover_image_url={trip.cover_image_url}
+                            tags={trip.trip_banner?.tags}
+                            isDevMode={false}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void handleRestoreTrip(trip.id)}
+                          className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow transition hover:bg-emerald-500 active:scale-95"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          恢復顯示
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {showHidden && hiddenTrips.length === 0 && (
+                  <p className="text-sm text-gray-400">沒有已隱藏的行程</p>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -1016,54 +1069,6 @@ export default function DestinationPage() {
           <div className="mt-10 flex items-center justify-center py-6">
             <div className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
             <span className="ml-2 text-sm text-gray-500">載入推薦行程...</span>
-          </div>
-        )}
-
-        {/* Dev mode 已隱藏行程 */}
-        {isDevMode && (
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={() => { if (!showHidden) { setShowHidden(true); void loadHiddenTrips(); } else { setShowHidden(false); } }}
-              className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
-              </svg>
-              {showHidden ? `收起已隱藏行程（${hiddenTrips.length}）` : '顯示已隱藏行程'}
-            </button>
-            {showHidden && hiddenTrips.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {hiddenTrips.map((trip) => (
-                  <div key={trip.id} className="relative opacity-60">
-                    <div className="absolute inset-0 z-10 flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => void handleRestoreTrip(trip.id)}
-                        className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500 active:scale-95"
-                      >
-                        恢復顯示
-                      </button>
-                    </div>
-                    <TripCard
-                      id={trip.id}
-                      title={trip.title}
-                      duration={trip.duration}
-                      price_range={getTripCardPrice(trip)}
-                      cover_image_url={trip.cover_image_url}
-                      document_url={trip.document_url}
-                      document_is_available={trip.document_is_available}
-                      departure_dates={trip.departure_dates}
-                      tags={trip.trip_banner?.tags}
-                      isDevMode={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-            {showHidden && hiddenTrips.length === 0 && (
-              <p className="text-sm text-gray-400">沒有已隱藏的行程</p>
-            )}
           </div>
         )}
 
