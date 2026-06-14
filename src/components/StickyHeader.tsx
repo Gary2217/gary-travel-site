@@ -352,7 +352,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                   {section.destinations.map((d, i) => (
                     <span key={d.id} className="flex items-center gap-2">
                       {i > 0 && <span className="text-gray-300">｜</span>}
-                      <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm font-medium text-gray-700 transition hover:text-sky-600">{d.title}</Link>
+                      <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm font-medium text-gray-700 transition hover:text-sky-600">{d.sub_region || d.title}</Link>
                     </span>
                   ))}
                 </div>
