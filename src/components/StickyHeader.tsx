@@ -13,6 +13,11 @@ const ContactFormModal = dynamic(() => import("./ContactFormModal"), { ssr: fals
 /** 子城市列表已移除，導航列只顯示 destination 名稱 */
 const SUB_CITIES: Record<string, Record<string, string[]>> = {};
 
+/** 導航列下拉用 sub_area 地區名（比 destination 更細），全部連到同一個合併頁 */
+const NAV_AREAS: Record<string, string[]> = {
+  '港澳大陸': ['張家界', '九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'],
+};
+
 type FavTrip = {
   id: string;
   title: string;
@@ -325,7 +330,26 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
             /* ── 有子城市資料（日本/東南亞/歐洲/港澳大陸）→ 4 欄 grid ── */
             /* ── 其餘小區域 → 水平排列 destination 名稱 ── */
-            const content = hasRegionCityData ? (() => {
+            const navAreas = NAV_AREAS[section.categoryLabel];
+            const firstDestId = section.destinations[0]?.id;
+
+            const content = navAreas ? (
+              /* 有 NAV_AREAS 的區域 → 顯示 sub_area 地區名，全部連到合併頁 */
+              <div className="mx-auto max-w-site px-6 py-4">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {navAreas.map((area) => (
+                    <Link
+                      key={area}
+                      href={`/destination/${firstDestId}`}
+                      onClick={() => setHoveredNavId(null)}
+                      className="rounded-full border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 px-5 py-2 text-[13px] font-bold tracking-wide text-gray-600 shadow-sm ring-1 ring-sky-100/50 transition hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                    >
+                      {area}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : hasRegionCityData ? (() => {
               const grouped = new Map<string, typeof section.destinations>();
               for (const d of section.destinations) { const key = d.sub_region || d.title; const list = grouped.get(key) || []; list.push(d); grouped.set(key, list); }
               return (
