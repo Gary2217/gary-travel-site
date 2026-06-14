@@ -1118,15 +1118,21 @@ export default function HomePage() {
                     {hasMore && (
                       <button
                         type="button"
-                        onClick={() => setExpandedSections((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(section.id)) {
-                            next.delete(section.id);
-                          } else {
-                            next.add(section.id);
+                        onClick={() => {
+                          const willExpand = !isExpanded;
+                          setExpandedSections((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(section.id)) next.delete(section.id);
+                            else next.add(section.id);
+                            return next;
+                          });
+                          if (willExpand) {
+                            setTimeout(() => {
+                              const el = document.getElementById(section.id);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 50);
                           }
-                          return next;
-                        })}
+                        }}
                         className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-sky-600 transition hover:bg-gray-100 hover:text-sky-500"
                       >
                         {isExpanded ? '收合' : `查看全部 ${section.destinations.length} 個目的地`}
