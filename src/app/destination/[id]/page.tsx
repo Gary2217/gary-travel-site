@@ -338,6 +338,21 @@ export default function DestinationPage() {
     }
   };
 
+  const handleHideTrip = async (tripId: string) => {
+    try {
+      const res = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: false }),
+      });
+      if (!res.ok) throw new Error('隱藏失敗');
+      setTrips(prev => prev.filter(trip => trip.id !== tripId));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "隱藏失敗";
+      alert(`隱藏行程失敗：${msg}`);
+    }
+  };
+
   const handleDeleteTrip = async (tripId: string) => {
     try {
       await deleteTrip(tripId);
@@ -859,6 +874,7 @@ export default function DestinationPage() {
                           onDurationUpdate={handleTripDurationUpdate}
                           onTitleUpdate={handleTripTitleUpdate}
                           onDelete={handleDeleteTrip}
+                          onHide={handleHideTrip}
                         />
                       </div>
                     );

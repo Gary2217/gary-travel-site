@@ -48,6 +48,7 @@ interface TripCardProps {
   onDurationUpdate?: (tripId: string, newDuration: string) => void;
   onTitleUpdate?: (tripId: string, newTitle: string) => void;
   onDelete?: (tripId: string) => void;
+  onHide?: (tripId: string) => void;
 }
 
 function formatShortDate(dateStr: string) {
@@ -80,6 +81,7 @@ export default function TripCard({
   onDurationUpdate,
   onTitleUpdate,
   onDelete,
+  onHide,
 }: TripCardProps) {
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -339,6 +341,24 @@ export default function TripCard({
                 className={`flex min-h-8 items-center justify-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold shadow transition active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm ${isCustomTour ? 'border-sky-300 bg-sky-100 text-sky-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
               >
                 {isCustomTour ? '✓ 已鎖定洽詢' : '+ 設為洽詢模式'}
+              </button>
+            )}
+
+            {/* Dev mode 隱藏行程 */}
+            {isDevMode && onHide && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`確定要隱藏「${title}」嗎？隱藏後用戶看不到，可在 DB 重新啟用。`)) {
+                    onHide(id);
+                  }
+                }}
+                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-700 shadow transition hover:bg-amber-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
+              >
+                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
+                </svg>
+                隱藏
               </button>
             )}
 
