@@ -123,8 +123,8 @@ export default function DestinationPage() {
         setDestination(destData);
         setTrips(tripsData);
 
-        // 載入同區域的其他目的地，建立 tabs（含「全部」）
-        const isMergedRegion = destData.regions?.title === '港澳大陸';
+        // 載入同區域的所有行程，建立 sub_area 篩選 tabs
+        const isChinaRegion = destData.regions?.title === '港澳大陸';
 
         if (destData.region_id) {
           try {
@@ -138,11 +138,8 @@ export default function DestinationPage() {
               const allSiblingIds = siblings.map(d => d.id);
               siblingDestsRef.current = allSiblingIds;
 
-              // 檢查 URL 是否有 ?all=1（從導航列或首頁進來），港澳大陸永遠是全部模式
-              const isAllMode = isMergedRegion || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('all') === '1');
-
-              if (isAllMode && siblings.length > 1) {
-                // 全部模式：載入所有子目的地的行程
+              if (siblings.length > 1) {
+                // 載入所有子目的地的行程（合併顯示）
                 const siblingIds = allSiblingIds.filter(id => id !== destinationId);
                 const results = await Promise.allSettled(
                   siblingIds.map(id => getDestinationTrips(id))
@@ -161,12 +158,12 @@ export default function DestinationPage() {
                   return true;
                 });
 
-                // 所有區域全部模式：用 sub_area 值建立篩選 tabs
+                // 用 sub_area 值建立篩選 tabs
                 const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
                 const areas = Array.from(new Set(
                   deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
                 ));
-                if (isMergedRegion) {
+                if (isChinaRegion) {
                   areas.sort((a, b) => {
                     const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
                     const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
@@ -178,30 +175,12 @@ export default function DestinationPage() {
                 }
                 const areaTabs = areas.length >= 2
                   ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-                  : [{ label: "全部", destId: "all" }];
+                  : [];
 
                 if (isMounted) {
                   setTrips(deduped);
                   setRegionTabs(areaTabs);
                   setCurrentTabLabel("全部");
-                }
-              } else {
-                // 非全部模式：按 sub_region 分組（快速分頁用）
-                const tabMap = new Map<string, string>();
-                let myTab = "";
-                for (const d of siblings) {
-                  const label = d.sub_region || d.title;
-                  if (!tabMap.has(label)) tabMap.set(label, d.id);
-                  if (d.id === destinationId) myTab = label;
-                }
-                const tabEntries = Array.from(tabMap.entries()).map(([label, destId]) => ({ label, destId }));
-                const tabs = siblings.length > 1
-                  ? [{ label: "全部", destId: "all" }, ...tabEntries]
-                  : tabEntries;
-
-                if (isMounted) {
-                  setRegionTabs(tabs);
-                  setCurrentTabLabel(myTab);
                 }
               }
             }
@@ -474,33 +453,12 @@ export default function DestinationPage() {
 
   const handleTabClick = (tab: { label: string; destId: string }) => {
     if (tab.label === currentTabLabel) return;
-
     if (tab.destId.startsWith("filter:")) {
-      // Sub_area 篩選 tab
-      const area = tab.destId.slice(7);
-      setSubAreaFilter(area);
+      setSubAreaFilter(tab.destId.slice(7));
       setCurrentTabLabel(tab.label);
     } else if (tab.destId === "all") {
       setSubAreaFilter("");
-      // 已在全部模式（有 filter tabs）→ 只清篩選；否則重新載入全部
-      const hasFilterTabs = regionTabs.some(t => t.destId.startsWith("filter:"));
-      if (hasFilterTabs) {
-        setCurrentTabLabel("全部");
-      } else {
-        void handleShowAll();
-      }
-    } else if (tab.destId === destinationId && currentTabLabel === "全部") {
-      // 同一 destination，從「全部」切回特定 tab
-      setSubAreaFilter("");
-      setCurrentTabLabel(tab.label);
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('all');
-        window.history.replaceState({}, '', url.toString());
-      }
-      void getDestinationTrips(destinationId).then(data => setTrips(data));
-    } else {
-      router.push(`/destination/${tab.destId}`);
+      setCurrentTabLabel("全部");
     }
   };
 
