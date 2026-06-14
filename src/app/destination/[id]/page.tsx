@@ -350,7 +350,10 @@ export default function DestinationPage() {
       if (!res.ok) throw new Error('隱藏失敗');
       const hidden = trips.find(t => t.id === tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
-      if (hidden && showHidden) setHiddenTrips(prev => [...prev, hidden]);
+      if (hidden) {
+        setHiddenTrips(prev => [...prev, hidden]);
+        setShowHidden(true);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "隱藏失敗";
       alert(`隱藏行程失敗：${msg}`);
