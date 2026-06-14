@@ -189,6 +189,24 @@ export default function DestinationPage() {
           } catch { /* 靜默 */ }
         }
 
+        // Dev mode：載入已隱藏行程
+        const isDevOn = typeof window !== 'undefined' && localStorage.getItem('dev_mode_enabled') === '1';
+        if (isDevOn && destData.region_id) {
+          try {
+            const hiddenDestIds = siblingDestsRef.current.length > 0 ? siblingDestsRef.current : [destinationId];
+            const hiddenResults = await Promise.allSettled(
+              hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`, { cache: 'no-store' }).then(r => r.json()))
+            );
+            const hiddenAll = hiddenResults
+              .filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled')
+              .flatMap(r => r.value);
+            if (isMounted) {
+              setHiddenTrips(hiddenAll);
+              setShowHidden(true);
+            }
+          } catch { /* 靜默 */ }
+        }
+
         // 載入同區域推薦行程（不管有沒有行程都載）
         if (destData.region_id && destData.regions?.category_label) {
           setRelatedLoading(true);
@@ -246,13 +264,7 @@ export default function DestinationPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const devOn = localStorage.getItem('dev_mode_enabled') === '1';
-    setIsDevMode(devOn);
-    if (devOn) {
-      setShowHidden(true);
-      // 延遲載入確保 siblingDestsRef 已設定
-      setTimeout(() => void loadHiddenTrips(), 2000);
-    }
+    setIsDevMode(localStorage.getItem('dev_mode_enabled') === '1');
   }, []);
 
   useEffect(() => {
