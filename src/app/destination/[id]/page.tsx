@@ -63,6 +63,8 @@ export default function DestinationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
+  const [hiddenTrips, setHiddenTrips] = useState<Trip[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
   const [dateFilter, setDateFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
@@ -346,11 +348,41 @@ export default function DestinationPage() {
         body: JSON.stringify({ is_active: false }),
       });
       if (!res.ok) throw new Error('隱藏失敗');
+      const hidden = trips.find(t => t.id === tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
+      if (hidden && showHidden) setHiddenTrips(prev => [...prev, hidden]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "隱藏失敗";
       alert(`隱藏行程失敗：${msg}`);
     }
+  };
+
+  const handleRestoreTrip = async (tripId: string) => {
+    try {
+      const res = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: true }),
+      });
+      if (!res.ok) throw new Error('恢復失敗');
+      const restored = hiddenTrips.find(t => t.id === tripId);
+      setHiddenTrips(prev => prev.filter(t => t.id !== tripId));
+      if (restored) setTrips(prev => [...prev, restored]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "恢復失敗";
+      alert(`恢復行程失敗：${msg}`);
+    }
+  };
+
+  const loadHiddenTrips = async () => {
+    const allIds = siblingDestsRef.current.length > 0 ? siblingDestsRef.current : [destinationId];
+    try {
+      const results = await Promise.allSettled(
+        allIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`, { cache: 'no-store' }).then(r => r.json()))
+      );
+      const all = results.filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled').flatMap(r => r.value);
+      setHiddenTrips(all);
+    } catch { /* ignore */ }
   };
 
   const handleDeleteTrip = async (tripId: string) => {
@@ -981,6 +1013,54 @@ export default function DestinationPage() {
           <div className="mt-10 flex items-center justify-center py-6">
             <div className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
             <span className="ml-2 text-sm text-gray-500">載入推薦行程...</span>
+          </div>
+        )}
+
+        {/* Dev mode 已隱藏行程 */}
+        {isDevMode && (
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => { if (!showHidden) { setShowHidden(true); void loadHiddenTrips(); } else { setShowHidden(false); } }}
+              className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
+              </svg>
+              {showHidden ? `收起已隱藏行程（${hiddenTrips.length}）` : '顯示已隱藏行程'}
+            </button>
+            {showHidden && hiddenTrips.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {hiddenTrips.map((trip) => (
+                  <div key={trip.id} className="relative opacity-60">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => void handleRestoreTrip(trip.id)}
+                        className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500 active:scale-95"
+                      >
+                        恢復顯示
+                      </button>
+                    </div>
+                    <TripCard
+                      id={trip.id}
+                      title={trip.title}
+                      duration={trip.duration}
+                      price_range={getTripCardPrice(trip)}
+                      cover_image_url={trip.cover_image_url}
+                      document_url={trip.document_url}
+                      document_is_available={trip.document_is_available}
+                      departure_dates={trip.departure_dates}
+                      tags={trip.trip_banner?.tags}
+                      isDevMode={false}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            {showHidden && hiddenTrips.length === 0 && (
+              <p className="text-sm text-gray-400">沒有已隱藏的行程</p>
+            )}
           </div>
         )}
 

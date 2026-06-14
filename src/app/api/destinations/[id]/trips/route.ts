@@ -24,11 +24,13 @@ export async function GET(
 
     const today = new Date().toISOString().slice(0, 10);
 
+    const showHidden = _request.nextUrl.searchParams.get('hidden') === '1';
+
     const { data, error } = await supabase
       .from('trips')
       .select('*, trip_departure_dates(*)')
       .eq('destination_id', params.id)
-      .eq('is_active', true)
+      .eq('is_active', showHidden ? false : true)
       .order('display_order', { ascending: true });
 
     if (error) {
