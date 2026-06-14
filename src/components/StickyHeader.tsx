@@ -354,7 +354,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                       key={d.id}
                       href={`/destination/${d.id}`}
                       onClick={() => setHoveredNavId(null)}
-                      className="rounded-lg border border-sky-200 bg-gradient-to-r from-[#e0f2fe] via-white to-[#dbeafe] px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:from-[#bae6fd] hover:via-[#e0f2fe] hover:to-[#bfdbfe] hover:text-sky-700 hover:shadow-md"
+                      className="rounded-full border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 px-5 py-2 text-[13px] font-bold tracking-wide text-gray-600 shadow-sm ring-1 ring-sky-100/50 transition hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
                     >
                       {d.sub_region || d.title}
                     </Link>

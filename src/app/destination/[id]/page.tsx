@@ -589,16 +589,16 @@ export default function DestinationPage() {
             </h2>
           )}
           <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex justify-center gap-2 pb-1">
+            <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
               {regionTabs.map((tab) => (
                 <button
                   key={tab.label}
                   type="button"
                   onClick={() => handleTabClick(tab)}
-                  className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition-all ${
+                  className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
                     tab.label === currentTabLabel
-                      ? "bg-gradient-to-r from-[#0ea5e9] to-[#1d4ed8] text-white shadow-lg shadow-blue-500/25"
-                      : "border border-sky-200 bg-gradient-to-r from-[#e0f2fe] via-white to-[#dbeafe] text-gray-700 shadow-sm hover:-translate-y-0.5 hover:border-sky-400 hover:from-[#bae6fd] hover:via-[#e0f2fe] hover:to-[#bfdbfe] hover:text-sky-700 hover:shadow-md"
+                      ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
+                      : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
                   }`}
                 >
                   {tab.label}
