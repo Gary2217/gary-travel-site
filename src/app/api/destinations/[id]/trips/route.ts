@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 export async function GET(
   _request: NextRequest,
@@ -15,7 +16,10 @@ export async function GET(
       return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const showHidden = _request.nextUrl.searchParams.get('hidden') === '1';
+
+    // 查隱藏行程需 service role key 繞過 RLS
+    const supabase = createClient(supabaseUrl, showHidden && supabaseServiceKey ? supabaseServiceKey : supabaseAnonKey, {
       global: {
         fetch: (url: RequestInfo | URL, options?: RequestInit) =>
           fetch(url, { ...options, cache: 'no-store' }),
@@ -23,8 +27,6 @@ export async function GET(
     });
 
     const today = new Date().toISOString().slice(0, 10);
-
-    const showHidden = _request.nextUrl.searchParams.get('hidden') === '1';
 
     const { data, error } = await supabase
       .from('trips')
