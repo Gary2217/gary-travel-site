@@ -246,7 +246,13 @@ export default function DestinationPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    setIsDevMode(localStorage.getItem('dev_mode_enabled') === '1');
+    const devOn = localStorage.getItem('dev_mode_enabled') === '1';
+    setIsDevMode(devOn);
+    if (devOn) {
+      setShowHidden(true);
+      // 延遲載入確保 siblingDestsRef 已設定
+      setTimeout(() => void loadHiddenTrips(), 2000);
+    }
   }, []);
 
   useEffect(() => {
@@ -940,7 +946,7 @@ export default function DestinationPage() {
             })()}
 
             {/* Dev mode 已隱藏行程（緊接在行程列表下方） */}
-            {isDevMode && (showHidden || hiddenTrips.length > 0) && (
+            {isDevMode && (
               <div className="mt-6" id="hidden-trips-section">
                 <button
                   type="button"
