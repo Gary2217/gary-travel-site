@@ -347,13 +347,17 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                 </div>
               );
             })() : (
-              <div className="mx-auto max-w-site px-6 py-5">
-                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
-                  {section.destinations.map((d, i) => (
-                    <span key={d.id} className="flex items-center gap-2">
-                      {i > 0 && <span className="text-gray-300">｜</span>}
-                      <Link href={`/destination/${d.id}`} onClick={() => setHoveredNavId(null)} className="text-sm font-medium text-gray-700 transition hover:text-sky-600">{d.sub_region || d.title}</Link>
-                    </span>
+              <div className="mx-auto max-w-site px-6 py-4">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {section.destinations.map((d) => (
+                    <Link
+                      key={d.id}
+                      href={`/destination/${d.id}`}
+                      onClick={() => setHoveredNavId(null)}
+                      className="rounded-lg border border-sky-200 bg-gradient-to-r from-[#e0f2fe] via-white to-[#dbeafe] px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:from-[#bae6fd] hover:via-[#e0f2fe] hover:to-[#bfdbfe] hover:text-sky-700 hover:shadow-md"
+                    >
+                      {d.sub_region || d.title}
+                    </Link>
                   ))}
                 </div>
               </div>

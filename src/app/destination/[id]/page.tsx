@@ -580,29 +580,31 @@ export default function DestinationPage() {
         </div>
       </div>
 
-      {/* 同區域快速分頁（按 sub_region 分組，像朋威的 中東/中亞/西伯利亞 tabs） */}
+      {/* 區域篩選 tabs */}
       {regionTabs.length > 1 && (
         <div className="mx-auto max-w-site px-3 pt-5 sm:px-4 md:px-8">
           {destination.regions && (
-            <h2 className="mb-3 text-center text-xl font-bold text-gray-800 sm:text-2xl">
+            <h2 className="mb-4 text-center text-xl font-bold text-gray-800 sm:text-2xl">
               {destination.regions.title}
             </h2>
           )}
-          <div className="flex flex-wrap justify-center gap-2">
-            {regionTabs.map((tab) => (
-              <button
-                key={tab.label}
-                type="button"
-                onClick={() => handleTabClick(tab)}
-                className={`rounded-full border-2 px-4 py-1.5 text-sm font-semibold transition ${
-                  tab.label === currentTabLabel
-                    ? "border-gray-800 bg-gray-800 text-white"
-                    : "border-gray-300 bg-white text-gray-600 hover:border-gray-500 hover:text-gray-800"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex justify-center gap-2 pb-1">
+              {regionTabs.map((tab) => (
+                <button
+                  key={tab.label}
+                  type="button"
+                  onClick={() => handleTabClick(tab)}
+                  className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition-all ${
+                    tab.label === currentTabLabel
+                      ? "bg-gradient-to-r from-[#0ea5e9] to-[#1d4ed8] text-white shadow-lg shadow-blue-500/25"
+                      : "border border-sky-200 bg-gradient-to-r from-[#e0f2fe] via-white to-[#dbeafe] text-gray-700 shadow-sm hover:-translate-y-0.5 hover:border-sky-400 hover:from-[#bae6fd] hover:via-[#e0f2fe] hover:to-[#bfdbfe] hover:text-sky-700 hover:shadow-md"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
