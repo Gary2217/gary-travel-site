@@ -961,7 +961,19 @@ export default function HomePage() {
             <section key={section.id} id={section.id} className="mb-8 scroll-mt-[120px]">
               <div className="mb-3 flex items-baseline justify-between px-1">
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">{section.title}</h2>
+                  {section.destinations.length > 0 ? (
+                    <Link
+                      href={`/destination/${section.destinations[0].id}?all=1`}
+                      className="group inline-flex items-center gap-1.5"
+                    >
+                      <h2 className="text-lg font-bold text-gray-900 transition group-hover:text-sky-600">{section.title}</h2>
+                      <svg className="h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  ) : (
+                    <h2 className="text-lg font-bold text-gray-900">{section.title}</h2>
+                  )}
                   <p className="text-xs text-gray-500">{section.description}</p>
                 </div>
                 {isDevMode && (

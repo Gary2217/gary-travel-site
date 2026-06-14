@@ -76,14 +76,7 @@ export default function DestinationPage() {
   const [scrapeRunning, setScrapeRunning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
-  const updateSubAreaFilter = (area: string) => {
-    setSubAreaFilter(area);
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    if (area) url.searchParams.set('area', area);
-    else url.searchParams.delete('area');
-    window.history.replaceState({}, '', url.toString());
-  };
+  const siblingDestsRef = useRef<string[]>([]);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
 
@@ -93,7 +86,6 @@ export default function DestinationPage() {
     const qs = new URLSearchParams(window.location.search);
     setDateFilter(qs.get('date') || '');
     setCityFilter(qs.get('city') || '');
-    setSubAreaFilter(qs.get('area') || '');
   }, []);
 
   // 檢查是否有抓取進行中（防重複觸發）
@@ -131,8 +123,8 @@ export default function DestinationPage() {
         setDestination(destData);
         setTrips(tripsData);
 
-        // 載入同區域的其他目的地
-        const isChinaRegion = destData.regions?.title === '港澳大陸';
+        // 載入同區域的其他目的地，建立 tabs（含「全部」）
+        const isMergedRegion = destData.regions?.title === '港澳大陸';
 
         if (destData.region_id) {
           try {
@@ -143,9 +135,15 @@ export default function DestinationPage() {
                 .filter((d) => d.region_id === destData.region_id)
                 .sort((a, b) => a.display_order - b.display_order);
 
-              if (isChinaRegion) {
-                // 港澳大陸合併模式：載入所有子目的地的行程
-                const siblingIds = siblings.map(d => d.id).filter(id => id !== destinationId);
+              const allSiblingIds = siblings.map(d => d.id);
+              siblingDestsRef.current = allSiblingIds;
+
+              // 檢查 URL 是否有 ?all=1（從導航列或首頁進來），港澳大陸永遠是全部模式
+              const isAllMode = isMergedRegion || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('all') === '1');
+
+              if (isAllMode && siblings.length > 1) {
+                // 全部模式：載入所有子目的地的行程
+                const siblingIds = allSiblingIds.filter(id => id !== destinationId);
                 const results = await Promise.allSettled(
                   siblingIds.map(id => getDestinationTrips(id))
                 );
@@ -163,12 +161,32 @@ export default function DestinationPage() {
                   return true;
                 });
 
+                // 所有區域全部模式：用 sub_area 值建立篩選 tabs
+                const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+                const areas = Array.from(new Set(
+                  deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+                ));
+                if (isMergedRegion) {
+                  areas.sort((a, b) => {
+                    const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
+                    const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
+                    if (ai === -1 && bi === -1) return a.localeCompare(b);
+                    if (ai === -1) return 1;
+                    if (bi === -1) return -1;
+                    return ai - bi;
+                  });
+                }
+                const areaTabs = areas.length >= 2
+                  ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
+                  : [{ label: "全部", destId: "all" }];
+
                 if (isMounted) {
                   setTrips(deduped);
-                  setRegionTabs([]); // 隱藏 sub_region tabs
+                  setRegionTabs(areaTabs);
+                  setCurrentTabLabel("全部");
                 }
               } else {
-                // 正常模式：按 sub_region 分組（快速分頁用）
+                // 非全部模式：按 sub_region 分組（快速分頁用）
                 const tabMap = new Map<string, string>();
                 let myTab = "";
                 for (const d of siblings) {
@@ -176,8 +194,13 @@ export default function DestinationPage() {
                   if (!tabMap.has(label)) tabMap.set(label, d.id);
                   if (d.id === destinationId) myTab = label;
                 }
+                const tabEntries = Array.from(tabMap.entries()).map(([label, destId]) => ({ label, destId }));
+                const tabs = siblings.length > 1
+                  ? [{ label: "全部", destId: "all" }, ...tabEntries]
+                  : tabEntries;
+
                 if (isMounted) {
-                  setRegionTabs(Array.from(tabMap.entries()).map(([label, destId]) => ({ label, destId })));
+                  setRegionTabs(tabs);
                   setCurrentTabLabel(myTab);
                 }
               }
@@ -403,7 +426,82 @@ export default function DestinationPage() {
   const clearFilters = () => {
     setDateFilter('');
     setCityFilter('');
-    router.replace(`/destination/${destinationId}`);
+    const isAll = currentTabLabel === "全部";
+    router.replace(`/destination/${destinationId}${isAll ? '?all=1' : ''}`);
+  };
+
+  const handleShowAll = async () => {
+    setCurrentTabLabel("全部");
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('all', '1');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    const allIds = siblingDestsRef.current;
+    if (allIds.length === 0) return;
+
+    try {
+      const results = await Promise.allSettled(
+        allIds.map(id => getDestinationTrips(id))
+      );
+      const allTrips = results
+        .filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled')
+        .flatMap(r => r.value);
+
+      const seen = new Set<string>();
+      const deduped = allTrips.filter(t => {
+        const key = (t.trip_banner as Record<string, unknown>)?.code_label as string || t.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      // 全部模式：用 sub_area 建立篩選 tabs
+      const areas = Array.from(new Set(
+        deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+      ));
+      const areaTabs = areas.length >= 2
+        ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
+        : [{ label: "全部", destId: "all" }];
+
+      setTrips(deduped);
+      setRegionTabs(areaTabs);
+    } catch {
+      // 保持目前行程不變
+    }
+  };
+
+  const handleTabClick = (tab: { label: string; destId: string }) => {
+    if (tab.label === currentTabLabel) return;
+
+    if (tab.destId.startsWith("filter:")) {
+      // Sub_area 篩選 tab
+      const area = tab.destId.slice(7);
+      setSubAreaFilter(area);
+      setCurrentTabLabel(tab.label);
+    } else if (tab.destId === "all") {
+      setSubAreaFilter("");
+      // 已在全部模式（有 filter tabs）→ 只清篩選；否則重新載入全部
+      const hasFilterTabs = regionTabs.some(t => t.destId.startsWith("filter:"));
+      if (hasFilterTabs) {
+        setCurrentTabLabel("全部");
+      } else {
+        void handleShowAll();
+      }
+    } else if (tab.destId === destinationId && currentTabLabel === "全部") {
+      // 同一 destination，從「全部」切回特定 tab
+      setSubAreaFilter("");
+      setCurrentTabLabel(tab.label);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('all');
+        window.history.replaceState({}, '', url.toString());
+      }
+      void getDestinationTrips(destinationId).then(data => setTrips(data));
+    } else {
+      router.push(`/destination/${tab.destId}`);
+    }
   };
 
   const formatDate = (d: string) => {
@@ -537,7 +635,7 @@ export default function DestinationPage() {
               <button
                 key={tab.label}
                 type="button"
-                onClick={() => { if (tab.label !== currentTabLabel) router.push(`/destination/${tab.destId}`); }}
+                onClick={() => handleTabClick(tab)}
                 className={`rounded-full border-2 px-4 py-1.5 text-sm font-semibold transition ${
                   tab.label === currentTabLabel
                     ? "border-gray-800 bg-gray-800 text-white"
@@ -550,50 +648,6 @@ export default function DestinationPage() {
           </div>
         </div>
       )}
-
-      {/* 子區域篩選（如越南的富國島/芽莊/中越/北越） */}
-      {(() => {
-        const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
-        const areas = Array.from(new Set(
-          trips
-            .flatMap((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()))
-            .filter(Boolean)
-        ));
-        if (areas.length < 2) return null;
-
-        // 港澳大陸：按固定順序排序
-        if (destination.regions?.title === '港澳大陸') {
-          areas.sort((a, b) => {
-            const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
-            const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
-            if (ai === -1 && bi === -1) return a.localeCompare(b);
-            if (ai === -1) return 1;
-            if (bi === -1) return 1;
-            return ai - bi;
-          });
-        }
-
-        return (
-          <div className="mx-auto max-w-site px-3 pt-3 sm:px-4 md:px-8">
-            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-              {areas.map((area) => (
-                <button
-                  key={area}
-                  type="button"
-                  onClick={() => updateSubAreaFilter(subAreaFilter === area ? "" : area)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition sm:text-sm ${
-                    subAreaFilter === area
-                      ? "border-sky-600 bg-sky-600 text-white"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-sky-400 hover:text-sky-600"
-                  }`}
-                >
-                  {area}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* 行程列表 */}
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">

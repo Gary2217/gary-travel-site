@@ -382,7 +382,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                   return (
                     <div key={section.id} className="relative" onMouseEnter={() => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); setHoveredNavId(section.id); }}>
                       <Link
-                        href={`/#section-${section.id}`}
+                        href={hasDests ? `/destination/${section.destinations[0].id}?all=1` : '/'}
                         className={`flex items-center gap-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${hoveredNavId === section.id ? "text-[#d4a853]" : "text-white/80 hover:text-[#d4a853]"}`}
                       >
                         {section.categoryLabel}
