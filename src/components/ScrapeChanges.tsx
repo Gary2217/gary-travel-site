@@ -163,10 +163,11 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   };
 
   const toggleCheckAll = () => {
-    if (checkedIds.size === changes.length) {
+    const checkable = changes.filter((c) => c.change_type !== "warning" && c.change_type !== "new_tab");
+    if (checkedIds.size === checkable.length && checkable.length > 0) {
       setCheckedIds(new Set());
     } else {
-      setCheckedIds(new Set(changes.map((c) => c.id)));
+      setCheckedIds(new Set(checkable.map((c) => c.id)));
     }
   };
 
@@ -519,12 +520,16 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                           key={change.id}
                           className={`flex items-center gap-3 px-4 py-3 transition hover:bg-white/5 ${isChecked ? "bg-sky-500/5" : ""}`}
                         >
-                          <button
-                            onClick={() => toggleCheck(change.id)}
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked ? "border-sky-500 bg-sky-500/20" : "border-white/20 hover:border-white/40"}`}
-                          >
-                            {isChecked && <span className="text-[10px] text-sky-400">✓</span>}
-                          </button>
+                          {change.change_type === "warning" || change.change_type === "new_tab" ? (
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-white/10 text-[10px] text-white/20">—</span>
+                          ) : (
+                            <button
+                              onClick={() => toggleCheck(change.id)}
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked ? "border-sky-500 bg-sky-500/20" : "border-white/20 hover:border-white/40"}`}
+                            >
+                              {isChecked && <span className="text-[10px] text-sky-400">✓</span>}
+                            </button>
+                          )}
                           {coverUrl ? (
                             <img
                               src={coverUrl}

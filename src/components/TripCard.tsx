@@ -37,6 +37,8 @@ interface TripCardProps {
   departure_dates?: DepartureDateInfo[];
   tags?: string[];
   isDevMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (tripId: string) => void;
   isCustomTour?: boolean;
   isPromoEnabled?: boolean;
   promoContent?: string;
@@ -70,6 +72,8 @@ export default function TripCard({
   departure_dates,
   tags,
   isDevMode = false,
+  isSelected = false,
+  onSelect,
   isCustomTour = false,
   isPromoEnabled = false,
   promoContent,
@@ -131,7 +135,7 @@ export default function TripCard({
 
   return (
     <>
-        <div className="group relative flex flex-row md:flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md">
+        <div className={`group relative flex flex-row md:flex-col overflow-hidden rounded-xl border ${isDevMode && isSelected ? 'border-purple-400 ring-2 ring-purple-300' : 'border-gray-200'} bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md`}>
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
           className={`relative min-h-[160px] w-[140px] shrink-0 self-stretch overflow-hidden sm:min-h-[200px] sm:w-48 md:w-full md:h-[200px]${!isDevMode ? ' cursor-pointer' : ''}`}
@@ -155,6 +159,20 @@ export default function TripCard({
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+            {/* Dev mode 勾選 checkbox */}
+            {isDevMode && onSelect && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSelect(id); }}
+                className={`absolute left-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded border-2 transition sm:h-7 sm:w-7 ${isSelected ? 'border-purple-500 bg-purple-500 text-white' : 'border-white/80 bg-black/30 text-transparent hover:border-purple-300 hover:bg-black/50'}`}
+                title={isSelected ? '取消選取' : '選取此行程'}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            )}
 
             {/* 天數標籤 */}
             <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm sm:px-2.5 sm:text-xs">
