@@ -47,7 +47,7 @@ export async function GET(
     data.flight_departure_dates = departures || [];
 
     return NextResponse.json(data, {
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

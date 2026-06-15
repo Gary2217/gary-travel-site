@@ -58,7 +58,7 @@ export async function GET() {
 
     return NextResponse.json(
       { url: buildLogoPublicUrl(`${LOGO_DIR}/${latestFile.name}`, latestFile.updated_at || Date.now().toString()) },
-      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' } }
     );
   } catch {
     return NextResponse.json({ url: '/travel-logo.svg' });
