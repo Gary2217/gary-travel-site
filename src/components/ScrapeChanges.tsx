@@ -115,8 +115,11 @@ function groupByRegion(changes: ScrapeChangeItem[]): Map<string, ScrapeChangeIte
 
 function getAlertMessage(change: ScrapeChangeItem): string | null {
   if (change.change_type !== "new_tab" && change.change_type !== "warning") return null;
-  const msg = change.scraped_data?.message;
-  return typeof msg === "string" ? msg : null;
+  const sd = change.scraped_data;
+  const msg = sd?.message ?? sd?.error;
+  if (typeof msg === "string") return msg;
+  if (typeof change.new_value === "string" && change.new_value) return change.new_value;
+  return null;
 }
 
 function getAlertSummary(change: ScrapeChangeItem): string {
