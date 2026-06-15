@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import MaintenanceGuard from '@/components/MaintenanceGuard';
 import './globals.css';
 
@@ -68,23 +69,29 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="zh-TW">
       <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-MWGKSWE0Q8" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MWGKSWE0Q8');`,
-          }}
-        />
+        <link rel="dns-prefetch" href="https://soujehqympampczeiwcz.supabase.co" />
+        <link rel="preconnect" href="https://soujehqympampczeiwcz.supabase.co" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <script
+      </head>
+      <body>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-MWGKSWE0Q8" strategy="afterInteractive" />
+        <Script
+          id="ga-config"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MWGKSWE0Q8');`,
+          }}
+        />
+        <Script
+          id="img-protect"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `document.addEventListener('contextmenu',function(e){if(e.target.tagName==='IMG'){e.preventDefault()}});document.addEventListener('dragstart',function(e){if(e.target.tagName==='IMG'){e.preventDefault()}});`,
           }}
         />
-      </head>
-      <body>
         <MaintenanceGuard>{children}</MaintenanceGuard>
       </body>
     </html>

@@ -4,6 +4,7 @@ const nextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   images: {
+    formats: ['image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
