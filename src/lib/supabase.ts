@@ -1,3 +1,27 @@
+// ---------------------------------------------------------------------------
+// 客戶端記憶體快取（避免返回 / 切頁時重複拉資料）
+// ---------------------------------------------------------------------------
+const _cache = new Map<string, { data: unknown; exp: number }>();
+
+function cacheGet<T>(key: string): T | null {
+  const entry = _cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.exp) { _cache.delete(key); return null; }
+  return entry.data as T;
+}
+
+function cacheSet(key: string, data: unknown, ttlMs: number) {
+  _cache.set(key, { data, exp: Date.now() + ttlMs });
+}
+
+/** 清除指定前綴或全部快取（寫入後呼叫） */
+export function invalidateCache(prefix?: string) {
+  if (!prefix) { _cache.clear(); return; }
+  for (const key of _cache.keys()) {
+    if (key.startsWith(prefix)) _cache.delete(key);
+  }
+}
+
 // 社群連結常數
 const lineId = process.env.NEXT_PUBLIC_LINE_ID || "@YOUR_LINE_ID";
 export const lineHref = process.env.NEXT_PUBLIC_LINE_FRIEND_URL || `https://line.me/ti/p/${lineId}`;
@@ -195,55 +219,69 @@ export type Inquiry = {
 
 // 取得所有啟用的區域和目的地
 export async function getRegionsWithDestinations() {
-  const res = await fetch('/api/regions', {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch regions: ${res.status}`);
-  }
-  return res.json();
+  const KEY = 'regions';
+  const hit = cacheGet(KEY);
+  if (hit) return hit;
+
+  const res = await fetch('/api/regions');
+  if (!res.ok) throw new Error(`Failed to fetch regions: ${res.status}`);
+  const data = await res.json();
+  cacheSet(KEY, data, 5 * 60_000); // 5 min
+  return data;
 }
 
 // 取得單一目的地資訊
 export async function getDestination(destinationId: string) {
-  const res = await fetch(`/api/destinations/${destinationId}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch destination: ${res.status}`);
-  }
-  return res.json();
+  const KEY = `dest:${destinationId}`;
+  const hit = cacheGet(KEY);
+  if (hit) return hit;
+
+  const res = await fetch(`/api/destinations/${destinationId}`);
+  if (!res.ok) throw new Error(`Failed to fetch destination: ${res.status}`);
+  const data = await res.json();
+  cacheSet(KEY, data, 5 * 60_000); // 5 min
+  return data;
 }
 
 // 取得目的地的所有行程
 export async function getDestinationTrips(destinationId: string) {
-  const res = await fetch(`/api/destinations/${destinationId}/trips`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch trips: ${res.status}`);
-  }
-  return res.json();
+  const KEY = `dest-trips:${destinationId}`;
+  const hit = cacheGet(KEY);
+  if (hit) return hit;
+
+  const res = await fetch(`/api/destinations/${destinationId}/trips`);
+  if (!res.ok) throw new Error(`Failed to fetch trips: ${res.status}`);
+  const data = await res.json();
+  cacheSet(KEY, data, 2 * 60_000); // 2 min
+  return data;
 }
 
 // 依日期搜尋行程
 export async function searchTripsByDate(date: string, city?: string) {
   const qs = new URLSearchParams({ date });
   if (city) qs.set('city', city);
-  const res = await fetch(`/api/search-trips?${qs.toString()}`, { cache: 'no-store' });
+  const KEY = `search:${qs.toString()}`;
+  const hit = cacheGet(KEY);
+  if (hit) return hit;
+
+  const res = await fetch(`/api/search-trips?${qs.toString()}`);
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  cacheSet(KEY, data, 60_000); // 1 min
+  return data;
 }
 
 // 取得單一行程（含每日明細）
 export async function getTripWithDays(tripId: string) {
-  const res = await fetch(`/api/trips/${tripId}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch trip: ${res.status}`);
-  }
-  return res.json();
+  const KEY = `trip:${tripId}`;
+  const hit = cacheGet(KEY);
+  if (hit) return hit;
+
+  const res = await fetch(`/api/trips/${tripId}`);
+  if (!res.ok) throw new Error(`Failed to fetch trip: ${res.status}`);
+  const data = await res.json();
+  cacheSet(KEY, data, 2 * 60_000); // 2 min
+  return data;
 }
 
 // 提交諮詢
@@ -277,13 +315,15 @@ export async function getRelatedTrips(
     category_label: categoryLabel,
     exclude_destination_id: excludeDestinationId,
   });
-  const res = await fetch(`/api/regions/${regionId}/related-trips?${qs}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch related trips');
-  }
-  return res.json();
+  const KEY = `related:${regionId}:${qs}`;
+  const hit = cacheGet<{ regionTrips: Trip[]; categoryTrips: Trip[] }>(KEY);
+  if (hit) return hit;
+
+  const res = await fetch(`/api/regions/${regionId}/related-trips?${qs}`);
+  if (!res.ok) throw new Error('Failed to fetch related trips');
+  const data = await res.json();
+  cacheSet(KEY, data, 3 * 60_000); // 3 min
+  return data;
 }
 
 // 記錄點擊事件（使用 sendBeacon 避免阻塞頁面跳轉）
@@ -445,6 +485,9 @@ export async function updateTrip(tripId: string, fields: Record<string, any>): P
     throw new Error(err.error || '更新失敗');
   }
 
+  invalidateCache('trip:');
+  invalidateCache('dest-trips:');
+  invalidateCache('related:');
   return res.json();
 }
 
@@ -461,6 +504,7 @@ export async function createTrip(destinationId: string, title?: string): Promise
     throw new Error(err.error || '新增失敗');
   }
 
+  invalidateCache('dest-trips:');
   return res.json();
 }
 
@@ -474,41 +518,44 @@ export async function deleteTrip(tripId: string): Promise<void> {
     const err = await res.json();
     throw new Error(err.error || '刪除失敗');
   }
+
+  invalidateCache('trip:');
+  invalidateCache('dest-trips:');
+  invalidateCache('related:');
 }
 
 export async function getSiteLogo(): Promise<string> {
   const fallback = '/travel-logo.svg';
+  const KEY = 'site-logo';
 
+  // 記憶體快取最優先
+  const memHit = cacheGet<string>(KEY);
+  if (memHit) return memHit;
+
+  // localStorage 次之
   let cached: string | null = null;
   if (typeof window !== 'undefined') {
-    try {
-      cached = localStorage.getItem('site_logo_url');
-    } catch {
-      // ignore cache read errors
-    }
+    try { cached = localStorage.getItem('site_logo_url'); } catch { /* ignore */ }
   }
 
   try {
-    const res = await fetch('/api/site-logo', { cache: 'no-store' });
+    const res = await fetch('/api/site-logo');
     if (!res.ok) {
-      if (cached) return cached;
+      if (cached) { cacheSet(KEY, cached, 30 * 60_000); return cached; }
       throw new Error('Failed to fetch site logo');
     }
 
     const data = await res.json();
     const url = data.url || fallback;
+    cacheSet(KEY, url, 30 * 60_000); // 30 min
 
     if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('site_logo_url', url);
-      } catch {
-        // ignore cache write errors
-      }
+      try { localStorage.setItem('site_logo_url', url); } catch { /* ignore */ }
     }
 
     return url;
   } catch {
-    if (cached) return cached;
+    if (cached) { cacheSet(KEY, cached, 30 * 60_000); return cached; }
     return fallback;
   }
 }
