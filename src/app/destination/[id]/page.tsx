@@ -189,6 +189,16 @@ export default function DestinationPage() {
           const areaTabs = areas.length >= 2
             ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
             : [];
+          // 重新排序：有出團日期的在前、custom_tour 在最後
+          deduped.sort((a, b) => {
+            const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
+            const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
+            if (aCustom !== bCustom) return aCustom - bCustom;
+            const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
+            const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
+            if (aHas !== bHas) return aHas - bHas;
+            return (a.display_order || 99) - (b.display_order || 99);
+          });
           setTrips(deduped);
           setRegionTabs(areaTabs);
           setCurrentTabLabel("全部");
@@ -494,6 +504,16 @@ export default function DestinationPage() {
         ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
         : [{ label: "全部", destId: "all" }];
 
+      // 重新排序：有出團日期的在前、custom_tour 在最後
+      deduped.sort((a, b) => {
+        const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
+        const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
+        if (aCustom !== bCustom) return aCustom - bCustom;
+        const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
+        const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
+        if (aHas !== bHas) return aHas - bHas;
+        return (a.display_order || 99) - (b.display_order || 99);
+      });
       setTrips(deduped);
       setRegionTabs(areaTabs);
     } catch {
