@@ -775,11 +775,14 @@ async function scrapeTripDetail(tripSummary) {
   const $promoEl = $('#marketing .MarketingContent');
   const promoText = $promoEl.length ? sanitizeText($promoEl.text()) : '';
 
-  // ⑥ 出發日期
+  // ⑥ 出發日期（含出團狀態偵測）
   const rawDepartures = [];
   $('#search-table tbody tr').each((_, row) => {
     const date = padDate(sanitizeText($(row).find('.YMD').text()));
     if (!date) return;
+    // 偵測出團狀態：整列文字含「請來電洽詢」→ 表示未確定出團
+    const rowText = sanitizeText($(row).text());
+    const isInquiryOnly = rowText.includes('請來電洽詢');
     rawDepartures.push({
       date,
       departure_airport: sanitizeText($(row).find('.airport').text()),
@@ -788,8 +791,13 @@ async function scrapeTripDetail(tripSummary) {
       seats_total: Number(String($(row).find('.TotalSeat').text() || '').replace(/[^\d]/g, '') || 0),
       seats_available: Number(String($(row).find('.AvailableSeat').text() || '').replace(/[^\d]/g, '') || 0),
       price: Number(String($(row).find('.TourPrice').text() || '').replace(/[^\d]/g, '') || 0),
+      inquiry_only: isInquiryOnly,
     });
   });
+
+  // 過濾掉全部「請來電洽詢」的出發日（表示未確定出團，不顯示在前端）
+  const allInquiryOnly = rawDepartures.length > 0 && rawDepartures.every(d => d.inquiry_only);
+  const validDepartures = allInquiryOnly ? [] : rawDepartures;
 
   // 頁面標題和封面圖
   const title = sanitizeText($('h1').first().text());
@@ -825,7 +833,7 @@ async function scrapeTripDetail(tripSummary) {
   const priceDetail = buildPriceDetailText(priceDetails);
   const adultPrice = normalizePriceText(priceDetails[0] || '');
   const priceRange = formatPriceRange(adultPrice);
-  const departures = rawDepartures.map((departure) => ({
+  const departures = validDepartures.map((departure) => ({
     date: sanitizeText(departure.date),
     departure_city: getDepartureCity(departure.departure_airport || basicInfo['出發機場'] || ''),
     airline: formatAirlineLabel(departure.airline || primaryAirline, enrichedFlightSegments[0]?.flight_number || ''),
@@ -861,6 +869,7 @@ async function scrapeTripDetail(tripSummary) {
     departure_label: getDepartureLabel(basicInfo['出發機場'] || ''),
     display_order: tripSummary.display_order,
     custom_tour: customTour,
+    all_inquiry_only: allInquiryOnly,
     promo_text: sanitizeText(promoText),
     trip_banner: {
       code_label: sanitizeText(codeLabel),
@@ -1000,6 +1009,17 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   // custom_tour：只在從 false→true 時通知（有出發日變無出發日）
   if (!Boolean(existingBanner.custom_tour) && Boolean(scrapedTrip.custom_tour)) {
     pushChange('info', 'custom_tour', false, true);
+  }
+
+  // 全部「請來電洽詢」→ 建議隱藏行程（is_active=false）
+  if (scrapedTrip.all_inquiry_only) {
+    changes.push({
+      ...buildPendingChangeBase(context),
+      change_type: 'removed',
+      field_name: 'all_inquiry_only',
+      old_value: '出發日期全部為「請來電洽詢」',
+      new_value: '建議隱藏（朋威所有梯次未確定出團）',
+    });
   }
 
   // 售價明細：統一用 tab 分隔後比較
