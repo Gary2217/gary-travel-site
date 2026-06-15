@@ -116,7 +116,7 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
 
     async function loadTripCount() {
       try {
-        const res = await fetch(`/api/destinations/${destination.id}/trips`, { cache: 'no-store' });
+        const res = await fetch(`/api/destinations/${destination.id}/trips`);
         const data = res.ok ? await res.json() : [];
         if (!active) return;
         setTripCount(Array.isArray(data) ? data.length : 0);
@@ -182,7 +182,7 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
                 if (!confirm(`確定要刪除「${destination.title}」嗎？`)) return;
 
                 try {
-                  const tripsRes = await fetch(`/api/destinations/${destination.id}/trips`, { cache: 'no-store' });
+                  const tripsRes = await fetch(`/api/destinations/${destination.id}/trips`);
                   const tripsData = tripsRes.ok ? await tripsRes.json() : [];
                   const tripCount = Array.isArray(tripsData) ? tripsData.length : 0;
                   setTripCount(tripCount);
@@ -341,7 +341,7 @@ export default function HomePage() {
   useEffect(() => {
     async function loadPopular() {
       try {
-        const res = await fetch('/api/popular-trips', { cache: 'no-store' });
+        const res = await fetch('/api/popular-trips');
         if (res.ok) {
           const data = await res.json();
           setPopularDestinations(data);
@@ -357,7 +357,7 @@ export default function HomePage() {
     const ids = getFavorites();
     if (ids.length === 0) return;
     Promise.all(
-      ids.map(id => fetch(`/api/trips/${id}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null))
+      ids.map(id => fetch(`/api/trips/${id}`).then(r => r.ok ? r.json() : null).catch(() => null))
     ).then(results => setFavoriteTrips(results.filter(Boolean) as FavoriteTrip[]));
   }, []);
 

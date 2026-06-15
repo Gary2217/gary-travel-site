@@ -597,13 +597,13 @@ export default function TripPage() {
               // 不足 6 筆時從熱門行程補足
               if (combined.length < 6) {
                 try {
-                  const popRes = await fetch('/api/popular-trips', { cache: 'no-store' });
+                  const popRes = await fetch('/api/popular-trips');
                   if (popRes.ok) {
                     const popDests = await popRes.json();
                     const usedIds = new Set([tripId, ...combined.map((t: Trip) => t.id)]);
                     for (const pd of popDests) {
                       if (combined.length >= 6) break;
-                      const tripsRes = await fetch(`/api/destinations/${pd.id}/trips`, { cache: 'no-store' });
+                      const tripsRes = await fetch(`/api/destinations/${pd.id}/trips`);
                       if (!tripsRes.ok) continue;
                       const destTrips = (await tripsRes.json()) as Trip[];
                       for (const dt of destTrips) {

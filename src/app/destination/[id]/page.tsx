@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, lineDmHref, type Destination, type Trip } from "@/lib/supabase";
+import Image from "next/image";
 import { openExternalLink } from "@/lib/external-link";
 import FloatingContact from "@/components/FloatingContact";
 import SocialCta from "@/components/SocialCta";
@@ -78,6 +79,7 @@ export default function DestinationPage() {
   const [scrapeRunning, setScrapeRunning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
+  const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
   const siblingDestsRef = useRef<string[]>([]);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
@@ -113,129 +115,106 @@ export default function DestinationPage() {
     async function loadData() {
       try {
         setPopularFallback(null);
-        const [destData, tripsData] = await Promise.all([
+
+        // Phase 1：核心資料 + 全部目的地清單 並行載入
+        const [destData, tripsData, destsData] = await Promise.all([
           getDestination(destinationId),
           getDestinationTrips(destinationId),
+          fetch('/api/destinations').then(r => r.ok ? r.json() : []).catch(() => []),
         ]);
         if (!isMounted) return;
-        if (!destData) {
-          setError("找不到此目的地");
-          return;
-        }
+        if (!destData) { setError("找不到此目的地"); return; }
         setDestination(destData);
         setTrips(tripsData);
 
-        // 載入同區域的所有行程，建立 sub_area 篩選 tabs
         const isChinaRegion = destData.regions?.title === '港澳大陸';
-
-        if (destData.region_id) {
-          try {
-            const allDests = await fetch('/api/destinations', { cache: 'no-store' });
-            if (allDests.ok) {
-              const destsData = await allDests.json();
-              const siblings = (destsData as { id: string; title: string; region_id: string; display_order: number; sub_region?: string }[])
-                .filter((d) => d.region_id === destData.region_id)
-                .sort((a, b) => a.display_order - b.display_order);
-
-              const allSiblingIds = siblings.map(d => d.id);
-              siblingDestsRef.current = allSiblingIds;
-
-              if (siblings.length > 1) {
-                // 載入所有子目的地的行程（合併顯示）
-                const siblingIds = allSiblingIds.filter(id => id !== destinationId);
-                const results = await Promise.allSettled(
-                  siblingIds.map(id => getDestinationTrips(id))
-                );
-                const extraTrips = results
-                  .filter((r): r is PromiseFulfilledResult<typeof tripsData> => r.status === 'fulfilled')
-                  .flatMap(r => r.value);
-                const allTrips = [...tripsData, ...extraTrips];
-
-                // 去重 by code_label
-                const seen = new Set<string>();
-                const deduped = allTrips.filter(t => {
-                  const key = (t.trip_banner as Record<string, unknown>)?.code_label as string || t.id;
-                  if (seen.has(key)) return false;
-                  seen.add(key);
-                  return true;
-                });
-
-                // 用 sub_area 值建立篩選 tabs
-                const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
-                const areas = Array.from(new Set(
-                  deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
-                ));
-                if (isChinaRegion) {
-                  areas.sort((a, b) => {
-                    const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
-                    const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
-                    if (ai === -1 && bi === -1) return a.localeCompare(b);
-                    if (ai === -1) return 1;
-                    if (bi === -1) return -1;
-                    return ai - bi;
-                  });
-                }
-                const areaTabs = areas.length >= 2
-                  ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-                  : [];
-
-                if (isMounted) {
-                  setTrips(deduped);
-                  setRegionTabs(areaTabs);
-                  setCurrentTabLabel("全部");
-                }
-              }
-            }
-          } catch { /* 靜默 */ }
-        }
-
-        // Dev mode：載入已隱藏行程
         const isDevOn = typeof window !== 'undefined' && localStorage.getItem('dev_mode_enabled') === '1';
-        if (isDevOn && destData.region_id) {
-          try {
-            const hiddenDestIds = siblingDestsRef.current.length > 0 ? siblingDestsRef.current : [destinationId];
-            const hiddenResults = await Promise.allSettled(
-              hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`, { cache: 'no-store' }).then(r => r.json()))
-            );
-            const hiddenAll = hiddenResults
-              .filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled')
-              .flatMap(r => r.value);
-            if (isMounted) {
-              setHiddenTrips(hiddenAll);
-              setShowHidden(true);
-            }
-          } catch { /* 靜默 */ }
+
+        // 建立同區域兄弟目的地清單
+        const siblings = (destsData as { id: string; title: string; region_id: string; display_order: number; sub_region?: string }[])
+          .filter((d) => d.region_id === destData.region_id)
+          .sort((a, b) => a.display_order - b.display_order);
+        const allSiblingIds = siblings.map(d => d.id);
+        siblingDestsRef.current = allSiblingIds;
+        const siblingIds = allSiblingIds.filter(id => id !== destinationId);
+        const hasSiblings = siblings.length > 1;
+
+        // Phase 2：兄弟行程 + 推薦行程 + 隱藏行程 全部並行
+        const siblingTripsP = hasSiblings
+          ? Promise.allSettled(siblingIds.map(id => getDestinationTrips(id)))
+          : Promise.resolve(null);
+
+        const hasRelated = destData.region_id && destData.regions?.category_label;
+        if (hasRelated) setRelatedLoading(true);
+        const relatedP = hasRelated
+          ? getRelatedTrips(destData.region_id, destData.regions!.category_label, destinationId).catch(() => null)
+          : Promise.resolve(null);
+
+        const hiddenDestIds = allSiblingIds.length > 0 ? allSiblingIds : [destinationId];
+        const hiddenP = (isDevOn && destData.region_id)
+          ? Promise.allSettled(hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json())))
+          : Promise.resolve(null);
+
+        const [siblingResult, relatedResult, hiddenResult] = await Promise.all([siblingTripsP, relatedP, hiddenP]);
+        if (!isMounted) return;
+
+        // 處理兄弟行程 → 合併 + 去重 + 建立 sub_area tabs
+        if (hasSiblings && siblingResult) {
+          const extraTrips = (siblingResult as PromiseSettledResult<typeof tripsData>[])
+            .filter((r): r is PromiseFulfilledResult<typeof tripsData> => r.status === 'fulfilled')
+            .flatMap(r => r.value);
+          const allTrips = [...tripsData, ...extraTrips];
+          const seen = new Set<string>();
+          const deduped = allTrips.filter(t => {
+            const key = (t.trip_banner as Record<string, unknown>)?.code_label as string || t.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+          const areas = Array.from(new Set(
+            deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+          ));
+          if (isChinaRegion) {
+            areas.sort((a, b) => {
+              const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
+              const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
+              if (ai === -1 && bi === -1) return a.localeCompare(b);
+              if (ai === -1) return 1;
+              if (bi === -1) return -1;
+              return ai - bi;
+            });
+          }
+          const areaTabs = areas.length >= 2
+            ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
+            : [];
+          setTrips(deduped);
+          setRegionTabs(areaTabs);
+          setCurrentTabLabel("全部");
         }
 
-        // 載入同區域推薦行程（不管有沒有行程都載）
-        if (destData.region_id && destData.regions?.category_label) {
-          setRelatedLoading(true);
-          try {
-            const related = await getRelatedTrips(
-              destData.region_id,
-              destData.regions.category_label,
-              destinationId
-            );
-            if (!isMounted) return;
-            setRelatedTrips(related);
+        // 處理隱藏行程
+        if (hiddenResult) {
+          const hiddenAll = (hiddenResult as PromiseSettledResult<Trip[]>[])
+            .filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled')
+            .flatMap(r => r.value);
+          setHiddenTrips(hiddenAll);
+          setShowHidden(true);
+        }
 
-            if (related.regionTrips.length === 0 && related.categoryTrips.length === 0) {
-              try {
-                const res = await fetch('/api/popular-trips', { cache: 'no-store' });
-                if (res.ok) {
-                  const popular = (await res.json()) as Trip[];
-                  if (isMounted) setPopularFallback(popular);
-                }
-              } catch {
-                // 靜默失敗，不影響主頁面
-              }
-            }
-          } catch {
-            // 靜默失敗，不影響主頁面
-          } finally {
-            if (isMounted) setRelatedLoading(false);
+        // 處理推薦行程
+        if (relatedResult) {
+          setRelatedTrips(relatedResult as { regionTrips: Trip[]; categoryTrips: Trip[] });
+          const rel = relatedResult as { regionTrips: Trip[]; categoryTrips: Trip[] };
+          if (rel.regionTrips.length === 0 && rel.categoryTrips.length === 0) {
+            try {
+              const res = await fetch('/api/popular-trips');
+              if (res.ok && isMounted) setPopularFallback((await res.json()) as Trip[]);
+            } catch { /* 靜默 */ }
           }
         }
+        if (hasRelated && isMounted) setRelatedLoading(false);
       } catch {
         if (isMounted) setError("無法載入資料，請重新整理頁面");
       } finally {
@@ -402,7 +381,7 @@ export default function DestinationPage() {
     const allIds = siblingDestsRef.current.length > 0 ? siblingDestsRef.current : [destinationId];
     try {
       const results = await Promise.allSettled(
-        allIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`, { cache: 'no-store' }).then(r => r.json()))
+        allIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json()))
       );
       const all = results.filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled').flatMap(r => r.value);
       setHiddenTrips(all);
@@ -553,22 +532,48 @@ export default function DestinationPage() {
     return trip.price_range;
   };
 
+  const handleSelectTrip = (tripId: string) => {
+    setSelectedTripIds(prev => {
+      const next = new Set(prev);
+      if (next.has(tripId)) {
+        next.delete(tripId);
+      } else {
+        next.add(tripId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const visibleTrips = subAreaFilter
+      ? trips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
+      : trips;
+    const allIds = visibleTrips.map(t => t.id);
+    const allSelected = allIds.every(id => selectedTripIds.has(id));
+    if (allSelected) {
+      setSelectedTripIds(new Set());
+    } else {
+      setSelectedTripIds(new Set(allIds));
+    }
+  };
+
   const handleScrapeThisPage = async () => {
     if (scrapeTriggering) return;
 
-    // 先檢查 destination 有沒有 source_url
-    if (!destination?.source_url) {
+    // 沒有勾選行程且 destination 沒 source_url → 擋住（行程有自己的 source_url 時不需要）
+    if (selectedTripIds.size === 0 && !destination?.source_url) {
       alert('此目的地尚未設定朋威對應 URL（source_url），無法抓取。\n請到 Supabase 設定此目的地的 source_url 後再試。');
       return;
     }
 
     setScrapeTriggering(true);
     try {
+      const tripIds = Array.from(selectedTripIds);
       const res = await fetch('/api/scrape/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ destinationId }),
+        body: JSON.stringify({ destinationId, tripIds: tripIds.length > 0 ? tripIds : undefined }),
       });
 
       if (!res.ok) {
@@ -629,9 +634,13 @@ export default function DestinationPage() {
 
       {/* Hero 區塊 */}
       <div className="relative h-48 overflow-hidden sm:h-56 md:h-64">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${destination.image_url})` }}
+        <Image
+          src={destination.image_url}
+          alt={destination.title}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-white via-black/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
@@ -850,9 +859,26 @@ export default function DestinationPage() {
               </div>
             )}
 
-            <h2 className="mb-4 text-lg font-bold text-gray-900 sm:mb-6 sm:text-xl md:text-2xl">
-              可選行程（{subAreaFilter ? trips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter)).length : trips.length}）
-            </h2>
+            <div className="mb-4 flex items-center gap-3 sm:mb-6">
+              <h2 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">
+                可選行程（{subAreaFilter ? trips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter)).length : trips.length}）
+              </h2>
+              {isDevMode && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="shrink-0 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 transition hover:bg-purple-100"
+                >
+                  {(() => {
+                    const visibleTrips = subAreaFilter
+                      ? trips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
+                      : trips;
+                    const allSelected = visibleTrips.length > 0 && visibleTrips.every(t => selectedTripIds.has(t.id));
+                    return allSelected ? '取消全選' : '全選';
+                  })()}
+                </button>
+              )}
+            </div>
 
             {(() => {
               const filtered = subAreaFilter
@@ -919,6 +945,8 @@ export default function DestinationPage() {
                           departure_dates={trip.departure_dates}
                           tags={trip.trip_banner?.tags}
                           isDevMode={isDevMode}
+                          isSelected={selectedTripIds.has(trip.id)}
+                          onSelect={handleSelectTrip}
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                           promoContent={trip.trip_banner?.promo_content || ''}
@@ -1101,10 +1129,10 @@ export default function DestinationPage() {
       {isDevMode && (
         <button
           onClick={() => void handleScrapeThisPage()}
-          disabled={scrapeTriggering || scrapeRunning}
+          disabled={scrapeTriggering || scrapeRunning || selectedTripIds.size === 0}
           className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-500 disabled:opacity-60"
         >
-          {scrapeRunning ? '⏳ 抓取進行中' : scrapeTriggering ? '⏳ 啟動中...' : '🔄 更新抓取此頁'}
+          {scrapeRunning ? '⏳ 抓取進行中' : scrapeTriggering ? '⏳ 啟動中...' : `🔄 更新抓取已選 (${selectedTripIds.size})`}
         </button>
       )}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
