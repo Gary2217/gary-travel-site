@@ -22,8 +22,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const regions = body.regions || []; // 空 = 全部抓
     const destinationId = typeof body.destinationId === 'string' ? body.destinationId.trim() : '';
+    const tripIds = Array.isArray(body.tripIds) ? body.tripIds.filter((id: unknown) => typeof id === 'string' && id.trim()).map((id: string) => id.trim()) : [];
 
-    const inputs = { regions: regions.length > 0 ? regions.join(',') : 'all', destination_id: destinationId || '' };
+    const inputs: Record<string, string> = {
+      regions: regions.length > 0 ? regions.join(',') : 'all',
+      destination_id: destinationId || '',
+      trip_ids: tripIds.length > 0 ? tripIds.join(',') : '',
+    };
 
     // 觸發 GitHub Actions workflow_dispatch
     const response = await fetch(
@@ -51,6 +56,7 @@ export async function POST(req: NextRequest) {
       triggered: true,
       regions: regions.length > 0 ? regions : 'all',
       destinationId: destinationId || null,
+      tripIds: tripIds.length > 0 ? tripIds : null,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

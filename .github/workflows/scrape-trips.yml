@@ -12,6 +12,10 @@ on:
         description: '指定目的地 ID'
         required: false
         default: ''
+      trip_ids:
+        description: '指定行程 IDs（逗號分隔）'
+        required: false
+        default: ''
 
   # 排程觸發（每日 UTC 19:00 = 台灣凌晨 03:00）
   schedule:
@@ -63,13 +67,20 @@ jobs:
         run: |
           REGIONS="${{ github.event.inputs.regions || 'all' }}"
           DEST_ID="${{ github.event.inputs.destination_id || '' }}"
+          TRIP_IDS="${{ github.event.inputs.trip_ids || '' }}"
+          ARGS=""
           if [ -n "$DEST_ID" ]; then
-            node scripts/auto-scrape.mjs --destination-id=$DEST_ID
-          elif [ "$REGIONS" = "all" ]; then
-            node scripts/auto-scrape.mjs
-          else
-            node scripts/auto-scrape.mjs --regions=$REGIONS
+            ARGS="$ARGS --destination-id=$DEST_ID"
           fi
+          if [ -n "$TRIP_IDS" ]; then
+            ARGS="$ARGS --trip-ids=$TRIP_IDS"
+          fi
+          if [ -z "$ARGS" ]; then
+            if [ "$REGIONS" != "all" ]; then
+              ARGS="--regions=$REGIONS"
+            fi
+          fi
+          node scripts/auto-scrape.mjs $ARGS
 
       - name: Auto cleanup (30 days)
         if: github.event_name == 'schedule'

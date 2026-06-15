@@ -64,6 +64,7 @@ interface ScrapedTrip {
   display_order: number;
   destination_id: string;
   cover_image_url?: string;
+  source_url?: string;
   promo_text?: string;
   trip_banner: Record<string, unknown>;
   departures: Array<{
@@ -308,6 +309,9 @@ export async function POST(req: NextRequest) {
               cover_image_url: resolvedImageUrl,
               trip_banner: mergedBanner,
             };
+            if (scraped.source_url) {
+              tripUpdateFields.source_url = scraped.source_url;
+            }
             if (change.change_type === 'info' && change.field_name === 'display_order') {
               tripUpdateFields.display_order = scraped.display_order;
             }
@@ -474,6 +478,7 @@ export async function POST(req: NextRequest) {
                 display_order: scraped.display_order || 99,
                 cover_image_url: tempImageUrl,
                 trip_banner: newTripBanner,
+                source_url: scraped.source_url || null,
               })
               .select('id')
               .single();
@@ -552,6 +557,12 @@ export async function POST(req: NextRequest) {
               results.push({ id: changeId, success: false, error: deactivateErr.message });
               continue;
             }
+            break;
+          }
+
+          case 'warning':
+          case 'new_tab': {
+            // 警告/通知類型：不做實際資料變更，直接標記為已確認
             break;
           }
 

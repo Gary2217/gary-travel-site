@@ -68,7 +68,7 @@ function loadEnv() {
 }
 
 function parseArgs(argv) {
-  const args = { regions: null, logId: null, destinationId: null };
+  const args = { regions: null, logId: null, destinationId: null, tripIds: null };
 
   for (const arg of argv) {
     if (arg.startsWith('--regions=')) {
@@ -81,6 +81,12 @@ function parseArgs(argv) {
       args.logId = arg.slice('--log-id='.length).trim() || null;
     } else if (arg.startsWith('--destination-id=')) {
       args.destinationId = arg.slice('--destination-id='.length).trim() || null;
+    } else if (arg.startsWith('--trip-ids=')) {
+      args.tripIds = arg
+        .slice('--trip-ids='.length)
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
     }
   }
 
@@ -477,6 +483,7 @@ async function loadExistingTrips(supabase) {
       price_range,
       display_order,
       is_active,
+      source_url,
       trip_banner,
       departure_dates:trip_departure_dates (
         trip_id,
@@ -1148,7 +1155,7 @@ async function loadDismissedKeys(supabase) {
 async function main() {
   const { supabaseUrl, serviceRoleKey } = loadEnv();
   const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const { regions, logId: requestedLogId, destinationId } = parseArgs(process.argv.slice(2));
+  const { regions, logId: requestedLogId, destinationId, tripIds } = parseArgs(process.argv.slice(2));
   let selectedRegions = selectRegions(regions);
 
   // 載入 dismissed 記憶，用於跳過已忽略的相同差異
@@ -1194,9 +1201,11 @@ async function main() {
       targetDestination = destinations.find((destination) => destination.id === destinationId) || null;
 
       // 前置檢查 — 先建 log 再 throw，確保 admin 能看到錯誤
+      // tripIds 模式下不強制要求 destination.source_url（行程有自己的 source_url）
+      const needsDestSourceUrl = !tripIds?.length;
       const earlyError = !targetDestination
         ? `找不到指定目的地：${destinationId}`
-        : !sanitizeText(targetDestination.source_url)
+        : (needsDestSourceUrl && !sanitizeText(targetDestination.source_url))
           ? `指定目的地缺少 source_url：${targetDestination?.title || destinationId}。請到 Supabase 設定此目的地的 source_url。`
           : null;
 
@@ -1226,6 +1235,144 @@ async function main() {
       selectedRegions = [targetRegion];
     }
 
+    // --trip-ids 模式：建立選取行程的識別集合（必須在 log 建立之前，避免雙重 log）
+    const tripIdSet = tripIds?.length ? new Set(tripIds) : null;
+    let selectedTripIdentifiers = null;
+
+    // --trip-ids 直接抓取模式：若所有選取行程都有 source_url，跳過區域列表頁
+    if (tripIdSet && tripIdSet.size > 0) {
+      const selectedTrips = existingTrips.filter((trip) => tripIdSet.has(trip.id));
+      const tripsWithUrl = selectedTrips.filter((trip) => trip.source_url);
+      const tripsWithoutUrl = selectedTrips.filter((trip) => !trip.source_url);
+
+      if (tripsWithUrl.length > 0 && tripsWithoutUrl.length === 0) {
+        // 所有行程都有 source_url → 直接打詳情頁
+        const directRegionDetails = [{
+          key: 'direct',
+          name: 'direct-scrape',
+          url: '',
+          tabs: [],
+          status: 'pending',
+          trip_count: tripsWithUrl.length,
+          completed: 0,
+        }];
+
+        logId = await createOrResetLog(supabase, requestedLogId, 1, directRegionDetails);
+        console.log(`🚀 直接抓取模式，log_id=${logId}，共 ${tripsWithUrl.length} 筆行程`);
+
+        let completedTrips = 0;
+        let changesFound = 0;
+
+        await updateLog(supabase, logId, {
+          current_region: 'direct',
+          total_trips: tripsWithUrl.length,
+          region_details: [{ ...directRegionDetails[0], status: 'running' }],
+        });
+
+        for (const trip of tripsWithUrl) {
+          console.log(`  🔍 [${completedTrips + 1}/${tripsWithUrl.length}] ${trip.title}`);
+
+          const tripSummary = {
+            title: trip.title,
+            href: trip.source_url,
+            section_label: '',
+            display_order: trip.display_order,
+            listing_tags: [],
+          };
+
+          let scrapedTrip;
+          try {
+            scrapedTrip = await scrapeTripDetail(tripSummary);
+          } catch (detailErr) {
+            const reason = detailErr.message || '未知錯誤';
+            console.log(`  ⚠️ 抓取失敗：${reason}`);
+            changesFound += await insertPendingChanges(supabase, [{
+              scrape_log_id: logId,
+              destination_id: trip.destination_id,
+              trip_id: trip.id,
+              trip_title: trip.title,
+              source_code: sanitizeText(trip.trip_banner?.code_label),
+              source_url: trip.source_url,
+              region_label: 'direct',
+              scraped_data: { error: reason, source_url: trip.source_url },
+              status: 'pending',
+              change_type: 'warning',
+              field_name: 'scrape_failed',
+              old_value: trip.source_url,
+              new_value: `⚠️ 抓取失敗：${reason}`,
+            }]);
+            completedTrips += 1;
+            continue;
+          }
+
+          if (!scrapedTrip.title || scrapedTrip.title.length < 3) {
+            console.log(`  ⚠️ 無效資料，跳過`);
+            changesFound += await insertPendingChanges(supabase, [{
+              scrape_log_id: logId,
+              destination_id: trip.destination_id,
+              trip_id: trip.id,
+              trip_title: trip.title,
+              source_code: sanitizeText(trip.trip_banner?.code_label),
+              source_url: trip.source_url,
+              region_label: 'direct',
+              scraped_data: { error: '頁面回傳無效資料（空標題或頁面不存在）', source_url: trip.source_url },
+              status: 'pending',
+              change_type: 'warning',
+              field_name: 'scrape_invalid',
+              old_value: trip.title,
+              new_value: '⚠️ 朋威頁面回傳無效資料，行程可能已下架或 URL 已變更',
+            }]);
+            completedTrips += 1;
+            continue;
+          }
+
+          const changes = buildComparisonChanges({
+            logId,
+            destinationId: trip.destination_id,
+            existingTrip: trip,
+            scrapedTrip,
+          });
+          changesFound += await insertPendingChanges(supabase, changes);
+
+          completedTrips += 1;
+          await updateLog(supabase, logId, {
+            current_trip: scrapedTrip.title,
+            completed_trips: completedTrips,
+            changes_found: changesFound,
+          });
+
+          await sleep(300);
+        }
+
+        await updateLog(supabase, logId, {
+          status: 'completed',
+          current_trip: '',
+          completed_trips: completedTrips,
+          completed_regions: 1,
+          changes_found: changesFound,
+          region_details: [{ ...directRegionDetails[0], status: 'completed', completed: completedTrips }],
+          finished_at: new Date().toISOString(),
+        });
+
+        console.log(`\n✅ 直接抓取完成，共 ${completedTrips} 筆行程，發現 ${changesFound} 筆待確認變更`);
+        return;
+      }
+
+      // 部分或全部缺 source_url → 降級為區域列表 + 過濾模式
+      if (tripsWithoutUrl.length > 0) {
+        console.log(`⚠️ ${tripsWithoutUrl.length} 筆行程缺少 source_url，使用區域列表比對模式`);
+        tripsWithoutUrl.forEach((t) => console.log(`   - ${t.title}`));
+      }
+
+      selectedTripIdentifiers = selectedTrips.map((trip) => ({
+        id: trip.id,
+        code_label: sanitizeText(trip.trip_banner?.code_label),
+        title: sanitizeText(trip.title),
+      }));
+      console.log(`🎯 指定抓取 ${selectedTripIdentifiers.length} 筆行程（區域列表比對模式）`);
+    }
+
+    // 正常流程（含降級路徑）：建立 log
     const initialRegionDetails = buildRegionDetails(selectedRegions);
     logId = await createOrResetLog(supabase, requestedLogId, selectedRegions.length, initialRegionDetails);
     console.log(`🚀 開始自動抓取，log_id=${logId}`);
@@ -1272,6 +1419,22 @@ async function main() {
 
       for (let index = 0; index < tripSummaries.length; index += 1) {
         const tripSummary = tripSummaries[index];
+
+        // --trip-ids 模式：列表階段預過濾（從 href 取 code + 標題比對），跳過不相關的行程
+        if (selectedTripIdentifiers) {
+          const hrefCodeMatch = tripSummary.href.match(/\/products\/(?:group|domestic)\/([A-Z][A-Z0-9]{4,})\b/i);
+          const listingCode = hrefCodeMatch ? hrefCodeMatch[1].toUpperCase() : '';
+          const listingTitle = sanitizeText(tripSummary.title);
+          const matchesAtListing = selectedTripIdentifiers.some((sel) => {
+            if (listingCode && sel.code_label && listingCode === sel.code_label) return true;
+            return similarity(listingTitle, sel.title) >= 0.5;
+          });
+          if (!matchesAtListing) {
+            completedTrips += 1;
+            continue;
+          }
+        }
+
         console.log(`  🔍 [${index + 1}/${tripSummaries.length}] ${tripSummary.title}`);
 
         let scrapedTrip;
@@ -1293,6 +1456,20 @@ async function main() {
             airline: scrapedTrip.airline,
             tags: tripSummary.listing_tags,
           });
+        }
+
+        // --trip-ids 模式：詳情頁二次確認（code_label 精確比對）
+        if (selectedTripIdentifiers) {
+          const scrapedCode = sanitizeText(scrapedTrip.code_label);
+          const matchesSelected = selectedTripIdentifiers.some((sel) => {
+            if (scrapedCode && sel.code_label && scrapedCode === sel.code_label) return true;
+            return similarity(scrapedTrip.title, sel.title) >= 0.7;
+          });
+          if (!matchesSelected) {
+            console.log(`  ⏭️ 跳過（詳情頁確認不匹配）：${scrapedTrip.title}`);
+            completedTrips += 1;
+            continue;
+          }
         }
 
         // 過濾垃圾資料（頁面載入失敗、空標題等）
@@ -1350,6 +1527,12 @@ async function main() {
         if (matchedTrip) {
           consumedTripIds.add(matchedTrip.id);
           matchedTripIdsByDestination.set(destination.id, consumedTripIds);
+
+          // 自動回填 source_url（metadata，不走 pending_changes）
+          if (scrapedTrip.source_url && scrapedTrip.source_url !== matchedTrip.source_url) {
+            await supabase.from('trips').update({ source_url: scrapedTrip.source_url }).eq('id', matchedTrip.id);
+          }
+
           const changes = buildComparisonChanges({
             logId,
             destinationId: destination.id,
@@ -1389,6 +1572,37 @@ async function main() {
 
         await sleep(300);
       }
+
+      // --trip-ids 模式：檢查哪些選取行程沒在朋威頁面找到
+      if (tripIdSet && selectedTripIdentifiers) {
+        console.log('  ⏭️ 指定行程模式，跳過下架偵測');
+        const allMatchedIds = new Set();
+        for (const [, ids] of matchedTripIdsByDestination) {
+          for (const id of ids) allMatchedIds.add(id);
+        }
+        const unmatchedTrips = selectedTripIdentifiers.filter((sel) => !allMatchedIds.has(sel.id));
+        for (const unmatched of unmatchedTrips) {
+          console.log(`  ⚠️ 選取行程未匹配到朋威：${unmatched.title}`);
+          changesFound += await insertPendingChanges(supabase, [{
+            scrape_log_id: logId,
+            destination_id: targetDestination?.id || null,
+            trip_id: unmatched.id,
+            trip_title: unmatched.title,
+            source_code: unmatched.code_label || '',
+            source_url: `${BASE_URL}${regionConfig.url}`,
+            region_label: regionConfig.key,
+            scraped_data: {
+              error: '在朋威區域頁面找不到此行程（code_label 和標題都無法匹配）',
+              source_url: `${BASE_URL}${regionConfig.url}`,
+            },
+            status: 'pending',
+            change_type: 'warning',
+            field_name: 'scrape_not_found',
+            old_value: unmatched.title,
+            new_value: '⚠️ 在朋威頁面找不到此行程，可能已下架、改名或移至其他區域',
+          }]);
+        }
+      } else if (!tripIdSet) {
 
       const destinationEntries = targetDestination
         ? [[targetDestination.id, tripsByDestinationId.get(targetDestination.id) || []]]
@@ -1435,6 +1649,8 @@ async function main() {
           changesFound += await insertPendingChanges(supabase, [removedChange]);
         }
       }
+
+      } // end of removed-detection / unmatched-warning block
 
       completedRegions += 1;
       regionDetails = mergeRegionDetail(regionDetails, regionConfig.key, {
