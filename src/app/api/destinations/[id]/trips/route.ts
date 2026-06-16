@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,12 @@ export async function GET(
     }
 
     const showHidden = _request.nextUrl.searchParams.get('hidden') === '1';
+
+    // hidden=1 需要開發者授權才能使用 service role
+    if (showHidden) {
+      const authError = requireDevAuth();
+      if (authError) return authError;
+    }
 
     // 查隱藏行程需 service role key 繞過 RLS
     const supabase = createClient(supabaseUrl, showHidden && supabaseServiceKey ? supabaseServiceKey : supabaseAnonKey, {
