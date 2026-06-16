@@ -488,6 +488,8 @@ export async function updateTrip(tripId: string, fields: Record<string, any>): P
   invalidateCache('trip:');
   invalidateCache('dest-trips:');
   invalidateCache('related:');
+  invalidateCache('regions');
+  invalidateCache('dest:');
   return res.json();
 }
 
@@ -505,6 +507,7 @@ export async function createTrip(destinationId: string, title?: string): Promise
   }
 
   invalidateCache('dest-trips:');
+  invalidateCache('regions');
   return res.json();
 }
 

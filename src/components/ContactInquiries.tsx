@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import * as XLSX from "xlsx";
+// xlsx 動態載入，避免打包進每個訪客的 bundle（僅後台匯出時需要）
+const loadXLSX = () => import("xlsx");
 
 interface ContactForm {
   id: string;
@@ -63,6 +64,7 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
   const downloadXlsx = async () => {
     if (records.length === 0) return;
 
+    const XLSX = await loadXLSX();
     const data = records.map((r) => ({
       "發送日期": formatDate(r.created_at),
       "姓名/暱稱": r.name || "",
