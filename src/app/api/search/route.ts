@@ -8,11 +8,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get('q')?.trim() ?? '';
+  const rawQ = request.nextUrl.searchParams.get('q')?.trim() ?? '';
 
-  if (q.length < 1) {
+  if (rawQ.length < 1) {
     return NextResponse.json([]);
   }
+
+  // 過濾 PostgREST 特殊字元，防止 filter injection
+  const q = rawQ.replace(/[(),."\\]/g, '');
 
   try {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);

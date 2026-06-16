@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true);
 
     if (city) {
-      dateQuery = dateQuery.or(`departure_city.ilike.%${city}%,outbound_from.ilike.%${city}%`);
+      // 過濾 PostgREST 特殊字元，防止 filter injection
+      const safeCity = city.replace(/[(),."\\]/g, '');
+      dateQuery = dateQuery.or(`departure_city.ilike.%${safeCity}%,outbound_from.ilike.%${safeCity}%`);
     }
 
     const { data: dateRows, error: dateError } = await dateQuery;
