@@ -1011,8 +1011,8 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushChange('info', 'custom_tour', false, true);
   }
 
-  // 全部「請來電洽詢」→ 建議隱藏行程（is_active=false）
-  if (scrapedTrip.all_inquiry_only) {
+  // 全部「請來電洽詢」→ 建議隱藏行程（is_active=false），已隱藏的不重複標記
+  if (scrapedTrip.all_inquiry_only && existingTrip.is_active !== false) {
     changes.push({
       ...buildPendingChangeBase(context),
       change_type: 'removed',
@@ -1561,6 +1561,19 @@ async function main() {
           });
           changesFound += await insertPendingChanges(supabase, changes);
         } else {
+          // 防重複：檢查 code_label 是否已存在於整個 DB（可能在其他 destination）
+          const scrapedCode = sanitizeText(scrapedTrip.code_label);
+          if (scrapedCode) {
+            const existingByCode = existingTrips.find(
+              (t) => sanitizeText(t.trip_banner?.code_label) === scrapedCode,
+            );
+            if (existingByCode) {
+              console.log(`  ⏭️ 跳過新增（code_label ${scrapedCode} 已存在於 ${sanitizeText(existingByCode.title)}）`);
+              completedTrips += 1;
+              continue;
+            }
+          }
+
           const newTripChange = createNewTripChange({
             logId,
             destinationId: destination.id,
@@ -1632,12 +1645,23 @@ async function main() {
         const scrapedTrips = scrapedByDestination.get(destinationId);
         if (!scrapedTrips?.length) continue;
 
+        // 跨區域保護：只檢查屬於當前區域的 destination（防止日本東北/港澳大陸東北 誤判）
+        const destRecord = destinations.find((d) => d.id === destinationId);
+        if (destRecord?.source_url) {
+          const regionPath = regionConfig.url.replace(/\/$/, '');
+          if (!destRecord.source_url.includes(regionPath)) {
+            console.log(`  ⏭️ 跳過下架偵測：${destRecord.title}（source_url 不屬於 ${regionConfig.key} 區域）`);
+            continue;
+          }
+        }
+
         const matchedIds = matchedTripIdsByDestination.get(destinationId) || new Set();
         // 收集此區域所有已抓取的行程（跨 destination），用於反查防誤判
         const allScrapedInRegion = [...scrapedByDestination.values()].flat();
 
         for (const trip of destinationTrips) {
           if (matchedIds.has(trip.id)) continue;
+          if (!trip.is_active) continue; // 已隱藏的行程不重複標記下架
 
           // 下架保護：先跨 destination 反查，確認此行程在整個區域都找不到才標記下架
           const tripCode = sanitizeText(trip.trip_banner?.code_label);
