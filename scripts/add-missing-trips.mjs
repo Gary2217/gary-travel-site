@@ -9,7 +9,11 @@ import puppeteer from 'puppeteer';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://soujehqympampczeiwcz.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvdWplaHF5bXBhbXBjemVpd2N6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjkyMTEyNywiZXhwIjoyMDkyNDk3MTI3fQ.7wgfFZ_RSHEmTKEJGGpg1lDK10N6doom_n_2os4E8pI';
+// ⚠️ 已移除硬編碼金鑰，改從 .env.local 讀取
+import { readFileSync } from 'fs';
+const _env = readFileSync('.env.local', 'utf8');
+const _getEnv = (k) => { const m = _env.match(new RegExp(`^${k}=(.+)$`, 'm')); return m ? m[1].trim() : null; };
+const SERVICE_ROLE_KEY = _getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 const BASE_URL = 'https://www.pwgotravel.com.tw';

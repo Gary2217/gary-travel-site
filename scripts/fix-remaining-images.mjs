@@ -2,11 +2,16 @@
  * 修復剩餘未上傳的行程圖片
  * 執行：node scripts/fix-remaining-images.mjs
  */
+import { readFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
 
+// 從 .env.local 讀取（禁止硬編碼金鑰）
+const _env = readFileSync('.env.local', 'utf8');
+const _getEnv = (k) => { const m = _env.match(new RegExp(`^${k}=(.+)$`, 'm')); return m ? m[1].trim() : null; };
+
 const supabase = createClient(
-  'https://soujehqympampczeiwcz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvdWplaHF5bXBhbXBjemVpd2N6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjkyMTEyNywiZXhwIjoyMDkyNDk3MTI3fQ.7wgfFZ_RSHEmTKEJGGpg1lDK10N6doom_n_2os4E8pI'
+  _getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  _getEnv('SUPABASE_SERVICE_ROLE_KEY')
 );
 
 // 用確認存在的 Unsplash 圖片（都是 800x600 旅遊主題）
