@@ -3,7 +3,8 @@ import crypto from "crypto";
 const COOKIE_NAME = "dev_auth";
 
 function getSecret(): string | null {
-  return process.env.DEV_AUTH_SECRET || process.env.NEXT_PUBLIC_DEV_PASSWORD || null;
+  // 只用伺服器端 secret，禁止 fallback 到 NEXT_PUBLIC_*（會進前端 bundle）
+  return process.env.DEV_AUTH_SECRET || null;
 }
 
 export function signDevAuth(payload: string): string | null {
@@ -27,15 +28,22 @@ export function verifyDevAuthCookie(cookieValue?: string | null) {
   if (parts.length !== 3) return false;
 
   const [userId, timestamp, signature] = parts;
+
+  // 長度不一致時直接拒絕（避免 timingSafeEqual throw）
   const payload = `${userId}.${timestamp}`;
   const expected = signDevAuth(payload);
-
-  // 密鑰未設定時一律拒絕
   if (!expected) return false;
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length) return false;
+
+  if (!crypto.timingSafeEqual(sigBuf, expBuf)) {
     return false;
   }
+
+  // 二次驗證：userId 必須在白名單內
+  if (!isAllowedDevUser(userId)) return false;
 
   const ageMs = Date.now() - Number(timestamp);
   const maxAgeMs = 1000 * 60 * 60 * 24 * 7; // 7天
