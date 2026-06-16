@@ -37,6 +37,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
 
       - name: Check auto-scrape setting
         if: github.event_name == 'schedule'
