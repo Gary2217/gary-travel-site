@@ -35,6 +35,8 @@ export const fbDmHref = _fbPageId ? `https://m.me/${_fbPageId}` : fbHref;
 const _igUrl = process.env.NEXT_PUBLIC_IG_URL || "";
 const _igUsername = _igUrl.replace(/https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "");
 export const igDmHref = _igUsername ? `https://www.instagram.com/${_igUsername}/` : igHref;
+// FB 社團連結
+export const fbGroupHref = process.env.NEXT_PUBLIC_FB_GROUP_URL || "#";
 
 // LINE 帶預填訊息的連結（開啟聊天框並自動填入文字）
 export function lineMessageHref(message: string) {

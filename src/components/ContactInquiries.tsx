@@ -92,7 +92,7 @@ export default function ContactInquiries({ defaultOpen = false }: ContactInquiri
 
     if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
       try {
-        const handle = await (window as any).showSaveFilePicker({
+        const handle = await (window as unknown as { showSaveFilePicker: (opts: { suggestedName: string; types: { description: string; accept: Record<string, string[]> }[] }) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
           suggestedName: fileName,
           types: [{
             description: "Excel 檔案",

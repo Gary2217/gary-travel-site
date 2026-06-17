@@ -46,7 +46,6 @@ export default function InquiryButtons({ tripTitle, tripId, variant, selectedDat
     openExternalLink(lineUrl);
   }, [lineUrl, tripId, tripTitle]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!isOpen) return;
     const handler = () => setIsOpen(false);

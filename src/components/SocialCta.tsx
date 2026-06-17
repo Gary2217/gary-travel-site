@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
+import { lineHref, fbHref, igHref, fbGroupHref, lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 import ContactFormModal from "./ContactFormModal";
 import LegalNotice from "./LegalNotice";
@@ -43,7 +43,7 @@ export default function SocialCta({
           <p className="text-sm text-gray-500">關注最新旅遊資訊、優惠行程、出團動態</p>
         </div>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-          <a href="https://lin.ee/t64tR31J" target="_blank" rel="noopener noreferrer"
+          <a href={lineHref} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#06C755]/30 hover:shadow-lg hover:shadow-[#06C755]/10">
             <div className="absolute inset-0 bg-gradient-to-br from-[#06C755]/[0.04] via-transparent to-[#06C755]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="relative">
@@ -58,7 +58,7 @@ export default function SocialCta({
             </div>
             <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#06C755]/60 via-[#06C755] to-[#06C755]/60 transition-all duration-300 group-hover:w-3/4" />
           </a>
-          <a href="https://www.facebook.com/Travel.has.no.end" target="_blank" rel="noopener noreferrer"
+          <a href={fbHref} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#1877F2]/30 hover:shadow-lg hover:shadow-[#1877F2]/10">
             <div className="absolute inset-0 bg-gradient-to-br from-[#1877F2]/[0.04] via-transparent to-[#1877F2]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="relative">
@@ -73,7 +73,7 @@ export default function SocialCta({
             </div>
             <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#1877F2]/60 via-[#1877F2] to-[#1877F2]/60 transition-all duration-300 group-hover:w-3/4" />
           </a>
-          <a href="https://www.facebook.com/share/g/18TSaJMtzb/" target="_blank" rel="noopener noreferrer"
+          <a href={fbGroupHref} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#1877F2]/30 hover:shadow-lg hover:shadow-[#1877F2]/10">
             <div className="absolute inset-0 bg-gradient-to-br from-[#1877F2]/[0.04] via-transparent to-[#1877F2]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="relative">
@@ -88,7 +88,7 @@ export default function SocialCta({
             </div>
             <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#1877F2]/60 via-[#1877F2] to-[#1877F2]/60 transition-all duration-300 group-hover:w-3/4" />
           </a>
-          <a href="https://www.instagram.com/gary_____1207/" target="_blank" rel="noopener noreferrer"
+          <a href={igHref} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E4405F]/30 hover:shadow-lg hover:shadow-[#E4405F]/10">
             <div className="absolute inset-0 bg-gradient-to-br from-[#E4405F]/[0.04] via-transparent to-[#E4405F]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="relative">

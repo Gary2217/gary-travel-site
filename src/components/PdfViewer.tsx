@@ -19,11 +19,11 @@ export default function PdfViewer({ url, title, isDevMode = false }: PdfViewerPr
   const [error, setError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [pages, setPages] = useState<PageInfo[]>([]);
-  const pdfRef = useRef<any>(null);
+  const pdfRef = useRef<import('pdfjs-dist').PDFDocumentProxy | null>(null);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const renderingRef = useRef<Set<number>>(new Set());
   const initRef = useRef(false);
-  const pdfjsLibRef = useRef<any>(null);
+  const pdfjsLibRef = useRef<typeof import('pdfjs-dist') | null>(null);
   const textLayerRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // 載入 PDF 文件（只取得 metadata，不渲染頁面）
