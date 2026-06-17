@@ -31,3 +31,6 @@ pnpm-debug.log*
 .env*.local
 .claude/
 .playwright-mcp/
+
+# one-time migration scripts (already committed, no longer tracked)
+scripts/oneoff/
