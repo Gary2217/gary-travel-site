@@ -1,19 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAnonClient, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const start = Date.now();
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   // 環境變數檢查
   const env_checks = [
     {
       name: 'Supabase 資料庫',
-      ok: Boolean(supabaseUrl && supabaseAnonKey),
+      ok: hasSupabaseConfig(),
       impact: '網站無法載入任何資料，所有頁面都會顯示錯誤',
       fix: '請確認 Vercel 環境變數有設定 NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SUPABASE_ANON_KEY',
     },
@@ -43,7 +40,7 @@ export async function GET() {
     },
   ];
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!hasSupabaseConfig()) {
     return NextResponse.json(
       { status: 'error', db: 'unreachable', latency_ms: Date.now() - start, env_checks, data_checks: [] },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
@@ -51,7 +48,7 @@ export async function GET() {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
 
     const { error: dbError } = await supabase
       .from('regions')
@@ -134,7 +131,8 @@ export async function GET() {
       { status: hasWarnings ? 'warning' : 'ok', db: 'connected', latency_ms, env_checks, data_checks },
       { headers: { 'Cache-Control': 'no-store' } }
     );
-  } catch {
+  } catch (err) {
+    console.error('[API 503] 健康檢查失敗:', err instanceof Error ? err.message : String(err));
     return NextResponse.json(
       { status: 'error', db: 'unreachable', latency_ms: Date.now() - start, env_checks, data_checks: [] },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }

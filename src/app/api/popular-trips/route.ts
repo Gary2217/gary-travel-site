@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
+import { createAnonClient, createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const FEATURED_DESTINATION_ORDER = ['杜拜 / 阿布達比', '烏茲別克', '斯里蘭卡', '馬爾地夫'];
@@ -13,7 +12,7 @@ const POPULAR_ORDER_KEY = 'popular_destination_order';
 
 export async function GET() {
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
 
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -63,7 +62,7 @@ export async function GET() {
     let savedOrder: string[] | null = null;
     if (supabaseServiceRoleKey) {
       try {
-        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+        const supabaseAdmin = createServiceClient();
         const { data: orderSetting } = await supabaseAdmin
           .from('site_settings')
           .select('value')
@@ -130,7 +129,7 @@ export async function GET() {
     return NextResponse.json(ranked, {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

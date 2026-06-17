@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { createAnonClient } from '@/lib/supabase-server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -20,26 +20,30 @@ export async function POST(request: NextRequest) {
     const { destination_id } = body;
 
     if (!destination_id || typeof destination_id !== 'string') {
-      return NextResponse.json({ error: 'Missing destination_id' }, { status: 400 });
+      return apiError('缺少 destination_id', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
+
+    const MAX_HEADER_LEN = 512;
+    const userAgent = (request.headers.get('user-agent') || '').slice(0, MAX_HEADER_LEN);
+    const referrer = (request.headers.get('referer') || '').slice(0, MAX_HEADER_LEN);
 
     const { error } = await supabase
       .from('click_analytics')
       .insert({
         destination_id,
-        user_agent: request.headers.get('user-agent') || '',
-        referrer: request.headers.get('referer') || '',
+        user_agent: userAgent,
+        referrer,
         ip_address: ip,
       });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

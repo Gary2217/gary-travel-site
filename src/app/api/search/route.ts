@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS } from '@/lib/api-error';
+import { createAnonClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(request: NextRequest) {
   const rawQ = request.nextUrl.searchParams.get('q')?.trim() ?? '';
@@ -18,7 +16,7 @@ export async function GET(request: NextRequest) {
   const q = rawQ.replace(/[(),."\\]/g, '');
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
 
     const { data, error } = await supabase
       .from('trips')
@@ -29,13 +27,13 @@ export async function GET(request: NextRequest) {
       .limit(10);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     return NextResponse.json(data || [], {
       headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

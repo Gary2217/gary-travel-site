@@ -1,24 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
+import { createAnonClientNoCache, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
 export async function GET() {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasSupabaseConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = createAnonClientNoCache();
 
     const { data: regionsData, error: regionsError } = await supabase
       .from('regions')
@@ -29,7 +22,7 @@ export async function GET() {
 
     if (regionsError) {
       console.error('regions query error:', regionsError.message);
-      return NextResponse.json({ error: '載入失敗' }, { status: 500 });
+      return apiError('載入失敗', 500, regionsError);
     }
 
     const regions = (regionsData || [])
@@ -44,7 +37,7 @@ export async function GET() {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

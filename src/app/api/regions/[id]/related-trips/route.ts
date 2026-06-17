@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
+import { createAnonClientNoCache } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 function mergeDepartureDates(trips: any[], today: string): any[] {
   return trips.map((trip: any) => {
@@ -24,19 +20,13 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  noStore();
   try {
     const { searchParams } = new URL(request.url);
     const categoryLabel = searchParams.get('category_label') || '';
     const excludeDestinationId = searchParams.get('exclude_destination_id') || '';
     const today = new Date().toISOString().slice(0, 10);
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = createAnonClientNoCache();
 
     // Round 1：regionDests 與 categoryRegions 互不依賴，並行執行
     let regionDestsQuery = supabase

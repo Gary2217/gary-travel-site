@@ -1,29 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { createAnonClientNoCache, createServiceClient, hasServiceRoleConfig, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasSupabaseConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = createAnonClientNoCache();
 
     const { data, error } = await supabase
       .from('destinations')
@@ -33,14 +25,14 @@ export async function GET(
 
     if (error) {
       console.error('destination query error:', error.message);
-      return NextResponse.json({ error: '找不到目的地' }, { status: 404 });
+      return apiError('找不到目的地', 404);
     }
 
     return NextResponse.json(data, {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -52,8 +44,8 @@ export async function PATCH(
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const body = await request.json();
@@ -62,7 +54,7 @@ export async function PATCH(
     if (typeof body.title === 'string') {
       const title = body.title.trim();
       if (!title) {
-        return NextResponse.json({ error: '標題不可為空白' }, { status: 400 });
+        return apiError('標題不可為空白', 400);
       }
       updates.title = title;
     }
@@ -76,10 +68,10 @@ export async function PATCH(
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: '沒有可更新的欄位' }, { status: 400 });
+      return apiError('沒有可更新的欄位', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
     const { data, error } = await supabase
       .from('destinations')
       .update(updates)
@@ -88,12 +80,12 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -105,11 +97,11 @@ export async function DELETE(
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     const { data: destination, error: destinationError } = await supabase
       .from('destinations')
@@ -118,7 +110,7 @@ export async function DELETE(
       .single();
 
     if (destinationError || !destination) {
-      return NextResponse.json({ error: '找不到目的地' }, { status: 404 });
+      return apiError('找不到目的地', 404);
     }
 
     const { data: trips, error: tripsError } = await supabase
@@ -127,7 +119,7 @@ export async function DELETE(
       .eq('destination_id', params.id);
 
     if (tripsError) {
-      return NextResponse.json({ error: tripsError.message }, { status: 500 });
+      return API_ERRORS.dbError(tripsError);
     }
 
     const tripIds = (trips || []).map((trip) => trip.id);
@@ -164,7 +156,7 @@ export async function DELETE(
         .eq('media_type', 'image');
 
       if (sideMediaError) {
-        return NextResponse.json({ error: sideMediaError.message }, { status: 500 });
+          return API_ERRORS.dbError(sideMediaError);
       }
 
       for (const media of sideMedia || []) {
@@ -188,7 +180,7 @@ export async function DELETE(
         .eq('destination_id', params.id);
 
       if (deleteTripsError) {
-        return NextResponse.json({ error: deleteTripsError.message }, { status: 500 });
+        return API_ERRORS.dbError(deleteTripsError);
       }
     }
 
@@ -198,7 +190,7 @@ export async function DELETE(
       .eq('id', params.id);
 
     if (deleteDestinationError) {
-      return NextResponse.json({ error: deleteDestinationError.message }, { status: 500 });
+      return API_ERRORS.dbError(deleteDestinationError);
     }
 
     if (storagePaths.size > 0) {
@@ -212,7 +204,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true, deleted_trip_count: tripIds.length });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

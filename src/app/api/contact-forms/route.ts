@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { createAnonClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // POST - 提交聯絡表單
 export async function POST(request: NextRequest) {
@@ -55,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '請至少填寫一個聯繫方式（電話、LINE ID 或信箱）' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
 
     const { error } = await supabase
       .from('contact_forms')
@@ -88,7 +85,7 @@ export async function GET(request: NextRequest) {
   const month = searchParams.get('month');
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
 
     let query = supabase
       .from('contact_forms')
@@ -146,7 +143,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少 id' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createAnonClient();
 
     const { data: existingForm, error: existingError } = await supabase
       .from('contact_forms')

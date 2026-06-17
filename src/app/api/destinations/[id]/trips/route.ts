@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createAnonClientNoCache, createServiceClient, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 export async function GET(
@@ -13,8 +12,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasSupabaseConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const showHidden = _request.nextUrl.searchParams.get('hidden') === '1';
@@ -26,12 +25,7 @@ export async function GET(
     }
 
     // 查隱藏行程需 service role key 繞過 RLS
-    const supabase = createClient(supabaseUrl, showHidden && supabaseServiceKey ? supabaseServiceKey : supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = showHidden && supabaseServiceKey ? createServiceClient() : createAnonClientNoCache();
 
     const today = new Date().toISOString().slice(0, 10);
 
@@ -44,7 +38,7 @@ export async function GET(
 
     if (error) {
       console.error('destination trips query error:', error.message);
-      return NextResponse.json({ error: '載入失敗' }, { status: 500 });
+      return apiError('載入失敗', 500, error);
     }
 
     const trips = (data || []).map((trip: any) => {
@@ -69,7 +63,7 @@ export async function GET(
     return NextResponse.json(trips, {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

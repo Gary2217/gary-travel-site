@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
+import { createAnonClientNoCache, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
 export async function GET(request: NextRequest) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasSupabaseConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,15 +15,10 @@ export async function GET(request: NextRequest) {
     const city = searchParams.get('city');
 
     if (!date) {
-      return NextResponse.json({ error: '請選擇出發日期' }, { status: 400 });
+      return apiError('請選擇出發日期', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = createAnonClientNoCache();
 
     // 找出該日期有出發的梯次
     let dateQuery = supabase
@@ -43,7 +36,7 @@ export async function GET(request: NextRequest) {
     const { data: dateRows, error: dateError } = await dateQuery;
 
     if (dateError) {
-      return NextResponse.json({ error: '查詢失敗' }, { status: 500 });
+      return apiError('查詢失敗', 500, dateError);
     }
 
     const tripIds = [...new Set((dateRows || []).map((r: any) => r.trip_id))];
@@ -60,7 +53,7 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true);
 
     if (tripError) {
-      return NextResponse.json({ error: '查詢失敗' }, { status: 500 });
+      return apiError('查詢失敗', 500, tripError);
     }
 
     const result = (trips || []).map((trip: any) => {
@@ -77,7 +70,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result, {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
