@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@types/node": "20.17.57",
-    "@types/pdf-parse": "^1.1.5",
     "@types/react": "18.3.23",
     "@types/react-dom": "18.3.7",
     "autoprefixer": "10.4.20",
@@ -34,6 +33,6 @@
     "typescript": "5.8.3"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=20.0.0"
   }
 }
