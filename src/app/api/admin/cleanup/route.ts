@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,15 +8,12 @@ export async function POST(req: NextRequest) {
   const authError = requireDevAuth();
   if (authError) return authError;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  if (!hasServiceRoleConfig()) {
     return NextResponse.json({ error: '伺服器設定錯誤' }, { status: 500 });
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 清除超過 90 天的 analytics 事件
     const cutoffDate = new Date();

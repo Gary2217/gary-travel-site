@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(
   _request: NextRequest,
@@ -15,11 +12,11 @@ export async function POST(
     const authError = requireDevAuth();
     if (authError) return authError;
 
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 取得行程的 document_url
     const { data: trip, error: tripError } = await supabase

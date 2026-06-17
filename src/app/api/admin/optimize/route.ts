@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 function createSupabase() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey);
+  return createServiceClient();
 }
 
 // GET: 取得資料統計 + 完整性檢查

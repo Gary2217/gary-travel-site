@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 type ReorderTable = 'destinations' | 'trips';
 
@@ -32,8 +30,8 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const body = await request.json();
@@ -41,10 +39,10 @@ export async function POST(request: NextRequest) {
     const items = body.items;
 
     if (!isValidTable(table) || !isValidItems(items) || items.length === 0) {
-      return NextResponse.json({ error: '無效的排序資料' }, { status: 400 });
+      return apiError('無效的排序資料', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     const results = await Promise.all(
       items.map((item) =>
@@ -57,11 +55,11 @@ export async function POST(request: NextRequest) {
 
     const failed = results.find((result) => result.error);
     if (failed?.error) {
-      return NextResponse.json({ error: failed.error.message }, { status: 500 });
+      return API_ERRORS.dbError(failed.error);
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

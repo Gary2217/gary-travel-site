@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 // POST: 新增行程（需登入）
 export async function POST(request: NextRequest) {
   const authError = requireDevAuth();
   if (authError) return authError;
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
     const body = await request.json();
@@ -21,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing destination_id' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 取得目前最大 display_order
     const { data: existing } = await supabase

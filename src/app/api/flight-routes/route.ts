@@ -1,27 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createAnonClientNoCache, createServiceClient, hasServiceRoleConfig, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 export async function GET() {
-  noStore();
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasSupabaseConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = createAnonClientNoCache();
 
     const { data, error } = await supabase
       .from('flight_routes')
@@ -31,21 +21,21 @@ export async function GET() {
 
     if (error) {
       console.error('flight-routes query error:', error.message);
-      return NextResponse.json({ error: '載入失敗' }, { status: 500 });
+      return apiError('載入失敗', 500, error);
     }
 
     return NextResponse.json(data ?? [], {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
     });
-  } catch {
-    return NextResponse.json({ error: '載入失敗' }, { status: 500 });
+  } catch (err) {
+    return apiError('載入失敗', 500, err);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const authError = requireDevAuth();
@@ -55,10 +45,10 @@ export async function POST(request: NextRequest) {
     const { region, from_city, to_city, airlines, duration, price_range, image_url, direct, metadata } = body;
 
     if (!region || !to_city || !airlines || !duration || !price_range) {
-      return NextResponse.json({ error: '缺少必填欄位' }, { status: 400 });
+      return apiError('缺少必填欄位', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     const { data: maxOrderData } = await supabase
       .from('flight_routes')
@@ -88,11 +78,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     return NextResponse.json(data, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
 import { requireDevAuth } from '@/lib/api-auth';
-import { unstable_noStore as noStore } from 'next/cache';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 function createSupabase() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    global: {
-      fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-        fetch(url, { ...options, cache: 'no-store' }),
-    },
-  });
+  return createServiceClient();
 }
 
 function checkIsDevUser(): boolean {
@@ -26,10 +18,12 @@ function checkIsDevUser(): boolean {
 
 // GET: 查詢維護模式狀態
 export async function GET(req: NextRequest) {
-  noStore();
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ enabled: false, isDevUser: false });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json(
+        { enabled: false, isDevUser: false },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
     }
 
     const supabase = createSupabase();
@@ -46,9 +40,13 @@ export async function GET(req: NextRequest) {
       { enabled, isDevUser: devUser },
       { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
     );
-  } catch {
+  } catch (err) {
+    console.error('[API 500] 維護模式狀態讀取失敗:', err instanceof Error ? err.message : String(err));
     // 表不存在或其他錯誤，預設關閉維護模式
-    return NextResponse.json({ enabled: false, isDevUser: checkIsDevUser() });
+    return NextResponse.json(
+      { enabled: false, isDevUser: checkIsDevUser() },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   }
 }
 
@@ -58,8 +56,8 @@ export async function PUT(req: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const body = await req.json();
@@ -75,11 +73,11 @@ export async function PUT(req: NextRequest) {
       );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     return NextResponse.json({ enabled });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

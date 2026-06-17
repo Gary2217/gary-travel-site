@@ -1,29 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { createAnonClientNoCache, createServiceClient, hasServiceRoleConfig, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasSupabaseConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-          fetch(url, { ...options, cache: 'no-store' }),
-      },
-    });
+    const supabase = createAnonClientNoCache();
 
     const [{ data, error }, daysResult, datesResult] = await Promise.all([
       supabase.from('trips').select('*, destinations (*)').eq('id', params.id).single(),
@@ -59,8 +50,8 @@ export async function PATCH(
   const authError = requireDevAuth();
   if (authError) return authError;
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
     const body = await request.json();
@@ -77,7 +68,7 @@ export async function PATCH(
       return NextResponse.json({ error: '沒有可更新的欄位' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     const { data, error } = await supabase
       .from('trips')
@@ -104,11 +95,11 @@ export async function DELETE(
   const authErr = requireDevAuth();
   if (authErr) return authErr;
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 取得行程資料以收集 Storage 路徑
     const { data: trip, error: tripFetchError } = await supabase

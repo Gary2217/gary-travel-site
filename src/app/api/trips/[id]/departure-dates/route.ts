@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { requireDevAuth } from '@/lib/api-auth';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 function createSupabase() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey);
+  return createServiceClient();
 }
 
 // POST: 新增出團梯次
@@ -19,8 +16,8 @@ export async function POST(
   const authError = requireDevAuth();
   if (authError) return authError;
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
     const body = await request.json();
@@ -76,8 +73,8 @@ export async function PATCH(request: NextRequest) {
   const authError = requireDevAuth();
   if (authError) return authError;
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -130,8 +127,8 @@ export async function DELETE(request: NextRequest) {
   const authError = requireDevAuth();
   if (authError) return authError;
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json({ error: '伺服器設定缺失' }, { status: 500 });
     }
 
     const { searchParams } = new URL(request.url);
