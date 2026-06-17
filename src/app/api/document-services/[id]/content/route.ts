@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { requireDevAuth } from "@/lib/api-auth";
 import { getStoragePathFromPublicUrl } from "@/lib/storage";
+import { createServiceClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const SERVICE_IDS = ["roc0001", "roc0002", "tcc0001"] as const;
 const CONTENT_FOLDER = "document-services-content";
@@ -51,7 +48,7 @@ function isContractKey(value: string): value is ContractKey {
 }
 
 function createAdminClient() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey);
+  return createServiceClient();
 }
 
 function getContentPath(serviceId: ServiceId) {

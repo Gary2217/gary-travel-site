@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 const ALLOWED_EXTENSIONS = ['pdf'];
 
@@ -14,15 +12,15 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const body = await request.json();
     const { trip_id, file_name } = body;
 
     if (!trip_id || !file_name) {
-      return NextResponse.json({ error: 'Missing trip_id or file_name' }, { status: 400 });
+      return apiError('缺少 trip_id 或 file_name', 400);
     }
 
     const fileExt = file_name.split('.').pop()?.toLowerCase() || '';
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     const fileName = `${trip_id}-${Date.now()}.${sanitizedExt}`;
     const filePath = `documents/${fileName}`;
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
       .createSignedUploadUrl(filePath);
 
     if (signedError || !signedData) {
-      return NextResponse.json({ error: signedError?.message || '無法建立上傳連結' }, { status: 500 });
+      return signedError ? API_ERRORS.dbError(signedError) : apiError('無法建立上傳連結', 500);
     }
 
     const { data: { publicUrl } } = supabase.storage
@@ -58,8 +56,8 @@ export async function POST(request: NextRequest) {
       path: filePath,
       publicUrl,
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -69,18 +67,18 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const body = await request.json();
     const { trip_id } = body;
 
     if (!trip_id) {
-      return NextResponse.json({ error: 'Missing trip_id' }, { status: 400 });
+      return apiError('缺少 trip_id', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 取得舊檔案路徑
     const { data: existingTrip } = await supabase
@@ -96,7 +94,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', trip_id);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return API_ERRORS.dbError(updateError);
     }
 
     // 刪除 Storage 中的檔案
@@ -106,8 +104,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -117,18 +115,18 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const body = await request.json();
     const { trip_id, url } = body;
 
     if (!trip_id || !url) {
-      return NextResponse.json({ error: 'Missing trip_id or url' }, { status: 400 });
+      return apiError('缺少 trip_id 或 url', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 取得舊檔案路徑
     const { data: existingTrip } = await supabase
@@ -161,7 +159,7 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return API_ERRORS.dbError(updateError);
     }
 
     // 刪除舊檔案
@@ -173,7 +171,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({ url, document_is_available: true, trip: updatedTrip });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

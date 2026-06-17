@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { createAnonClient, createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // GET - 取得行程的側邊媒體
 export async function GET(request: NextRequest) {
@@ -15,10 +12,10 @@ export async function GET(request: NextRequest) {
   const tripId = searchParams.get('trip_id');
 
   if (!tripId) {
-    return NextResponse.json({ error: '缺少 trip_id' }, { status: 400 });
+    return apiError('缺少 trip_id', 400);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createAnonClient();
   const { data, error } = await supabase
     .from('trip_side_media')
     .select('*')
@@ -26,7 +23,7 @@ export async function GET(request: NextRequest) {
     .order('display_order', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return API_ERRORS.dbError(error);
   }
 
   return NextResponse.json(data || [], {
@@ -44,18 +41,18 @@ export async function POST(request: NextRequest) {
     const { trip_id, media_type, url } = body;
 
     if (!trip_id || !media_type || !url) {
-      return NextResponse.json({ error: '缺少必要欄位' }, { status: 400 });
+      return apiError('缺少必要欄位', 400);
     }
 
     if (!['image', 'instagram_video'].includes(media_type)) {
-      return NextResponse.json({ error: '不支援的媒體類型' }, { status: 400 });
+      return apiError('不支援的媒體類型', 400);
     }
 
     if (typeof url !== 'string' || url.length > 2048) {
-      return NextResponse.json({ error: 'URL 長度不得超過 2048 字元' }, { status: 400 });
+      return apiError('URL 長度不得超過 2048 字元', 400);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     // 檢查數量限制
     const { count } = await supabase
@@ -89,12 +86,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -107,10 +104,10 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get('id');
 
   if (!id) {
-    return NextResponse.json({ error: '缺少 id' }, { status: 400 });
+    return apiError('缺少 id', 400);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+  const supabase = createServiceClient();
 
   const { data: targetMedia, error: targetError } = await supabase
     .from('trip_side_media')
@@ -119,7 +116,7 @@ export async function DELETE(request: NextRequest) {
     .single();
 
   if (targetError || !targetMedia) {
-    return NextResponse.json({ error: '找不到指定媒體' }, { status: 404 });
+    return apiError('找不到指定媒體', 404);
   }
 
   const { error } = await supabase
@@ -128,7 +125,7 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return API_ERRORS.dbError(error);
   }
 
   if (targetMedia.media_type === 'image') {

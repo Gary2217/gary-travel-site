@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const LOGO_DIR = 'site';
 
 export async function GET(request: NextRequest) {
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
+    if (!hasServiceRoleConfig()) {
       return NextResponse.redirect(new URL('/travel-logo.svg', request.url));
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
     const { data: files, error: listError } = await supabase.storage
       .from('images')
       .list(LOGO_DIR, { limit: 100, sortBy: { column: 'name', order: 'desc' } });
@@ -34,9 +32,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/travel-logo.svg', request.url));
     }
 
+    const SAFE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const contentType = SAFE_TYPES.includes(data.type) ? data.type : 'application/octet-stream';
+
     return new NextResponse(data, {
       headers: {
-        'Content-Type': data.type || 'application/octet-stream',
+        'Content-Type': contentType,
+        'Content-Disposition': 'inline',
+        'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store',
       },
     });

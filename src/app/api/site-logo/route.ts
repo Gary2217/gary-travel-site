@@ -1,38 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { validateFileSignature } from '@/lib/file-validation';
+import { createAnonClient, createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024;
 const LOGO_DIR = 'site';
 
 function buildLogoPublicUrl(path: string, version: string) {
-  const { data } = createClient(supabaseUrl, supabaseServiceRoleKey).storage.from('images').getPublicUrl(path);
+  const { data } = createServiceClient().storage.from('images').getPublicUrl(path);
   return `${data.publicUrl}?v=${version}`;
 }
 
 export async function GET() {
-  noStore();
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ url: '/travel-logo.svg' });
+    if (!hasServiceRoleConfig()) {
+      return NextResponse.json(
+        { url: '/travel-logo.svg' },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
     }
 
     // 用 anon key 讀取公開 storage 列表
-    const supabaseRead = createClient(supabaseUrl, supabaseAnonKey);
+    const supabaseRead = createAnonClient();
     const { data: files, error } = await supabaseRead.storage
       .from('images')
       .list(LOGO_DIR, { limit: 100 });
 
     if (error || !files || files.length === 0) {
-      return NextResponse.json({ url: '/travel-logo.svg' });
+      return NextResponse.json(
+        { url: '/travel-logo.svg' },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
     }
 
     // 依檔名降序排列，取最新上傳的
@@ -40,7 +42,10 @@ export async function GET() {
     const latestFile = sorted[0];
 
     if (!latestFile) {
-      return NextResponse.json({ url: '/travel-logo.svg' });
+      return NextResponse.json(
+        { url: '/travel-logo.svg' },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
     }
 
     // 刪除舊 logo（用 service role key）
@@ -49,7 +54,7 @@ export async function GET() {
       .map((file) => `${LOGO_DIR}/${file.name}`);
 
     if (stalePaths.length > 0) {
-      const supabaseWrite = createClient(supabaseUrl, supabaseServiceRoleKey);
+      const supabaseWrite = createServiceClient();
       const { error: removeError } = await supabaseWrite.storage.from('images').remove(stalePaths);
       if (removeError) {
         console.error('Failed to remove old site logos:', removeError.message);
@@ -60,8 +65,12 @@ export async function GET() {
       { url: buildLogoPublicUrl(`${LOGO_DIR}/${latestFile.name}`, latestFile.updated_at || Date.now().toString()) },
       { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' } }
     );
-  } catch {
-    return NextResponse.json({ url: '/travel-logo.svg' });
+  } catch (err) {
+    console.error('[API 500] 站台 Logo 讀取失敗:', err instanceof Error ? err.message : String(err));
+    return NextResponse.json(
+      { url: '/travel-logo.svg' },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   }
 }
 
@@ -71,17 +80,17 @@ export async function DELETE() {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
     const { data: files, error } = await supabase.storage
       .from('images')
       .list(LOGO_DIR, { limit: 100 });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     if (files && files.length > 0) {
@@ -90,8 +99,8 @@ export async function DELETE() {
     }
 
     return NextResponse.json({ success: true, deleted: files?.length ?? 0 });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -100,23 +109,23 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server upload configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'Missing file' }, { status: 400 });
+      return apiError('缺少檔案', 400);
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Allowed: JPG, PNG, WebP, SVG' }, { status: 400 });
+      return NextResponse.json({ error: '不支援的檔案類型，僅接受 JPG、PNG、WebP' }, { status: 400 });
     }
 
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'File too large. Max 5MB' }, { status: 400 });
+      return apiError('檔案過大，最大僅支援 5MB', 400);
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -124,7 +133,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '檔案內容與類型不符' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
     const fileExt = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
     const filePath = `${LOGO_DIR}/logo-${Date.now()}.${fileExt}`;
 
@@ -133,7 +142,7 @@ export async function POST(request: NextRequest) {
       .list(LOGO_DIR, { limit: 100, sortBy: { column: 'name', order: 'desc' } });
 
     if (listError) {
-      return NextResponse.json({ error: listError.message }, { status: 500 });
+      return API_ERRORS.dbError(listError);
     }
 
     const { error: uploadError } = await supabase.storage
@@ -145,7 +154,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      return API_ERRORS.dbError(uploadError);
     }
 
     const stalePaths = (existingFiles || [])
@@ -161,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ url: buildLogoPublicUrl(filePath, Date.now().toString()) });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

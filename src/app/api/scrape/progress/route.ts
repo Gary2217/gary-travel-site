@@ -1,25 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
-import { unstable_noStore as noStore } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 function createSupabase() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    global: {
-      fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-        fetch(url, { ...options, cache: 'no-store' }),
-    },
-  });
+  return createServiceClient();
 }
 
 // GET: 讀取最新的抓取進度（前端每 3 秒輪詢）
 export async function GET() {
-  noStore();
   const authError = requireDevAuth();
   if (authError) return authError;
 
@@ -72,8 +63,8 @@ export async function GET() {
       },
       { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
     );
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -93,11 +84,11 @@ export async function DELETE() {
       .single();
 
     if (fetchErr || !log) {
-      return NextResponse.json({ error: '找不到抓取紀錄' }, { status: 404 });
+      return apiError('找不到抓取紀錄', 404);
     }
 
     if (log.status === 'running') {
-      return NextResponse.json({ error: '抓取進行中，無法清除' }, { status: 400 });
+      return apiError('抓取進行中，無法清除', 400);
     }
 
     const { error: updateErr } = await supabase
@@ -106,11 +97,11 @@ export async function DELETE() {
       .eq('id', log.id);
 
     if (updateErr) {
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      return API_ERRORS.dbError(updateErr);
     }
 
     return NextResponse.json({ cleared: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

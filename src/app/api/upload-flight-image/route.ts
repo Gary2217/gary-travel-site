@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { validateFileSignature } from '@/lib/file-validation';
 import { getStoragePathFromPublicUrl } from '@/lib/storage';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -15,8 +13,8 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      return NextResponse.json({ error: 'Missing server upload configuration.' }, { status: 500 });
+    if (!hasServiceRoleConfig()) {
+      return API_ERRORS.missingConfig();
     }
 
     const formData = await request.formData();
@@ -24,7 +22,7 @@ export async function POST(request: NextRequest) {
     const oldImageUrl = formData.get('old_image_url') as string | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'Missing file' }, { status: 400 });
+      return apiError('缺少檔案', 400);
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json({ error: '僅支援 JPG、PNG、WebP' }, { status: 400 });
@@ -38,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '檔案內容與類型不符' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createServiceClient();
 
     const fileExt = (file.name.split('.').pop()?.toLowerCase() || 'jpg').replace(/[^a-z0-9]/g, '');
     const fileName = `flight-${Date.now()}.${fileExt}`;
@@ -53,7 +51,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      return API_ERRORS.dbError(uploadError);
     }
 
     const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ url: versionedUrl });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

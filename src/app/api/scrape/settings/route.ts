@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
-import { unstable_noStore as noStore } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 function createSupabase() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    global: {
-      fetch: (url: RequestInfo | URL, options?: RequestInit) =>
-        fetch(url, { ...options, cache: 'no-store' }),
-    },
-  });
+  return createServiceClient();
 }
 
 const SCRAPE_KEYS = [
@@ -28,7 +20,6 @@ const SCRAPE_KEYS = [
 
 // GET: 讀取所有抓取設定
 export async function GET() {
-  noStore();
   try {
     const supabase = createSupabase();
     const { data, error } = await supabase
@@ -37,7 +28,7 @@ export async function GET() {
       .in('key', SCRAPE_KEYS);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return API_ERRORS.dbError(error);
     }
 
     const settings: Record<string, unknown> = {};
@@ -48,8 +39,8 @@ export async function GET() {
     return NextResponse.json(settings, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }
 
@@ -76,7 +67,7 @@ export async function PUT(req: NextRequest) {
     }
 
     if (updates.length === 0) {
-      return NextResponse.json({ error: '沒有可更新的欄位' }, { status: 400 });
+      return apiError('沒有可更新的欄位', 400);
     }
 
     for (const item of updates) {
@@ -85,12 +76,12 @@ export async function PUT(req: NextRequest) {
         .upsert(item, { onConflict: 'key' });
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+          return API_ERRORS.dbError(error);
       }
     }
 
     return NextResponse.json({ updated: updates.length });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return API_ERRORS.internal(err);
   }
 }

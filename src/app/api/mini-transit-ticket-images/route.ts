@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { requireDevAuth } from "@/lib/api-auth";
 import { validateFileSignature } from "@/lib/file-validation";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { createAnonClient, createServiceClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +27,11 @@ function filePrefix(ticketId: TicketId, imageType: ImageType) {
 }
 
 function createReadClient() {
-  return createClient(supabaseUrl, supabaseAnonKey);
+  return createAnonClient();
 }
 
 function createAdminClient() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey);
+  return createServiceClient();
 }
 
 function buildPublicUrl(path: string) {

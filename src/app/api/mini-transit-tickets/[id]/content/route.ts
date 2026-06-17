@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { requireDevAuth } from "@/lib/api-auth";
 import { getStoragePathFromPublicUrl } from "@/lib/storage";
+import { createServiceClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const TICKET_IDS = ["mtl001", "mtl002", "mtl003", "mtl004", "mtl005"] as const;
 const CONTENT_FOLDER = "mini-transit-tickets-content";
@@ -49,7 +46,7 @@ function isContractKey(value: string): value is ContractKey {
 }
 
 function createAdminClient() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey);
+  return createServiceClient();
 }
 
 function contentPath(ticketId: TicketId) {
