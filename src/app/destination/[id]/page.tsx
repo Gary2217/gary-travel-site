@@ -139,11 +139,7 @@ export default function DestinationPage() {
         const siblingIds = allSiblingIds.filter(id => id !== destinationId);
         const hasSiblings = siblings.length > 1;
 
-        // Phase 2：兄弟行程 + 推薦行程 + 隱藏行程 全部並行
-        const siblingTripsP = hasSiblings
-          ? Promise.allSettled(siblingIds.map(id => getDestinationTrips(id)))
-          : Promise.resolve(null);
-
+        // Phase 2：推薦行程 + 隱藏行程 並行載入
         const hasRelated = destData.region_id && destData.regions?.category_label;
         if (hasRelated) setRelatedLoading(true);
         const relatedP = hasRelated
@@ -155,54 +151,41 @@ export default function DestinationPage() {
           ? Promise.allSettled(hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json())))
           : Promise.resolve(null);
 
-        const [siblingResult, relatedResult, hiddenResult] = await Promise.all([siblingTripsP, relatedP, hiddenP]);
+        const [relatedResult, hiddenResult] = await Promise.all([relatedP, hiddenP]);
         if (!isMounted) return;
 
-        // 處理兄弟行程 → 合併 + 去重 + 建立 sub_area tabs
-        if (hasSiblings && siblingResult) {
-          const extraTrips = (siblingResult as PromiseSettledResult<typeof tripsData>[])
-            .filter((r): r is PromiseFulfilledResult<typeof tripsData> => r.status === 'fulfilled')
-            .flatMap(r => r.value);
-          const allTrips = [...tripsData, ...extraTrips];
-          const seen = new Set<string>();
-          const deduped = allTrips.filter(t => {
-            const key = (t.trip_banner as Record<string, unknown>)?.code_label as string || t.id;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
+        // 建立 sub_area tabs（僅從當前 destination 的行程）
+        const currentTrips = tripsData as Trip[];
+        const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+        const areas: string[] = Array.from(new Set(
+          currentTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+        ));
+        if (isChinaRegion) {
+          areas.sort((a, b) => {
+            const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
+            const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
+            if (ai === -1 && bi === -1) return a.localeCompare(b);
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return ai - bi;
           });
-
-          const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
-          const areas = Array.from(new Set(
-            deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
-          ));
-          if (isChinaRegion) {
-            areas.sort((a, b) => {
-              const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
-              const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
-              if (ai === -1 && bi === -1) return a.localeCompare(b);
-              if (ai === -1) return 1;
-              if (bi === -1) return -1;
-              return ai - bi;
-            });
-          }
-          const areaTabs = areas.length >= 2
-            ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-            : [];
-          // 重新排序：有出團日期的在前、custom_tour 在最後
-          deduped.sort((a, b) => {
-            const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
-            const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
-            if (aCustom !== bCustom) return aCustom - bCustom;
-            const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
-            const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
-            if (aHas !== bHas) return aHas - bHas;
-            return (a.display_order || 99) - (b.display_order || 99);
-          });
-          setTrips(deduped);
-          setRegionTabs(areaTabs);
-          setCurrentTabLabel("全部");
         }
+        const areaTabs = areas.length >= 2
+          ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
+          : [];
+        // 重新排序：有出團日期的在前、custom_tour 在最後
+        const sortedTrips = [...currentTrips].sort((a, b) => {
+          const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
+          const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
+          if (aCustom !== bCustom) return aCustom - bCustom;
+          const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
+          const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
+          if (aHas !== bHas) return aHas - bHas;
+          return (a.display_order || 99) - (b.display_order || 99);
+        });
+        setTrips(sortedTrips);
+        setRegionTabs(areaTabs);
+        if (areaTabs.length > 0) setCurrentTabLabel("全部");
 
         // 處理隱藏行程
         if (hiddenResult) {
@@ -471,41 +454,23 @@ export default function DestinationPage() {
 
   const handleShowAll = async () => {
     setCurrentTabLabel("全部");
+    setSubAreaFilter("");
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('all', '1');
       window.history.replaceState({}, '', url.toString());
     }
 
-    const allIds = siblingDestsRef.current;
-    if (allIds.length === 0) return;
-
     try {
-      const results = await Promise.allSettled(
-        allIds.map(id => getDestinationTrips(id))
-      );
-      const allTrips = results
-        .filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled')
-        .flatMap(r => r.value);
-
-      const seen = new Set<string>();
-      const deduped = allTrips.filter(t => {
-        const key = (t.trip_banner as Record<string, unknown>)?.code_label as string || t.id;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      // 全部模式：用 sub_area 建立篩選 tabs
-      const areas = Array.from(new Set(
-        deduped.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+      const freshTrips = (await getDestinationTrips(destinationId)) as Trip[];
+      const areas: string[] = Array.from(new Set(
+        freshTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
       ));
       const areaTabs = areas.length >= 2
         ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-        : [{ label: "全部", destId: "all" }];
+        : [];
 
-      // 重新排序：有出團日期的在前、custom_tour 在最後
-      deduped.sort((a, b) => {
+      const sorted = [...freshTrips].sort((a, b) => {
         const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
         const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
         if (aCustom !== bCustom) return aCustom - bCustom;
@@ -514,7 +479,7 @@ export default function DestinationPage() {
         if (aHas !== bHas) return aHas - bHas;
         return (a.display_order || 99) - (b.display_order || 99);
       });
-      setTrips(deduped);
+      setTrips(sorted);
       setRegionTabs(areaTabs);
     } catch {
       // 保持目前行程不變
@@ -683,11 +648,9 @@ export default function DestinationPage() {
       {/* 區域篩選 tabs */}
       {regionTabs.length > 1 && (
         <div className="mx-auto max-w-site px-3 pt-5 sm:px-4 md:px-8">
-          {destination.regions && (
-            <h2 className="mb-4 text-center text-xl font-bold text-gray-800 sm:text-2xl">
-              {destination.regions.title}
-            </h2>
-          )}
+          <h2 className="mb-4 text-center text-xl font-bold text-gray-800 sm:text-2xl">
+            {destination.title}
+          </h2>
           <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
               {regionTabs.map((tab) => (
