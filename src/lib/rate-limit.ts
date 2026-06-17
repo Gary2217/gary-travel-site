@@ -1,6 +1,11 @@
 /**
- * 簡易記憶體型 Rate Limiter（適合 serverless 環境的基本保護）
- * 注意：Vercel serverless 函式每次 cold start 會重置，但仍能阻擋同一 instance 上的連續攻擊
+ * 簡易記憶體型 Rate Limiter
+ *
+ * 限制：Vercel serverless 每次 cold start 會重置 Map，不同 instance 之間不共享。
+ * 仍能阻擋同一 warm instance 上的連續暴力攻擊（如表單重複提交、API 掃描）。
+ *
+ * 目前使用於 4 個 write 端點（contact-forms 5/min、inquiries 10/min、track-click 30/min、analytics 30/min），
+ * 對中小流量網站已足夠。若未來需要跨 instance 一致性，可改用 Upstash Redis（@upstash/ratelimit）。
  */
 
 const ipRequestMap = new Map<string, { count: number; resetAt: number }>();
