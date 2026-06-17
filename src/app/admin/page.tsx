@@ -296,7 +296,7 @@ export default function AdminPage() {
     setHealthLoading(true);
 
     // 1. 先完成 health API（含 DB 查詢），避免與端點檢查搶資源
-    let healthData: any = { db: "error", latency_ms: 0, env_checks: [], data_checks: [] };
+    let healthData: { db: string; latency_ms: number; env_checks: EnvCheck[]; data_checks: DataCheck[] } = { db: "error", latency_ms: 0, env_checks: [], data_checks: [] };
     try {
       const res = await fetch("/api/health", { cache: "no-store" });
       healthData = await res.json();
