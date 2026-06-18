@@ -832,7 +832,11 @@ export default function TripPage() {
         },
       };
 
+      const depPrice = parseDeparturePrice(departureEditorPrice);
       const tripPatchBody2: Record<string, unknown> = { trip_banner: bannerPayload };
+      if (depPrice) {
+        tripPatchBody2.price_range = `NT$${depPrice.toLocaleString('zh-TW')}起`;
+      }
       if (editDestinationId && editDestinationId !== trip?.destination_id) {
         tripPatchBody2.destination_id = editDestinationId;
       }
@@ -874,7 +878,7 @@ export default function TripPage() {
             : bannerPayload,
         };
       });
-      setDepartureDates((prev) => [...prev, createdDeparture].sort((a, b) => a.departure_date.localeCompare(b.departure_date)));
+      setDepartureDates((prev) => [...prev, createdDeparture].sort((a, b) => (a.departure_date || '').localeCompare(b.departure_date || '')));
       setSelectedDepartureId(createdDeparture.id);
       setDepartureEditorPrice(typeof createdDeparture.price === 'number' ? String(createdDeparture.price) : '');
       setIsCreatingNewDeparture(false);
@@ -2520,7 +2524,7 @@ export default function TripPage() {
               </div>
             </div>
             <a
-              href={ctaLineHref}
+              href={lineHref}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
