@@ -529,6 +529,19 @@ export async function deleteTrip(tripId: string): Promise<void> {
   invalidateCache('related:');
 }
 
+// 複製行程（含 trip_banner、出發日期）
+export async function cloneTrip(tripId: string): Promise<Trip> {
+  const res = await fetch(`/api/trips/${tripId}/clone`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || '複製失敗');
+  }
+  invalidateCache('dest-trips:');
+  return res.json();
+}
+
 export async function getSiteLogo(): Promise<string> {
   const fallback = '/travel-logo.svg';
   const KEY = 'site-logo';

@@ -51,6 +51,7 @@ interface TripCardProps {
   onTitleUpdate?: (tripId: string, newTitle: string) => void;
   onDelete?: (tripId: string) => void;
   onHide?: (tripId: string) => void;
+  onDuplicate?: (tripId: string) => void;
 }
 
 function formatShortDate(dateStr: string) {
@@ -86,6 +87,7 @@ export default function TripCard({
   onTitleUpdate,
   onDelete,
   onHide,
+  onDuplicate,
 }: TripCardProps) {
   const [showDownloadGate, setShowDownloadGate] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -359,6 +361,20 @@ export default function TripCard({
                 className={`flex min-h-8 items-center justify-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold shadow transition active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm ${isCustomTour ? 'border-sky-300 bg-sky-100 text-sky-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
               >
                 {isCustomTour ? '✓ 已鎖定洽詢' : '+ 設為洽詢模式'}
+              </button>
+            )}
+
+            {/* Dev mode 複製行程 */}
+            {isDevMode && onDuplicate && (
+              <button
+                type="button"
+                onClick={() => onDuplicate(id)}
+                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-700 shadow transition hover:bg-sky-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
+              >
+                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                複製
               </button>
             )}
 

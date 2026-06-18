@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, lineDmHref, type Destination, type Trip } from "@/lib/supabase";
+import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, type Destination, type Trip } from "@/lib/supabase";
 import Image from "next/image";
 import { openExternalLink } from "@/lib/external-link";
 import FloatingContact from "@/components/FloatingContact";
@@ -388,6 +388,16 @@ export default function DestinationPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "刪除失敗";
       alert(`刪除行程失敗：${msg}`);
+    }
+  };
+
+  const handleDuplicateTrip = async (tripId: string) => {
+    try {
+      const newTrip = await cloneTrip(tripId);
+      setTrips(prev => [...prev, newTrip]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "複製失敗";
+      alert(`複製行程失敗：${msg}`);
     }
   };
 
@@ -942,6 +952,7 @@ export default function DestinationPage() {
                           onTitleUpdate={handleTripTitleUpdate}
                           onDelete={handleDeleteTrip}
                           onHide={handleHideTrip}
+                          onDuplicate={handleDuplicateTrip}
                         />
                       </div>
                     );
