@@ -1069,6 +1069,14 @@ export default function TripPage() {
                     })() : '—'}
                   </span>
                 </div>
+                {(editTripBanner.airline || selectedDeparture?.airline) && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{editTripBanner.airline || selectedDeparture?.airline}</span>
+                  </div>
+                )}
                 {trip.destinations && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
@@ -1160,9 +1168,17 @@ export default function TripPage() {
                 {getScheduleLabel(selectedDeparture) && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">
-                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" /></svg>
                     </span>
                     <span className="text-sm font-medium text-gray-900">{getScheduleLabel(selectedDeparture)}</span>
+                  </div>
+                )}
+                {(editTripBanner.airline || selectedDeparture?.airline) && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{editTripBanner.airline || selectedDeparture?.airline}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2.5">
@@ -1237,7 +1253,7 @@ export default function TripPage() {
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">小孩不佔床</label><input value={detailChildNoBedPrice} onChange={(e) => setDetailChildNoBedPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">加床</label><input value={detailChildExtraBedPrice} onChange={(e) => setDetailChildExtraBedPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">嬰兒</label><input value={detailInfantPrice} onChange={(e) => setDetailInfantPrice(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
-                    <div><label className="mb-0.5 block text-[10px] text-gray-500">團費</label><input value={departureEditorPrice} onChange={(e) => setDepartureEditorPrice(e.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
+                    <div><label className="mb-0.5 block text-[10px] text-gray-500">航空公司</label><input value={editTripBanner.airline || ''} onChange={(e) => setEditTripBanner(prev => ({ ...prev, airline: e.target.value }))} placeholder="例：太陽富國航空" className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div><label className="mb-0.5 block text-[10px] text-gray-500">訂金</label><input value={detailDeposit} onChange={(e) => setDetailDeposit(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-sky-400" /></div>

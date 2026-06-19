@@ -163,6 +163,7 @@ export type TripBanner = {
   promo_content?: string;
   min_group_size?: number | null;
   sub_area?: string;
+  airline?: string;
 };
 
 export type DepartureBannerInfo = {
