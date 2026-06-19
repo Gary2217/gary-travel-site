@@ -1015,7 +1015,7 @@ export default function TripPage() {
           )}
         </div>
 
-        <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-x-6">
           {/* 主圖 */}
           <div className="order-1 min-w-0 lg:order-none lg:col-start-1 lg:row-start-1">
             <SideMediaCarousel
@@ -1149,7 +1149,7 @@ export default function TripPage() {
 
           {/* 產品資訊 — 桌面左欄第2行（手機隱藏） */}
           <div className="hidden min-w-0 lg:block lg:order-none lg:col-start-1 lg:row-start-2">
-            <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
+            <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
                 {editTripBanner.tags && editTripBanner.tags.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5">
                     {editTripBanner.tags.map((tag, i) => (
@@ -1282,7 +1282,7 @@ export default function TripPage() {
               )}
 
               {/* 桌面版表頭 — 出團資訊在表頭列 */}
-              <div className={`relative ${!showAllDates && filteredDepartures.length > 10 ? 'max-h-[600px] overflow-hidden' : ''}`}>
+              <div className={`relative ${!showAllDates && filteredDepartures.length > 5 ? 'max-h-[420px] overflow-hidden' : ''}`}>
               <table className="hidden w-full sm:table">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-sm text-gray-900">
@@ -1320,11 +1320,11 @@ export default function TripPage() {
                   })}
                 </tbody>
               </table>
-              {!showAllDates && filteredDepartures.length > 10 && (
+              {!showAllDates && filteredDepartures.length > 5 && (
                 <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent" />
               )}
               </div>
-              {filteredDepartures.length > 10 && (
+              {filteredDepartures.length > 5 && (
                 <div className="hidden justify-center border-t border-gray-100 py-2 sm:flex">
                   <button type="button" onClick={() => setShowAllDates(v => !v)} className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium text-sky-600 transition hover:bg-sky-50 hover:text-sky-500">
                     {showAllDates ? '收合 ▲' : `展開全部 ${filteredDepartures.length} 筆出發日期 ▼`}

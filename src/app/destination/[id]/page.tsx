@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, type Destination, type Trip } from "@/lib/supabase";
+import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, invalidateCache, type Destination, type Trip } from "@/lib/supabase";
 import Image from "next/image";
 import { openExternalLink } from "@/lib/external-link";
 import FloatingContact from "@/components/FloatingContact";
@@ -318,6 +318,11 @@ export default function DestinationPage() {
             t.id === tripId ? { ...t, trip_banner: updatedBanner } : t
           )
         );
+        invalidateCache('dest-trips');
+      } else if (res.status === 401) {
+        // 由 DevModeToggle 的 fetch 攔截器處理 re-login toast
+      } else {
+        alert('設定失敗，請再試一次');
       }
     } catch {
       alert('設定失敗，請再試一次');

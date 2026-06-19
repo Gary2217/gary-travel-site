@@ -214,6 +214,11 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
       setIsDevMode(enabled);
       onToggle(enabled);
 
+      // 先前有開過 dev mode 但 auth 已過期 → 彈出重新登入提示
+      if (!authorized && storedEnabled === "1") {
+        setShowReloginToast(true);
+      }
+
       // 載入維護模式狀態 + 抓取待確認數量
       if (authorized) {
         try {
