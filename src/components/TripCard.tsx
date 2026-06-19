@@ -49,6 +49,7 @@ interface TripCardProps {
   onDocumentAvailabilityUpdate?: (tripId: string, available: boolean) => void;
   onDurationUpdate?: (tripId: string, newDuration: string) => void;
   onTitleUpdate?: (tripId: string, newTitle: string) => void;
+  onPriceUpdate?: (tripId: string, newPrice: string) => void;
   onDelete?: (tripId: string) => void;
   onHide?: (tripId: string) => void;
   onDuplicate?: (tripId: string) => void;
@@ -85,6 +86,7 @@ export default function TripCard({
   onDocumentAvailabilityUpdate,
   onDurationUpdate,
   onTitleUpdate,
+  onPriceUpdate,
   onDelete,
   onHide,
   onDuplicate,
@@ -205,6 +207,27 @@ export default function TripCard({
                 documentUploadFn={uploadTripDocument}
                 duration={duration}
                 onDurationUpdate={onDurationUpdate ? (newDur) => onDurationUpdate(id, newDur) : undefined}
+                editableTitle={title}
+                editableSubtitle=""
+                onEditableTitleUpdate={async (newTitle) => {
+                  const res = await fetch(`/api/trips/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle }),
+                  });
+                  if (!res.ok) throw new Error('標題儲存失敗');
+                  if (onTitleUpdate) onTitleUpdate(id, newTitle);
+                }}
+                priceRange={price_range || ''}
+                onPriceRangeUpdate={async (newPrice) => {
+                  const res = await fetch(`/api/trips/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price_range: newPrice }),
+                  });
+                  if (!res.ok) throw new Error('團費儲存失敗');
+                  if (onPriceUpdate) onPriceUpdate(id, newPrice);
+                }}
               />
             )}
           </div>

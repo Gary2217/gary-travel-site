@@ -298,6 +298,10 @@ export default function DestinationPage() {
     );
   };
 
+  const handleTripPriceUpdate = (tripId: string, newPrice: string) => {
+    setTrips(prev => prev.map(t => t.id === tripId ? { ...t, price_range: newPrice } : t));
+  };
+
   const handleCustomTourToggle = async (tripId: string, value: boolean) => {
     try {
       const trip = trips.find(t => t.id === tripId);
@@ -950,6 +954,7 @@ export default function DestinationPage() {
                           onDocumentAvailabilityUpdate={handleTripDocumentAvailabilityUpdate}
                           onDurationUpdate={handleTripDurationUpdate}
                           onTitleUpdate={handleTripTitleUpdate}
+                          onPriceUpdate={handleTripPriceUpdate}
                           onDelete={handleDeleteTrip}
                           onHide={handleHideTrip}
                           onDuplicate={handleDuplicateTrip}

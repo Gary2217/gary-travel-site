@@ -22,9 +22,11 @@ interface ImageEditorProps {
   editableSubtitle?: string;
   onEditableTitleUpdate?: (newTitle: string) => Promise<void>;
   onEditableSubtitleUpdate?: (newSubtitle: string) => Promise<void>;
+  priceRange?: string;
+  onPriceRangeUpdate?: (newPrice: string) => Promise<void>;
 }
 
-export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, onSaveSuccess, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate, editableTitle, editableSubtitle, onEditableTitleUpdate, onEditableSubtitleUpdate }: ImageEditorProps) {
+export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate, onOpenChange, onSaveSuccess, uploadFn = uploadImage, documentUrl, onDocumentUpdate, documentUploadFn, onDocumentAvailabilityUpdate, duration, onDurationUpdate, editableTitle, editableSubtitle, onEditableTitleUpdate, onEditableSubtitleUpdate, priceRange, onPriceRangeUpdate }: ImageEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
@@ -35,10 +37,9 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState(false);
   const [durationValue, setDurationValue] = useState(duration || "");
-  const [savingDuration, setSavingDuration] = useState(false);
   const [editableTitleValue, setEditableTitleValue] = useState(editableTitle || "");
   const [editableSubtitleValue, setEditableSubtitleValue] = useState(editableSubtitle || "");
-  const [savingEditableText, setSavingEditableText] = useState(false);
+  const [priceRangeValue, setPriceRangeValue] = useState(priceRange || "");
 
   const previewUrl = useMemo(() => {
     if (!selectedFile) {
@@ -63,6 +64,10 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
   useEffect(() => {
     setEditableSubtitleValue(editableSubtitle || "");
   }, [editableSubtitle]);
+
+  useEffect(() => {
+    setPriceRangeValue(priceRange || "");
+  }, [priceRange]);
 
   useEffect(() => {
     return () => {
@@ -139,6 +144,38 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
     }
   };
 
+  const handleUnifiedSave = async () => {
+    setUploading(true);
+    try {
+      if (selectedFile) {
+        const publicUrl = await uploadFn(entityId, selectedFile);
+        onUpdate(publicUrl);
+        resetSelection();
+      }
+      if (editableTitleValue.trim() !== (editableTitle || '') && onEditableTitleUpdate) {
+        if (!editableTitleValue.trim()) throw new Error('標題不可為空白');
+        await onEditableTitleUpdate(editableTitleValue.trim());
+      }
+      if (editableSubtitleValue.trim() !== (editableSubtitle || '') && onEditableSubtitleUpdate) {
+        await onEditableSubtitleUpdate(editableSubtitleValue.trim());
+      }
+      if (durationValue.trim() !== (duration || '') && onDurationUpdate) {
+        if (!durationValue.trim()) throw new Error('天數不可為空白');
+        await updateTrip(entityId, { duration: durationValue.trim() });
+        onDurationUpdate(durationValue.trim());
+      }
+      if (priceRangeValue.trim() !== (priceRange || '') && onPriceRangeUpdate) {
+        await onPriceRangeUpdate(priceRangeValue.trim());
+      }
+      onSaveSuccess?.('儲存成功');
+      setIsOpen(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '儲存失敗');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
       <button
@@ -166,7 +203,7 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
           }}
         >
           <div
-            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-3 shadow-2xl sm:p-4"
+            className="max-h-[80vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-3 shadow-2xl sm:p-4"
             onClick={handleModalClick}
             onMouseDown={stopMouseEvent}
             onMouseUp={stopMouseEvent}
@@ -189,6 +226,73 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
             </div>
 
             <div className="space-y-3">
+              {/* 標題 */}
+              {onEditableTitleUpdate && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-gray-500">標題</label>
+                  <input
+                    type="text"
+                    value={editableTitleValue}
+                    onChange={(e) => setEditableTitleValue(e.target.value)}
+                    onClick={stopMouseEvent}
+                    onMouseDown={stopMouseEvent}
+                    onMouseUp={stopMouseEvent}
+                    placeholder="請輸入標題"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                  />
+                </div>
+              )}
+
+              {/* 副標題 */}
+              {onEditableSubtitleUpdate && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-gray-500">副標題</label>
+                  <input
+                    type="text"
+                    value={editableSubtitleValue}
+                    onChange={(e) => setEditableSubtitleValue(e.target.value)}
+                    onClick={stopMouseEvent}
+                    onMouseDown={stopMouseEvent}
+                    onMouseUp={stopMouseEvent}
+                    placeholder="請輸入副標題"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                  />
+                </div>
+              )}
+
+              {/* 團費 */}
+              {onPriceRangeUpdate && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-gray-500">團費（價格區間）</label>
+                  <input
+                    type="text"
+                    value={priceRangeValue}
+                    onChange={(e) => setPriceRangeValue(e.target.value)}
+                    onClick={stopMouseEvent}
+                    onMouseDown={stopMouseEvent}
+                    onMouseUp={stopMouseEvent}
+                    placeholder="例：NT$32,900起"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                  />
+                </div>
+              )}
+
+              {/* 行程天數 */}
+              {onDurationUpdate && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-gray-500">行程天數</label>
+                  <input
+                    type="text"
+                    value={durationValue}
+                    onChange={(e) => setDurationValue(e.target.value)}
+                    onClick={stopMouseEvent}
+                    onMouseDown={stopMouseEvent}
+                    placeholder="例：5天4夜"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                  />
+                </div>
+              )}
+
               <div>
                 <p className="mb-1.5 text-sm text-gray-600">當前圖片：</p>
                 <div className="h-20 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 sm:h-28">
@@ -243,22 +347,14 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                   <p className="mt-1.5 text-xs text-gray-500">
                     支援 JPG、PNG、WebP，大小限制 5MB。
                   </p>
-                <div className="sticky bottom-0 mt-2 flex flex-wrap gap-3 bg-white pb-1 pt-1.5">
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={!selectedFile || uploading}
-                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {uploading ? "儲存中..." : "儲存圖片"}
-                  </button>
+                <div className="mt-2 flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={() => {
                       resetSelection();
                     }}
                     disabled={!selectedFile || uploading}
-                  className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     清除選擇
                   </button>
@@ -268,131 +364,15 @@ export default function ImageEditor({ entityId, currentImageUrl, title, onUpdate
                 )}
               </div>
 
-              {(onEditableTitleUpdate || onEditableSubtitleUpdate) && (
-                <div className="border-t border-gray-200 pt-2.5">
-                  <label className="mb-2 block text-sm font-medium text-gray-900">
-                    文字內容
-                  </label>
-                  <div className="space-y-2.5">
-                    {onEditableTitleUpdate && (
-                      <div>
-                        <p className="mb-1 text-xs text-gray-500">主標題</p>
-                        <input
-                          type="text"
-                          value={editableTitleValue}
-                          onChange={(e) => setEditableTitleValue(e.target.value)}
-                          onClick={stopMouseEvent}
-                          onMouseDown={stopMouseEvent}
-                          onMouseUp={stopMouseEvent}
-                          placeholder="請輸入主標題"
-                          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:outline-none"
-                        />
-                      </div>
-                    )}
-
-                    {onEditableSubtitleUpdate && (
-                      <div>
-                        <p className="mb-1 text-xs text-gray-500">副標題</p>
-                        <input
-                          type="text"
-                          value={editableSubtitleValue}
-                          onChange={(e) => setEditableSubtitleValue(e.target.value)}
-                          onClick={stopMouseEvent}
-                          onMouseDown={stopMouseEvent}
-                          onMouseUp={stopMouseEvent}
-                          placeholder="請輸入副標題"
-                          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:outline-none"
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        disabled={savingEditableText}
-                        onClick={async () => {
-                          setSavingEditableText(true);
-                          try {
-                            if (onEditableTitleUpdate) {
-                              const nextTitle = editableTitleValue.trim();
-                              if (!nextTitle) {
-                                throw new Error("主標題不可為空白");
-                              }
-                              if (nextTitle !== (editableTitle || "")) {
-                                await onEditableTitleUpdate(nextTitle);
-                              }
-                            }
-
-                            if (onEditableSubtitleUpdate) {
-                              const nextSubtitle = editableSubtitleValue.trim();
-                              if (nextSubtitle !== (editableSubtitle || "")) {
-                                await onEditableSubtitleUpdate(nextSubtitle);
-                              }
-                            }
-
-                            setIsOpen(false);
-                            if (onSaveSuccess) onSaveSuccess("文字已更新！");
-                            else alert("文字已更新！");
-                          } catch (err) {
-                            const msg = err instanceof Error ? err.message : "更新失敗";
-                            alert(`更新失敗：${msg}`);
-                            setEditableTitleValue(editableTitle || "");
-                            setEditableSubtitleValue(editableSubtitle || "");
-                          } finally {
-                            setSavingEditableText(false);
-                          }
-                        }}
-                        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {savingEditableText ? "儲存中..." : "儲存文字"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 天數編輯區塊 */}
-              {onDurationUpdate && (
-                <div className="border-t border-gray-200 pt-2.5">
-                  <label className="mb-2 block text-sm font-medium text-gray-900">
-                    行程天數
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={durationValue}
-                      onChange={(e) => setDurationValue(e.target.value)}
-                      onClick={stopMouseEvent}
-                      onMouseDown={stopMouseEvent}
-                      placeholder="例：5天4夜"
-                      className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      disabled={savingDuration || durationValue === duration}
-                      onClick={async () => {
-                        if (!durationValue.trim()) return;
-                        setSavingDuration(true);
-                        try {
-                          await updateTrip(entityId, { duration: durationValue.trim() });
-                          onDurationUpdate(durationValue.trim());
-                          setIsOpen(false);
-                          if (onSaveSuccess) onSaveSuccess("天數已更新！");
-                          else alert("天數已更新！");
-                        } catch (err) {
-                          const msg = err instanceof Error ? err.message : "更新失敗";
-                          alert(`更新失敗：${msg}`);
-                        } finally {
-                          setSavingDuration(false);
-                        }
-                      }}
-                      className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {savingDuration ? "儲存中..." : "儲存"}
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* 統一儲存按鈕 */}
+              <button
+                type="button"
+                onClick={handleUnifiedSave}
+                disabled={uploading}
+                className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-500 disabled:opacity-60"
+              >
+                {uploading ? '儲存中...' : '儲存'}
+              </button>
 
               {/* 行程檔案上傳區塊 */}
               {documentUploadFn && onDocumentUpdate && (
