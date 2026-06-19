@@ -1080,7 +1080,7 @@ export default function TripPage() {
                 {trip.destinations && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
-                    <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
+                    <span className="text-sm font-medium text-gray-900">{editTripBanner.sub_area || trip.destinations.title}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-2">
@@ -1209,7 +1209,7 @@ export default function TripPage() {
                 {trip.destinations && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
-                    <span className="text-sm font-medium text-gray-900">{trip.destinations.title}</span>
+                    <span className="text-sm font-medium text-gray-900">{editTripBanner.sub_area || trip.destinations.title}</span>
                   </div>
                 )}
               {/* ── 團位 ── */}
