@@ -1408,9 +1408,14 @@ export default function TripPage() {
               </div>
             </div>
 
-            {/* Dev mode 出團資訊編輯器 */}
-            {isDevMode && showBannerEditor && (
-              <div className={`mt-3 space-y-3 rounded-[1.25rem] border p-4 ${isCreatingNewDeparture ? 'border-emerald-200 bg-emerald-50' : 'border-sky-200 bg-sky-50'}`}>
+            {/* Dev mode 出團資訊編輯器（Modal） */}
+            {isDevMode && showBannerEditor && createPortal(
+              <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) { setShowBannerEditor(false); setIsCreatingNewDeparture(false); } }}>
+              <div className={`relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[1.25rem] border p-4 shadow-2xl ${isCreatingNewDeparture ? 'border-emerald-200 bg-emerald-50' : 'border-sky-200 bg-white'}`} onClick={e => e.stopPropagation()}>
+                <button type="button" onClick={() => { setShowBannerEditor(false); setIsCreatingNewDeparture(false); }} className="absolute right-3 top-3 z-10 text-gray-400 hover:text-gray-700">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              <div className="space-y-3">
                 <div>
                   <p className={`text-[10px] font-semibold tracking-[0.2em] ${isCreatingNewDeparture ? 'text-emerald-600' : 'text-sky-600'}`}>
                     {isCreatingNewDeparture ? '新增梯次' : '目前編輯梯次'}
@@ -1579,6 +1584,9 @@ export default function TripPage() {
                   <button type="button" onClick={() => { setEditTripBanner(EMPTY_TRIP_BANNER); setEditDayCount(''); setEditNightCount(''); setDepartureEditorGroupCode(''); setDepartureEditorWaitlist(''); setDepartureEditorPrice(''); setDetailTitle(''); setDetailSubtitle(''); setDetailAdultPrice(''); setDetailChildWithBedPrice(''); setDetailChildNoBedPrice(''); setDetailChildExtraBedPrice(''); setDetailInfantPrice(''); setDetailPricingNote(''); setDetailDeposit(''); setDetailSingleRoom(''); setDetailVisaFee(''); setDetailSurcharge(''); setDetailGroupNote(''); setDetailQuoteNote(''); setDetailVisaNote(''); }} className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100">清空目前內容</button>
                 </div>
               </div>
+              </div>
+              </div>,
+              document.body
             )}
           </div>
         </div>
