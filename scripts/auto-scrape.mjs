@@ -828,7 +828,11 @@ async function scrapeTripDetail(tripSummary) {
     next_day: Boolean(segment.next_day),
   }));
 
-  const primaryAirline = formatAirlineLabel(basicInfo['航空公司'] || '', enrichedFlightSegments[0]?.flight_number || '');
+  // primaryAirline: 優先從 PriceBlock「航空公司」欄位取，
+  // fallback 到 flight modal 的第一個航段（朋威多數頁面只有「航班資訊」連結，沒有獨立「航空公司」欄位）
+  const primaryAirline = formatAirlineLabel(basicInfo['航空公司'] || '', enrichedFlightSegments[0]?.flight_number || '')
+    || enrichedFlightSegments[0]?.airline
+    || '';
   const tags = rawTags.map(normalizeTag).filter(Boolean);
   const priceDetail = buildPriceDetailText(priceDetails);
   const adultPrice = normalizePriceText(priceDetails[0] || '');
