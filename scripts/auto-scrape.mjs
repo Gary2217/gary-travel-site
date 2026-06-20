@@ -2,6 +2,84 @@ import { readFileSync } from 'fs';
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
 
+// Puppeteer fallback：cheerio 抓不到航班時，用 headless browser 重試
+let _puppeteerBrowser = null;
+
+async function getPuppeteerBrowser() {
+  if (_puppeteerBrowser) return _puppeteerBrowser;
+  try {
+    const puppeteer = await import('puppeteer');
+    _puppeteerBrowser = await puppeteer.default.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    return _puppeteerBrowser;
+  } catch {
+    return null; // Puppeteer 不可用（本地開發可能沒裝）
+  }
+}
+
+async function closePuppeteerBrowser() {
+  if (_puppeteerBrowser) {
+    await _puppeteerBrowser.close().catch(() => {});
+    _puppeteerBrowser = null;
+  }
+}
+
+/**
+ * Puppeteer fallback：從 JS 渲染的頁面提取航空公司和航班資訊
+ * 只在 cheerio 無法取得時呼叫
+ */
+async function scrapeAirlineWithPuppeteer(pageUrl) {
+  const browser = await getPuppeteerBrowser();
+  if (!browser) return null;
+
+  let page;
+  try {
+    page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.waitForSelector('.PriceBlock, #flightModal', { timeout: 8000 }).catch(() => {});
+    await new Promise(r => setTimeout(r, 2000)); // 等 JS 渲染
+
+    const result = await page.evaluate(() => {
+      // 從 PriceBlock 取航空公司
+      let airline = '';
+      document.querySelectorAll('.PriceBlock li').forEach(li => {
+        const strong = li.querySelector('strong');
+        if (strong && strong.textContent.trim() === '航空公司') {
+          const spans = li.querySelectorAll('.fontEg');
+          const texts = Array.from(spans).map(s => s.textContent.trim()).filter(t => t && t !== '航班資訊');
+          if (texts.length) airline = texts.join(' ');
+        }
+      });
+
+      // 從 flight modal 取航段
+      const segments = [];
+      document.querySelectorAll('#flightModal li').forEach(li => {
+        const airlineSpan = li.querySelector('.detail_airline span');
+        if (!airlineSpan) return;
+        const fullText = airlineSpan.textContent.trim();
+        const match = fullText.match(/^(.+?)([A-Z]{2}\d{1,4}[A-Z]?)$/i);
+        segments.push({
+          airline: match ? match[1].trim() : fullText,
+          flight_number: match ? match[2].trim() : '',
+        });
+      });
+
+      // 從出發日期表取
+      const departurePlane = document.querySelector('.plane-abbr');
+      const planeAbbr = departurePlane ? departurePlane.textContent.trim() : '';
+
+      return { airline, segments, planeAbbr };
+    });
+
+    return result;
+  } catch (e) {
+    console.log(`    ⚠️ Puppeteer fallback 失敗：${e.message}`);
+    return null;
+  } finally {
+    if (page) await page.close().catch(() => {});
+  }
+}
+
 const BASE_URL = 'https://www.pwgotravel.com.tw';
 const REGION_PAGES = [
   { key: 'asia', url: '/asia/', tabs: ['中東', '中亞', '西伯利亞', '高雄出發'] },
@@ -830,9 +908,38 @@ async function scrapeTripDetail(tripSummary) {
 
   // primaryAirline: 優先從 PriceBlock「航空公司」欄位取，
   // fallback 到 flight modal 的第一個航段（朋威多數頁面只有「航班資訊」連結，沒有獨立「航空公司」欄位）
-  const primaryAirline = formatAirlineLabel(basicInfo['航空公司'] || '', enrichedFlightSegments[0]?.flight_number || '')
+  let primaryAirline = formatAirlineLabel(basicInfo['航空公司'] || '', enrichedFlightSegments[0]?.flight_number || '')
     || enrichedFlightSegments[0]?.airline
     || '';
+
+  // Puppeteer fallback：cheerio 解析不到航班時，用 headless browser 重試
+  if (!primaryAirline && enrichedFlightSegments.length === 0) {
+    const fullUrl = tripSummary.href?.startsWith('http') ? tripSummary.href : `${BASE_URL}${tripSummary.href}`;
+    console.log(`    🔄 Cheerio 無航班資料，嘗試 Puppeteer fallback...`);
+    const puppeteerResult = await scrapeAirlineWithPuppeteer(fullUrl);
+    if (puppeteerResult) {
+      // 用 Puppeteer 結果補充航班資訊
+      if (puppeteerResult.airline) {
+        primaryAirline = puppeteerResult.airline;
+        console.log(`    ✅ Puppeteer 取得航空公司：${primaryAirline}`);
+      }
+      if (puppeteerResult.segments.length > 0) {
+        const seg = puppeteerResult.segments[0];
+        primaryAirline = primaryAirline || formatAirlineLabel(seg.airline, seg.flight_number);
+        // 補充 flight segments
+        for (const seg of puppeteerResult.segments) {
+          enrichedFlightSegments.push({
+            day_text: '',
+            airline: formatAirlineLabel(seg.airline, seg.flight_number),
+            flight_number: sanitizeText(seg.flight_number),
+            dep_time: '', dep_airport: '', arr_time: '', arr_airport: '',
+            next_day: false,
+          });
+        }
+        console.log(`    ✅ Puppeteer 取得 ${puppeteerResult.segments.length} 個航段`);
+      }
+    }
+  }
   const tags = rawTags.map(normalizeTag).filter(Boolean);
   const priceDetail = buildPriceDetailText(priceDetails);
   const adultPrice = normalizePriceText(priceDetails[0] || '');
@@ -1745,7 +1852,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(() => closePuppeteerBrowser());
