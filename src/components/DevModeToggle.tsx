@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import ContactInquiries from "./ContactInquiries";
 
 interface DevModeToggleProps {
@@ -377,8 +378,8 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
       </button>
     </div>
 
-    {/* 開發者登入過期提示 */}
-    {showReloginToast && (
+    {/* 開發者登入過期提示 — Portal 到 body，避免被 header backdrop-filter 的 containing block 限制 */}
+    {showReloginToast && createPortal(
       <div className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" onClick={() => setShowReloginToast(false)}>
         <div className="w-full max-w-xs rounded-2xl border border-amber-300 bg-white p-5 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
@@ -401,11 +402,12 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
             稍後再說
           </button>
         </div>
-      </div>
+      </div>,
+      document.body,
     )}
 
-    {/* 聯絡表單記錄浮動面板 */}
-    {showInquiries && (
+    {/* 聯絡表單記錄浮動面板 — Portal 到 body */}
+    {showInquiries && createPortal(
       <div className="fixed inset-0 z-modal flex items-start justify-center pt-16 px-4" onClick={() => setShowInquiries(false)}>
         <div className="absolute inset-0 bg-black/50" />
         <div
@@ -422,7 +424,8 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
           </button>
           <ContactInquiries defaultOpen />
         </div>
-      </div>
+      </div>,
+      document.body,
     )}
     </>
   );
