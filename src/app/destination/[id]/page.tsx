@@ -92,6 +92,33 @@ export default function DestinationPage() {
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
 
+  // 所有 sub_region 是否都只有 1 個 destination（港澳大陸等：直接用 sub_area tabs 取代 sub_region tabs）
+  const allSingleDest = subRegionGroups.length > 0 && subRegionGroups.every(g => g.destinations.length === 1);
+
+  // sub_area tabs（從合併行程或當前行程動態計算）
+  const CHINA_SUB_AREA_ORDER = useMemo(() => ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'], []);
+  const mergedSubAreaTabs = useMemo(() => {
+    const source = subRegionTrips || trips;
+    if (!source || source.length === 0) return [];
+    const isChinaRegion = destination?.regions?.title === '港澳大陸';
+    const areas: string[] = Array.from(new Set(
+      source.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+    ));
+    if (isChinaRegion) {
+      areas.sort((a, b) => {
+        const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
+        const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+    }
+    return areas.length >= 2
+      ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
+      : [];
+  }, [subRegionTrips, trips, destination, CHINA_SUB_AREA_ORDER]);
+
   // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
   const displayTrips = useMemo(() => {
     if (subRegionTrips) {
@@ -754,103 +781,127 @@ export default function DestinationPage() {
           <h2 className="mb-3 text-center text-xl font-bold text-gray-800 sm:text-2xl">
             {destination.regions?.title}
           </h2>
-          {/* 第一排：sub_region 分組 */}
-          <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
-              <button
-                type="button"
-                onClick={async () => {
-                  setActiveSubRegion("全部");
-                  setActiveDestFilter(null);
-                  setSubAreaFilter("");
-                  setHeroDest(null);
-                  setSubRegionLoading(true);
-                  try {
-                    const ids = siblingDestsRef.current;
-                    const results = await Promise.all(ids.map(id => getDestinationTrips(id).catch(() => [])));
-                    setSubRegionTrips(results.flat());
-                  } catch { setSubRegionTrips(null); }
-                  setSubRegionLoading(false);
-                }}
-                className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
-                  activeSubRegion === "全部"
-                    ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
-                    : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
-                }`}
-              >
-                全部
-              </button>
-              {subRegionGroups.map((group) => (
-                <button
-                  key={group.subRegion}
-                  type="button"
-                  onClick={async () => {
-                    setActiveSubRegion(group.subRegion);
-                    setActiveDestFilter(null);
-                    if (group.destinations.length === 1) {
-                      const destId = group.destinations[0].id;
-                      if (destId === destinationId) {
-                        setSubRegionTrips(null);
-                        setHeroDest(null);
-                      } else {
-                        setSubRegionLoading(true);
-                        try {
-                          const t = await getDestinationTrips(destId);
-                          setSubRegionTrips(t);
-                          const cached = siblingDestsDataRef.current.get(destId);
-                          if (cached) setHeroDest(cached);
-                        } catch { setSubRegionTrips(null); }
-                        setSubRegionLoading(false);
-                      }
-                    } else {
+          {allSingleDest && mergedSubAreaTabs.length > 0 ? (
+            /* all-single-dest（港澳大陸等）：直接用 sub_area tabs */
+            <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                {mergedSubAreaTabs.map((tab) => (
+                  <button
+                    key={tab.label}
+                    type="button"
+                    onClick={() => { setActiveDestFilter(null); handleTabClick(tab); }}
+                    className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
+                      currentTabLabel === tab.label
+                        ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
+                        : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* multi-dest sub_regions（中東亞非等）：sub_region tabs + destination tabs */
+            <>
+              <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setActiveSubRegion("全部");
+                      setActiveDestFilter(null);
+                      setSubAreaFilter("");
+                      setHeroDest(null);
                       setSubRegionLoading(true);
                       try {
-                        const allTrips = await Promise.all(
-                          group.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
-                        );
-                        setSubRegionTrips(allTrips.flat());
-                        const cached = siblingDestsDataRef.current.get(group.destinations[0].id);
-                        if (cached) setHeroDest(cached);
+                        const ids = siblingDestsRef.current;
+                        const results = await Promise.all(ids.map(id => getDestinationTrips(id).catch(() => [])));
+                        setSubRegionTrips(results.flat());
                       } catch { setSubRegionTrips(null); }
                       setSubRegionLoading(false);
-                    }
-                  }}
-                  className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
-                    activeSubRegion === group.subRegion
-                      ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
-                      : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
-                  }`}
-                >
-                  {group.subRegion}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* 第二排：選中 sub_region 下的 destinations（2+ 個才顯示） */}
-          {(() => {
-            const activeGroup = subRegionGroups.find(g => g.subRegion === activeSubRegion);
-            if (!activeGroup || activeGroup.destinations.length <= 1) return null;
-            return (
-              <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
-                  {activeGroup.destinations.map((dest) => (
+                    }}
+                    className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
+                      activeSubRegion === "全部"
+                        ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
+                        : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                    }`}
+                  >
+                    全部
+                  </button>
+                  {subRegionGroups.map((group) => (
                     <button
-                      key={dest.id}
+                      key={group.subRegion}
                       type="button"
-                      onClick={() => setActiveDestFilter(activeDestFilter === dest.id ? null : dest.id)}
-                      className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
-                        activeDestFilter === dest.id
-                          ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
-                          : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
+                      onClick={async () => {
+                        setActiveSubRegion(group.subRegion);
+                        setActiveDestFilter(null);
+                        if (group.destinations.length === 1) {
+                          const destId = group.destinations[0].id;
+                          if (destId === destinationId) {
+                            setSubRegionTrips(null);
+                            setHeroDest(null);
+                          } else {
+                            setSubRegionLoading(true);
+                            try {
+                              const t = await getDestinationTrips(destId);
+                              setSubRegionTrips(t);
+                              const cached = siblingDestsDataRef.current.get(destId);
+                              if (cached) setHeroDest(cached);
+                            } catch { setSubRegionTrips(null); }
+                            setSubRegionLoading(false);
+                          }
+                        } else {
+                          setSubRegionLoading(true);
+                          try {
+                            const allTrips = await Promise.all(
+                              group.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
+                            );
+                            setSubRegionTrips(allTrips.flat());
+                            const cached = siblingDestsDataRef.current.get(group.destinations[0].id);
+                            if (cached) setHeroDest(cached);
+                          } catch { setSubRegionTrips(null); }
+                          setSubRegionLoading(false);
+                        }
+                      }}
+                      className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
+                        activeSubRegion === group.subRegion
+                          ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
+                          : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
                       }`}
                     >
-                      {dest.label}
+                      {group.subRegion}
                     </button>
                   ))}
                 </div>
               </div>
-            );
-          })()}
+              {/* 第二排：選中 sub_region 下的 destinations（2+ 個才顯示） */}
+              {(() => {
+                const activeGroup = subRegionGroups.find(g => g.subRegion === activeSubRegion);
+                if (!activeGroup || activeGroup.destinations.length <= 1) return null;
+                return (
+                  <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                      {activeGroup.destinations.map((dest) => (
+                        <button
+                          key={dest.id}
+                          type="button"
+                          onClick={() => setActiveDestFilter(activeDestFilter === dest.id ? null : dest.id)}
+                          className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
+                            activeDestFilter === dest.id
+                              ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
+                              : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
+                          }`}
+                        >
+                          {dest.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </div>
       )}
 
