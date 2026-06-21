@@ -85,7 +85,9 @@ export default function DestinationPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
+  const [heroDest, setHeroDest] = useState<(Destination & { regions?: { category_label: string; title: string } }) | null>(null);
   const siblingDestsRef = useRef<string[]>([]);
+  const siblingDestsDataRef = useRef<Map<string, Destination & { regions?: { category_label: string; title: string } }>>(new Map());
   const destsListCache = useRef<{ id: string; title: string; region_id: string; display_order: number; sub_region?: string }[] | null>(null);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
@@ -132,6 +134,7 @@ export default function DestinationPage() {
         setPopularFallback(null);
         setSubRegionTrips(null);
         setActiveDestFilter(null);
+        setHeroDest(null);
 
         // Phase 1：核心資料 + 全部目的地清單 並行載入（列表用 ref 快取加速切換）
         const destsPromise = destsListCache.current
@@ -177,7 +180,7 @@ export default function DestinationPage() {
           }
           const groups = Array.from(groupMap.entries()).map(([subRegion, destinations]) => ({ subRegion, destinations }));
           setSubRegionGroups(groups);
-          setActiveSubRegion(currentSR);
+          setActiveSubRegion("全部");
         } else {
           setSubRegionGroups([]);
           setActiveSubRegion("");
@@ -195,12 +198,20 @@ export default function DestinationPage() {
           ? Promise.allSettled(hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json())))
           : Promise.resolve(null);
 
-        const [relatedResult, hiddenResult] = await Promise.all([relatedP, hiddenP]);
+        // "全部" tab：載入所有兄弟目的地行程 + destination 資料（hero 切換用）
+        const allSibTripsP = hasSiblings && siblingIds.length > 0
+          ? Promise.all(siblingIds.map(id => getDestinationTrips(id).catch(() => [])))
+          : Promise.resolve(null);
+        const sibDestsP = hasSiblings
+          ? Promise.all(siblingIds.map(id => getDestination(id).catch(() => null)))
+          : Promise.resolve(null);
+
+        const [relatedResult, hiddenResult, allSibTripsResult, sibDestsResult] = await Promise.all([relatedP, hiddenP, allSibTripsP, sibDestsP]);
         if (!isMounted) return;
 
         // 建立 sub_area tabs（僅從當前 destination 的行程）
         const currentTrips = tripsData as Trip[];
-        const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+        const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
         const areas: string[] = Array.from(new Set(
           currentTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
         ));
@@ -238,6 +249,28 @@ export default function DestinationPage() {
             .flatMap(r => r.value);
           setHiddenTrips(hiddenAll);
           setShowHidden(true);
+        }
+
+        // 設定 "全部" 合併行程
+        if (hasSiblings && allSibTripsResult) {
+          const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort((a, b) => {
+            const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
+            const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
+            if (aCustom !== bCustom) return aCustom - bCustom;
+            const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
+            const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
+            if (aHas !== bHas) return aHas - bHas;
+            return (a.display_order || 99) - (b.display_order || 99);
+          });
+          setSubRegionTrips(merged);
+        }
+
+        // Cache sibling destination data for hero switching
+        if (sibDestsResult) {
+          const map = new Map<string, Destination & { regions?: { category_label: string; title: string } }>();
+          map.set(destinationId, destData);
+          (sibDestsResult as ((Destination & { regions?: { category_label: string; title: string } }) | null)[]).forEach(d => { if (d) map.set(d.id, d); });
+          siblingDestsDataRef.current = map;
         }
 
         // 處理推薦行程
@@ -681,32 +714,37 @@ export default function DestinationPage() {
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
       {/* Hero 區塊 */}
-      <div className="relative h-48 overflow-hidden sm:h-56 md:h-64">
-        <Image
-          src={destination.image_url}
-          alt={destination.title}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-black/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
-          <div className="mx-auto max-w-site">
-            {destination.regions && (
-              <span className="mb-1.5 inline-block rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:mb-2 sm:px-3 sm:py-1 sm:text-xs">
-                {destination.regions.category_label}
-              </span>
-            )}
-            <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">
-              {destination.title}
-            </h1>
-            {destination.subtitle && (
-              <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{destination.subtitle}</p>
-            )}
+      {(() => {
+        const d = heroDest || destination;
+        return (
+          <div className="relative h-48 overflow-hidden sm:h-56 md:h-64">
+            <Image
+              src={d.image_url}
+              alt={d.title}
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-black/40 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-8">
+              <div className="mx-auto max-w-site">
+                {d.regions && (
+                  <span className="mb-1.5 inline-block rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:mb-2 sm:px-3 sm:py-1 sm:text-xs">
+                    {d.regions.category_label}
+                  </span>
+                )}
+                <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl">
+                  {d.title}
+                </h1>
+                {d.subtitle && (
+                  <p className="mt-0.5 text-sm text-white/80 sm:mt-1 sm:text-base md:text-lg">{d.subtitle}</p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* 兩層導航：第一排 sub_region 分組，第二排該分組下的 destinations */}
       {subRegionGroups.length > 1 && (
@@ -717,6 +755,29 @@ export default function DestinationPage() {
           {/* 第一排：sub_region 分組 */}
           <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  setActiveSubRegion("全部");
+                  setActiveDestFilter(null);
+                  setSubAreaFilter("");
+                  setHeroDest(null);
+                  setSubRegionLoading(true);
+                  try {
+                    const ids = siblingDestsRef.current;
+                    const results = await Promise.all(ids.map(id => getDestinationTrips(id).catch(() => [])));
+                    setSubRegionTrips(results.flat());
+                  } catch { setSubRegionTrips(null); }
+                  setSubRegionLoading(false);
+                }}
+                className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
+                  activeSubRegion === "全部"
+                    ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
+                    : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                }`}
+              >
+                全部
+              </button>
               {subRegionGroups.map((group) => (
                 <button
                   key={group.subRegion}
@@ -725,20 +786,29 @@ export default function DestinationPage() {
                     setActiveSubRegion(group.subRegion);
                     setActiveDestFilter(null);
                     if (group.destinations.length === 1) {
-                      // 單一 destination：如果是當前的，清除合併行程；否則跳轉
-                      if (group.destinations[0].id === destinationId) {
+                      const destId = group.destinations[0].id;
+                      if (destId === destinationId) {
                         setSubRegionTrips(null);
+                        setHeroDest(null);
                       } else {
-                        router.push(`/destination/${group.destinations[0].id}`);
+                        setSubRegionLoading(true);
+                        try {
+                          const t = await getDestinationTrips(destId);
+                          setSubRegionTrips(t);
+                          const cached = siblingDestsDataRef.current.get(destId);
+                          if (cached) setHeroDest(cached);
+                        } catch { setSubRegionTrips(null); }
+                        setSubRegionLoading(false);
                       }
                     } else {
-                      // 多個 destinations：合併載入所有行程
                       setSubRegionLoading(true);
                       try {
                         const allTrips = await Promise.all(
                           group.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
                         );
                         setSubRegionTrips(allTrips.flat());
+                        const cached = siblingDestsDataRef.current.get(group.destinations[0].id);
+                        if (cached) setHeroDest(cached);
                       } catch { setSubRegionTrips(null); }
                       setSubRegionLoading(false);
                     }
@@ -782,7 +852,32 @@ export default function DestinationPage() {
         </div>
       )}
 
-      {/* sub_area 篩選 tabs — 已移除，只保留 destination 導航 */}
+      {/* sub_area 篩選 tabs（合併檢視 / "全部" / 多 destination 時隱藏） */}
+      {regionTabs.length > 0 && !subRegionTrips && activeSubRegion !== '全部' && (() => {
+        const g = subRegionGroups.find(gr => gr.subRegion === activeSubRegion);
+        return !g || g.destinations.length <= 1;
+      })() && (
+        <div className="mx-auto max-w-site px-3 pt-3 sm:px-4 md:px-8">
+          <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex flex-wrap justify-center gap-1.5 px-1 pb-1">
+              {regionTabs.map((tab) => (
+                <button
+                  key={tab.label}
+                  type="button"
+                  onClick={() => handleTabClick(tab)}
+                  className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
+                    currentTabLabel === tab.label
+                      ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
+                      : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 行程列表 */}
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
