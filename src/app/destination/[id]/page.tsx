@@ -180,7 +180,7 @@ export default function DestinationPage() {
           }
           const groups = Array.from(groupMap.entries()).map(([subRegion, destinations]) => ({ subRegion, destinations }));
           setSubRegionGroups(groups);
-          setActiveSubRegion("全部");
+          setActiveSubRegion(currentSR);
         } else {
           setSubRegionGroups([]);
           setActiveSubRegion("");
@@ -263,6 +263,8 @@ export default function DestinationPage() {
             return (a.display_order || 99) - (b.display_order || 99);
           });
           setSubRegionTrips(merged);
+          // 預選當前 destination（第二排 tab 高亮 + 篩選顯示）
+          setActiveDestFilter(destinationId);
         }
 
         // Cache sibling destination data for hero switching
