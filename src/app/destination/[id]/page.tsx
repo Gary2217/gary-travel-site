@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, invalidateCache, type Destination, type Trip } from "@/lib/supabase";
 import Image from "next/image";
@@ -60,6 +60,11 @@ export default function DestinationPage() {
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(null);
   const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
   const [currentTabLabel, setCurrentTabLabel] = useState("");
+  const [subRegionGroups, setSubRegionGroups] = useState<{ subRegion: string; destinations: { id: string; label: string }[] }[]>([]);
+  const [activeSubRegion, setActiveSubRegion] = useState("");
+  const [subRegionTrips, setSubRegionTrips] = useState<Trip[] | null>(null);
+  const [activeDestFilter, setActiveDestFilter] = useState<string | null>(null);
+  const [subRegionLoading, setSubRegionLoading] = useState(false);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,8 +86,18 @@ export default function DestinationPage() {
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
   const siblingDestsRef = useRef<string[]>([]);
+  const destsListCache = useRef<{ id: string; title: string; region_id: string; display_order: number; sub_region?: string }[] | null>(null);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
+
+  // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
+  const displayTrips = useMemo(() => {
+    if (subRegionTrips) {
+      if (activeDestFilter) return subRegionTrips.filter(t => t.destination_id === activeDestFilter);
+      return subRegionTrips;
+    }
+    return trips;
+  }, [subRegionTrips, activeDestFilter, trips]);
 
   // 從 URL query params 讀取搜尋條件（含 sub_area 篩選）
   useEffect(() => {
@@ -115,13 +130,21 @@ export default function DestinationPage() {
     async function loadData() {
       try {
         setPopularFallback(null);
+        setSubRegionTrips(null);
+        setActiveDestFilter(null);
 
-        // Phase 1：核心資料 + 全部目的地清單 並行載入
+        // Phase 1：核心資料 + 全部目的地清單 並行載入（列表用 ref 快取加速切換）
+        const destsPromise = destsListCache.current
+          ? Promise.resolve(destsListCache.current)
+          : fetch('/api/destinations').then(r => r.ok ? r.json() : []).catch(() => []);
         const [destData, tripsData, destsData] = await Promise.all([
           getDestination(destinationId),
           getDestinationTrips(destinationId),
-          fetch('/api/destinations').then(r => r.ok ? r.json() : []).catch(() => []),
+          destsPromise,
         ]);
+        if (!destsListCache.current && Array.isArray(destsData) && destsData.length > 0) {
+          destsListCache.current = destsData;
+        }
         if (!isMounted) return;
         if (!destData) { setError("找不到此目的地"); return; }
         setDestination(destData);
@@ -138,6 +161,27 @@ export default function DestinationPage() {
         siblingDestsRef.current = allSiblingIds;
         const siblingIds = allSiblingIds.filter(id => id !== destinationId);
         const hasSiblings = siblings.length > 1;
+
+        // 建立 sub_region 兩層導航（第一排 sub_region 分組，第二排該分組下的 destinations）
+        if (hasSiblings) {
+          // 用當前 destData 的 sub_region 覆蓋列表中的值（列表 API 可能被 CDN 快取返回舊值）
+          const currentSR = destData.sub_region || destData.title;
+          const enrichedSiblings = siblings.map(s =>
+            s.id === destinationId ? { ...s, sub_region: currentSR } : s
+          );
+          const groupMap = new Map<string, { id: string; label: string }[]>();
+          for (const s of enrichedSiblings) {
+            const sr = s.sub_region || s.title;
+            if (!groupMap.has(sr)) groupMap.set(sr, []);
+            groupMap.get(sr)!.push({ id: s.id, label: s.title });
+          }
+          const groups = Array.from(groupMap.entries()).map(([subRegion, destinations]) => ({ subRegion, destinations }));
+          setSubRegionGroups(groups);
+          setActiveSubRegion(currentSR);
+        } else {
+          setSubRegionGroups([]);
+          setActiveSubRegion("");
+        }
 
         // Phase 2：推薦行程 + 隱藏行程 並行載入
         const hasRelated = destData.region_id && destData.regions?.category_label;
@@ -550,8 +594,8 @@ export default function DestinationPage() {
 
   const handleSelectAll = () => {
     const visibleTrips = subAreaFilter
-      ? trips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
-      : trips;
+      ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
+      : displayTrips;
     const allIds = visibleTrips.map(t => t.id);
     const allSelected = allIds.every(id => selectedTripIds.has(id));
     if (allSelected) {
@@ -664,37 +708,91 @@ export default function DestinationPage() {
         </div>
       </div>
 
-      {/* 區域篩選 tabs */}
-      {regionTabs.length > 1 && (
+      {/* 兩層導航：第一排 sub_region 分組，第二排該分組下的 destinations */}
+      {subRegionGroups.length > 1 && (
         <div className="mx-auto max-w-site px-3 pt-5 sm:px-4 md:px-8">
-          <h2 className="mb-4 text-center text-xl font-bold text-gray-800 sm:text-2xl">
-            {destination.title}
+          <h2 className="mb-3 text-center text-xl font-bold text-gray-800 sm:text-2xl">
+            {destination.regions?.title}
           </h2>
+          {/* 第一排：sub_region 分組 */}
           <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
-              {regionTabs.map((tab) => (
+              {subRegionGroups.map((group) => (
                 <button
-                  key={tab.label}
+                  key={group.subRegion}
                   type="button"
-                  onClick={() => handleTabClick(tab)}
+                  onClick={async () => {
+                    setActiveSubRegion(group.subRegion);
+                    setActiveDestFilter(null);
+                    if (group.destinations.length === 1) {
+                      // 單一 destination：如果是當前的，清除合併行程；否則跳轉
+                      if (group.destinations[0].id === destinationId) {
+                        setSubRegionTrips(null);
+                      } else {
+                        router.push(`/destination/${group.destinations[0].id}`);
+                      }
+                    } else {
+                      // 多個 destinations：合併載入所有行程
+                      setSubRegionLoading(true);
+                      try {
+                        const allTrips = await Promise.all(
+                          group.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
+                        );
+                        setSubRegionTrips(allTrips.flat());
+                      } catch { setSubRegionTrips(null); }
+                      setSubRegionLoading(false);
+                    }
+                  }}
                   className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
-                    tab.label === currentTabLabel
+                    activeSubRegion === group.subRegion
                       ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
                       : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
                   }`}
                 >
-                  {tab.label}
+                  {group.subRegion}
                 </button>
               ))}
             </div>
           </div>
+          {/* 第二排：選中 sub_region 下的 destinations（2+ 個才顯示） */}
+          {(() => {
+            const activeGroup = subRegionGroups.find(g => g.subRegion === activeSubRegion);
+            if (!activeGroup || activeGroup.destinations.length <= 1) return null;
+            return (
+              <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                  {activeGroup.destinations.map((dest) => (
+                    <button
+                      key={dest.id}
+                      type="button"
+                      onClick={() => setActiveDestFilter(activeDestFilter === dest.id ? null : dest.id)}
+                      className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
+                        activeDestFilter === dest.id
+                          ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
+                          : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
+                      }`}
+                    >
+                      {dest.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
+
+      {/* sub_area 篩選 tabs — 已移除，只保留 destination 導航 */}
 
       {/* 行程列表 */}
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
 
-        {trips.length === 0 && !isDevMode ? (
+        {subRegionLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
+            <span className="ml-2 text-sm text-gray-500">載入行程中...</span>
+          </div>
+        ) : displayTrips.length === 0 && !isDevMode ? (
           <>
             {/* 客製洽詢區塊（緊湊橫排） */}
             <div className="mb-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 sm:flex-row sm:px-5">
@@ -843,7 +941,7 @@ export default function DestinationPage() {
             )}
 
             {/* 無符合梯次提示 */}
-            {dateFilter && trips.length > 0 && !trips.some((t) => t.departure_dates?.some((d) => d.departure_date === dateFilter)) && (
+            {dateFilter && displayTrips.length > 0 && !displayTrips.some((t) => t.departure_dates?.some((d) => d.departure_date === dateFilter)) && (
               <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
                 <div className="flex items-start gap-3">
                   <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -863,7 +961,7 @@ export default function DestinationPage() {
 
             <div className="mb-4 flex items-center gap-3 sm:mb-6">
               <h2 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">
-                可選行程（{subAreaFilter ? trips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter)).length : trips.length}）
+                可選行程（{subAreaFilter ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter)).length : displayTrips.length}）
               </h2>
               {isDevMode && (
                 <button
@@ -873,8 +971,8 @@ export default function DestinationPage() {
                 >
                   {(() => {
                     const visibleTrips = subAreaFilter
-                      ? trips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
-                      : trips;
+                      ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
+                      : displayTrips;
                     const allSelected = visibleTrips.length > 0 && visibleTrips.every(t => selectedTripIds.has(t.id));
                     return allSelected ? '取消全選' : '全選';
                   })()}
@@ -884,8 +982,8 @@ export default function DestinationPage() {
 
             {(() => {
               const filtered = subAreaFilter
-                ? trips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter))
-                : trips;
+                ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter))
+                : displayTrips;
               const sorted = dateFilter
                 ? [...filtered].sort((a, b) => {
                     const aMatch = a.departure_dates?.some((d) => d.departure_date === dateFilter) ? 0 : 1;
@@ -1115,7 +1213,7 @@ export default function DestinationPage() {
         )}
 
         {/* 載入推薦行程中 */}
-        {trips.length > 0 && relatedLoading && (
+        {displayTrips.length > 0 && relatedLoading && (
           <div className="mt-10 flex items-center justify-center py-6">
             <div className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-sky-400 border-r-transparent" />
             <span className="ml-2 text-sm text-gray-500">載入推薦行程...</span>
