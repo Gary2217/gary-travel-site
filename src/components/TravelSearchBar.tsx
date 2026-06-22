@@ -115,6 +115,8 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   const containerRef = useRef<HTMLDivElement>(null);
   const departureButtonRef = useRef<HTMLButtonElement>(null);
   const departureDropdownRef = useRef<HTMLDivElement>(null);
+  const destButtonRef = useRef<HTMLButtonElement>(null);
+  const destDropdownRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -225,6 +227,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       const target = e.target as Node;
       if (containerRef.current?.contains(target)) return;
       if (departureDropdownRef.current?.contains(target)) return;
+      if (destDropdownRef.current?.contains(target)) return;
       setDepartureOpen(false);
       setDestOpen(false);
     };
@@ -525,6 +528,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
 
             {/* 目的地 */}
             <button
+              ref={destButtonRef}
               type="button"
               onClick={openDest}
               className="flex flex-1 items-center gap-3 px-5 py-4 text-left transition hover:bg-gray-50 focus:outline-none sm:h-[60px] sm:rounded-none"
@@ -648,89 +652,98 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             );
           })()}
 
-          {/* Dropdown 目的地 */}
-          {destOpen && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
-              <div className="border-b border-gray-100">
-                <div className="flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <button
-                    onClick={() => setActiveTab("all")}
-                    className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${
-                      activeTab === "all"
-                        ? "border-sky-500 text-sky-600"
-                        : "border-transparent text-gray-400 hover:text-gray-700"
-                    }`}
-                  >
-                    全部地區
-                  </button>
-                  {orderedRegions.map((r) => (
+          {/* Dropdown 目的地（Portal 避免被父層裁切） */}
+          {destOpen && typeof document !== "undefined" && (() => {
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (!rect) return null;
+            return createPortal(
+              <div
+                ref={destDropdownRef}
+                className="fixed z-[9999] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20"
+                style={{ top: rect.bottom + 4, left: rect.left, width: rect.width }}
+              >
+                <div className="border-b border-gray-100">
+                  <div className="flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <button
-                      key={r.id}
-                      onClick={() => setActiveTab(r.id)}
+                      onClick={() => setActiveTab("all")}
                       className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${
-                        activeTab === r.id
+                        activeTab === "all"
                           ? "border-sky-500 text-sky-600"
                           : "border-transparent text-gray-400 hover:text-gray-700"
                       }`}
                     >
-                      {r.categoryLabel}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="max-h-72 overflow-y-auto p-4">
-                {activeTab === "all" ? (
-                  <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
-                    <button
-                      onClick={handleSelectAll}
-                      className="flex items-start gap-2 py-1.5 text-left text-sm text-gray-400 transition hover:text-sky-600"
-                    >
-                      <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
-                      不限目的地
+                      全部地區
                     </button>
                     {orderedRegions.map((r) => (
                       <button
                         key={r.id}
-                        onClick={() => handleSelectRegion(r.id, r.categoryLabel)}
-                        className="flex items-start gap-2 py-1.5 text-left text-sm font-medium text-gray-700 transition hover:text-sky-600"
+                        onClick={() => setActiveTab(r.id)}
+                        className={`shrink-0 border-b-2 px-5 py-3 text-sm font-semibold whitespace-nowrap transition ${
+                          activeTab === r.id
+                            ? "border-sky-500 text-sky-600"
+                            : "border-transparent text-gray-400 hover:text-gray-700"
+                        }`}
                       >
-                        <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
                         {r.categoryLabel}
                       </button>
                     ))}
                   </div>
-                ) : (
-                  <>
-                    {(() => {
-                      const region = orderedRegions.find((r) => r.id === activeTab);
-                      if (!region) return null;
-                      return (
-                        <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
-                          <button
-                            onClick={() => handleSelectRegion(region.id, region.categoryLabel)}
-                            className="col-span-full mb-2 flex items-center gap-2 text-left text-sm font-bold text-sky-600 transition hover:text-sky-500"
-                          >
-                            <span className="text-xs text-sky-300">—</span>
-                            {region.categoryLabel}全部
-                          </button>
-                          {region.destinations.map((d) => (
+                </div>
+                <div className="max-h-72 overflow-y-auto p-4">
+                  {activeTab === "all" ? (
+                    <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+                      <button
+                        onClick={handleSelectAll}
+                        className="flex items-start gap-2 py-1.5 text-left text-sm text-gray-400 transition hover:text-sky-600"
+                      >
+                        <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
+                        不限目的地
+                      </button>
+                      {orderedRegions.map((r) => (
+                        <button
+                          key={r.id}
+                          onClick={() => handleSelectRegion(r.id, r.categoryLabel)}
+                          className="flex items-start gap-2 py-1.5 text-left text-sm font-medium text-gray-700 transition hover:text-sky-600"
+                        >
+                          <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
+                          {r.categoryLabel}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      {(() => {
+                        const region = orderedRegions.find((r) => r.id === activeTab);
+                        if (!region) return null;
+                        return (
+                          <div className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
                             <button
-                              key={d.id}
-                              onClick={() => handleSelectDest(region.id, d.id, d.title)}
-                              className="flex items-start gap-2 py-1.5 text-left text-sm text-gray-600 transition hover:text-sky-600"
+                              onClick={() => handleSelectRegion(region.id, region.categoryLabel)}
+                              className="col-span-full mb-2 flex items-center gap-2 text-left text-sm font-bold text-sky-600 transition hover:text-sky-500"
                             >
-                              <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
-                              {d.title}
+                              <span className="text-xs text-sky-300">—</span>
+                              {region.categoryLabel}全部
                             </button>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+                            {region.destinations.map((d) => (
+                              <button
+                                key={d.id}
+                                onClick={() => handleSelectDest(region.id, d.id, d.title)}
+                                className="flex items-start gap-2 py-1.5 text-left text-sm text-gray-600 transition hover:text-sky-600"
+                              >
+                                <span className="mt-0.5 shrink-0 text-xs text-gray-300">—</span>
+                                {d.title}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
+              </div>,
+              document.body
+            );
+          })()}
         </div>
       )}
 
