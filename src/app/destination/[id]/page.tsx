@@ -261,20 +261,22 @@ export default function DestinationPage() {
         setRegionTabs(areaTabs);
         if (areaTabs.length > 0) setCurrentTabLabel("全部");
 
-        // Phase 2：推薦行程 + 隱藏行程 並行載入
+        // ★ Phase 1 完成 — 立即顯示頁面，不等 Phase 2
+        setLoading(false);
+
+        // Phase 2（背景載入，不阻塞頁面顯示）
         const hasRelated = destData.region_id && destData.regions?.category_label;
         if (hasRelated) setRelatedLoading(true);
+        const isMergedRegion = ['港澳大陸', '日本', '中東亞非'].includes(rCat);
+
+        // 所有 Phase 2 請求並行
         const relatedP = hasRelated
           ? getRelatedTrips(destData.region_id, destData.regions!.category_label, destinationId).catch(() => null)
           : Promise.resolve(null);
-
         const hiddenDestIds = allSiblingIds.length > 0 ? allSiblingIds : [destinationId];
         const hiddenP = (isDevOn && destData.region_id)
           ? Promise.allSettled(hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json())))
           : Promise.resolve(null);
-
-        // 預載所有兄弟行程（MERGED 用於合併顯示，TWO-TIER 存 cache 供 tab 瞬切）
-        const isMergedRegion = ['港澳大陸', '日本', '中東亞非'].includes(rCat);
         const allSibTripsP = hasSiblings && siblingIds.length > 0
           ? Promise.all(siblingIds.map(id => getDestinationTrips(id).catch(() => [])))
           : Promise.resolve(null);
@@ -285,9 +287,7 @@ export default function DestinationPage() {
         const [relatedResult, hiddenResult, allSibTripsResult, sibDestsResult] = await Promise.all([relatedP, hiddenP, allSibTripsP, sibDestsP]);
         if (!isMounted) return;
 
-        // trips + areaTabs 已在 Phase 2 await 之前設定
-
-        // 處理隱藏行程
+        // 隱藏行程
         if (hiddenResult) {
           const hiddenAll = (hiddenResult as PromiseSettledResult<Trip[]>[])
             .filter((r): r is PromiseFulfilledResult<Trip[]> => r.status === 'fulfilled')
@@ -296,7 +296,7 @@ export default function DestinationPage() {
           setShowHidden(true);
         }
 
-        // 兄弟行程快取（TWO-TIER 模式存 ref 供 tab 瞬切，不影響 subRegionTrips）
+        // 兄弟行程快取（供 tab 瞬切）
         if (hasSiblings && allSibTripsResult) {
           const cache = new Map<string, Trip[]>();
           cache.set(destinationId, sortedTrips);
@@ -306,7 +306,7 @@ export default function DestinationPage() {
           siblingTripsCache.current = cache;
         }
 
-        // 設定 "全部" 合併行程（僅 MERGED 模式設 state，TWO-TIER 模式保持 null）
+        // MERGED 模式：設定合併行程
         if (hasSiblings && allSibTripsResult && isMergedRegion) {
           const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort((a, b) => {
             const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
@@ -321,7 +321,7 @@ export default function DestinationPage() {
           setActiveDestFilter(destinationId);
         }
 
-        // Cache sibling destination data for hero switching
+        // 兄弟 destination 資料快取（hero 切換用）
         if (sibDestsResult) {
           const map = new Map<string, Destination & { regions?: { category_label: string; title: string } }>();
           map.set(destinationId, destData);
@@ -329,7 +329,7 @@ export default function DestinationPage() {
           siblingDestsDataRef.current = map;
         }
 
-        // 處理推薦行程
+        // 推薦行程
         if (relatedResult) {
           setRelatedTrips(relatedResult as { regionTrips: Trip[]; categoryTrips: Trip[] });
           const rel = relatedResult as { regionTrips: Trip[]; categoryTrips: Trip[] };
@@ -344,7 +344,7 @@ export default function DestinationPage() {
       } catch {
         if (isMounted) setError("無法載入資料，請重新整理頁面");
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) setLoading(false); // 確保錯誤時也關閉 loading
       }
     }
 
