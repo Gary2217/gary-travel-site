@@ -34,21 +34,17 @@ interface TravelSearchBarProps {
 const REGION_DISPLAY_ORDER = [
   "日本",
   "韓國",
-  "中港澳旅遊",
+  "港澳大陸",
   "東南亞",
   "歐洲",
-  "美國加拿大",
-  "澳洲紐西蘭",
+  "紐澳美加",
   "中東亞非",
   "南亞",
+  "台灣旅遊",
+  "自由行",
   "郵輪旅遊",
   "高爾夫",
-  "奢華旅遊",
-  "蜜月旅遊",
-  "自由行",
-  "台灣旅遊",
   "客製旅遊",
-  "海島度假",
 ] as const;
 
 const DEPARTURE_CITIES = [
@@ -134,8 +130,8 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
     if (keywordRef.current) {
       const rect = keywordRef.current.getBoundingClientRect();
       setDropdownRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.bottom,
+        left: rect.left,
         width: rect.width,
       });
     }
