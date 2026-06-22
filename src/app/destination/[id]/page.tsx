@@ -912,37 +912,34 @@ export default function DestinationPage() {
                   </div>
                 );
               })()}
+
+              {/* 第三排：當前 destination 的 sub_area 篩選（曼谷/清邁 等） */}
+              {regionTabs.length > 0 && !subRegionTrips && activeSubRegion !== '全部' && (
+                <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex flex-wrap justify-center gap-1.5 px-1 pb-1">
+                    {regionTabs.map((tab) => (
+                      <button
+                        key={tab.label}
+                        type="button"
+                        onClick={() => handleTabClick(tab)}
+                        className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
+                          currentTabLabel === tab.label
+                            ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
+                            : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
       )}
 
-      {/* sub_area 篩選 tabs（合併檢視 / "全部" / 多 destination 時隱藏） */}
-      {regionTabs.length > 0 && !subRegionTrips && activeSubRegion !== '全部' && (() => {
-        const g = subRegionGroups.find(gr => gr.subRegion === activeSubRegion);
-        return !g || g.destinations.length <= 1;
-      })() && (
-        <div className="mx-auto max-w-site px-3 pt-3 sm:px-4 md:px-8">
-          <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex flex-wrap justify-center gap-1.5 px-1 pb-1">
-              {regionTabs.map((tab) => (
-                <button
-                  key={tab.label}
-                  type="button"
-                  onClick={() => handleTabClick(tab)}
-                  className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
-                    currentTabLabel === tab.label
-                      ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
-                      : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* sub_area 篩選 tabs 已內嵌到二層 tab 區塊中 */}
 
       {/* 行程列表 */}
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">
