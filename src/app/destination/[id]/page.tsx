@@ -224,6 +224,42 @@ export default function DestinationPage() {
           setActiveSubRegion("");
         }
 
+        // sub_area tabs 在 Phase 2 await 之前就計算好（避免 React render 時序問題）
+        const currentTrips = tripsData as Trip[];
+        const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+        const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
+        const areas: string[] = Array.from(new Set(
+          currentTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+        ));
+        const rCat = destData.regions?.category_label || '';
+        const orderList = rCat === '港澳大陸' ? CHINA_ORDER : rCat === '日本' ? JAPAN_ORDER : null;
+        if (orderList) {
+          areas.sort((a, b) => {
+            const ai = orderList.indexOf(a);
+            const bi = orderList.indexOf(b);
+            if (ai === -1 && bi === -1) return a.localeCompare(b);
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return ai - bi;
+          });
+        }
+        const areaTabs = areas.length >= 2
+          ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
+          : [];
+        // 排序：有出團日期的在前、custom_tour 在最後
+        const sortedTrips = [...currentTrips].sort((a, b) => {
+          const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
+          const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
+          if (aCustom !== bCustom) return aCustom - bCustom;
+          const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
+          const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
+          if (aHas !== bHas) return aHas - bHas;
+          return (a.display_order || 99) - (b.display_order || 99);
+        });
+        setTrips(sortedTrips);
+        setRegionTabs(areaTabs);
+        if (areaTabs.length > 0) setCurrentTabLabel("全部");
+
         // Phase 2：推薦行程 + 隱藏行程 並行載入
         const hasRelated = destData.region_id && destData.regions?.category_label;
         if (hasRelated) setRelatedLoading(true);
@@ -247,41 +283,7 @@ export default function DestinationPage() {
         const [relatedResult, hiddenResult, allSibTripsResult, sibDestsResult] = await Promise.all([relatedP, hiddenP, allSibTripsP, sibDestsP]);
         if (!isMounted) return;
 
-        // 建立 sub_area tabs（僅從當前 destination 的行程）
-        const currentTrips = tripsData as Trip[];
-        const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
-        const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
-        const areas: string[] = Array.from(new Set(
-          currentTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
-        ));
-        const rCat = destData.regions?.category_label || '';
-        const orderList = rCat === '港澳大陸' ? CHINA_ORDER : rCat === '日本' ? JAPAN_ORDER : null;
-        if (orderList) {
-          areas.sort((a, b) => {
-            const ai = orderList.indexOf(a);
-            const bi = orderList.indexOf(b);
-            if (ai === -1 && bi === -1) return a.localeCompare(b);
-            if (ai === -1) return 1;
-            if (bi === -1) return -1;
-            return ai - bi;
-          });
-        }
-        const areaTabs = areas.length >= 2
-          ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-          : [];
-        // 重新排序：有出團日期的在前、custom_tour 在最後
-        const sortedTrips = [...currentTrips].sort((a, b) => {
-          const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
-          const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
-          if (aCustom !== bCustom) return aCustom - bCustom;
-          const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
-          const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
-          if (aHas !== bHas) return aHas - bHas;
-          return (a.display_order || 99) - (b.display_order || 99);
-        });
-        setTrips(sortedTrips);
-        setRegionTabs(areaTabs);
-        if (areaTabs.length > 0) setCurrentTabLabel("全部");
+        // trips + areaTabs 已在 Phase 2 await 之前設定
 
         // 處理隱藏行程
         if (hiddenResult) {
