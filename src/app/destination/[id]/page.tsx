@@ -272,8 +272,9 @@ export default function DestinationPage() {
           ? Promise.allSettled(hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json())))
           : Promise.resolve(null);
 
-        // "全部" tab：載入所有兄弟目的地行程 + destination 資料（hero 切換用）
-        const allSibTripsP = hasSiblings && siblingIds.length > 0
+        // "全部" tab：MERGED 模式才預載所有兄弟行程；TWO-TIER 模式按需載入
+        const isMergedRegion = ['港澳大陸', '日本', '中東亞非'].includes(rCat);
+        const allSibTripsP = hasSiblings && siblingIds.length > 0 && isMergedRegion
           ? Promise.all(siblingIds.map(id => getDestinationTrips(id).catch(() => [])))
           : Promise.resolve(null);
         const sibDestsP = hasSiblings
@@ -294,8 +295,8 @@ export default function DestinationPage() {
           setShowHidden(true);
         }
 
-        // 設定 "全部" 合併行程
-        if (hasSiblings && allSibTripsResult) {
+        // 設定 "全部" 合併行程（僅 MERGED 模式預載，TWO-TIER 模式由「全部」按鈕按需載入）
+        if (hasSiblings && allSibTripsResult && isMergedRegion) {
           const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort((a, b) => {
             const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
             const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
@@ -306,7 +307,6 @@ export default function DestinationPage() {
             return (a.display_order || 99) - (b.display_order || 99);
           });
           setSubRegionTrips(merged);
-          // 預選當前 destination（第二排 tab 高亮 + 篩選顯示）
           setActiveDestFilter(destinationId);
         }
 
