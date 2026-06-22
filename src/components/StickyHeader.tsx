@@ -88,7 +88,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
     if (ids.length === 0) { setFavTrips([]); setFavLoaded(true); return; }
     setFavLoading(true);
     Promise.all(
-      ids.map(id => fetch(`/api/trips/${id}`, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null))
+      ids.map(id => fetch(`/api/trips/${id}`).then(r => r.ok ? r.json() : null).catch(() => null))
     ).then(results => {
       setFavTrips(results.filter(Boolean) as FavTrip[]);
       setFavLoading(false);
@@ -138,10 +138,9 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
       }
       return;
     }
-    // 優先用瀏覽器原生返回（瞬間恢復上一頁快取），無歷史時才用 href 導航
+    // 優先用瀏覽器原生返回（瞬間恢復上一頁快取），無歷史時用 router 軟導航
     if (window.history.length > 1) { window.history.back(); return; }
-    if (backHref) { window.location.href = backHref; return; }
-    window.location.href = '/';
+    router.push(backHref || '/');
   };
 
   return (

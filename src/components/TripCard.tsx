@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -98,6 +98,13 @@ export default function TripCard({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showPromo, setShowPromo] = useState(false);
   const router = useRouter();
+
+  // 預載入行程頁路由，讓點擊時瞬間切換
+  useEffect(() => {
+    if (!isDevMode && !isCustomTour) {
+      router.prefetch(`/trip/${id}`);
+    }
+  }, [id, isDevMode, isCustomTour, router]);
 
   const handleCoverClick = () => {
     if (!isDevMode && !isCustomTour) {
