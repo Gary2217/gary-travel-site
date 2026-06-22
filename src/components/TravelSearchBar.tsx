@@ -123,6 +123,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   const [keywordLoading, setKeywordLoading] = useState(false);
   const [keywordOpen, setKeywordOpen] = useState(false);
   const keywordRef = useRef<HTMLDivElement>(null);
+  const keywordDropdownRef = useRef<HTMLDivElement>(null);
   const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
@@ -172,9 +173,11 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   useEffect(() => {
     if (!keywordOpen) return;
     const handler = (e: MouseEvent) => {
-      if (keywordRef.current && !keywordRef.current.contains(e.target as Node)) {
-        setKeywordOpen(false);
-      }
+      const target = e.target as Node;
+      // 點擊在輸入框或 Portal 下拉選單內都不關閉
+      if (keywordRef.current?.contains(target)) return;
+      if (keywordDropdownRef.current?.contains(target)) return;
+      setKeywordOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -449,7 +452,8 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             {/* 搜尋結果下拉（Portal 渲染到 body，避免被 sticky 元素的 stacking context 蓋住） */}
             {keywordOpen && dropdownRect && typeof document !== "undefined" && createPortal(
               <div
-                className="fixed z-modal overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20"
+                ref={keywordDropdownRef}
+                className="fixed z-[9999] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20"
                 style={{ top: dropdownRect.top + 4, left: dropdownRect.left, width: dropdownRect.width }}
               >
                 {keywordResults.length === 0 ? (
