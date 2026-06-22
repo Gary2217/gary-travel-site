@@ -32,10 +32,10 @@ export async function GET() {
       );
     }
 
-    // 自動偵測卡住的 running 紀錄（超過 35 分鐘視為 crash）
+    // 自動偵測卡住的 running 紀錄（超過 30 分鐘視為 crash，對齊 GitHub Actions timeout）
     if (log.status === 'running' && log.started_at) {
       const elapsed = Date.now() - new Date(log.started_at).getTime();
-      if (elapsed > 35 * 60 * 1000) {
+      if (elapsed > 30 * 60 * 1000) {
         await supabase
           .from('scrape_logs')
           .update({

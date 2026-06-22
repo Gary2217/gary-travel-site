@@ -435,9 +435,9 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
               <button
                 onClick={toggleCheckAll}
                 className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-white/20 transition hover:border-white/40"
-                title={checkedIds.size === changes.length ? "取消全選" : "全選"}
+                title={checkedIds.size > 0 && checkedIds.size === changes.filter((c) => c.change_type !== "warning" && c.change_type !== "new_tab").length ? "取消全選" : "全選"}
               >
-                {checkedIds.size === changes.length && changes.length > 0 ? (
+                {checkedIds.size > 0 && checkedIds.size === changes.filter((c) => c.change_type !== "warning" && c.change_type !== "new_tab").length ? (
                   <span className="text-[10px] text-sky-400">✓</span>
                 ) : checkedIds.size > 0 ? (
                   <span className="text-[10px] text-white/40">—</span>

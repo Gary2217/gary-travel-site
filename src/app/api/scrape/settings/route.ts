@@ -18,8 +18,11 @@ const SCRAPE_KEYS = [
   'scrape_region_status',
 ];
 
-// GET: 讀取所有抓取設定
+// GET: 讀取所有抓取設定（需 dev auth）
 export async function GET() {
+  const authError = requireDevAuth();
+  if (authError) return authError;
+
   try {
     const supabase = createSupabase();
     const { data, error } = await supabase
