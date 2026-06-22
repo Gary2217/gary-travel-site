@@ -26,20 +26,26 @@ async function ensureSupabaseImage(
   tripId: string,
 ): Promise<string | null> {
   if (!imageUrl) return null;
-  // 已經是 Supabase Storage 的 URL → 不需處理
-  if (imageUrl.includes(supabaseUrl) || imageUrl.includes('supabase')) return imageUrl;
+  // 已經是 Supabase Storage 的 URL → 不需處理（嚴格檢查）
+  if (imageUrl.startsWith(supabaseUrl) || imageUrl.includes('.supabase.co/storage')) return imageUrl;
 
   try {
     const res = await fetch(imageUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       redirect: 'follow',
     });
-    if (!res.ok) return imageUrl; // 下載失敗就保留原 URL
+    if (!res.ok) {
+      console.warn(`[ensureSupabaseImage] 下載失敗 HTTP ${res.status}: ${imageUrl}`);
+      return null; // 下載失敗不保留外部 URL，避免違反規範
+    }
 
     const ct = res.headers.get('content-type') || 'image/jpeg';
     const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : 'jpg';
     const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 1000) return imageUrl; // 太小，可能不是真圖
+    if (buf.length < 1000) {
+      console.warn(`[ensureSupabaseImage] 圖片過小 ${buf.length} bytes: ${imageUrl}`);
+      return null; // 太小，可能不是真圖
+    }
 
     const path = `trips/${tripId}-${Date.now()}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from('images').upload(path, buf, {
@@ -47,12 +53,16 @@ async function ensureSupabaseImage(
       cacheControl: 'public, max-age=31536000',
       upsert: true,
     });
-    if (uploadErr) return imageUrl;
+    if (uploadErr) {
+      console.warn(`[ensureSupabaseImage] 上傳失敗: ${uploadErr.message}`);
+      return null; // 上傳失敗也不保留外部 URL
+    }
 
     const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(path);
     return `${publicUrl}?v=${Date.now()}`;
-  } catch {
-    return imageUrl; // 任何錯誤都保留原 URL，不中斷套用流程
+  } catch (err) {
+    console.warn(`[ensureSupabaseImage] 錯誤: ${err}`);
+    return null; // 任何錯誤都不保留外部 URL，禁止直接引用外部 CDN
   }
 }
 
@@ -157,6 +167,13 @@ async function rebuildDepartureInfoMap(
     .eq('trip_id', tripId);
 
   if (depsErr) return depsErr.message;
+
+  // 驗證 price_detail 欄數（應為 5 欄 tab 分隔）
+  const priceDetailRaw = String(scraped.trip_banner?.price_detail || '');
+  const priceDetailColumns = priceDetailRaw.split('\t');
+  if (priceDetailRaw && priceDetailColumns.length < 5) {
+    console.warn(`[rebuildDepartureInfoMap] price_detail 不足 5 欄（目前 ${priceDetailColumns.length} 欄），trip: ${tripId}`);
+  }
 
   const departureInfoMap: Record<string, DepartureInfoMapValue> = {};
   for (const dep of newDeps || []) {
@@ -266,6 +283,11 @@ export async function POST(req: NextRequest) {
                 (existing?.trip_banner as Record<string, unknown>).side_image_url;
             }
 
+            // 確保 price_label 與 price_range 同步（防止爬蟲遺漏時不一致）
+            if (scraped.price_range) {
+              (mergedBanner as Record<string, unknown>).price_label = scraped.price_range;
+            }
+
             if (change.change_type === 'promotion') {
               const promoText = (scraped as any).promo_text || change.new_value || '';
               (mergedBanner as Record<string, unknown>).promo_content = promoText;
@@ -280,17 +302,20 @@ export async function POST(req: NextRequest) {
                     .select('id, departure_date')
                     .eq('trip_id', change.trip_id);
 
+                  const promoMatchedIds: string[] = [];
                   for (const dep of deps || []) {
                     const dt = new Date(dep.departure_date + 'T00:00:00');
+                    if (isNaN(dt.getTime())) continue; // 跳過無效日期
                     const matched = promoDates.some(
                       (pd) => pd.month === dt.getMonth() + 1 && pd.day === dt.getDate(),
                     );
-                    if (matched) {
-                      await supabase
-                        .from('trip_departure_dates')
-                        .update({ label: '限時優惠' })
-                        .eq('id', dep.id);
-                    }
+                    if (matched) promoMatchedIds.push(dep.id);
+                  }
+                  if (promoMatchedIds.length > 0) {
+                    await supabase
+                      .from('trip_departure_dates')
+                      .update({ label: '限時優惠' })
+                      .in('id', promoMatchedIds);
                   }
                 }
               }
@@ -299,21 +324,36 @@ export async function POST(req: NextRequest) {
             // 外部圖片自動上傳 Supabase Storage
             const resolvedImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, change.trip_id);
 
-            // 組合更新欄位：display_order 只在 info 類型且 field_name 明確變更時才寫入
-            // 避免套用 price/flight 等變更時覆蓋手動調整的排序
+            // 組合更新欄位
+            // trip_banner 永遠透過 merge 更新；直接欄位依 change_type 決定範圍
             const tripUpdateFields: Record<string, unknown> = {
-              title: scraped.title,
-              subtitle: scraped.subtitle,
-              duration: scraped.duration,
-              price_range: scraped.price_range,
-              cover_image_url: resolvedImageUrl,
               trip_banner: mergedBanner,
             };
+
+            if (change.change_type === 'info') {
+              // info 類型：根據 field_name 只更新對應的直接欄位
+              // trip_banner 內的欄位（tags, code_label, airport, airline 等）已透過 merge 處理
+              const directFieldMap: Record<string, unknown> = {
+                title: scraped.title,
+                subtitle: scraped.subtitle,
+                duration: scraped.duration,
+                cover_image_url: resolvedImageUrl,
+                display_order: scraped.display_order,
+              };
+              if (change.field_name && change.field_name in directFieldMap) {
+                tripUpdateFields[change.field_name] = directFieldMap[change.field_name];
+              }
+            } else {
+              // price / price_detail / flight / promotion：更新所有欄位保持完整同步
+              tripUpdateFields.title = scraped.title;
+              tripUpdateFields.subtitle = scraped.subtitle;
+              tripUpdateFields.duration = scraped.duration;
+              tripUpdateFields.price_range = scraped.price_range;
+              tripUpdateFields.cover_image_url = resolvedImageUrl;
+            }
+
             if (scraped.source_url) {
               tripUpdateFields.source_url = scraped.source_url;
-            }
-            if (change.change_type === 'info' && change.field_name === 'display_order') {
-              tripUpdateFields.display_order = scraped.display_order;
             }
 
             const { error: updateErr } = await supabase
@@ -355,46 +395,40 @@ export async function POST(req: NextRequest) {
               continue;
             }
 
-            // 插入新日期
+            // 批量插入新日期
             const segments = scraped.flightSegments || [];
             const outbound = segments[0] || null;
             const returnFlight = segments[segments.length - 1] || null;
-            let departureError: string | null = null;
 
-            for (const dep of scraped.departures) {
-              const { error: insertDepErr } = await supabase.from('trip_departure_dates').insert({
-                trip_id: change.trip_id,
-                departure_date: dep.date,
-                departure_city: dep.departure_city,
-                airline: dep.airline,
-                price: dep.price,
-                label: dep.label,
-                seats_total: dep.seats_total,
-                seats_available: dep.seats_available,
-                outbound_flight: outbound?.flight_number || null,
-                outbound_time: outbound?.dep_time || null,
-                outbound_from: outbound?.dep_airport || null,
-                outbound_arrival_time: outbound?.arr_time || null,
-                outbound_to: outbound?.arr_airport || null,
-                outbound_next_day: outbound?.next_day || false,
-                return_flight: returnFlight?.flight_number || null,
-                return_time: returnFlight?.dep_time || null,
-                return_from: returnFlight?.dep_airport || null,
-                return_arrival_time: returnFlight?.arr_time || null,
-                return_to: returnFlight?.arr_airport || null,
-                return_next_day: returnFlight?.next_day || false,
-                flight_segments: segments,
-                is_active: true,
-              });
+            const departuresToInsert = scraped.departures.map((dep) => ({
+              trip_id: change.trip_id,
+              departure_date: dep.date,
+              departure_city: dep.departure_city,
+              airline: dep.airline,
+              price: dep.price,
+              label: dep.label,
+              seats_total: dep.seats_total,
+              seats_available: dep.seats_available,
+              outbound_flight: outbound?.flight_number || null,
+              outbound_time: outbound?.dep_time || null,
+              outbound_from: outbound?.dep_airport || null,
+              outbound_arrival_time: outbound?.arr_time || null,
+              outbound_to: outbound?.arr_airport || null,
+              outbound_next_day: outbound?.next_day || false,
+              return_flight: returnFlight?.flight_number || null,
+              return_time: returnFlight?.dep_time || null,
+              return_from: returnFlight?.dep_airport || null,
+              return_arrival_time: returnFlight?.arr_time || null,
+              return_to: returnFlight?.arr_airport || null,
+              return_next_day: returnFlight?.next_day || false,
+              flight_segments: segments,
+              is_active: true,
+            }));
 
-              if (insertDepErr) {
-                departureError = insertDepErr.message;
-                break;
-              }
-            }
+            const { error: batchInsertErr } = await supabase.from('trip_departure_dates').insert(departuresToInsert);
 
-            if (departureError) {
-              results.push({ id: changeId, success: false, error: departureError });
+            if (batchInsertErr) {
+              results.push({ id: changeId, success: false, error: batchInsertErr.message });
               continue;
             }
 
@@ -405,42 +439,37 @@ export async function POST(req: NextRequest) {
             }
 
             // 出發日期重建後，重新套用優惠標籤（避免被 DELETE+INSERT 洗掉）
-            const promoSource = (scraped as any).promo_text || '';
-            if (promoSource) {
-              const promoDatesForDep = parsePromoDates(promoSource);
-              if (promoDatesForDep.length > 0) {
-                const { data: newDeps } = await supabase
-                  .from('trip_departure_dates')
-                  .select('id, departure_date')
-                  .eq('trip_id', change.trip_id);
-                for (const nd of newDeps || []) {
-                  const ndt = new Date(nd.departure_date + 'T00:00:00');
-                  if (promoDatesForDep.some((pd) => pd.month === ndt.getMonth() + 1 && pd.day === ndt.getDate())) {
-                    await supabase.from('trip_departure_dates').update({ label: '限時優惠' }).eq('id', nd.id);
-                  }
-                }
-              }
-            } else {
-              // scraped_data 沒 promo_text，查現有 trip_banner.promo_content
+            // 先判斷優惠文字來源：scraped_data > 既有 trip_banner.promo_content
+            let promoTextForLabels = (scraped as any).promo_text || '';
+            if (!promoTextForLabels) {
               const { data: tripForPromo } = await supabase
                 .from('trips')
                 .select('trip_banner')
                 .eq('id', change.trip_id)
                 .single();
-              const existingPromo = (tripForPromo?.trip_banner as Record<string, unknown>)?.promo_content as string || '';
-              if (existingPromo) {
-                const existingPromoDates = parsePromoDates(existingPromo);
-                if (existingPromoDates.length > 0) {
-                  const { data: newDeps2 } = await supabase
-                    .from('trip_departure_dates')
-                    .select('id, departure_date')
-                    .eq('trip_id', change.trip_id);
-                  for (const nd2 of newDeps2 || []) {
-                    const ndt2 = new Date(nd2.departure_date + 'T00:00:00');
-                    if (existingPromoDates.some((pd) => pd.month === ndt2.getMonth() + 1 && pd.day === ndt2.getDate())) {
-                      await supabase.from('trip_departure_dates').update({ label: '限時優惠' }).eq('id', nd2.id);
-                    }
+              promoTextForLabels = (tripForPromo?.trip_banner as Record<string, unknown>)?.promo_content as string || '';
+            }
+
+            if (promoTextForLabels) {
+              const promoDatesForDep = parsePromoDates(promoTextForLabels);
+              if (promoDatesForDep.length > 0) {
+                const { data: newDepsForPromo } = await supabase
+                  .from('trip_departure_dates')
+                  .select('id, departure_date')
+                  .eq('trip_id', change.trip_id);
+                const depPromoMatchedIds: string[] = [];
+                for (const nd of newDepsForPromo || []) {
+                  const ndt = new Date(nd.departure_date + 'T00:00:00');
+                  if (isNaN(ndt.getTime())) continue; // 跳過無效日期
+                  if (promoDatesForDep.some((pd) => pd.month === ndt.getMonth() + 1 && pd.day === ndt.getDate())) {
+                    depPromoMatchedIds.push(nd.id);
                   }
+                }
+                if (depPromoMatchedIds.length > 0) {
+                  await supabase
+                    .from('trip_departure_dates')
+                    .update({ label: '限時優惠' })
+                    .in('id', depPromoMatchedIds);
                 }
               }
             }
@@ -488,47 +517,48 @@ export async function POST(req: NextRequest) {
               continue;
             }
 
-            // 插入出發日期
-            if (scraped.departures) {
-              const segments = scraped.flightSegments || [];
-              const outbound = segments[0] || null;
-              const returnFlight = segments[segments.length - 1] || null;
-              let departureError: string | null = null;
-
-              for (const dep of scraped.departures) {
-                const { error: insertDepErr } = await supabase.from('trip_departure_dates').insert({
-                  trip_id: inserted.id,
-                  departure_date: dep.date,
-                  departure_city: dep.departure_city,
-                  airline: dep.airline,
-                  price: dep.price,
-                  label: dep.label,
-                  seats_total: dep.seats_total,
-                  seats_available: dep.seats_available,
-                  outbound_flight: outbound?.flight_number || null,
-                  outbound_time: outbound?.dep_time || null,
-                  outbound_from: outbound?.dep_airport || null,
-                  outbound_arrival_time: outbound?.arr_time || null,
-                  outbound_to: outbound?.arr_airport || null,
-                  outbound_next_day: outbound?.next_day || false,
-                  return_flight: returnFlight?.flight_number || null,
-                  return_time: returnFlight?.dep_time || null,
-                  return_from: returnFlight?.dep_airport || null,
-                  return_arrival_time: returnFlight?.arr_time || null,
-                  return_to: returnFlight?.arr_airport || null,
-                  return_next_day: returnFlight?.next_day || false,
-                  flight_segments: segments,
-                  is_active: true,
-                });
-
-                if (insertDepErr) {
-                  departureError = insertDepErr.message;
-                  break;
-                }
+            // 用真正的 trip ID 重新上傳圖片（替換 placeholder ID 的路徑）
+            if (scraped.cover_image_url && inserted.id) {
+              const finalImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, inserted.id);
+              if (finalImageUrl && finalImageUrl !== tempImageUrl) {
+                await supabase.from('trips').update({ cover_image_url: finalImageUrl }).eq('id', inserted.id);
               }
+            }
 
-              if (departureError) {
-                results.push({ id: changeId, success: false, error: departureError });
+            // 批量插入出發日期
+            if (scraped.departures && scraped.departures.length > 0) {
+              const newTripSegments = scraped.flightSegments || [];
+              const newTripOutbound = newTripSegments[0] || null;
+              const newTripReturn = newTripSegments[newTripSegments.length - 1] || null;
+
+              const newTripDepartures = scraped.departures.map((dep) => ({
+                trip_id: inserted.id,
+                departure_date: dep.date,
+                departure_city: dep.departure_city,
+                airline: dep.airline,
+                price: dep.price,
+                label: dep.label,
+                seats_total: dep.seats_total,
+                seats_available: dep.seats_available,
+                outbound_flight: newTripOutbound?.flight_number || null,
+                outbound_time: newTripOutbound?.dep_time || null,
+                outbound_from: newTripOutbound?.dep_airport || null,
+                outbound_arrival_time: newTripOutbound?.arr_time || null,
+                outbound_to: newTripOutbound?.arr_airport || null,
+                outbound_next_day: newTripOutbound?.next_day || false,
+                return_flight: newTripReturn?.flight_number || null,
+                return_time: newTripReturn?.dep_time || null,
+                return_from: newTripReturn?.dep_airport || null,
+                return_arrival_time: newTripReturn?.arr_time || null,
+                return_to: newTripReturn?.arr_airport || null,
+                return_next_day: newTripReturn?.next_day || false,
+                flight_segments: newTripSegments,
+                is_active: true,
+              }));
+
+              const { error: newTripDepErr } = await supabase.from('trip_departure_dates').insert(newTripDepartures);
+              if (newTripDepErr) {
+                results.push({ id: changeId, success: false, error: newTripDepErr.message });
                 continue;
               }
 
