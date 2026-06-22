@@ -594,18 +594,23 @@ export default function TripPage() {
               const categoryFiltered = (related.categoryTrips || []).filter((t: Trip) => t.id !== tripId && hasDates(t) && !regionFiltered.some((r: Trip) => r.id === t.id));
               let combined = [...regionFiltered, ...categoryFiltered].slice(0, 6);
 
-              // 不足 6 筆時從熱門行程補足
+              // 不足 6 筆時從熱門行程補足（並行 fetch 所有熱門目的地）
               if (combined.length < 6) {
                 try {
                   const popRes = await fetch('/api/popular-trips');
                   if (popRes.ok) {
                     const popDests = await popRes.json();
                     const usedIds = new Set([tripId, ...combined.map((t: Trip) => t.id)]);
-                    for (const pd of popDests) {
+                    // 並行 fetch 所有熱門目的地的行程
+                    const popTripsResults = await Promise.all(
+                      popDests.map((pd: { id: string }) =>
+                        fetch(`/api/destinations/${pd.id}/trips`)
+                          .then(r => r.ok ? r.json() as Promise<Trip[]> : [])
+                          .catch(() => [] as Trip[])
+                      )
+                    );
+                    for (const destTrips of popTripsResults) {
                       if (combined.length >= 6) break;
-                      const tripsRes = await fetch(`/api/destinations/${pd.id}/trips`);
-                      if (!tripsRes.ok) continue;
-                      const destTrips = (await tripsRes.json()) as Trip[];
                       for (const dt of destTrips) {
                         if (combined.length >= 6) break;
                         if (usedIds.has(dt.id)) continue;
@@ -917,7 +922,7 @@ export default function TripPage() {
             <p className={`text-lg ${isDeleted ? "text-gray-600" : "text-red-400"}`}>{error || "找不到此行程"}</p>
             <div className="mt-4 flex items-center justify-center gap-3">
               <button
-                onClick={() => { window.location.href = from || '/'; }}
+                onClick={() => { if (window.history.length > 1) { window.history.back(); } else { window.location.href = from || '/'; } }}
                 className="rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
               >
                 返回上一頁

@@ -29,9 +29,10 @@ export async function GET(
 
     const today = new Date().toISOString().slice(0, 10);
 
+    // departure dates 只選取列表頁需要的欄位（減少回應體積 ~60%）
     const { data, error } = await supabase
       .from('trips')
-      .select('*, trip_departure_dates(*)')
+      .select('*, trip_departure_dates(id, departure_date, price, seats_available, seats_total, label, outbound_from, flight_segments, is_active)')
       .eq('destination_id', params.id)
       .eq('is_active', showHidden ? false : true)
       .order('display_order', { ascending: true });
