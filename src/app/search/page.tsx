@@ -114,7 +114,7 @@ export default function SearchPage() {
             <h2 className="mb-4 text-lg font-bold text-gray-900 sm:mb-6 sm:text-xl">
               {formatDate(date)} 出發行程（{trips.length}）
             </h2>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {trips.map((trip) => (
                 <TripCard
                   key={trip.id}
