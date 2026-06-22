@@ -860,10 +860,29 @@ export default function DestinationPage() {
                           if (destId === destinationId) {
                             setSubRegionTrips(null);
                             setHeroDest(null);
+                            // 恢復當前 destination 的 sub_area tabs
+                            setSubAreaFilter("");
+                            setCurrentTabLabel("全部");
                           } else {
-                            // 導航到該目的地頁面（URL 更新 + sub_area 正確顯示）
-                            router.push(`/destination/${destId}`);
-                            return;
+                            // 原地載入兄弟 destination 行程 + 動態更新 sub_area tabs
+                            setSubRegionLoading(true);
+                            try {
+                              const t = await getDestinationTrips(destId);
+                              setSubRegionTrips(t);
+                              // 計算新 destination 的 sub_area tabs
+                              const sibAreas: string[] = Array.from(new Set(
+                                (t as Trip[]).flatMap((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").split(",").map((s: string) => s.trim())).filter(Boolean)
+                              ));
+                              const sibAreaTabs = sibAreas.length >= 2
+                                ? [{ label: "全部", destId: "all" }, ...sibAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
+                                : [];
+                              setRegionTabs(sibAreaTabs);
+                              setCurrentTabLabel("全部");
+                              setSubAreaFilter("");
+                              const cached = siblingDestsDataRef.current.get(destId);
+                              if (cached) setHeroDest(cached);
+                            } catch { setSubRegionTrips(null); }
+                            setSubRegionLoading(false);
                           }
                         } else {
                           setSubRegionLoading(true);
@@ -915,8 +934,8 @@ export default function DestinationPage() {
                 );
               })()}
 
-              {/* 第三排：當前 destination 的 sub_area 篩選（曼谷/清邁 等） */}
-              {regionTabs.length > 0 && !subRegionTrips && activeSubRegion !== '全部' && (
+              {/* 第三排：當前/兄弟 destination 的 sub_area 篩選（曼谷/清邁 等） */}
+              {regionTabs.length > 0 && activeSubRegion !== '全部' && (
                 <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div className="flex flex-wrap justify-center gap-1.5 px-1 pb-1">
                     {regionTabs.map((tab) => (
