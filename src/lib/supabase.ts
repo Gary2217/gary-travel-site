@@ -1,24 +1,75 @@
 // ---------------------------------------------------------------------------
-// 客戶端記憶體快取（避免返回 / 切頁時重複拉資料）
+// 客戶端混合快取（記憶體 + sessionStorage，跨頁面導航保留資料）
 // ---------------------------------------------------------------------------
 const _cache = new Map<string, { data: unknown; exp: number }>();
+const SS_PREFIX = 'sc:'; // sessionStorage key 前綴
 
 function cacheGet<T>(key: string): T | null {
-  const entry = _cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.exp) { _cache.delete(key); return null; }
-  return entry.data as T;
+  // 1. 記憶體快取（最快）
+  const memEntry = _cache.get(key);
+  if (memEntry) {
+    if (Date.now() <= memEntry.exp) return memEntry.data as T;
+    _cache.delete(key);
+  }
+
+  // 2. sessionStorage（跨頁面導航保留）
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    const stored = sessionStorage.getItem(SS_PREFIX + key);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as { data: unknown; exp: number };
+    if (Date.now() > parsed.exp) {
+      sessionStorage.removeItem(SS_PREFIX + key);
+      return null;
+    }
+    // 提升回記憶體快取
+    _cache.set(key, parsed);
+    return parsed.data as T;
+  } catch {
+    return null;
+  }
 }
 
 function cacheSet(key: string, data: unknown, ttlMs: number) {
-  _cache.set(key, { data, exp: Date.now() + ttlMs });
+  const entry = { data, exp: Date.now() + ttlMs };
+  _cache.set(key, entry);
+
+  // 同步寫入 sessionStorage
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.setItem(SS_PREFIX + key, JSON.stringify(entry));
+  } catch {
+    // 容量超限時清除舊條目後重試
+    try {
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i);
+        if (k?.startsWith(SS_PREFIX)) sessionStorage.removeItem(k);
+      }
+      sessionStorage.setItem(SS_PREFIX + key, JSON.stringify(entry));
+    } catch { /* 放棄，不影響功能 */ }
+  }
 }
 
 /** 清除指定前綴或全部快取（寫入後呼叫） */
 export function invalidateCache(prefix?: string) {
-  if (!prefix) { _cache.clear(); return; }
+  if (!prefix) {
+    _cache.clear();
+    if (typeof sessionStorage !== 'undefined') {
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i);
+        if (k?.startsWith(SS_PREFIX)) sessionStorage.removeItem(k);
+      }
+    }
+    return;
+  }
   for (const key of _cache.keys()) {
     if (key.startsWith(prefix)) _cache.delete(key);
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const k = sessionStorage.key(i);
+      if (k?.startsWith(SS_PREFIX + prefix)) sessionStorage.removeItem(k);
+    }
   }
 }
 
@@ -229,7 +280,7 @@ export async function getRegionsWithDestinations() {
   const res = await fetch('/api/regions');
   if (!res.ok) throw new Error(`Failed to fetch regions: ${res.status}`);
   const data = await res.json();
-  cacheSet(KEY, data, 5 * 60_000); // 5 min
+  cacheSet(KEY, data, 10 * 60_000); // 10 min（區域資料變動少）
   return data;
 }
 
@@ -242,7 +293,7 @@ export async function getDestination(destinationId: string) {
   const res = await fetch(`/api/destinations/${destinationId}`);
   if (!res.ok) throw new Error(`Failed to fetch destination: ${res.status}`);
   const data = await res.json();
-  cacheSet(KEY, data, 5 * 60_000); // 5 min
+  cacheSet(KEY, data, 10 * 60_000); // 10 min（目的地資料變動少）
   return data;
 }
 
@@ -255,7 +306,7 @@ export async function getDestinationTrips(destinationId: string) {
   const res = await fetch(`/api/destinations/${destinationId}/trips`);
   if (!res.ok) throw new Error(`Failed to fetch trips: ${res.status}`);
   const data = await res.json();
-  cacheSet(KEY, data, 2 * 60_000); // 2 min
+  cacheSet(KEY, data, 5 * 60_000); // 5 min
   return data;
 }
 
@@ -283,7 +334,7 @@ export async function getTripWithDays(tripId: string) {
   const res = await fetch(`/api/trips/${tripId}`);
   if (!res.ok) throw new Error(`Failed to fetch trip: ${res.status}`);
   const data = await res.json();
-  cacheSet(KEY, data, 2 * 60_000); // 2 min
+  cacheSet(KEY, data, 5 * 60_000); // 5 min
   return data;
 }
 
