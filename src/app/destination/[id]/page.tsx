@@ -97,27 +97,38 @@ export default function DestinationPage() {
 
   // sub_area tabs（從合併行程或當前行程動態計算）
   const CHINA_SUB_AREA_ORDER = useMemo(() => ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'], []);
+  const JAPAN_SUB_AREA_ORDER = useMemo(() => ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'], []);
+
+  /** 依指定順序排列 sub_area 標籤（不在清單中的排末尾） */
+  const sortByOrder = useCallback((areas: string[], order: string[]) => {
+    areas.sort((a, b) => {
+      const ai = order.indexOf(a);
+      const bi = order.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, []);
+
+  // 使用 merged sub_area tabs 的區域白名單（sub_area 代表區域內細分，適合合併顯示）
+  // 不在名單中的區域（東南亞等）使用兩層 tab：上面國家/地區切換，下面 sub_area 篩選
+  const MERGED_REGIONS = useMemo(() => ['港澳大陸', '日本', '中東亞非'], []);
+  const regionCat = destination?.regions?.category_label || '';
+  const useMergedMode = allSingleDest && MERGED_REGIONS.includes(regionCat);
+
   const mergedSubAreaTabs = useMemo(() => {
     const source = subRegionTrips || trips;
     if (!source || source.length === 0) return [];
-    const isChinaRegion = destination?.regions?.title === '港澳大陸';
     const areas: string[] = Array.from(new Set(
       source.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
     ));
-    if (isChinaRegion) {
-      areas.sort((a, b) => {
-        const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
-        const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
-        if (ai === -1 && bi === -1) return a.localeCompare(b);
-        if (ai === -1) return 1;
-        if (bi === -1) return -1;
-        return ai - bi;
-      });
-    }
+    if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
+    else if (regionCat === '日本') sortByOrder(areas, JAPAN_SUB_AREA_ORDER);
     return areas.length >= 2
       ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
       : [];
-  }, [subRegionTrips, trips, destination, CHINA_SUB_AREA_ORDER]);
+  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, sortByOrder]);
 
   // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
   const displayTrips = useMemo(() => {
@@ -238,14 +249,17 @@ export default function DestinationPage() {
 
         // 建立 sub_area tabs（僅從當前 destination 的行程）
         const currentTrips = tripsData as Trip[];
-        const CHINA_SUB_AREA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+        const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+        const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
         const areas: string[] = Array.from(new Set(
           currentTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
         ));
-        if (isChinaRegion) {
+        const rCat = destData.regions?.category_label || '';
+        const orderList = rCat === '港澳大陸' ? CHINA_ORDER : rCat === '日本' ? JAPAN_ORDER : null;
+        if (orderList) {
           areas.sort((a, b) => {
-            const ai = CHINA_SUB_AREA_ORDER.indexOf(a);
-            const bi = CHINA_SUB_AREA_ORDER.indexOf(b);
+            const ai = orderList.indexOf(a);
+            const bi = orderList.indexOf(b);
             if (ai === -1 && bi === -1) return a.localeCompare(b);
             if (ai === -1) return 1;
             if (bi === -1) return -1;
@@ -591,6 +605,9 @@ export default function DestinationPage() {
       const areas: string[] = Array.from(new Set(
         freshTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
       ));
+      // 依區域排序 sub_area tabs
+      if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
+      else if (regionCat === '日本') sortByOrder(areas, JAPAN_SUB_AREA_ORDER);
       const areaTabs = areas.length >= 2
         ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
         : [];
@@ -727,7 +744,7 @@ export default function DestinationPage() {
             <p className="mt-3 text-lg font-bold text-gray-700">{error || "找不到此目的地"}</p>
             <p className="mt-1 text-sm text-gray-400">此頁面可能已移除或網址有誤</p>
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => { if (window.history.length > 1) { window.history.back(); } else { window.location.href = '/'; } }}
               className="mt-5 rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
             >
               回首頁
@@ -781,8 +798,8 @@ export default function DestinationPage() {
           <h2 className="mb-3 text-center text-xl font-bold text-gray-800 sm:text-2xl">
             {destination.regions?.title}
           </h2>
-          {allSingleDest && mergedSubAreaTabs.length > 0 ? (
-            /* all-single-dest（港澳大陸等）：直接用 sub_area tabs */
+          {useMergedMode && mergedSubAreaTabs.length > 0 ? (
+            /* merged mode（港澳大陸/日本/中東亞非）：直接用 sub_area tabs */
             <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
                 {mergedSubAreaTabs.map((tab) => (
@@ -842,14 +859,9 @@ export default function DestinationPage() {
                             setSubRegionTrips(null);
                             setHeroDest(null);
                           } else {
-                            setSubRegionLoading(true);
-                            try {
-                              const t = await getDestinationTrips(destId);
-                              setSubRegionTrips(t);
-                              const cached = siblingDestsDataRef.current.get(destId);
-                              if (cached) setHeroDest(cached);
-                            } catch { setSubRegionTrips(null); }
-                            setSubRegionLoading(false);
+                            // 導航到該目的地頁面（URL 更新 + sub_area 正確顯示）
+                            router.push(`/destination/${destId}`);
+                            return;
                           }
                         } else {
                           setSubRegionLoading(true);
