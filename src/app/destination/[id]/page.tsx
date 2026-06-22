@@ -88,6 +88,7 @@ export default function DestinationPage() {
   const [heroDest, setHeroDest] = useState<(Destination & { regions?: { category_label: string; title: string } }) | null>(null);
   const siblingDestsRef = useRef<string[]>([]);
   const siblingDestsDataRef = useRef<Map<string, Destination & { regions?: { category_label: string; title: string } }>>(new Map());
+  const siblingTripsCache = useRef<Map<string, Trip[]>>(new Map());
   const destsListCache = useRef<{ id: string; title: string; region_id: string; display_order: number; sub_region?: string }[] | null>(null);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
@@ -272,9 +273,9 @@ export default function DestinationPage() {
           ? Promise.allSettled(hiddenDestIds.map(id => fetch(`/api/destinations/${id}/trips?hidden=1`).then(r => r.json())))
           : Promise.resolve(null);
 
-        // "全部" tab：MERGED 模式才預載所有兄弟行程；TWO-TIER 模式按需載入
+        // 預載所有兄弟行程（MERGED 用於合併顯示，TWO-TIER 存 cache 供 tab 瞬切）
         const isMergedRegion = ['港澳大陸', '日本', '中東亞非'].includes(rCat);
-        const allSibTripsP = hasSiblings && siblingIds.length > 0 && isMergedRegion
+        const allSibTripsP = hasSiblings && siblingIds.length > 0
           ? Promise.all(siblingIds.map(id => getDestinationTrips(id).catch(() => [])))
           : Promise.resolve(null);
         const sibDestsP = hasSiblings
@@ -295,7 +296,17 @@ export default function DestinationPage() {
           setShowHidden(true);
         }
 
-        // 設定 "全部" 合併行程（僅 MERGED 模式預載，TWO-TIER 模式由「全部」按鈕按需載入）
+        // 兄弟行程快取（TWO-TIER 模式存 ref 供 tab 瞬切，不影響 subRegionTrips）
+        if (hasSiblings && allSibTripsResult) {
+          const cache = new Map<string, Trip[]>();
+          cache.set(destinationId, sortedTrips);
+          siblingIds.forEach((id, i) => {
+            cache.set(id, (allSibTripsResult as Trip[][])[i] || []);
+          });
+          siblingTripsCache.current = cache;
+        }
+
+        // 設定 "全部" 合併行程（僅 MERGED 模式設 state，TWO-TIER 模式保持 null）
         if (hasSiblings && allSibTripsResult && isMergedRegion) {
           const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort((a, b) => {
             const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
@@ -835,7 +846,11 @@ export default function DestinationPage() {
                       setSubRegionLoading(true);
                       try {
                         const ids = siblingDestsRef.current;
-                        const results = await Promise.all(ids.map(id => getDestinationTrips(id).catch(() => [])));
+                        // 優先從預快取讀取
+                        const results = await Promise.all(ids.map(id => {
+                          const cached = siblingTripsCache.current.get(id);
+                          return cached ? Promise.resolve(cached) : getDestinationTrips(id).catch(() => []);
+                        }));
                         setSubRegionTrips(results.flat());
                       } catch { setSubRegionTrips(null); }
                       setSubRegionLoading(false);
@@ -864,25 +879,22 @@ export default function DestinationPage() {
                             setSubAreaFilter("");
                             setCurrentTabLabel("全部");
                           } else {
-                            // 原地載入兄弟 destination 行程 + 動態更新 sub_area tabs
-                            setSubRegionLoading(true);
-                            try {
-                              const t = await getDestinationTrips(destId);
-                              setSubRegionTrips(t);
-                              // 計算新 destination 的 sub_area tabs
-                              const sibAreas: string[] = Array.from(new Set(
-                                (t as Trip[]).flatMap((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").split(",").map((s: string) => s.trim())).filter(Boolean)
-                              ));
-                              const sibAreaTabs = sibAreas.length >= 2
-                                ? [{ label: "全部", destId: "all" }, ...sibAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
-                                : [];
-                              setRegionTabs(sibAreaTabs);
-                              setCurrentTabLabel("全部");
-                              setSubAreaFilter("");
-                              const cached = siblingDestsDataRef.current.get(destId);
-                              if (cached) setHeroDest(cached);
-                            } catch { setSubRegionTrips(null); }
-                            setSubRegionLoading(false);
+                            // 從預快取瞬間切換，無快取時才 fetch
+                            const cachedTrips = siblingTripsCache.current.get(destId);
+                            const tripData = cachedTrips || await getDestinationTrips(destId).catch(() => []);
+                            setSubRegionTrips(tripData as Trip[]);
+                            // 計算新 destination 的 sub_area tabs
+                            const sibAreas: string[] = Array.from(new Set(
+                              (tripData as Trip[]).flatMap((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").split(",").map((s: string) => s.trim())).filter(Boolean)
+                            ));
+                            const sibAreaTabs = sibAreas.length >= 2
+                              ? [{ label: "全部", destId: "all" }, ...sibAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
+                              : [];
+                            setRegionTabs(sibAreaTabs);
+                            setCurrentTabLabel("全部");
+                            setSubAreaFilter("");
+                            const cachedDest = siblingDestsDataRef.current.get(destId);
+                            if (cachedDest) setHeroDest(cachedDest);
                           }
                         } else {
                           setSubRegionLoading(true);
