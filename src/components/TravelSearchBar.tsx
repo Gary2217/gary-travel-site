@@ -113,6 +113,8 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   const [selectedLabel, setSelectedLabel] = useState("不限目的地");
   const [date, setDate] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const departureButtonRef = useRef<HTMLButtonElement>(null);
+  const departureDropdownRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -220,10 +222,11 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   useEffect(() => {
     if (!departureOpen && !destOpen) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setDepartureOpen(false);
-        setDestOpen(false);
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (departureDropdownRef.current?.contains(target)) return;
+      setDepartureOpen(false);
+      setDestOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -496,6 +499,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
 
             {/* 出發地 */}
             <button
+              ref={departureButtonRef}
               type="button"
               onClick={openDeparture}
               className="flex flex-1 items-center gap-3 rounded-t-2xl px-5 py-4 text-left transition hover:bg-gray-50 focus:outline-none sm:h-[60px] sm:rounded-l-full sm:rounded-r-none"
@@ -608,32 +612,41 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             </div>
           </div>
 
-          {/* Dropdown 出發地 */}
-          {departureOpen && (
-            <div className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20">
-              <div className="py-1.5">
-                {DEPARTURE_CITIES.map((city) => (
-                  <button
-                    key={city.id}
-                    onClick={() => handleSelectDepartureCity(city.id)}
-                    className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition ${
-                      departureCityId === city.id
-                        ? "bg-sky-50 font-semibold text-sky-600"
-                        : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
-                    }`}
-                  >
-                    {departureCityId === city.id && (
-                      <svg className="h-3.5 w-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                    {departureCityId !== city.id && <span className="h-3.5 w-3.5 shrink-0" />}
-                    {city.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Dropdown 出發地（Portal 避免被父層裁切） */}
+          {departureOpen && typeof document !== "undefined" && (() => {
+            const rect = departureButtonRef.current?.getBoundingClientRect();
+            if (!rect) return null;
+            return createPortal(
+              <div
+                ref={departureDropdownRef}
+                className="fixed z-[9999] w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-black/20"
+                style={{ top: rect.bottom + 4, left: rect.left }}
+              >
+                <div className="py-1.5">
+                  {DEPARTURE_CITIES.map((city) => (
+                    <button
+                      key={city.id}
+                      onClick={() => handleSelectDepartureCity(city.id)}
+                      className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition ${
+                        departureCityId === city.id
+                          ? "bg-sky-50 font-semibold text-sky-600"
+                          : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
+                      }`}
+                    >
+                      {departureCityId === city.id && (
+                        <svg className="h-3.5 w-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      {departureCityId !== city.id && <span className="h-3.5 w-3.5 shrink-0" />}
+                      {city.label}
+                    </button>
+                  ))}
+                </div>
+              </div>,
+              document.body
+            );
+          })()}
 
           {/* Dropdown 目的地 */}
           {destOpen && (
