@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, invalidateCache, type Destination, type Trip } from "@/lib/supabase";
 import Image from "next/image";
