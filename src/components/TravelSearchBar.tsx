@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -211,14 +211,14 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
     region: string;
   } | null>(null);
 
-  const orderedRegions = [...regions].sort((a, b) => {
+  const orderedRegions = useMemo(() => [...regions].sort((a, b) => {
     const aIndex = REGION_DISPLAY_ORDER.indexOf(a.categoryLabel as (typeof REGION_DISPLAY_ORDER)[number]);
     const bIndex = REGION_DISPLAY_ORDER.indexOf(b.categoryLabel as (typeof REGION_DISPLAY_ORDER)[number]);
     const safeA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
     const safeB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
     if (safeA !== safeB) return safeA - safeB;
     return a.categoryLabel.localeCompare(b.categoryLabel, "zh-Hant");
-  });
+  }), [regions]);
 
   // 行程 dropdown 外點關閉
   useEffect(() => {
@@ -234,6 +234,18 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [departureOpen, destOpen]);
+
+  // 頁面滾動時關閉 Portal dropdown（fixed 定位不隨捲動更新）
+  useEffect(() => {
+    if (!departureOpen && !destOpen && !keywordOpen) return;
+    const close = () => {
+      setDepartureOpen(false);
+      setDestOpen(false);
+      setKeywordOpen(false);
+    };
+    window.addEventListener("scroll", close, { passive: true });
+    return () => window.removeEventListener("scroll", close);
+  }, [departureOpen, destOpen, keywordOpen]);
 
   // 切到機票模式時載入航線資料
   useEffect(() => {
@@ -498,7 +510,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             )}
           </div>
 
-          <div className="flex flex-col overflow-visible rounded-2xl bg-white shadow-2xl shadow-black/40 sm:flex-row sm:rounded-full">
+          <div className="flex flex-col overflow-visible rounded-2xl border border-gray-100 bg-white shadow-xl shadow-black/[0.08] sm:flex-row sm:rounded-full">
 
             {/* 出發地 */}
             <button
@@ -809,7 +821,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
           </div>
 
           {/* 搜尋框主體 */}
-          <div className="flex flex-col overflow-visible rounded-2xl bg-white shadow-2xl shadow-black/40 sm:flex-row sm:rounded-full">
+          <div className="flex flex-col overflow-visible rounded-2xl border border-gray-100 bg-white shadow-xl shadow-black/[0.08] sm:flex-row sm:rounded-full">
 
             {/* 出發地 */}
             <button
