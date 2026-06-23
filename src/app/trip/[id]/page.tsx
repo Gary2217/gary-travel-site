@@ -2640,7 +2640,7 @@ export default function TripPage() {
             else void handleScrapeThisTrip();
           }}
           disabled={scrapePhase === 'triggering' || scrapePhase === 'polling' || scrapePhase === 'applying' || scrapePhase === 'done' || scrapePhase === 'no_changes'}
-          className={`fixed bottom-24 left-4 z-[56] flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg transition disabled:opacity-60 ${
+          className={`fixed bottom-24 right-4 z-[56] flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg transition disabled:opacity-60 ${
             scrapePhase === 'has_changes' ? 'bg-emerald-600 hover:bg-emerald-500' :
             scrapePhase === 'error' ? 'bg-red-600 hover:bg-red-500' :
             scrapePhase === 'done' || scrapePhase === 'no_changes' ? 'bg-emerald-600' :
