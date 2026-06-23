@@ -402,7 +402,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-transparent pt-14 text-gray-900">
+      <main className="min-h-screen bg-transparent pt-header text-gray-900">
         <div className="mx-auto max-w-site px-4 py-6 md:px-5">
           <div className="mb-8">
             <Skeleton className="mb-2 h-5 w-32" />
@@ -736,7 +736,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-header text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} onSaveSuccess={showSaveSuccess} /> : null}

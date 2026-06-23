@@ -211,7 +211,7 @@ export default function FlightsPage() {
         devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
       />
 
-      <div className="px-4 pt-14">
+      <div className="px-4 pt-header">
 
         {/* Hero */}
         <div className="mx-auto max-w-3xl py-8 text-center">

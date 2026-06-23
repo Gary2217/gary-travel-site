@@ -71,7 +71,7 @@ export default function SearchPage() {
   }
 
   return (
-    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-header text-gray-900">
       <StickyHeader showBackButton backHref="/" logoUrl={siteLogoUrl} />
 
       <section className="mx-auto max-w-site px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-10">

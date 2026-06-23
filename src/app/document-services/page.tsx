@@ -110,7 +110,7 @@ export default function DocumentServicesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-transparent pt-14 text-gray-900">
+    <main className="min-h-screen bg-transparent pt-header text-gray-900">
       <StickyHeader
         logoUrl={siteLogoUrl}
         showBackButton
