@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  // 過濾 PostgREST 特殊字元，防止 filter injection
-  const q = rawQ.replace(/[(),."\\]/g, '');
+  // 過濾 PostgREST 特殊字元 + SQL ilike 萬用字元，防止 filter injection
+  const q = rawQ.replace(/[(),."\\%_]/g, '');
 
   try {
     const supabase = createAnonClient();
