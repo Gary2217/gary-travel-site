@@ -109,6 +109,10 @@ export default function TripPage() {
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
   const [isDevMode, setIsDevMode] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [scrapePhase, setScrapePhase] = useState<'idle' | 'triggering' | 'polling' | 'has_changes' | 'applying' | 'done' | 'no_changes' | 'error'>('idle');
+  const [scrapePendingChanges, setScrapePendingChanges] = useState<{id: string; change_type: string}[]>([]);
+  const scrapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrapeTriggerTimeRef = useRef<number>(0);
   const docInputRef = useRef<HTMLInputElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
@@ -214,6 +218,86 @@ export default function TripPage() {
     }
 
   };
+
+  const handleScrapeThisTrip = async () => {
+    if ((scrapePhase !== 'idle' && scrapePhase !== 'error') || !trip) return;
+    setScrapePhase('triggering');
+    scrapeTriggerTimeRef.current = Date.now();
+    try {
+      const res = await fetch('/api/scrape/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ destinationId: trip.destination_id, tripIds: [tripId] }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || '觸發抓取失敗');
+      }
+      setScrapePhase('polling');
+      const pollProgress = async () => {
+        try {
+          if (Date.now() - scrapeTriggerTimeRef.current > 10 * 60 * 1000) {
+            setScrapePhase('error');
+            return;
+          }
+          const progressRes = await fetch('/api/scrape/progress', { credentials: 'include' });
+          if (!progressRes.ok) { scrapeTimerRef.current = setTimeout(pollProgress, 3000); return; }
+          const progress = await progressRes.json();
+          if (progress.running) { scrapeTimerRef.current = setTimeout(pollProgress, 3000); return; }
+          const logStarted = progress.latest?.started_at ? new Date(progress.latest.started_at).getTime() : 0;
+          if (logStarted < scrapeTriggerTimeRef.current - 10000) {
+            scrapeTimerRef.current = setTimeout(pollProgress, 3000);
+            return;
+          }
+          if (progress.latest?.status === 'failed') { setScrapePhase('error'); return; }
+          const changesRes = await fetch('/api/scrape/changes?status=pending', { credentials: 'include' });
+          if (!changesRes.ok) { setScrapePhase('error'); return; }
+          const allChanges = await changesRes.json();
+          const tripChanges = (allChanges as {id: string; change_type: string; trip_id?: string}[]).filter(c => c.trip_id === tripId);
+          if (tripChanges.length > 0) {
+            setScrapePendingChanges(tripChanges);
+            setScrapePhase('has_changes');
+          } else {
+            setScrapePhase('no_changes');
+            setTimeout(() => setScrapePhase('idle'), 2000);
+          }
+        } catch { scrapeTimerRef.current = setTimeout(pollProgress, 3000); }
+      };
+      scrapeTimerRef.current = setTimeout(pollProgress, 3000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '觸發抓取失敗');
+      setScrapePhase('idle');
+    }
+  };
+
+  const handleApplyChanges = async () => {
+    if (scrapePhase !== 'has_changes' || scrapePendingChanges.length === 0) return;
+    setScrapePhase('applying');
+    try {
+      const applyRes = await fetch('/api/scrape/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ changeIds: scrapePendingChanges.map(c => c.id) }),
+      });
+      if (!applyRes.ok) throw new Error('套用失敗');
+      const data = await getTripWithDays(tripId);
+      setTrip(data);
+      setDepartureDates(data.departure_dates || []);
+      setScrapePendingChanges([]);
+      setScrapePhase('done');
+      showSaveSuccess('行程已更新');
+      setTimeout(() => setScrapePhase('idle'), 2000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '套用失敗');
+      setScrapePhase('has_changes');
+    }
+  };
+
+  useEffect(() => {
+    return () => { if (scrapeTimerRef.current) clearTimeout(scrapeTimerRef.current); };
+  }, []);
 
   // 用 ref 讀取 deposit_label，避免其加入 useEffect 依賴而觸發欄位重置
   const depositLabelRef = useRef(editTripBanner.deposit_label);
@@ -2546,6 +2630,32 @@ export default function TripPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {isDevMode && (
+        <button
+          type="button"
+          onClick={() => {
+            if (scrapePhase === 'has_changes') void handleApplyChanges();
+            else void handleScrapeThisTrip();
+          }}
+          disabled={scrapePhase === 'triggering' || scrapePhase === 'polling' || scrapePhase === 'applying' || scrapePhase === 'done' || scrapePhase === 'no_changes'}
+          className={`fixed bottom-24 left-4 z-[56] flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg transition disabled:opacity-60 ${
+            scrapePhase === 'has_changes' ? 'bg-emerald-600 hover:bg-emerald-500' :
+            scrapePhase === 'error' ? 'bg-red-600 hover:bg-red-500' :
+            scrapePhase === 'done' || scrapePhase === 'no_changes' ? 'bg-emerald-600' :
+            'bg-purple-600 hover:bg-purple-500'
+          }`}
+        >
+          {scrapePhase === 'idle' && '🔄 抓取此行程'}
+          {scrapePhase === 'triggering' && '⏳ 啟動中...'}
+          {scrapePhase === 'polling' && '⏳ 抓取中...'}
+          {scrapePhase === 'has_changes' && `✅ 套用更新 (${scrapePendingChanges.length} 筆)`}
+          {scrapePhase === 'applying' && '⏳ 套用中...'}
+          {scrapePhase === 'done' && '✅ 已更新'}
+          {scrapePhase === 'no_changes' && '✅ 無變更'}
+          {scrapePhase === 'error' && '❌ 重試'}
+        </button>
       )}
 
       <div className="fixed bottom-0 left-0 right-0 z-[55] px-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 sm:pb-4">
