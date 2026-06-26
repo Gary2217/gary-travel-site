@@ -485,8 +485,9 @@ export default function DestinationPage() {
         body: JSON.stringify({ is_active: false }),
       });
       if (!res.ok) throw new Error('隱藏失敗');
-      const hidden = trips.find(t => t.id === tripId);
+      const hidden = trips.find(t => t.id === tripId) || subRegionTrips?.find(t => t.id === tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
+      setSubRegionTrips(prev => prev ? prev.filter(trip => trip.id !== tripId) : null);
       if (hidden) {
         setShowHidden(true);
         await loadHiddenTrips();
@@ -510,7 +511,10 @@ export default function DestinationPage() {
       if (!res.ok) throw new Error('恢復失敗');
       const restored = hiddenTrips.find(t => t.id === tripId);
       setHiddenTrips(prev => prev.filter(t => t.id !== tripId));
-      if (restored) setTrips(prev => [...prev, restored]);
+      if (restored) {
+        setTrips(prev => [...prev, restored]);
+        setSubRegionTrips(prev => prev ? [...prev, restored] : null);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "恢復失敗";
       alert(`恢復行程失敗：${msg}`);
@@ -532,6 +536,7 @@ export default function DestinationPage() {
     try {
       await deleteTrip(tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
+      setSubRegionTrips(prev => prev ? prev.filter(trip => trip.id !== tripId) : null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "刪除失敗";
       alert(`刪除行程失敗：${msg}`);
@@ -542,6 +547,7 @@ export default function DestinationPage() {
     try {
       const newTrip = await cloneTrip(tripId);
       setTrips(prev => [...prev, newTrip]);
+      setSubRegionTrips(prev => prev ? [...prev, newTrip] : null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "複製失敗";
       alert(`複製行程失敗：${msg}`);
