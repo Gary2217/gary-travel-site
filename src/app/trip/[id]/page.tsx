@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import TripCard from "@/components/TripCard";
 import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
@@ -282,6 +282,7 @@ export default function TripPage() {
         body: JSON.stringify({ changeIds: scrapePendingChanges.map(c => c.id) }),
       });
       if (!applyRes.ok) throw new Error('套用失敗');
+      invalidateCache('trip:' + tripId);
       const data = await getTripWithDays(tripId);
       setTrip(data);
       setDepartureDates(data.departure_dates || []);
@@ -846,6 +847,7 @@ export default function TripPage() {
       setDepartureEditorPrice(typeof normalizedDeparture.price === 'number' ? String(normalizedDeparture.price) : '');
       setShowBannerEditor(false);
       setIsCreatingNewDeparture(false);
+      invalidateCache('trip:' + tripId);
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -876,6 +878,7 @@ export default function TripPage() {
       }
       const updatedTrip = await res.json();
       setTrip((prev) => (prev ? { ...prev, ...updatedTrip, trip_banner: updatedTrip?.trip_banner || bannerPayload } : prev));
+      invalidateCache('trip:' + tripId);
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -972,6 +975,7 @@ export default function TripPage() {
       setDepartureEditorPrice(typeof createdDeparture.price === 'number' ? String(createdDeparture.price) : '');
       setIsCreatingNewDeparture(false);
       setShowBannerEditor(false);
+      invalidateCache('trip:' + tripId);
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -1791,6 +1795,7 @@ export default function TripPage() {
                     }
                   }
                   setTrip(prev => prev ? { ...prev, ...updated, destinations: newDest } : prev);
+                  invalidateCache('trip:' + tripId);
                   setShowEditPanel(false);
                   showSaveSuccess('儲存成功');
                 } else {
@@ -2034,6 +2039,7 @@ export default function TripPage() {
                 try {
                   const result = await uploadTripDocument(tripId, file);
                   setTrip((prev) => prev ? { ...prev, document_url: result.url, document_is_available: result.document_is_available } : prev);
+                  invalidateCache('trip:' + tripId);
                   showSaveSuccess("PDF 行程檔已上傳！");
                 } catch (err) {
                   alert(err instanceof Error ? err.message : "上傳失敗，請再試");
@@ -2050,6 +2056,7 @@ export default function TripPage() {
                   try {
                     await deleteTripDocument(tripId);
                     setTrip((prev) => prev ? { ...prev, document_url: undefined, document_is_available: false } : prev);
+                    invalidateCache('trip:' + tripId);
                     showSaveSuccess("PDF 已刪除");
                   } catch (err) {
                     alert(err instanceof Error ? err.message : "刪除失敗");
@@ -2597,6 +2604,7 @@ export default function TripPage() {
                   if (res.ok) {
                     const updated = await res.json();
                     setTrip(prev => prev ? { ...prev, ...updated } : prev);
+                    invalidateCache('trip:' + tripId);
                     setShowPromoEditor(false);
                     showSaveSuccess('限時優惠已儲存');
                   } else { alert('儲存失敗，請再試一次'); }
