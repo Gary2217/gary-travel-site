@@ -391,48 +391,33 @@ export default function DestinationPage() {
     return () => mediaQuery.removeListener(updateIsPC);
   }, []);
 
+  const updateTrip = (tripId: string, updater: (t: Trip) => Trip) => {
+    setTrips(prev => prev.map(t => t.id === tripId ? updater(t) : t));
+    setSubRegionTrips(prev => prev ? prev.map(t => t.id === tripId ? updater(t) : t) : null);
+  };
+
   const handleTripImageUpdate = (tripId: string, newImageUrl: string) => {
-    setTrips(prev =>
-      prev.map(trip =>
-        trip.id === tripId ? { ...trip, cover_image_url: newImageUrl } : trip
-      )
-    );
+    updateTrip(tripId, t => ({ ...t, cover_image_url: newImageUrl }));
   };
 
   const handleTripDocumentUpdate = (tripId: string, newDocUrl: string) => {
-    setTrips(prev =>
-      prev.map(trip =>
-        trip.id === tripId ? { ...trip, document_url: newDocUrl } : trip
-      )
-    );
+    updateTrip(tripId, t => ({ ...t, document_url: newDocUrl }));
   };
 
   const handleTripDocumentAvailabilityUpdate = (tripId: string, available: boolean) => {
-    setTrips(prev =>
-      prev.map(trip =>
-        trip.id === tripId ? { ...trip, document_is_available: available } : trip
-      )
-    );
+    updateTrip(tripId, t => ({ ...t, document_is_available: available }));
   };
 
   const handleTripDurationUpdate = (tripId: string, newDuration: string) => {
-    setTrips(prev =>
-      prev.map(trip =>
-        trip.id === tripId ? { ...trip, duration: newDuration } : trip
-      )
-    );
+    updateTrip(tripId, t => ({ ...t, duration: newDuration }));
   };
 
   const handleTripTitleUpdate = (tripId: string, newTitle: string) => {
-    setTrips(prev =>
-      prev.map(trip =>
-        trip.id === tripId ? { ...trip, title: newTitle } : trip
-      )
-    );
+    updateTrip(tripId, t => ({ ...t, title: newTitle }));
   };
 
   const handleTripPriceUpdate = (tripId: string, newPrice: string) => {
-    setTrips(prev => prev.map(t => t.id === tripId ? { ...t, price_range: newPrice } : t));
+    updateTrip(tripId, t => ({ ...t, price_range: newPrice }));
   };
 
   const handleCustomTourToggle = async (tripId: string, value: boolean) => {
@@ -446,16 +431,7 @@ export default function DestinationPage() {
         body: JSON.stringify({ trip_banner: updatedBanner }),
       });
       if (res.ok) {
-        setTrips(prev =>
-          prev.map(t =>
-            t.id === tripId ? { ...t, trip_banner: updatedBanner } : t
-          )
-        );
-        setSubRegionTrips(prev =>
-          prev ? prev.map(t =>
-            t.id === tripId ? { ...t, trip_banner: updatedBanner } : t
-          ) : null
-        );
+        updateTrip(tripId, t => ({ ...t, trip_banner: updatedBanner }));
         invalidateCache('dest-trips');
       } else if (res.status === 401) {
         // 由 DevModeToggle 的 fetch 攔截器處理 re-login toast
@@ -470,7 +446,9 @@ export default function DestinationPage() {
   const handleAddTrip = async () => {
     try {
       const newTrip = await createTrip(destinationId);
-      setTrips(prev => [...prev, { ...newTrip, document_is_available: false }]);
+      const tripWithFlag = { ...newTrip, document_is_available: false } as Trip;
+      setTrips(prev => [...prev, tripWithFlag]);
+      setSubRegionTrips(prev => prev ? [...prev, tripWithFlag] : null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "新增失敗";
       alert(`新增行程失敗：${msg}`);
