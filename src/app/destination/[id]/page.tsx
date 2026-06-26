@@ -451,6 +451,11 @@ export default function DestinationPage() {
             t.id === tripId ? { ...t, trip_banner: updatedBanner } : t
           )
         );
+        setSubRegionTrips(prev =>
+          prev ? prev.map(t =>
+            t.id === tripId ? { ...t, trip_banner: updatedBanner } : t
+          ) : null
+        );
         invalidateCache('dest-trips');
       } else if (res.status === 401) {
         // 由 DevModeToggle 的 fetch 攔截器處理 re-login toast
@@ -947,7 +952,11 @@ export default function DestinationPage() {
               })()}
 
               {/* 第三排：當前/兄弟 destination 的 sub_area 篩選（曼谷/清邁 等） */}
-              {regionTabs.length > 0 && activeSubRegion !== '全部' && (
+              {/* 僅在 sub_region 下只有 1 個 destination 時顯示，避免與第二排 destination tabs 重複 */}
+              {regionTabs.length > 0 && activeSubRegion !== '全部' && (() => {
+                const g = subRegionGroups.find(gr => gr.subRegion === activeSubRegion);
+                return !g || g.destinations.length <= 1;
+              })() && (
                 <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div className="flex flex-wrap justify-center gap-1.5 px-1 pb-1">
                     {regionTabs.map((tab) => (
