@@ -105,6 +105,30 @@
 | 跨模組疑難 bug | 試了 2+ 次還找不到原因的問題 |
 | 安全性 / 效能審查 | RLS 全面檢查、效能瓶頸分析 |
 
+### OpenCode 模型分流設定檔
+
+**完整路徑**：`C:\Users\sc666\.config\opencode\oh-my-openagent.json`
+
+| 層級 | Agent / Category | 模型 | 說明 |
+|------|-----------------|------|------|
+| 🟢 Haiku | `explore` | claude-haiku-4-5 | 便宜 grep |
+| 🟢 Haiku | `librarian` | claude-haiku-4-5 | 便宜外部參考搜尋 |
+| 🟢 Haiku | `quick` (category) | gpt-5.4-mini | 單檔小改、已知解法 |
+| 🟢 Haiku | `unspecified-low` (category) | claude-haiku-4-5 | 低負擔雜項 |
+| 🟢 Haiku | `writing` (category) | claude-haiku-4-5 | 文案、文件修改 |
+| 🟡 Sonnet | `sisyphus-junior` | claude-sonnet-4-6 | 任務執行者 |
+| 🟡 Sonnet | `atlas` | claude-sonnet-4-6 | 中階 agent |
+| 🟡 Sonnet | `visual-engineering` (category) | claude-sonnet-4-6 | 前端 / UI / 樣式 |
+| 🟡 Sonnet | `artistry` (category) | claude-sonnet-4-6 | 創意解法 |
+| 🟡 Sonnet | `unspecified-high` (category) | claude-sonnet-4-6 | 高負擔雜項 |
+| 🔴 Opus | `sisyphus` | claude-opus-4-6 max | 主控 agent |
+| 🔴 Opus | `oracle` | gpt-5.4 high | 架構顧問 |
+| 🔴 Opus | `ultrabrain` (category) | gpt-5.4 xhigh | 高難度邏輯 |
+| 🔴 Opus | `deep` (category) | gpt-5.4 medium | 深度自主解題 |
+| 🔴 Opus | `momus` | gpt-5.4 xhigh | 計畫審查 |
+| 🔴 Opus | `metis` | claude-opus-4-6 max | 前置分析 |
+| 🔴 Opus | `prometheus` | claude-opus-4-6 max | 規劃 |
+
 ### Token 節省策略
 
 - **預設 Haiku**，確實不夠才升級，不要「怕出錯」就用高階模型
@@ -196,6 +220,110 @@ src/
 | 前端只負責顯示 | 不持有核心資料邏輯 |
 | **目的地頁雙狀態同步** | `destination/[id]/page.tsx` 同時維護 `trips`（當前 destination）和 `subRegionTrips`（合併的兄弟 destination 行程）兩個狀態源。**任何修改行程的 handler 都必須同時更新兩者**，否則中東亞非、港澳大陸、日本等合併顯示區域的 UI 不會反映變更。已提供 `updateTrip()` 共用函式處理欄位更新；新增/刪除/隱藏/恢復/複製等操作需分別對 `setTrips` 和 `setSubRegionTrips` 各做一次。**新增 handler 時必須搜尋 `setTrips` 確認是否也需要 `setSubRegionTrips`。** |
 | **目的地頁 tabs 層級限制** | sub_region 下有 2+ 個 destination 時，**不顯示第三層 sub_area tabs**（第二排 destination tabs 已足夠篩選）。僅在 sub_region 下只有 1 個 destination 時才顯示 sub_area 細分篩選。 |
+
+---
+
+## 4.1 前端寫入操作規則（DevMode 功能持久化 — 不可違反）
+
+> 此規則源自多次持久化 bug（資料存成功但重新整理消失）的教訓，不可省略任何一條。
+
+### 規則 A：所有寫入 fetch 必須加 `credentials: 'include'`
+
+任何 POST/PATCH/PUT/DELETE 的 fetch 呼叫，無論在 `supabase.ts` 的共用函式或元件內的直接呼叫，**都必須**加上 `credentials: 'include'`。
+
+```typescript
+// ✅ 正確
+const res = await fetch(`/api/trips/${tripId}`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',  // ← 必須加
+  body: JSON.stringify(payload),
+});
+
+// ❌ 錯誤 — 會導致 dev auth cookie 不傳送，API 返回 401
+const res = await fetch(`/api/trips/${tripId}`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
+```
+
+**例外**：
+- GET 請求不需要（公開讀取不需認證）
+- 直傳 Supabase Storage 的 PUT（signed URL 自帶認證）
+- 公開 API（如 `/api/inquiries` POST、`/api/track-click` POST）
+
+### 規則 B：寫入成功後必須呼叫 `invalidateCache`
+
+所有修改 DB 資料的操作完成後，**必須**呼叫 `invalidateCache` 清除**所有相關的** cache key prefix，否則重新整理頁面會顯示舊資料。
+
+**Cache Key Prefix 對照表：**
+
+| Prefix | 說明 | 何時需清除 |
+|--------|------|-----------|
+| `trip:` | 行程詳情（含 trip_banner） | 任何行程欄位修改 |
+| `dest-trips:` | 目的地行程列表 | 行程新增/刪除/複製/隱藏/恢復/圖片修改 |
+| `regions` | 區域 + 目的地列表 | 目的地修改 |
+| `dest:` | 單一目的地資訊 | 目的地圖片/欄位修改 |
+| `related:` | 相關行程 | 行程修改 |
+| `site-logo` | 網站 Logo | Logo 修改 |
+
+**常見操作的 invalidateCache 清單：**
+
+```typescript
+// 修改行程欄位（標題/價格/banner/標籤）
+invalidateCache('trip:');
+invalidateCache('dest-trips:');
+invalidateCache('related:');
+invalidateCache('regions');
+invalidateCache('dest:');
+
+// 新增/複製/刪除行程
+invalidateCache('dest-trips:');
+invalidateCache('regions');
+
+// 上傳行程圖片/PDF
+invalidateCache('trip:');
+invalidateCache('dest-trips:');
+
+// 上傳目的地圖片
+invalidateCache('dest:');
+invalidateCache('regions');
+
+// 隱藏/恢復行程
+invalidateCache('dest-trips:');
+invalidateCache('trip:');
+```
+
+### 規則 C：API Route Cache-Control 設定
+
+- **讀取 API（會被 DevMode 修改的資料）**：必須用 `Cache-Control: no-store, no-cache, must-revalidate`
+- **讀取 API（純靜態/不常改的資料）**：可以用 `s-maxage`，但要確認 invalidateCache 有處理
+- **寫入 API（POST/PATCH/PUT/DELETE）**：回傳加 `Cache-Control: no-store`
+
+```typescript
+// ✅ 會被 DevMode 修改的資料 — 必須 no-store
+return NextResponse.json(trips, {
+  headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+});
+
+// ❌ 錯誤 — 造成 Vercel 邊緣快取舊資料
+return NextResponse.json(trips, {
+  headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+});
+```
+
+### 規則 D：新增寫入功能時的 Checklist
+
+每次新增或修改任何 DevMode 功能（編輯、上傳、刪除等），必須檢查：
+
+- [ ] fetch 有 `credentials: 'include'`
+- [ ] 成功後呼叫了 `invalidateCache`（所有相關 prefix）
+- [ ] 對應的 API route 有 `requireDevAuth()`
+- [ ] API route 回傳有 `Cache-Control: no-store`
+- [ ] 前端 state 更新了（setTrip / setTrips / setSubRegionTrips）
+- [ ] 如果是目的地頁面操作，`setTrips` 和 `setSubRegionTrips` 都有更新
+- [ ] 錯誤處理有 alert 或 Toast 告知用戶，不可靜默失敗
 
 ---
 
