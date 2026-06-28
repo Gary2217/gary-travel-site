@@ -429,6 +429,7 @@ export async function uploadImage(destinationId: string, file: File): Promise<st
 
   const res = await fetch('/api/upload-image', {
     method: 'POST',
+    credentials: 'include',
     body: formData,
   });
 
@@ -438,6 +439,8 @@ export async function uploadImage(destinationId: string, file: File): Promise<st
   }
 
   const data = await res.json();
+  invalidateCache('dest:');
+  invalidateCache('regions');
   return data.url;
 }
 
@@ -449,6 +452,7 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
 
   const res = await fetch('/api/upload-trip-image', {
     method: 'POST',
+    credentials: 'include',
     body: formData,
   });
 
@@ -458,6 +462,8 @@ export async function uploadTripImage(tripId: string, file: File): Promise<strin
   }
 
   const data = await res.json();
+  invalidateCache('trip:');
+  invalidateCache('dest-trips:');
   return data.url;
 }
 
@@ -468,6 +474,7 @@ export async function uploadTripBannerImage(tripId: string, file: File): Promise
 
   const res = await fetch('/api/upload-trip-banner-image', {
     method: 'POST',
+    credentials: 'include',
     body: formData,
   });
 
@@ -477,6 +484,8 @@ export async function uploadTripBannerImage(tripId: string, file: File): Promise
   }
 
   const data = await res.json();
+  invalidateCache('trip:');
+  invalidateCache('dest-trips:');
   return data.url;
 }
 
@@ -492,6 +501,7 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<{ 
   const urlRes = await fetch('/api/upload-trip-document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ trip_id: tripId, file_name: file.name }),
   });
 
@@ -519,6 +529,7 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<{ 
   const confirmRes = await fetch('/api/upload-trip-document', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ trip_id: tripId, url: publicUrl }),
   });
 
@@ -541,6 +552,7 @@ export async function deleteTripDocument(tripId: string): Promise<void> {
   const res = await fetch('/api/upload-trip-document', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ trip_id: tripId }),
   });
 
@@ -558,6 +570,7 @@ export async function updateTrip(tripId: string, fields: Record<string, any>): P
   const res = await fetch(`/api/trips/${tripId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(fields),
   });
 
@@ -579,6 +592,7 @@ export async function createTrip(destinationId: string, title?: string): Promise
   const res = await fetch('/api/trips', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ destination_id: destinationId, title }),
   });
 
@@ -596,6 +610,7 @@ export async function createTrip(destinationId: string, title?: string): Promise
 export async function deleteTrip(tripId: string): Promise<void> {
   const res = await fetch(`/api/trips/${tripId}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
 
   if (!res.ok) {
@@ -612,6 +627,7 @@ export async function deleteTrip(tripId: string): Promise<void> {
 export async function cloneTrip(tripId: string): Promise<Trip> {
   const res = await fetch(`/api/trips/${tripId}/clone`, {
     method: 'POST',
+    credentials: 'include',
   });
   if (!res.ok) {
     const err = await res.json();

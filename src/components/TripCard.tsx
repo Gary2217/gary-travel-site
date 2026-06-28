@@ -220,6 +220,7 @@ export default function TripCard({
                   const res = await fetch(`/api/trips/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ title: newTitle }),
                   });
                   if (!res.ok) throw new Error('標題儲存失敗');
@@ -230,6 +231,7 @@ export default function TripCard({
                   const res = await fetch(`/api/trips/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ price_range: newPrice }),
                   });
                   if (!res.ok) throw new Error('團費儲存失敗');
@@ -256,6 +258,7 @@ export default function TripCard({
                       await fetch(`/api/trips/${id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({ title: titleValue.trim() }),
                       });
                       onTitleUpdate?.(id, titleValue.trim());

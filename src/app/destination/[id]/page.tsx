@@ -36,6 +36,7 @@ async function handleReorder<T extends { id: string; display_order: number }>(
   const res = await fetch('/api/reorder', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({
       table,
       items: [
@@ -465,6 +466,8 @@ export default function DestinationPage() {
                 body: JSON.stringify({ is_active: false }),
               });
       if (!res.ok) throw new Error('隱藏失敗');
+      invalidateCache('dest-trips:');
+      invalidateCache('trip:');
       const hidden = trips.find(t => t.id === tripId) || subRegionTrips?.find(t => t.id === tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
       setSubRegionTrips(prev => prev ? prev.filter(trip => trip.id !== tripId) : null);
@@ -490,6 +493,8 @@ export default function DestinationPage() {
                 body: JSON.stringify({ is_active: true }),
               });
       if (!res.ok) throw new Error('恢復失敗');
+      invalidateCache('dest-trips:');
+      invalidateCache('trip:');
       const restored = hiddenTrips.find(t => t.id === tripId);
       setHiddenTrips(prev => prev.filter(t => t.id !== tripId));
       if (restored) {
