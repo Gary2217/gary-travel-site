@@ -427,6 +427,29 @@ export default function TripPage() {
               })),
             };
           });
+          // 同步更新 departureDates state（航班顯示用的是這個 state，不是 trip.departure_dates）
+          const flightUpdate = {
+            airline: airlineStr,
+            label: derivedLabel,
+            outbound_flight: firstOut.flight_number,
+            outbound_time: firstOut.departure_time,
+            outbound_from: firstOut.from_city,
+            outbound_to: lastOut.to_city,
+            outbound_arrival_time: lastOut.arrival_time,
+            outbound_next_day: lastOut.is_next_day,
+            ...(firstRet ? {
+              return_flight: firstRet.flight_number,
+              return_time: firstRet.departure_time,
+              return_from: firstRet.from_city,
+            } : {}),
+            ...(lastRet ? {
+              return_to: lastRet.to_city,
+              return_arrival_time: lastRet.arrival_time,
+              return_next_day: lastRet.is_next_day,
+            } : {}),
+            flight_segments: dbSegments,
+          };
+          setDepartureDates(prev => prev.map(dd => ({ ...dd, ...flightUpdate })));
           invalidateCache('trip:');
           invalidateCache('dest-trips:');
           flightMsg = `，航班已寫入 ${okCount} 個出發日期`;
