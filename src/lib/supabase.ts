@@ -215,6 +215,7 @@ export type TripBanner = {
   min_group_size?: number | null;
   sub_area?: string;
   airline?: string;
+  airport?: string;
 };
 
 export type DepartureBannerInfo = {
@@ -269,6 +270,27 @@ export type Inquiry = {
   status: 'pending' | 'contacted' | 'completed';
   created_at: string;
   updated_at: string;
+};
+
+export type PdfScrapeResult = {
+  title: string;
+  duration: string | null;
+  airline: string | null;
+  airport: string | null;
+  departure_label: string | null;
+  min_group_size: number | null;
+  flight_segments: Array<{
+    day: string;
+    from_city: string;
+    to_city: string;
+    airline: string;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    is_next_day: boolean;
+  }>;
+  hotels: string[];
+  raw_text: string;
 };
 
 // 取得所有啟用的區域和目的地
@@ -633,6 +655,19 @@ export async function getSiteLogo(): Promise<string> {
     if (cached) { cacheSet(KEY, cached, 30 * 60_000); return cached; }
     return fallback;
   }
+}
+
+// 從已上傳的 PDF 行程檔提取並解析結構化資料
+export async function scrapeTripPdf(tripId: string): Promise<PdfScrapeResult> {
+  const res = await fetch(`/api/trips/${tripId}/scrape-pdf`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || 'PDF 解析失敗');
+  }
+  return res.json();
 }
 
 export async function uploadSiteLogo(file: File): Promise<string> {

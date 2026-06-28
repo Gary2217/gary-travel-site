@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, scrapeTripPdf, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import TripCard from "@/components/TripCard";
 import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
@@ -173,6 +173,7 @@ export default function TripPage() {
   const [showNewDestInput, setShowNewDestInput] = useState(false);
   const [newDestName, setNewDestName] = useState('');
   const [creatingDest, setCreatingDest] = useState(false);
+  const [pdfScraping, setPdfScraping] = useState(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -293,6 +294,45 @@ export default function TripPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : '套用失敗');
       setScrapePhase('has_changes');
+    }
+  };
+
+  const handlePdfScrape = async () => {
+    if (!trip?.document_url || pdfScraping) return;
+    setPdfScraping(true);
+    try {
+      const parsed = await scrapeTripPdf(tripId);
+
+      // 初始化 banner 編輯器，並用 PDF 解析結果覆蓋相應欄位
+      const baseBanner = { ...EMPTY_TRIP_BANNER, ...(trip.trip_banner ?? {}) };
+      const durationStr = parsed.duration ?? baseBanner.duration_label ?? '';
+      const dayParsed = durationStr.match(/(\d+)\s*天/);
+      const nightParsed = durationStr.match(/(\d+)\s*夜/);
+      setEditTripBanner({
+        ...baseBanner,
+        departure_info_map: trip.trip_banner?.departure_info_map ?? {},
+        ...(parsed.airline != null ? { airline: parsed.airline } : {}),
+        ...(parsed.airport != null ? { airport: parsed.airport } : {}),
+        ...(parsed.departure_label != null ? { departure_label: parsed.departure_label } : {}),
+        ...(parsed.min_group_size != null ? { min_group_size: parsed.min_group_size } : {}),
+        ...(parsed.duration != null ? { duration_label: parsed.duration } : {}),
+      });
+      setEditDayCount(dayParsed ? dayParsed[1] : '');
+      setEditNightCount(nightParsed ? nightParsed[1] : '');
+      setEditBannerTagInput('');
+
+      // 若標題與現有不同，也同步到標題編輯欄位
+      if (parsed.title && parsed.title !== trip.title) {
+        setEditTitle(parsed.title);
+      }
+
+      setShowBannerEditor(true);
+      showSaveSuccess('PDF 解析完成，已預填到編輯器');
+    } catch (err) {
+      console.error('[handlePdfScrape]', err);
+      alert(err instanceof Error ? err.message : 'PDF 解析失敗');
+    } finally {
+      setPdfScraping(false);
     }
   };
 
@@ -2686,6 +2726,18 @@ export default function TripPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {isDevMode && (
+        <button
+          type="button"
+          onClick={() => void handlePdfScrape()}
+          disabled={pdfScraping || !trip?.document_url}
+          title={!trip?.document_url ? '請先上傳 PDF' : undefined}
+          className="fixed bottom-36 right-4 z-[56] flex items-center gap-2 rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-amber-500 disabled:opacity-60"
+        >
+          {pdfScraping ? '⏳ 解析中...' : '📄 從 PDF 抓取'}
+        </button>
       )}
 
       {isDevMode && (
