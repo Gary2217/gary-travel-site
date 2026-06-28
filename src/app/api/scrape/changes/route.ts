@@ -18,12 +18,19 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') || 'pending';
 
+    const destinationId = searchParams.get('destination_id');
+
     const supabase = createSupabase();
-    const { data, error } = await supabase
+    let query = supabase
       .from('pending_changes')
       .select('*')
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+      .eq('status', status);
+
+    if (destinationId) {
+      query = query.eq('destination_id', destinationId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       return API_ERRORS.dbError(error);
