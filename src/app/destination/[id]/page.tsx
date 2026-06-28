@@ -83,6 +83,9 @@ export default function DestinationPage() {
   const [isPC, setIsPC] = useState(false);
   const [scrapeTriggering, setScrapeTriggering] = useState(false);
   const [scrapeRunning, setScrapeRunning] = useState(false);
+  const [scrapePendingIds, setScrapePendingIds] = useState<string[]>([]);
+  const [scrapeApplying, setScrapeApplying] = useState(false);
+  const scrapePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
@@ -694,16 +697,21 @@ export default function DestinationPage() {
     }
   };
 
-  const handleScrapeThisPage = async () => {
-    if (scrapeTriggering) return;
+  // 清理 polling timer
+  useEffect(() => {
+    return () => { if (scrapePollingRef.current) clearInterval(scrapePollingRef.current); };
+  }, []);
 
-    // 沒有勾選行程且 destination 沒 source_url → 擋住（行程有自己的 source_url 時不需要）
+  const handleScrapeThisPage = async () => {
+    if (scrapeTriggering || scrapeRunning) return;
+
     if (selectedTripIds.size === 0 && !destination?.source_url) {
       alert('此目的地尚未設定朋威對應 URL（source_url），無法抓取。\n請到 Supabase 設定此目的地的 source_url 後再試。');
       return;
     }
 
     setScrapeTriggering(true);
+    setScrapePendingIds([]);
     try {
       const tripIds = Array.from(selectedTripIds);
       const res = await fetch('/api/scrape/trigger', {
@@ -718,15 +726,65 @@ export default function DestinationPage() {
         throw new Error(data?.error || '觸發抓取失敗');
       }
 
-      setToastMessage('已觸發抓取');
-      setTimeout(() => {
-        const from = encodeURIComponent(window.location.pathname + window.location.search);
-        router.push(`/admin?tab=scrape&from=${from}`);
-      }, 600);
+      setScrapeRunning(true);
+      setScrapeTriggering(false);
+      setToastMessage('已觸發抓取，等待完成...');
+
+      // 輪詢進度，完成後抓 pending changes
+      if (scrapePollingRef.current) clearInterval(scrapePollingRef.current);
+      scrapePollingRef.current = setInterval(async () => {
+        try {
+          const progRes = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
+          if (!progRes.ok) return;
+          const prog = await progRes.json();
+          if (prog.status === 'completed' || prog.status === 'idle' || prog.status === 'failed') {
+            if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
+            setScrapeRunning(false);
+
+            if (prog.status === 'failed') {
+              setToastMessage('抓取失敗');
+              return;
+            }
+
+            // 抓取此 destination 的 pending changes
+            const changesRes = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
+            if (changesRes.ok) {
+              const changes = await changesRes.json();
+              const ids = Array.isArray(changes) ? changes.map((c: { id: string }) => c.id) : [];
+              setScrapePendingIds(ids);
+              setToastMessage(ids.length > 0 ? `抓取完成，${ids.length} 筆待更新` : '抓取完成，無新變更');
+            }
+          }
+        } catch { /* ignore polling errors */ }
+      }, 5000);
     } catch (err) {
       alert(err instanceof Error ? err.message : '觸發抓取失敗');
-    } finally {
       setScrapeTriggering(false);
+    }
+  };
+
+  const handleApplyPendingChanges = async () => {
+    if (scrapeApplying || scrapePendingIds.length === 0) return;
+    setScrapeApplying(true);
+    try {
+      const res = await fetch('/api/scrape/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ changeIds: scrapePendingIds }),
+      });
+      if (!res.ok) throw new Error('套用失敗');
+      setScrapePendingIds([]);
+      invalidateCache('dest-trips:');
+      invalidateCache('trip:');
+      invalidateCache('regions');
+      setToastMessage('更新完成！重新載入中...');
+      // 重新載入行程
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '套用失敗');
+    } finally {
+      setScrapeApplying(false);
     }
   };
 
@@ -1420,13 +1478,24 @@ export default function DestinationPage() {
 
       <FloatingContact />
       {isDevMode && (
-        <button
-          onClick={() => void handleScrapeThisPage()}
-          disabled={scrapeTriggering || scrapeRunning}
-          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-500 disabled:opacity-60"
-        >
-          {scrapeRunning ? '⏳ 抓取進行中' : scrapeTriggering ? '⏳ 啟動中...' : selectedTripIds.size > 0 ? `🔄 更新抓取已選 (${selectedTripIds.size})` : '🔄 抓取此頁行程'}
-        </button>
+        <div className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2">
+          {scrapePendingIds.length > 0 && (
+            <button
+              onClick={() => void handleApplyPendingChanges()}
+              disabled={scrapeApplying}
+              className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-2 ring-emerald-300 ring-offset-2 animate-pulse transition hover:bg-emerald-400 disabled:opacity-60 disabled:animate-none"
+            >
+              {scrapeApplying ? '⏳ 更新中...' : `✅ 更新 (${scrapePendingIds.length} 筆)`}
+            </button>
+          )}
+          <button
+            onClick={() => void handleScrapeThisPage()}
+            disabled={scrapeTriggering || scrapeRunning}
+            className="flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-500 disabled:opacity-60"
+          >
+            {scrapeRunning ? '⏳ 抓取進行中...' : scrapeTriggering ? '⏳ 啟動中...' : selectedTripIds.size > 0 ? `🔄 更新抓取已選 (${selectedTripIds.size})` : '🔄 抓取此頁行程'}
+          </button>
+        </div>
       )}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
     </main>
