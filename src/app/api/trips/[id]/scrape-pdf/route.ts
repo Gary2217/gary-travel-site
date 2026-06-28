@@ -230,7 +230,13 @@ export async function POST(
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch (err) {
-    console.error('[scrape-pdf]', err);
-    return NextResponse.json({ error: 'PDF 解析失敗' }, { status: 500 });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errStack = err instanceof Error ? err.stack : '';
+    console.error('[scrape-pdf] error:', errMsg);
+    console.error('[scrape-pdf] stack:', errStack);
+    return NextResponse.json(
+      { error: `PDF 解析失敗: ${errMsg.slice(0, 200)}` },
+      { status: 500 },
+    );
   }
 }
