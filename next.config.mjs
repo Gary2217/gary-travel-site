@@ -3,7 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  experimental: {
+    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  },
   images: {
     formats: ['image/webp'],
     remotePatterns: [
