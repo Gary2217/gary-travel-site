@@ -152,22 +152,55 @@ export default function DestinationPage() {
     setCityFilter(qs.get('city') || '');
   }, []);
 
-  // 檢查是否有抓取進行中（防重複觸發）
+  // 檢查是否有抓取進行中 + 是否有待更新的 pending changes
   useEffect(() => {
     if (!isDevMode) return;
     let cancelled = false;
-    async function checkRunning() {
+    async function checkScrapeState() {
       try {
-        const res = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) setScrapeRunning(data.running === true);
+        // 檢查進行中
+        const progRes = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
+        if (progRes.ok) {
+          const prog = await progRes.json();
+          if (!cancelled) {
+            const running = prog.running === true || prog.status === 'running' || prog.status === 'queued';
+            setScrapeRunning(running);
+            // 如果正在跑，啟動輪詢
+            if (running && !scrapePollingRef.current) {
+              scrapePollingRef.current = setInterval(async () => {
+                try {
+                  const r = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
+                  if (!r.ok) return;
+                  const p = await r.json();
+                  if (p.status === 'completed' || p.status === 'idle' || p.status === 'failed') {
+                    if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
+                    setScrapeRunning(false);
+                    if (p.status !== 'failed') {
+                      // 抓完後檢查 pending changes
+                      const cr = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
+                      if (cr.ok) {
+                        const changes = await cr.json();
+                        setScrapePendingIds(Array.isArray(changes) ? changes.map((c: { id: string }) => c.id) : []);
+                      }
+                    }
+                  }
+                } catch { /* ignore */ }
+              }, 5000);
+            }
+          }
+        }
+        // 檢查待更新的 pending changes（頁面載入時就檢查）
+        const changesRes = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
+        if (changesRes.ok && !cancelled) {
+          const changes = await changesRes.json();
+          const ids = Array.isArray(changes) ? changes.map((c: { id: string }) => c.id) : [];
+          if (ids.length > 0) setScrapePendingIds(ids);
         }
       } catch { /* ignore */ }
     }
-    checkRunning();
+    checkScrapeState();
     return () => { cancelled = true; };
-  }, [isDevMode]);
+  }, [isDevMode, destinationId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -730,7 +763,7 @@ export default function DestinationPage() {
       setScrapeTriggering(false);
       setToastMessage('已觸發抓取，等待完成...');
 
-      // 輪詢進度，完成後抓 pending changes
+      // 啟動輪詢進度
       if (scrapePollingRef.current) clearInterval(scrapePollingRef.current);
       scrapePollingRef.current = setInterval(async () => {
         try {
@@ -740,13 +773,7 @@ export default function DestinationPage() {
           if (prog.status === 'completed' || prog.status === 'idle' || prog.status === 'failed') {
             if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
             setScrapeRunning(false);
-
-            if (prog.status === 'failed') {
-              setToastMessage('抓取失敗');
-              return;
-            }
-
-            // 抓取此 destination 的 pending changes
+            if (prog.status === 'failed') { setToastMessage('抓取失敗'); return; }
             const changesRes = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
             if (changesRes.ok) {
               const changes = await changesRes.json();
@@ -755,7 +782,7 @@ export default function DestinationPage() {
               setToastMessage(ids.length > 0 ? `抓取完成，${ids.length} 筆待更新` : '抓取完成，無新變更');
             }
           }
-        } catch { /* ignore polling errors */ }
+        } catch { /* ignore */ }
       }, 5000);
     } catch (err) {
       alert(err instanceof Error ? err.message : '觸發抓取失敗');
