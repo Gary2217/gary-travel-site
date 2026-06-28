@@ -327,6 +327,10 @@ export default function TripPage() {
       }
 
       setShowBannerEditor(true);
+      setEditDestinationId(trip.destination_id);
+      if (allRegions.length === 0) {
+        getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {});
+      }
       showSaveSuccess('PDF 解析完成，已預填到編輯器');
     } catch (err) {
       console.error('[handlePdfScrape]', err);
