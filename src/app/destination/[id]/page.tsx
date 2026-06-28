@@ -426,10 +426,11 @@ export default function DestinationPage() {
       const currentBanner = trip?.trip_banner;
       const updatedBanner = { ...(currentBanner || { code_label: '', price_label: '', tags: [], departure_label: '', duration_label: '', seats_total: null, seats_available: null, deposit_label: '' }), custom_tour: value };
       const res = await fetch(`/api/trips/${tripId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trip_banner: updatedBanner }),
-      });
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ trip_banner: updatedBanner }),
+              });
       if (res.ok) {
         updateTrip(tripId, t => ({ ...t, trip_banner: updatedBanner }));
         invalidateCache('dest-trips');
@@ -458,10 +459,11 @@ export default function DestinationPage() {
   const handleHideTrip = async (tripId: string) => {
     try {
       const res = await fetch(`/api/trips/${tripId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: false }),
-      });
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ is_active: false }),
+              });
       if (!res.ok) throw new Error('隱藏失敗');
       const hidden = trips.find(t => t.id === tripId) || subRegionTrips?.find(t => t.id === tripId);
       setTrips(prev => prev.filter(trip => trip.id !== tripId));
@@ -482,10 +484,11 @@ export default function DestinationPage() {
   const handleRestoreTrip = async (tripId: string) => {
     try {
       const res = await fetch(`/api/trips/${tripId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: true }),
-      });
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ is_active: true }),
+              });
       if (!res.ok) throw new Error('恢復失敗');
       const restored = hiddenTrips.find(t => t.id === tripId);
       setHiddenTrips(prev => prev.filter(t => t.id !== tripId));

@@ -790,65 +790,85 @@ export default function TripPage() {
         fetch(`/api/trips/${tripId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(tripPatchBody),
         }),
         fetch(`/api/trips/${tripId}/departure-dates?dateId=${selectedDepartureId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(departurePayload),
         }),
       ]);
 
-      if (!tripRes.ok || !departureRes.ok) {
-        alert('儲存失敗，請再試一次');
+      // 分開處理：即使出發日期失敗，只要 banner 成功就更新 state
+      const tripOk = tripRes.ok;
+      const depOk = departureRes.ok;
+
+      if (tripOk) {
+        const updatedTrip = await tripRes.json();
+        let updatedDest: Trip['destinations'] = undefined;
+        if (editDestinationId && editDestinationId !== trip?.destination_id) {
+          for (const region of allRegions) {
+            const found = (region.destinations || []).find(d => d.id === editDestinationId);
+            if (found) { updatedDest = found; break; }
+          }
+        }
+        setTrip((prev) => {
+          if (!prev) return prev;
+          const remoteBanner = updatedTrip?.trip_banner;
+          return {
+            ...prev,
+            ...updatedTrip,
+            ...(updatedDest ? { destinations: updatedDest } : {}),
+            trip_banner: remoteBanner
+              ? {
+                  ...bannerPayload,
+                  ...remoteBanner,
+                  departure_info_map: {
+                    ...bannerPayload.departure_info_map,
+                    ...(remoteBanner.departure_info_map || {}),
+                  },
+                }
+              : bannerPayload,
+          };
+        });
+        invalidateCache('trip:' + tripId);
+        invalidateCache('dest-trips:');
+      }
+
+      if (depOk) {
+        const updatedDeparture = await departureRes.json();
+        const fallbackPrice = parseDeparturePrice(departureEditorPrice);
+        const normalizedDeparture = {
+          ...selectedDeparture,
+          ...updatedDeparture,
+          departure_date: updatedDeparture?.departure_date || departureEditorDate || selectedDeparture.departure_date,
+          price: typeof updatedDeparture?.price === 'number' ? updatedDeparture.price : fallbackPrice,
+        };
+        setDepartureDates((prev) =>
+          prev
+            .map((date) => (date.id === selectedDepartureId ? { ...date, ...normalizedDeparture } : date))
+            .sort((a, b) => a.departure_date.localeCompare(b.departure_date))
+        );
+        setDepartureEditorPrice(typeof normalizedDeparture.price === 'number' ? String(normalizedDeparture.price) : '');
+      }
+
+      if (!tripOk && !depOk) {
+        alert('儲存失敗，請確認已登入開發者模式');
         return false;
       }
-
-      const [updatedTrip, updatedDeparture] = await Promise.all([tripRes.json(), departureRes.json()]);
-      const fallbackPrice = parseDeparturePrice(departureEditorPrice);
-      const normalizedDeparture = {
-        ...selectedDeparture,
-        ...updatedDeparture,
-        departure_date: updatedDeparture?.departure_date || departureEditorDate || selectedDeparture.departure_date,
-        price: typeof updatedDeparture?.price === 'number' ? updatedDeparture.price : fallbackPrice,
-      };
-
-      let updatedDest: Trip['destinations'] = undefined;
-      if (editDestinationId && editDestinationId !== trip?.destination_id) {
-        for (const region of allRegions) {
-          const found = (region.destinations || []).find(d => d.id === editDestinationId);
-          if (found) { updatedDest = found; break; }
-        }
+      if (!tripOk) {
+        alert('行程資訊儲存失敗（標籤/banner），出發日期已更新');
+        return false;
       }
-      setTrip((prev) => {
-        if (!prev) return prev;
-        const remoteBanner = updatedTrip?.trip_banner;
-        return {
-          ...prev,
-          ...updatedTrip,
-          ...(updatedDest ? { destinations: updatedDest } : {}),
-          trip_banner: remoteBanner
-            ? {
-                ...bannerPayload,
-                ...remoteBanner,
-                departure_info_map: {
-                  ...bannerPayload.departure_info_map,
-                  ...(remoteBanner.departure_info_map || {}),
-                },
-              }
-            : bannerPayload,
-        };
-      });
-      setDepartureDates((prev) =>
-        prev
-          .map((date) => (date.id === selectedDepartureId ? { ...date, ...normalizedDeparture } : date))
-          .sort((a, b) => a.departure_date.localeCompare(b.departure_date))
-      );
-      setDepartureEditorPrice(typeof normalizedDeparture.price === 'number' ? String(normalizedDeparture.price) : '');
+      if (!depOk) {
+        alert('出發日期儲存失敗，但行程資訊（標籤/banner）已更新');
+      }
+
       setShowBannerEditor(false);
       setIsCreatingNewDeparture(false);
-      invalidateCache('trip:' + tripId);
-      showSaveSuccess('儲存成功');
+      showSaveSuccess(depOk ? '儲存成功' : '部分儲存成功');
       return true;
     } catch {
       alert('儲存失敗，請再試一次');
@@ -870,15 +890,17 @@ export default function TripPage() {
       const res = await fetch(`/api/trips/${tripId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ trip_banner: bannerPayload }),
       });
       if (!res.ok) {
-        alert('儲存失敗，請再試一次');
+        alert('儲存失敗，請確認已登入開發者模式');
         return false;
       }
       const updatedTrip = await res.json();
       setTrip((prev) => (prev ? { ...prev, ...updatedTrip, trip_banner: updatedTrip?.trip_banner || bannerPayload } : prev));
       invalidateCache('trip:' + tripId);
+      invalidateCache('dest-trips:');
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -904,11 +926,32 @@ export default function TripPage() {
       const createRes = await fetch(`/api/trips/${tripId}/departure-dates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(departureCreatePayload),
       });
 
       if (!createRes.ok) {
-        alert('建立出團梯次失敗，請再試一次');
+        // 即使建立梯次失敗，仍嘗試儲存 banner（標籤等）
+        const bannerOnlyPayload: TripBanner = {
+          ...EMPTY_TRIP_BANNER,
+          ...editTripBanner,
+          duration_label: renderDaysNights(previewDayText, previewNightText),
+        };
+        const fallbackRes = await fetch(`/api/trips/${tripId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ trip_banner: bannerOnlyPayload }),
+        });
+        if (fallbackRes.ok) {
+          const fallbackTrip = await fallbackRes.json();
+          setTrip((prev) => (prev ? { ...prev, ...fallbackTrip, trip_banner: fallbackTrip?.trip_banner || bannerOnlyPayload } : prev));
+          invalidateCache('trip:' + tripId);
+          invalidateCache('dest-trips:');
+          alert('建立出團梯次失敗，但標籤/banner 已儲存');
+        } else {
+          alert('建立出團梯次失敗，請確認已登入開發者模式');
+        }
         return false;
       }
 
@@ -935,11 +978,12 @@ export default function TripPage() {
       const tripRes = await fetch(`/api/trips/${tripId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(tripPatchBody2),
       });
 
       if (!tripRes.ok) {
-        alert('儲存出團資訊失敗，請再試一次');
+        alert('儲存出團資訊失敗，請確認已登入開發者模式');
         return false;
       }
 
@@ -976,6 +1020,7 @@ export default function TripPage() {
       setIsCreatingNewDeparture(false);
       setShowBannerEditor(false);
       invalidateCache('trip:' + tripId);
+      invalidateCache('dest-trips:');
       showSaveSuccess('儲存成功');
       return true;
     } catch {
@@ -1783,6 +1828,7 @@ export default function TripPage() {
                 const res = await fetch(`/api/trips/${tripId}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
                   body: JSON.stringify(payload),
                 });
                 if (res.ok) {
@@ -1796,10 +1842,11 @@ export default function TripPage() {
                   }
                   setTrip(prev => prev ? { ...prev, ...updated, destinations: newDest } : prev);
                   invalidateCache('trip:' + tripId);
+                  invalidateCache('dest-trips:');
                   setShowEditPanel(false);
                   showSaveSuccess('儲存成功');
                 } else {
-                  alert('儲存失敗，請再試一次');
+                  alert('儲存失敗，請確認已登入開發者模式');
                 }
                 setSaving(false);
               }}
@@ -2600,14 +2647,15 @@ export default function TripPage() {
                 setSavingPromo(true);
                 try {
                   const updatedBanner = { ...editTripBanner, promo_enabled: promoEnabled, promo_content: promoContent.trim() };
-                  const res = await fetch(`/api/trips/${tripId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trip_banner: updatedBanner }) });
+                  const res = await fetch(`/api/trips/${tripId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ trip_banner: updatedBanner }) });
                   if (res.ok) {
                     const updated = await res.json();
                     setTrip(prev => prev ? { ...prev, ...updated } : prev);
                     invalidateCache('trip:' + tripId);
+                    invalidateCache('dest-trips:');
                     setShowPromoEditor(false);
                     showSaveSuccess('限時優惠已儲存');
-                  } else { alert('儲存失敗，請再試一次'); }
+                  } else { alert('儲存失敗，請確認已登入開發者模式'); }
                 } catch { alert('儲存失敗'); } finally { setSavingPromo(false); }
               }} className="w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60">
                 {savingPromo ? '儲存中...' : '儲存'}

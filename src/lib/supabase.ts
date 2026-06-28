@@ -506,6 +506,8 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<{ 
   }
 
   const data = await confirmRes.json();
+  invalidateCache('trip:' + tripId);
+  invalidateCache('dest-trips:');
   return {
     url: data.url,
     document_is_available: Boolean(data.document_is_available),
@@ -524,6 +526,9 @@ export async function deleteTripDocument(tripId: string): Promise<void> {
     const err = await res.json();
     throw new Error(err.error || '刪除失敗');
   }
+
+  invalidateCache('trip:' + tripId);
+  invalidateCache('dest-trips:');
 }
 
 // 更新行程欄位（天數、標題等）
