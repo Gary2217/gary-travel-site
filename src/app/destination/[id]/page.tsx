@@ -1422,10 +1422,10 @@ export default function DestinationPage() {
       {isDevMode && (
         <button
           onClick={() => void handleScrapeThisPage()}
-          disabled={scrapeTriggering || scrapeRunning || selectedTripIds.size === 0}
+          disabled={scrapeTriggering || scrapeRunning}
           className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-500 disabled:opacity-60"
         >
-          {scrapeRunning ? '⏳ 抓取進行中' : scrapeTriggering ? '⏳ 啟動中...' : `🔄 更新抓取已選 (${selectedTripIds.size})`}
+          {scrapeRunning ? '⏳ 抓取進行中' : scrapeTriggering ? '⏳ 啟動中...' : selectedTripIds.size > 0 ? `🔄 更新抓取已選 (${selectedTripIds.size})` : '🔄 抓取此頁行程'}
         </button>
       )}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
