@@ -1358,7 +1358,21 @@ export default function TripPage() {
               {/* 資訊列 */}
               <div className="space-y-2 border-t border-gray-100 px-4 py-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="min-w-[36px] text-[11px] text-sky-600">日期</span>
+                  <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
+                  <span className="text-xs font-medium text-gray-900 sm:text-sm">{selectedDepartureInfo?.group_code || banner.code_label || '—'}</span>
+                </div>
+                {(editTripBanner.airline || selectedDeparture?.airline) && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">
+                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                    </span>
+                    <span className="text-xs font-medium text-gray-900 sm:text-sm">{editTripBanner.airline || selectedDeparture?.airline}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">
+                    <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </span>
                   <span className="whitespace-nowrap text-xs font-medium text-gray-900 sm:text-sm">
                     {selectedDeparture ? (() => {
                       const start = formatFullDate(selectedDeparture.departure_date);
@@ -1376,18 +1390,16 @@ export default function TripPage() {
                     })() : '—'}
                   </span>
                 </div>
-                {(editTripBanner.airline || selectedDeparture?.airline) && (
+                {editTripBanner.departure_label && (
                   <div className="flex items-center gap-2.5">
-                    <span className="min-w-[36px] text-[11px] text-sky-600">
-                      <svg className="inline h-3.5 w-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">{editTripBanner.airline || selectedDeparture?.airline}</span>
+                    <span className="min-w-[36px] text-[11px] text-sky-600">出發地</span>
+                    <span className="text-xs font-medium text-gray-900 sm:text-sm">{editTripBanner.departure_label}</span>
                   </div>
                 )}
                 {trip.destinations && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
-                    <span className="text-sm font-medium text-gray-900">{editTripBanner.sub_area || trip.destinations.title}</span>
+                    <span className="text-xs font-medium text-gray-900 sm:text-sm">{editTripBanner.sub_area || trip.destinations.title}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-2">
@@ -1472,6 +1484,10 @@ export default function TripPage() {
                     ))}
                   </div>
                 )}
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || banner.code_label || '—'}</span>
+                </div>
                 {(editTripBanner.airline || selectedDeparture?.airline) && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">
@@ -1488,10 +1504,6 @@ export default function TripPage() {
                     <span className="text-sm font-medium text-gray-900">{getScheduleLabel(selectedDeparture)}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2.5">
-                  <span className="min-w-[36px] text-[11px] text-sky-600">團號</span>
-                  <span className="text-sm font-medium text-gray-900">{selectedDepartureInfo.group_code || '—'}</span>
-                </div>
                 <div className="flex items-center gap-2.5">
                   <span className="min-w-[36px] text-[11px] text-sky-600">
                     <svg className="inline h-3.5 w-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -1513,6 +1525,12 @@ export default function TripPage() {
                     })() : '—'}
                   </span>
                 </div>
+                {editTripBanner.departure_label && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="min-w-[36px] text-[11px] text-sky-600">出發地</span>
+                    <span className="text-sm font-medium text-gray-900">{editTripBanner.departure_label}</span>
+                  </div>
+                )}
                 {trip.destinations && (
                   <div className="flex items-center gap-2.5">
                     <span className="min-w-[36px] text-[11px] text-sky-600">目的地</span>
