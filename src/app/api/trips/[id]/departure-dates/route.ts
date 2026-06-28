@@ -27,6 +27,13 @@ export async function POST(
       flight_segments,
     } = body;
 
+    // 驗證 departure_date 格式
+    if (departure_date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(departure_date) || isNaN(Date.parse(departure_date))) {
+        return NextResponse.json({ error: `無效日期格式: ${departure_date}` }, { status: 400 });
+      }
+    }
+
     const supabase = createSupabase();
 
     const { data, error } = await supabase
@@ -101,6 +108,14 @@ export async function PATCH(request: NextRequest) {
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: '沒有可更新的欄位' }, { status: 400 });
+    }
+
+    // 驗證 departure_date 格式
+    if (updates.departure_date) {
+      const d = updates.departure_date as string;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(Date.parse(d))) {
+        return NextResponse.json({ error: `無效日期格式: ${d}` }, { status: 400 });
+      }
     }
 
     const supabase = createSupabase();

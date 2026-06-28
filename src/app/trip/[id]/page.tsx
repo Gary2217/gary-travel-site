@@ -331,7 +331,109 @@ export default function TripPage() {
       if (allRegions.length === 0) {
         getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {});
       }
-      showSaveSuccess('PDF 解析完成，已預填到編輯器');
+
+      // 自動寫入航班資訊到所有出發日期
+      let flightMsg = '';
+      const segments = parsed.flight_segments;
+      if (segments.length > 0 && trip.departure_dates && trip.departure_dates.length > 0) {
+        const outboundSegs = segments.filter(s => s.day === segments[0].day);
+        const returnSegs = segments.filter(s => s.day !== segments[0].day);
+
+        // 推算去回時段 label
+        const depHour = parseInt(outboundSegs[0].departure_time.split(':')[0]);
+        const arrHour = returnSegs.length > 0
+          ? parseInt(returnSegs[returnSegs.length - 1].arrival_time.split(':')[0])
+          : parseInt(outboundSegs[outboundSegs.length - 1].arrival_time.split(':')[0]);
+        const depPart = depHour < 12 ? '早去' : depHour < 17 ? '午去' : '晚去';
+        const arrPart = arrHour < 12 ? '早回' : arrHour < 17 ? '午回' : '晚回';
+        const derivedLabel = `${depPart}${arrPart}`;
+
+        // 航空公司
+        const airlines = [...new Set(segments.map(s => s.airline).filter(Boolean))];
+        const airlineStr = airlines.join('/') || null;
+
+        const firstOut = outboundSegs[0];
+        const lastOut = outboundSegs[outboundSegs.length - 1];
+        const firstRet = returnSegs.length > 0 ? returnSegs[0] : null;
+        const lastRet = returnSegs.length > 0 ? returnSegs[returnSegs.length - 1] : null;
+
+        // 轉換成 FlightSegment 格式
+        const dbSegments = segments.map(s => ({
+          date: s.day,
+          airline: s.airline,
+          flight_number: s.flight_number,
+          dep_time: s.departure_time,
+          dep_airport: s.from_city,
+          arr_time: s.arrival_time,
+          arr_airport: s.to_city,
+          next_day: s.is_next_day,
+        }));
+
+        const flightPayload: Record<string, unknown> = {
+          airline: airlineStr,
+          label: derivedLabel,
+          outbound_flight: firstOut.flight_number,
+          outbound_time: firstOut.departure_time,
+          outbound_from: firstOut.from_city,
+          outbound_to: lastOut.to_city,
+          outbound_arrival_time: lastOut.arrival_time,
+          outbound_next_day: lastOut.is_next_day,
+          flight_segments: dbSegments,
+        };
+        if (firstRet && lastRet) {
+          flightPayload.return_flight = firstRet.flight_number;
+          flightPayload.return_time = firstRet.departure_time;
+          flightPayload.return_from = firstRet.from_city;
+          flightPayload.return_to = lastRet.to_city;
+          flightPayload.return_arrival_time = lastRet.arrival_time;
+          flightPayload.return_next_day = lastRet.is_next_day;
+        }
+
+        const results = await Promise.all(
+          trip.departure_dates.map(dd =>
+            fetch(`/api/trips/${tripId}/departure-dates?dateId=${dd.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify(flightPayload),
+            })
+          )
+        );
+        const okCount = results.filter(r => r.ok).length;
+        if (okCount > 0) {
+          setTrip(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              departure_dates: prev.departure_dates?.map(dd => ({
+                ...dd,
+                airline: airlineStr,
+                label: derivedLabel,
+                outbound_flight: firstOut.flight_number,
+                outbound_time: firstOut.departure_time,
+                outbound_from: firstOut.from_city,
+                outbound_to: lastOut.to_city,
+                outbound_arrival_time: lastOut.arrival_time,
+                ...(firstRet ? {
+                  return_flight: firstRet.flight_number,
+                  return_time: firstRet.departure_time,
+                  return_from: firstRet.from_city,
+                } : {}),
+                ...(lastRet ? {
+                  return_to: lastRet.to_city,
+                  return_arrival_time: lastRet.arrival_time,
+                } : {}),
+                flight_segments: dbSegments,
+              })),
+            };
+          });
+          invalidateCache('trip:');
+          invalidateCache('dest-trips:');
+          flightMsg = `，航班已寫入 ${okCount} 個出發日期`;
+        }
+      }
+
+      showSaveSuccess(`PDF 解析完成，已預填到編輯器${flightMsg}`);
     } catch (err) {
       console.error('[handlePdfScrape]', err);
       alert(err instanceof Error ? err.message : 'PDF 解析失敗');
