@@ -27,9 +27,12 @@ export async function POST(
       flight_segments,
     } = body;
 
-    // 驗證 departure_date 格式
-    if (departure_date) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(departure_date) || isNaN(Date.parse(departure_date))) {
+    // 修正 & 驗證 departure_date 格式
+    let validatedDate = departure_date;
+    if (validatedDate) {
+      // 自動修正年份超過4位的情況（如 20206-12-06 → 2026-12-06）
+      validatedDate = validatedDate.replace(/^(\d{4})\d+(-\d{2}-\d{2})$/, '$1$2');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(validatedDate) || isNaN(Date.parse(validatedDate))) {
         return NextResponse.json({ error: `無效日期格式: ${departure_date}` }, { status: 400 });
       }
     }
@@ -40,7 +43,7 @@ export async function POST(
       .from('trip_departure_dates')
       .insert({
         trip_id: params.id,
-        departure_date: departure_date || null,
+        departure_date: validatedDate || null,
         departure_city: departure_city || '桃園',
         airline: airline || null,
         price: price || null,
@@ -110,11 +113,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: '沒有可更新的欄位' }, { status: 400 });
     }
 
-    // 驗證 departure_date 格式
+    // 修正 & 驗證 departure_date 格式
     if (updates.departure_date) {
-      const d = updates.departure_date as string;
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(Date.parse(d))) {
-        return NextResponse.json({ error: `無效日期格式: ${d}` }, { status: 400 });
+      const raw = updates.departure_date as string;
+      updates.departure_date = raw.replace(/^(\d{4})\d+(-\d{2}-\d{2})$/, '$1$2');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(updates.departure_date as string) || isNaN(Date.parse(updates.departure_date as string))) {
+        return NextResponse.json({ error: `無效日期格式: ${raw}` }, { status: 400 });
       }
     }
 
