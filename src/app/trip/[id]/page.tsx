@@ -1817,6 +1817,21 @@ export default function TripPage() {
                 </div>
 
                 <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
+                  <div className="text-xs font-semibold text-gray-600">出發地</div>
+                  <select
+                    value={editTripBanner.departure_label || ''}
+                    onChange={e => setEditTripBanner(prev => ({ ...prev, departure_label: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
+                  >
+                    <option value="">未設定</option>
+                    <option value="桃園出發">桃園出發</option>
+                    <option value="台北出發">台北出發</option>
+                    <option value="台中出發">台中出發</option>
+                    <option value="高雄出發">高雄出發</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-[52px_minmax(0,1fr)] items-center gap-2">
                   <div className="text-xs font-semibold text-gray-600">目的地</div>
                   <div className="flex items-center gap-1.5">
                     {allRegions.length > 0 ? (
