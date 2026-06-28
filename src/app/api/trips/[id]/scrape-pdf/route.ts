@@ -224,6 +224,22 @@ export async function POST(
     // 若無快取文字，即時下載並提取（pdf-parse v2 API）
     if (!documentText) {
       const { PDFParse } = await import('pdf-parse');
+      const { pathToFileURL } = await import('url');
+      const { createRequire } = await import('module');
+
+      // pdf-parse v2 需要手動指定 worker 路徑（Vercel serverless 無法自動解析）
+      try {
+        const localRequire = createRequire(import.meta.url);
+        const workerPath = localRequire.resolve(
+          'pdf-parse/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'
+        );
+        PDFParse.setWorker(pathToFileURL(workerPath).href);
+      } catch {
+        // 備用：嘗試直接路徑（Vercel 環境）
+        const { join } = await import('path');
+        const workerPath = join(process.cwd(), 'node_modules/pdf-parse/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs');
+        PDFParse.setWorker(pathToFileURL(workerPath).href);
+      }
 
       const pdfRes = await fetch(trip.document_url as string);
       if (!pdfRes.ok) {
