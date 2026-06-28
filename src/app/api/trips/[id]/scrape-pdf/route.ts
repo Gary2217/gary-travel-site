@@ -3,11 +3,7 @@ import { requireDevAuth } from '@/lib/api-auth';
 import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-interface PdfParseData {
-  text: string;
-  numpages: number;
-}
+export const maxDuration = 30; // PDF 解析可能較慢
 
 interface PdfFlightSegment {
   day: string;
@@ -201,24 +197,23 @@ export async function POST(
 
     let documentText: string = (trip.document_text as string | null) ?? '';
 
-    // 若無快取文字，即時下載並提取
+    // 若無快取文字，即時下載並提取（pdf-parse v2 API）
     if (!documentText) {
+      const { PDFParse } = await import('pdf-parse');
+
       const pdfRes = await fetch(trip.document_url as string);
       if (!pdfRes.ok) {
         return NextResponse.json({ error: 'PDF 下載失敗' }, { status: 502 });
       }
 
-      const pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
-
-      // 動態 import pdf-parse（繞過 Next.js bundler 限制）
-      const pdfMod = await (Function('return import("pdf-parse")')() as Promise<unknown>);
-      const pdfFn = (
-        typeof (pdfMod as { default?: unknown }).default === 'function'
-          ? (pdfMod as { default: (buf: Buffer) => Promise<PdfParseData> }).default
-          : pdfMod
-      ) as (buf: Buffer) => Promise<PdfParseData>;
-      const pdfData = await pdfFn(pdfBuffer);
-      documentText = pdfData.text ?? '';
+      const pdfBuffer = new Uint8Array(await pdfRes.arrayBuffer());
+      const parser = new PDFParse({ data: pdfBuffer });
+      try {
+        const result = await parser.getText();
+        documentText = result.text ?? '';
+      } finally {
+        await parser.destroy();
+      }
 
       // 回存 DB 以供下次使用
       if (documentText) {
