@@ -31,7 +31,7 @@ export async function GET() {
 
     if (!destinations || destinations.length === 0) {
       return NextResponse.json([], {
-        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
       });
     }
 
@@ -127,7 +127,7 @@ export async function GET() {
     }
 
     return NextResponse.json(ranked, {
-      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch (err) {
     return API_ERRORS.internal(err);
