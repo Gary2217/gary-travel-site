@@ -163,7 +163,7 @@ export default function DestinationPage() {
         if (progRes.ok) {
           const prog = await progRes.json();
           if (!cancelled) {
-            const running = prog.running === true || prog.status === 'running' || prog.status === 'queued';
+            const running = prog.running === true;
             setScrapeRunning(running);
             // 如果正在跑，啟動輪詢
             if (running && !scrapePollingRef.current) {
@@ -172,10 +172,10 @@ export default function DestinationPage() {
                   const r = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
                   if (!r.ok) return;
                   const p = await r.json();
-                  if (p.status === 'completed' || p.status === 'idle' || p.status === 'failed') {
+                  if (!p.running) {
                     if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
                     setScrapeRunning(false);
-                    if (p.status !== 'failed') {
+                    if (p.latest?.status !== 'failed') {
                       // 抓完後檢查 pending changes
                       const cr = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
                       if (cr.ok) {
@@ -770,10 +770,10 @@ export default function DestinationPage() {
           const progRes = await fetch('/api/scrape/progress', { credentials: 'include', cache: 'no-store' });
           if (!progRes.ok) return;
           const prog = await progRes.json();
-          if (prog.status === 'completed' || prog.status === 'idle' || prog.status === 'failed') {
-            if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
-            setScrapeRunning(false);
-            if (prog.status === 'failed') { setToastMessage('抓取失敗'); return; }
+                  if (!prog.running) {
+                    if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
+                    setScrapeRunning(false);
+                    if (prog.latest?.status === 'failed') { setToastMessage('抓取失敗'); return; }
             const changesRes = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
             if (changesRes.ok) {
               const changes = await changesRes.json();
