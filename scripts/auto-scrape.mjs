@@ -764,7 +764,7 @@ async function scrapeRegionListings(regionConfig, targetSourceUrl = '', targetDe
 
   // 若有指定 destination，用 title 或 sub_region 比對 section label
   if (!targetBlockId && (targetDestinationTitle || targetSubRegion)) {
-    const candidates = [targetSubRegion, targetDestinationTitle].filter(Boolean);
+    const candidates = [targetDestinationTitle, targetSubRegion].filter(Boolean);
     for (const candidate of candidates) {
       const normalized = normalizeTitle(candidate);
       const matched = sections.filter((s) => {
