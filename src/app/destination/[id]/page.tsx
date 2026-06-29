@@ -87,6 +87,7 @@ export default function DestinationPage() {
   const [scrapeApplying, setScrapeApplying] = useState(false);
   const [scrapeApplyProgress, setScrapeApplyProgress] = useState('');
   const scrapePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrapeTargetDestRef = useRef(destinationId);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
@@ -739,11 +740,16 @@ export default function DestinationPage() {
   const handleScrapeThisPage = async () => {
     if (scrapeTriggering || scrapeRunning) return;
 
-    if (selectedTripIds.size === 0 && !destination?.source_url) {
+    // 取實際顯示的 destination（tab 切換後可能跟 URL 不同）
+    const targetDestId = activeDestFilter || heroDest?.id || destinationId;
+    const targetDestData = siblingDestsDataRef.current.get(targetDestId) || destination;
+
+    if (selectedTripIds.size === 0 && !targetDestData?.source_url) {
       alert('此目的地尚未設定朋威對應 URL（source_url），無法抓取。\n請到 Supabase 設定此目的地的 source_url 後再試。');
       return;
     }
 
+    scrapeTargetDestRef.current = targetDestId;
     setScrapeTriggering(true);
     setScrapePendingIds([]);
     try {
@@ -752,7 +758,7 @@ export default function DestinationPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ destinationId, tripIds: tripIds.length > 0 ? tripIds : undefined }),
+        body: JSON.stringify({ destinationId: targetDestId, tripIds: tripIds.length > 0 ? tripIds : undefined }),
       });
 
       if (!res.ok) {
@@ -775,7 +781,7 @@ export default function DestinationPage() {
                     if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
                     setScrapeRunning(false);
                     if (prog.latest?.status === 'failed') { setToastMessage('抓取失敗'); return; }
-            const changesRes = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
+            const changesRes = await fetch(`/api/scrape/changes?destination_id=${scrapeTargetDestRef.current}&status=pending`, { credentials: 'include', cache: 'no-store' });
             if (changesRes.ok) {
               const changes = await changesRes.json();
               const ids = Array.isArray(changes) ? changes.map((c: { id: string }) => c.id) : [];
