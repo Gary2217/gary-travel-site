@@ -621,6 +621,7 @@ function buildDestinationResolver(destinations, existingTrips) {
 
   const aliases = new Map([
     ['濟州島', '濟州'],
+    ['普吉', '普吉島'],
     ['宿霧薄荷島', '宿霧'],
     ['馬來西亞/新加坡', '新加坡'],
     // 港澳大陸：朋威 tab/breadcrumb → 我們的 sub_region（已改名）
@@ -1229,8 +1230,12 @@ async function insertPendingChanges(supabase, changes) {
   if (!changes.length) return 0;
 
   // 去重：同一個 trip/destination + 同一個 change_type + 同一個 field_name 只建一筆
+  // new_trip 加上 source_code 或 trip_title 區分不同行程
   const deduped = changes.filter((c) => {
-    const key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
+    let key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
+    if (c.change_type === 'new_trip') {
+      key += `_${c.source_code || c.trip_title || ''}`;
+    }
     if (insertedChangeKeys.has(key)) return false;
     insertedChangeKeys.add(key);
     return true;
@@ -1277,8 +1282,10 @@ async function loadDismissedKeys(supabase) {
     .gte('created_at', thirtyDaysAgo);
   const keys = new Set();
   (data || []).forEach(c => {
-    // key 包含 destination_id，避免 new_trip (trip_id=null) 共用同一個 key
-    keys.add(`${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`);
+    // key 包含 destination_id + source_code，避免 new_trip 共用同一個 key
+    let key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
+    if (c.change_type === 'new_trip') key += `_${c.source_code || c.trip_title || ''}`;
+    keys.add(key);
   });
   return keys;
 }
