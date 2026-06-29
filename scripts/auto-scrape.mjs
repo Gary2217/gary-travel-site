@@ -1672,16 +1672,22 @@ async function main() {
           });
           changesFound += await insertPendingChanges(supabase, changes);
         } else {
-          // 防重複：檢查 code_label 是否已存在於整個 DB（可能在其他 destination）
+          // 防重複：檢查 code_label 是否已存在
+          // 目標抓取模式：只跳過同一 destination 的重複（不同 destination 允許新增）
+          // 全區域模式：跳過整個 DB 的重複
           const scrapedCode = sanitizeText(scrapedTrip.code_label);
           if (scrapedCode) {
             const existingByCode = existingTrips.find(
               (t) => sanitizeText(t.trip_banner?.code_label) === scrapedCode,
             );
             if (existingByCode) {
-              console.log(`  ⏭️ 跳過新增（code_label ${scrapedCode} 已存在於 ${sanitizeText(existingByCode.title)}）`);
-              completedTrips += 1;
-              continue;
+              const sameDestination = existingByCode.destination_id === destination.id;
+              if (sameDestination || !targetDestination) {
+                console.log(`  ⏭️ 跳過新增（code_label ${scrapedCode} 已存在於 ${sanitizeText(existingByCode.title)}）`);
+                completedTrips += 1;
+                continue;
+              }
+              console.log(`  ℹ️ code_label ${scrapedCode} 存在於其他 destination，但目標模式下允許新增`);
             }
           }
 
