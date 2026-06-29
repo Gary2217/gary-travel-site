@@ -1100,8 +1100,8 @@ export default function DestinationPage() {
               </div>
             ) : (
               <>
-                {/* 同地區其他行程（按 sub_region 分組） */}
-                {relatedTrips && relatedTrips.regionTrips.length > 0 && (() => {
+                {/* 同地區其他行程（按 sub_region 分組）— 選中 sub_region tab 時隱藏 */}
+                {!subRegionTrips && relatedTrips && relatedTrips.regionTrips.length > 0 && (() => {
                   const trips = relatedTrips.regionTrips as any[];
                   const hasSubRegions = trips.some((t) => t.destinations?.sub_region);
                   const groups: { label: string; trips: any[] }[] = [];
