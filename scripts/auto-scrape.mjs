@@ -1122,17 +1122,6 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushChange('info', 'custom_tour', false, true);
   }
 
-  // 行程在朋威仍存在但已停用 → 重新啟用
-  if (existingTrip.is_active === false && !scrapedTrip.all_inquiry_only) {
-    changes.push({
-      ...buildPendingChangeBase(context),
-      change_type: 'info',
-      field_name: 'is_active',
-      old_value: 'false（已停用）',
-      new_value: 'true（朋威仍有此行程，建議重新啟用）',
-    });
-  }
-
   // 全部「請來電洽詢」→ 建議隱藏行程（is_active=false），已隱藏的不重複標記
   if (scrapedTrip.all_inquiry_only && existingTrip.is_active !== false) {
     changes.push({
