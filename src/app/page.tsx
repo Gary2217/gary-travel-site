@@ -299,20 +299,31 @@ export default function HomePage() {
       try {
         setError(null);
         const data = await getRegionsWithDestinations();
-        const formattedSections = data.map((region: any) => ({
-          id: region.id,
-          categoryLabel: region.category_label,
-          title: region.title,
-          description: region.description || '',
-          destinations: (region.destinations || []).map((dest: any) => ({
+        const formattedSections = data.map((region: any) => {
+          const allDests = (region.destinations || []).map((dest: any) => ({
             id: dest.id,
             title: dest.title,
             subtitle: dest.subtitle || '',
             image_url: dest.image_url,
             display_order: dest.display_order ?? 0,
             sub_region: dest.sub_region || ''
-          }))
-        }));
+          }));
+          // 同 sub_region 只顯示第一個（display_order 最小的），避免首頁展開子分類
+          const seenSubRegions = new Set<string>();
+          const uniqueDests = allDests.filter((d: { sub_region: string }) => {
+            if (!d.sub_region) return true;
+            if (seenSubRegions.has(d.sub_region)) return false;
+            seenSubRegions.add(d.sub_region);
+            return true;
+          });
+          return {
+            id: region.id,
+            categoryLabel: region.category_label,
+            title: region.title,
+            description: region.description || '',
+            destinations: uniqueDests,
+          };
+        });
         setSections(formattedSections);
       } catch (err) {
         console.error('Error loading data:', err);
