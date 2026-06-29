@@ -339,6 +339,7 @@ export async function POST(req: NextRequest) {
                 duration: scraped.duration,
                 cover_image_url: resolvedImageUrl,
                 display_order: scraped.display_order,
+                is_active: true, // 重新啟用行程
               };
               if (change.field_name && change.field_name in directFieldMap) {
                 tripUpdateFields[change.field_name] = directFieldMap[change.field_name];
