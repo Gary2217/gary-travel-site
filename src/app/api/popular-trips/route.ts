@@ -3,7 +3,7 @@ import { API_ERRORS, apiError } from '@/lib/api-error';
 import { createAnonClient, createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+// 用 nodejs runtime 避免 edge 連線快取問題
 
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
