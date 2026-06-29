@@ -147,6 +147,7 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
   const [loading, setLoading] = useState(true);
   const [selectedChange, setSelectedChange] = useState<ScrapeChangeItem | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState('');
   const [clearing, setClearing] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -354,55 +355,56 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
     }
   };
 
-  const handleBulkApply = async () => {
+  const applyChangesOneByOne = async (ids: string[]) => {
     setBulkLoading(true);
-    try {
-      const ids = changes.map((c) => c.id);
-      const res = await fetch("/api/scrape/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ changeIds: ids }),
-      });
-      if (!res.ok) {
-        throw new Error(await getErrorMessage(res, "更新失敗"));
-      }
-      const data = (await res.json()) as {
-        success?: number;
-        failed?: number;
-        results?: Array<{ id: string; success: boolean; error?: string }>;
-      };
-      const successIds = (data.results || [])
-        .filter((result) => result.success)
-        .map((result) => result.id);
-      const successCount = data.success ?? successIds.length;
-      const failCount = data.failed ?? Math.max(ids.length - successCount, 0);
+    const total = ids.length;
+    let successCount = 0;
+    let failCount = 0;
+    const successIds: string[] = [];
 
-      if (successIds.length > 0) {
-        removeChanges(successIds);
-        setCheckedIds((prev) => {
-          const next = new Set(prev);
-          for (const id of successIds) next.delete(id);
-          return next;
+    for (let i = 0; i < total; i++) {
+      setBulkProgress(`(${i + 1}/${total})`);
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        const res = await fetch("/api/scrape/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ changeIds: [ids[i]] }),
+          signal: controller.signal,
         });
-      }
-
-      if (failCount > 0) {
-        setToast({
-          message: `更新失敗：${successCount} 筆成功，${failCount} 筆失敗`,
-          type: "error",
-        });
-      } else {
-        setToast({ message: `已更新 ${successCount} 筆行程`, type: "success" });
-      }
-    } catch (error) {
-      setToast({
-        message: `更新失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
-        type: "error",
-      });
-    } finally {
-      setBulkLoading(false);
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results?.[0]?.success) {
+            successCount++;
+            successIds.push(ids[i]);
+          } else { failCount++; }
+        } else { failCount++; }
+      } catch { failCount++; }
     }
+
+    if (successIds.length > 0) {
+      removeChanges(successIds);
+      setCheckedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of successIds) next.delete(id);
+        return next;
+      });
+    }
+
+    if (failCount > 0) {
+      setToast({ message: `${successCount} 筆成功，${failCount} 筆失敗`, type: "error" });
+    } else {
+      setToast({ message: `已更新 ${successCount} 筆行程`, type: "success" });
+    }
+    setBulkProgress('');
+    setBulkLoading(false);
+  };
+
+  const handleBulkApply = async () => {
+    await applyChangesOneByOne(changes.map((c) => c.id));
   };
 
   const handleClearProcessed = async () => {
@@ -611,31 +613,11 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                     {bulkLoading ? "處理中..." : `清除已選（${checkedIds.size}）`}
                   </button>
                   <button
-                    onClick={async () => {
-                      setBulkLoading(true);
-                      try {
-                        const ids = Array.from(checkedIds);
-                        const res = await fetch("/api/scrape/apply", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          credentials: "include",
-                          body: JSON.stringify({ changeIds: ids }),
-                        });
-                        if (!res.ok) throw new Error("更新失敗");
-                        const data = await res.json();
-                        const successIds = (data.results || []).filter((r: { success: boolean }) => r.success).map((r: { id: string }) => r.id);
-                        if (successIds.length > 0) {
-                          removeChanges(successIds);
-                          setCheckedIds((prev) => { const next = new Set(prev); for (const id of successIds) next.delete(id); return next; });
-                        }
-                        setToast({ message: `已更新 ${successIds.length} 筆`, type: "success" });
-                      } catch { setToast({ message: "更新失敗", type: "error" }); }
-                      finally { setBulkLoading(false); }
-                    }}
+                    onClick={() => void applyChangesOneByOne(Array.from(checkedIds))}
                     disabled={bulkLoading}
                     className="rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
                   >
-                    {bulkLoading ? "處理中..." : `更新已選（${checkedIds.size}）`}
+                    {bulkLoading ? `處理中${bulkProgress}...` : `更新已選（${checkedIds.size}）`}
                   </button>
                 </>
               )}
@@ -651,7 +633,7 @@ export default function ScrapeChanges({ onCountChange }: ScrapeChangesProps) {
                 disabled={bulkLoading}
                 className="rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
               >
-                {bulkLoading ? "處理中..." : "全部更新"}
+                {bulkLoading ? `處理中${bulkProgress}...` : "全部更新"}
               </button>
               <button
                 onClick={handleClearProcessed}

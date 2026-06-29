@@ -85,6 +85,7 @@ export default function DestinationPage() {
   const [scrapeRunning, setScrapeRunning] = useState(false);
   const [scrapePendingIds, setScrapePendingIds] = useState<string[]>([]);
   const [scrapeApplying, setScrapeApplying] = useState(false);
+  const [scrapeApplyProgress, setScrapeApplyProgress] = useState('');
   const scrapePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
@@ -793,26 +794,48 @@ export default function DestinationPage() {
   const handleApplyPendingChanges = async () => {
     if (scrapeApplying || scrapePendingIds.length === 0) return;
     setScrapeApplying(true);
-    try {
-      const res = await fetch('/api/scrape/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ changeIds: scrapePendingIds }),
-      });
-      if (!res.ok) throw new Error('套用失敗');
-      setScrapePendingIds([]);
-      invalidateCache('dest-trips:');
-      invalidateCache('trip:');
-      invalidateCache('regions');
-      setToastMessage('更新完成！重新載入中...');
-      // 重新載入行程
-      setTimeout(() => window.location.reload(), 800);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '套用失敗');
-    } finally {
-      setScrapeApplying(false);
+    const total = scrapePendingIds.length;
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < total; i++) {
+      setScrapeApplyProgress(`⏳ 更新中 (${i + 1}/${total})...`);
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        const res = await fetch('/api/scrape/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ changeIds: [scrapePendingIds[i]] }),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results?.[0]?.success) successCount++;
+          else failCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
     }
+
+    setScrapePendingIds([]);
+    setScrapeApplyProgress('');
+    invalidateCache('dest-trips:');
+    invalidateCache('trip:');
+    invalidateCache('regions');
+
+    if (failCount > 0) {
+      setToastMessage(`更新完成：${successCount} 成功、${failCount} 失敗`);
+    } else {
+      setToastMessage('更新完成！重新載入中...');
+    }
+    setTimeout(() => window.location.reload(), 800);
+    setScrapeApplying(false);
   };
 
   if (loading) {
@@ -1512,7 +1535,7 @@ export default function DestinationPage() {
               disabled={scrapeApplying}
               className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-2 ring-emerald-300 ring-offset-2 animate-pulse transition hover:bg-emerald-400 disabled:opacity-60 disabled:animate-none"
             >
-              {scrapeApplying ? '⏳ 更新中...' : `✅ 更新 (${scrapePendingIds.length} 筆)`}
+              {scrapeApplying ? (scrapeApplyProgress || '⏳ 更新中...') : `✅ 更新 (${scrapePendingIds.length} 筆)`}
             </button>
           )}
           <button
