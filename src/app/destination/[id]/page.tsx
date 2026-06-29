@@ -1042,7 +1042,17 @@ export default function DestinationPage() {
                         <button
                           key={dest.id}
                           type="button"
-                          onClick={() => setActiveDestFilter(activeDestFilter === dest.id ? null : dest.id)}
+                          onClick={async () => {
+                            const newFilter = activeDestFilter === dest.id ? null : dest.id;
+                            setActiveDestFilter(newFilter);
+                            // subRegionTrips 未載入時先載入，否則篩選無效
+                            if (!subRegionTrips && activeGroup) {
+                              const allTrips = await Promise.all(
+                                activeGroup.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
+                              );
+                              setSubRegionTrips(allTrips.flat());
+                            }
+                          }}
                           className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
                             activeDestFilter === dest.id
                               ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
