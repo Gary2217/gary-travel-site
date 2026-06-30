@@ -14,13 +14,10 @@ const ContactFormModal = dynamic(() => import("./ContactFormModal"), { ssr: fals
 const SUB_CITIES: Record<string, Record<string, string[]>> = {};
 
 /** 導航列下拉用 sub_area 地區名（比 destination 更細），全部連到同一個合併頁 */
+/** merged mode 區域（日本/港澳大陸）→ 下拉顯示 sub_area tab 名，帶 ?tab= 進入 */
 const NAV_AREAS: Record<string, string[]> = {
-  '港澳大陸': ['張家界', '九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱', '高雄出發'],
-  '日本': ['北海道', '東京', '大阪', '京阪神', '名古屋', '黑部立山', '沖繩', '九州', '東北', '四國'],
-  // 東南亞用 destinations 直接對應，不用 NAV_AREAS（sub_region tab 模式）
-  '歐洲': ['德瑞法', '英國', '荷比法', '義大利', '希臘', '東歐', '芬蘭', '瑞典'],
-  '中東亞非': ['中亞', '烏茲別克', '杜拜+阿布達比', '杜拜', '伊朗', '土耳其', '埃及', '西伯利亞'],
-  '紐澳美加': ['澳洲', '紐西蘭', '美西', '美東', '美加'],
+  '港澳大陸': ['張家界', '九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '黃山', '金廈', '江南', '武夷山', '青島', '洛陽', '哈爾濱'],
+  '日本': ['北海道', '仙台', '東京', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '名古屋/小松', '台中出發'],
 };
 
 type FavTrip = {
@@ -377,16 +374,25 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             })() : (
               <div className="mx-auto max-w-site px-6 py-4">
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  {section.destinations.map((d) => (
-                    <Link
-                      key={d.id}
-                      href={`/destination/${d.id}`}
-                      onClick={() => setHoveredNavId(null)}
-                      className="rounded-full border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 px-5 py-2 text-[13px] font-bold tracking-wide text-gray-600 shadow-sm ring-1 ring-sky-100/50 transition hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
-                    >
-                      {d.sub_region || d.title}
-                    </Link>
-                  ))}
+                  {/* sub_region 去重：每個 sub_region 只顯示第一個 destination */}
+                  {(() => {
+                    const seen = new Set<string>();
+                    return section.destinations.filter(d => {
+                      const key = d.sub_region || d.title;
+                      if (seen.has(key)) return false;
+                      seen.add(key);
+                      return true;
+                    }).map((d) => (
+                      <Link
+                        key={d.id}
+                        href={`/destination/${d.id}?all=1`}
+                        onClick={() => setHoveredNavId(null)}
+                        className="rounded-full border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 px-5 py-2 text-[13px] font-bold tracking-wide text-gray-600 shadow-sm ring-1 ring-sky-100/50 transition hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                      >
+                        {d.sub_region || d.title}
+                      </Link>
+                    ));
+                  })()}
                 </div>
               </div>
             );
