@@ -58,21 +58,9 @@ export default function DestinationPage() {
   const router = useRouter();
   const destinationId = params.id as string;
 
-  // 記住 tab 到 URL query param，重整後恢復
-  const setTabParam = (tab: string) => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    if (tab && tab !== '全部') {
-      url.searchParams.set('tab', tab);
-    } else {
-      url.searchParams.delete('tab');
-    }
-    window.history.replaceState({}, '', url.toString());
-  };
-  const getTabParam = () => {
-    if (typeof window === 'undefined') return '';
-    return new URL(window.location.href).searchParams.get('tab') || '';
-  };
+  // tab 不記憶，重整後永遠回到全部
+  const setTabParam = (_tab: string) => { /* no-op */ };
+  const getTabParam = () => '';
 
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(null);
   const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
