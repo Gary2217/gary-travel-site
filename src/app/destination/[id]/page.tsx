@@ -155,6 +155,19 @@ export default function DestinationPage() {
       : [];
   }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, sortByOrder]);
 
+  // mergedSubAreaTabs 載入完成後，從 URL 恢復 tab（解決重整後 tab 錯亂）
+  useEffect(() => {
+    if (mergedSubAreaTabs.length === 0) return;
+    const savedTab = getTabParam();
+    if (!savedTab || savedTab === '全部') return;
+    const validTab = mergedSubAreaTabs.find(t => t.label === savedTab);
+    if (validTab && validTab.label !== currentTabLabel) {
+      setCurrentTabLabel(validTab.label);
+      setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mergedSubAreaTabs]);
+
   // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
   const displayTrips = useMemo(() => {
     if (subRegionTrips) {
