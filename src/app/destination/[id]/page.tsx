@@ -110,7 +110,7 @@ export default function DestinationPage() {
 
   // sub_area tabs（從合併行程或當前行程動態計算）
   const CHINA_SUB_AREA_ORDER = useMemo(() => ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'], []);
-  const JAPAN_SUB_AREA_ORDER = useMemo(() => ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'], []);
+  const JAPAN_SUB_AREA_ORDER = useMemo(() => ['北海道', '仙台', '東京', '名古屋/小松', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'], []);
 
   /** 依指定順序排列 sub_area 標籤（不在清單中的排末尾） */
   const sortByOrder = useCallback((areas: string[], order: string[]) => {
