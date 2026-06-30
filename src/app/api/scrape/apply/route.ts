@@ -384,6 +384,14 @@ export async function POST(req: NextRequest) {
               continue;
             }
 
+            // 出團日期為空 → 更新 trip_banner.custom_tour = true
+            if (scraped.departures.length === 0) {
+              const { data: existingForCustom } = await supabase
+                .from('trips').select('trip_banner').eq('id', change.trip_id).single();
+              const bannerForCustom = { ...(existingForCustom?.trip_banner || {}), custom_tour: true };
+              await supabase.from('trips').update({ trip_banner: bannerForCustom }).eq('id', change.trip_id);
+            }
+
             // 刪除舊日期
             const { error: deleteErr } = await supabase
               .from('trip_departure_dates')
@@ -492,6 +500,11 @@ export async function POST(req: NextRequest) {
             if (newPromoText) {
               (newTripBanner as Record<string, unknown>).promo_content = newPromoText;
               (newTripBanner as Record<string, unknown>).promo_enabled = true;
+            }
+            // 無出團日期 → 自動設為洽詢模式
+            const hasNoDepartures = !scraped.departures || scraped.departures.length === 0;
+            if (hasNoDepartures) {
+              (newTripBanner as Record<string, unknown>).custom_tour = true;
             }
 
             const { data: inserted, error: insertErr } = await supabase
