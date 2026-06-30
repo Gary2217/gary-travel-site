@@ -316,7 +316,17 @@ export default function DestinationPage() {
         });
         setTrips(sortedTrips);
         setRegionTabs(areaTabs);
-        if (areaTabs.length > 0) setCurrentTabLabel("全部");
+        if (areaTabs.length > 0) {
+          // 從 URL query param 恢復 tab（merged mode 用 currentTabLabel）
+          const savedTab = getTabParam();
+          const validTab = areaTabs.find(t => t.label === savedTab);
+          if (validTab && savedTab !== '全部') {
+            setCurrentTabLabel(validTab.label);
+            setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
+          } else {
+            setCurrentTabLabel("全部");
+          }
+        }
 
         // ★ Phase 1 完成 — 立即顯示頁面，不等 Phase 2
         setLoading(false);
@@ -699,9 +709,11 @@ export default function DestinationPage() {
     if (tab.destId.startsWith("filter:")) {
       setSubAreaFilter(tab.destId.slice(7));
       setCurrentTabLabel(tab.label);
+      setTabParam(tab.label);
     } else if (tab.destId === "all") {
       setSubAreaFilter("");
       setCurrentTabLabel("全部");
+      setTabParam("全部");
     }
   };
 
