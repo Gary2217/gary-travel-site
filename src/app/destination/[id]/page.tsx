@@ -983,7 +983,14 @@ export default function DestinationPage() {
           <h2 className="mb-3 text-center text-xl font-bold text-gray-800 sm:text-2xl">
             {destination.regions?.title}
           </h2>
-          {useMergedMode && mergedSubAreaTabs.length > 0 ? (
+          {useMergedMode && mergedSubAreaTabs.length === 0 ? (
+            /* merged mode 載入中：顯示 skeleton 避免閃現錯誤 tabs */
+            <div className="flex justify-center gap-2 px-1 pb-1">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="h-9 w-16 animate-pulse rounded-full bg-gray-100" />
+              ))}
+            </div>
+          ) : useMergedMode && mergedSubAreaTabs.length > 0 ? (
             /* merged mode（港澳大陸/日本/中東亞非）：直接用 sub_area tabs */
             <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
