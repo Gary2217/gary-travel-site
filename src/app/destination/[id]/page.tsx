@@ -58,6 +58,22 @@ export default function DestinationPage() {
   const router = useRouter();
   const destinationId = params.id as string;
 
+  // 記住 tab 到 URL query param，重整後恢復
+  const setTabParam = (tab: string) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (tab && tab !== '全部') {
+      url.searchParams.set('tab', tab);
+    } else {
+      url.searchParams.delete('tab');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
+  const getTabParam = () => {
+    if (typeof window === 'undefined') return '';
+    return new URL(window.location.href).searchParams.get('tab') || '';
+  };
+
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(null);
   const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
   const [currentTabLabel, setCurrentTabLabel] = useState("");
@@ -88,6 +104,8 @@ export default function DestinationPage() {
   const [scrapeApplyProgress, setScrapeApplyProgress] = useState('');
   const scrapePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrapeTargetDestRef = useRef(destinationId);
+  // 抓取完成後要查哪些 destination 的 pending changes（全部 tab 時查所有 sibling）
+  const scrapeTargetDestsRef = useRef<string[]>([destinationId]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
@@ -191,13 +209,10 @@ export default function DestinationPage() {
             }
           }
         }
-        // 檢查待更新的 pending changes（頁面載入時就檢查）
-        const changesRes = await fetch(`/api/scrape/changes?destination_id=${destinationId}&status=pending`, { credentials: 'include', cache: 'no-store' });
-        if (changesRes.ok && !cancelled) {
-          const changes = await changesRes.json();
-          const ids = Array.isArray(changes) ? changes.map((c: { id: string }) => c.id) : [];
-          if (ids.length > 0) setScrapePendingIds(ids);
-        }
+        // 檢查待更新的 pending changes（頁面載入時就檢查，查所有 sibling destinations）
+        const sibIds = siblingDestsRef.current.length > 0 ? siblingDestsRef.current : [destinationId];
+        const initIds = await fetchPendingForDests(sibIds);
+        if (!cancelled && initIds.length > 0) setScrapePendingIds(initIds);
       } catch { /* ignore */ }
     }
     checkScrapeState();
@@ -258,7 +273,10 @@ export default function DestinationPage() {
           }
           const groups = Array.from(groupMap.entries()).map(([subRegion, destinations]) => ({ subRegion, destinations }));
           setSubRegionGroups(groups);
-          setActiveSubRegion(currentSR);
+          // 從 URL query param 恢復 tab，否則用 currentSR
+          const savedTab = getTabParam();
+          const restoredSR = savedTab && groups.some(g => g.subRegion === savedTab) ? savedTab : currentSR;
+          setActiveSubRegion(restoredSR);
         } else {
           setSubRegionGroups([]);
           setActiveSubRegion("");
@@ -737,28 +755,50 @@ export default function DestinationPage() {
     return () => { if (scrapePollingRef.current) clearInterval(scrapePollingRef.current); };
   }, []);
 
+  // 查多個 destination 的 pending changes
+  const fetchPendingForDests = async (destIds: string[]) => {
+    const allIds: string[] = [];
+    await Promise.all(destIds.map(async (did) => {
+      const res = await fetch(`/api/scrape/changes?destination_id=${did}&status=pending`, { credentials: 'include', cache: 'no-store' });
+      if (res.ok) {
+        const changes = await res.json();
+        if (Array.isArray(changes)) allIds.push(...changes.map((c: { id: string }) => c.id));
+      }
+    }));
+    return allIds;
+  };
+
   const handleScrapeThisPage = async () => {
     if (scrapeTriggering || scrapeRunning) return;
 
-    // 取實際顯示的 destination（tab 切換後可能跟 URL 不同）
+    // 判斷是「全部」tab 還是特定 destination
+    const isAllTab = !activeDestFilter && !heroDest;
+    const allSiblingIds = siblingDestsRef.current.length > 0 ? siblingDestsRef.current : [destinationId];
     const targetDestId = activeDestFilter || heroDest?.id || destinationId;
     const targetDestData = siblingDestsDataRef.current.get(targetDestId) || destination;
 
-    if (selectedTripIds.size === 0 && !targetDestData?.source_url) {
+    if (selectedTripIds.size === 0 && !isAllTab && !targetDestData?.source_url) {
       alert('此目的地尚未設定朋威對應 URL（source_url），無法抓取。\n請到 Supabase 設定此目的地的 source_url 後再試。');
       return;
     }
 
     scrapeTargetDestRef.current = targetDestId;
+    // 「全部」tab 時查所有 sibling，否則只查該 destination
+    scrapeTargetDestsRef.current = isAllTab ? allSiblingIds : [targetDestId];
     setScrapeTriggering(true);
     setScrapePendingIds([]);
     try {
       const tripIds = Array.from(selectedTripIds);
+      // 「全部」tab → 用 region key 觸發整區；否則觸發單一 destination
+      const regionKey = destination?.source_url?.match(/\/([^/]+)\/$/)?.[1] || '';
+      const body = isAllTab && regionKey && tripIds.length === 0
+        ? { regions: regionKey }
+        : { destinationId: targetDestId, tripIds: tripIds.length > 0 ? tripIds : undefined };
       const res = await fetch('/api/scrape/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ destinationId: targetDestId, tripIds: tripIds.length > 0 ? tripIds : undefined }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -781,13 +821,9 @@ export default function DestinationPage() {
                     if (scrapePollingRef.current) { clearInterval(scrapePollingRef.current); scrapePollingRef.current = null; }
                     setScrapeRunning(false);
                     if (prog.latest?.status === 'failed') { setToastMessage('抓取失敗'); return; }
-            const changesRes = await fetch(`/api/scrape/changes?destination_id=${scrapeTargetDestRef.current}&status=pending`, { credentials: 'include', cache: 'no-store' });
-            if (changesRes.ok) {
-              const changes = await changesRes.json();
-              const ids = Array.isArray(changes) ? changes.map((c: { id: string }) => c.id) : [];
-              setScrapePendingIds(ids);
-              setToastMessage(ids.length > 0 ? `抓取完成，${ids.length} 筆待更新` : '抓取完成，無新變更');
-            }
+            const ids = await fetchPendingForDests(scrapeTargetDestsRef.current);
+            setScrapePendingIds(ids);
+            setToastMessage(ids.length > 0 ? `抓取完成，${ids.length} 筆待更新` : '抓取完成，無新變更');
           }
         } catch { /* ignore */ }
       }, 5000);
@@ -954,6 +990,7 @@ export default function DestinationPage() {
                       setActiveDestFilter(null);
                       setSubAreaFilter("");
                       setHeroDest(null);
+                      setTabParam("全部");
                       setSubRegionLoading(true);
                       try {
                         const ids = siblingDestsRef.current;
@@ -981,6 +1018,7 @@ export default function DestinationPage() {
                       onClick={async () => {
                         setActiveSubRegion(group.subRegion);
                         setActiveDestFilter(null);
+                        setTabParam(group.subRegion);
                         if (group.destinations.length === 1) {
                           const destId = group.destinations[0].id;
                           if (destId === destinationId) {
