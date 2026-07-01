@@ -73,7 +73,10 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-gray-100"
+      className="mx-auto max-w-site px-4 py-3 sm:px-5"
+    >
+    <div
+      className="relative w-full overflow-hidden rounded-2xl bg-gray-100"
       onDragOver={(e) => { if (isDevMode) { e.preventDefault(); setDragOver(true); } }}
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => {
@@ -85,7 +88,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
       }}
     >
       {/* 主圖區 */}
-      <div className="relative h-[200px] w-full sm:h-[260px] md:h-[320px] lg:h-[360px]">
+      <div className="relative h-[160px] w-full sm:h-[220px] md:h-[280px] lg:h-[340px]">
         {total === 0 ? (
           // 空狀態（DevMode）
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50 text-gray-400">
@@ -219,6 +222,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
           e.target.value = '';
         }}
       />
+    </div>
     </div>
   );
 }
