@@ -259,11 +259,15 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
         <>
           <h3 className="text-sm font-bold text-white [text-shadow:_0_1px_6px_rgba(0,0,0,0.9)] sm:text-base">{destination.title}</h3>
           <p className="mt-0.5 text-[11px] text-white/90 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">{destination.subtitle}</p>
-          {destination.min_price && destination.min_price > 0 && (
+          {destination.min_price && destination.min_price > 0 ? (
             <p className="mt-0.5 text-[11px] font-bold text-amber-300 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">
               NT${destination.min_price.toLocaleString()} 起
             </p>
-          )}
+          ) : (destination.trip_count ?? 0) > 0 ? (
+            <p className="mt-0.5 text-[11px] text-white/70 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">
+              洽詢報價
+            </p>
+          ) : null}
         </>
       </div>
     </Link>
