@@ -11,6 +11,7 @@ import FloatingContact from "@/components/FloatingContact";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
+import HomeBannerCarousel from "@/components/HomeBannerCarousel";
 
 const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
 const LogoUploader = dynamic(() => import("@/components/LogoUploader"), { ssr: false });
@@ -158,7 +159,7 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
       onDrop={onDrop}
-      className={`group relative block aspect-[4/3] overflow-hidden rounded-xl border border-gray-200 bg-gray-100 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-gray-300/50 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'ring-2 ring-sky-400' : ''}`}
+      className={`group relative block aspect-[4/2.5] overflow-hidden rounded-xl border border-gray-200 bg-gray-100 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-gray-300/50 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'ring-2 ring-sky-400' : ''}`}
       onClick={() => { if (!isDevMode) trackClick(destination.id); }}
     >
       {isDevMode && (
@@ -285,6 +286,7 @@ export default function HomePage() {
   const [filterDate, setFilterDate] = useState('');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [popularDestinations, setPopularDestinations] = useState<Destination[]>([]);
+  const [homeBanners, setHomeBanners] = useState<string[]>([]);
   const [favoriteTrips, setFavoriteTrips] = useState<FavoriteTrip[]>([]);
   const [addingRegionId, setAddingRegionId] = useState<string | null>(null);
   const [newDestinationTitle, setNewDestinationTitle] = useState('');
@@ -360,6 +362,13 @@ export default function HomePage() {
     }
 
     loadSiteLogo();
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/home-banners', { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setHomeBanners(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -810,6 +819,15 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Banner 輪播 */}
+      {(homeBanners.length > 0 || isDevMode) && (
+        <HomeBannerCarousel
+          banners={homeBanners}
+          isDevMode={isDevMode}
+          onBannersChange={setHomeBanners}
+        />
       )}
 
       {/* 已收藏行程 */}
