@@ -380,7 +380,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   }
 
   return (
-    <div className="mx-auto max-w-[900px] px-3 py-4 sm:px-4 md:px-6">
+    <div className="mx-auto max-w-[900px] px-3 pb-4 pt-8 sm:px-4 sm:pt-10 md:px-6">
       {/* 標題 */}
 
       {/* 模式 Tab */}
