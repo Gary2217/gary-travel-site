@@ -383,11 +383,8 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
     <div className="mx-auto max-w-[900px] px-3 py-4 sm:px-4 md:px-6">
       {/* 標題 */}
       {!flightOnly && (
-        <div className="mb-5 text-center">
-          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl md:text-3xl">
-            出走，找到最美的自己
-          </h2>
-          <p className="mt-1.5 text-sm text-gray-500 sm:text-base">
+        <div className="mb-4 text-center">
+          <p className="text-sm text-gray-500">
             讓旅遊規劃師蓋瑞，為你量身打造專屬行程
           </p>
         </div>
@@ -491,13 +488,13 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
             </div>
 
             {/* 熱搜 tags */}
-            <div className="mt-2 flex flex-wrap gap-1.5 px-1">
-              {["日本", "韓國", "歐洲", "沖繩", "北海道", "泰國"].map((tag) => (
+            <div className="mt-2 flex flex-nowrap gap-1.5 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {["日本", "韓國", "歐洲", "泰國", "越南", "沖繩", "北海道", "杜拜", "張家界", "中亞", "峇里島", "港澳"].map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setKeyword(tag)}
-                  className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+                  className="shrink-0 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
                 >
                   {tag}
                 </button>
