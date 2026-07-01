@@ -25,10 +25,49 @@ export async function GET() {
       return apiError('載入失敗', 500, regionsError);
     }
 
+    const { data: tripsData, error: tripsError } = await supabase
+      .from('trips')
+      .select('destination_id, price_range')
+      .eq('is_active', true);
+
+    if (tripsError) {
+      console.error('trips query error:', tripsError.message);
+      return apiError('載入失敗', 500, tripsError);
+    }
+
+    const tripCountMap = (tripsData || []).reduce((acc: Record<string, number>, trip: any) => {
+      if (!trip.destination_id) return acc;
+      acc[trip.destination_id] = (acc[trip.destination_id] || 0) + 1;
+      return acc;
+    }, {});
+
+    const minPriceMap = (tripsData || []).reduce((acc: Record<string, number | null>, trip: any) => {
+      if (!trip.destination_id || !trip.price_range) return acc;
+
+      const match = String(trip.price_range).match(/[\d,]+/);
+      if (!match) return acc;
+
+      const price = Number(match[0].replace(/,/g, ''));
+      if (Number.isNaN(price)) return acc;
+
+      const currentMin = acc[trip.destination_id];
+      if (currentMin === null || currentMin === undefined || price < currentMin) {
+        acc[trip.destination_id] = price;
+      }
+
+      return acc;
+    }, {});
+
     const regions = (regionsData || [])
       .map((region: any) => ({
         ...region,
-        destinations: (region.destinations || []).sort((a: any, b: any) => a.display_order - b.display_order),
+        destinations: (region.destinations || [])
+          .sort((a: any, b: any) => a.display_order - b.display_order)
+          .map((destination: any) => ({
+            ...destination,
+            trip_count: tripCountMap[destination.id] || 0,
+            min_price: minPriceMap[destination.id] ?? null,
+          })),
       }))
       .filter((region: any) => region.destinations.length > 0);
 

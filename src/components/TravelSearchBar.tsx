@@ -29,6 +29,8 @@ interface TravelSearchBarProps {
   }) => void;
   /** 僅顯示機票搜尋（隱藏行程搜尋 tab） */
   flightOnly?: boolean;
+  /** 手機版可收合（機票頁不使用）*/
+  collapsible?: boolean;
 }
 
 const REGION_DISPLAY_ORDER = [
@@ -99,7 +101,7 @@ const FLIGHT_DESTINATIONS = [
   { code: "AKL", label: "奧克蘭", region: "澳紐" },
 ];
 
-export default function TravelSearchBar({ regions = [], onSearch, flightOnly = false }: TravelSearchBarProps) {
+export default function TravelSearchBar({ regions = [], onSearch, flightOnly = false, collapsible = false }: TravelSearchBarProps) {
   // 模式切換
   const [activeMode, setActiveMode] = useState<"trip" | "flight">(flightOnly ? "flight" : "trip");
 
@@ -130,6 +132,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   const keywordDropdownRef = useRef<HTMLDivElement>(null);
   const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const updateDropdownRect = useCallback(() => {
     if (keywordRef.current) {
@@ -308,20 +311,23 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       if (date) qs.set("date", date);
       if (departureCityId) qs.set("city", departureCityId);
       const query = qs.toString();
-      router.push(`/destination/${selectedDestId}${query ? `?${query}` : ""}`);
-      setDestOpen(false);
-      setDepartureOpen(false);
-      return;
-    }
-    // 只選日期也能搜尋
-    if (date) {
-      const qs = new URLSearchParams({ date });
-      if (departureCityId) qs.set("city", departureCityId);
-      router.push(`/search?${qs.toString()}`);
-      return;
-    }
-    onSearch?.({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: null, date });
-  };
+    router.push(`/destination/${selectedDestId}${query ? `?${query}` : ""}`);
+    setDestOpen(false);
+    setDepartureOpen(false);
+    if (collapsible) setMobileExpanded(false);
+    return;
+  }
+  // 只選日期也能搜尋
+  if (date) {
+    const qs = new URLSearchParams({ date });
+    if (departureCityId) qs.set("city", departureCityId);
+    router.push(`/search?${qs.toString()}`);
+    if (collapsible) setMobileExpanded(false);
+    return;
+  }
+  onSearch?.({ departureCity: departureCityId, regionId: selectedRegionId, destinationId: null, date });
+  if (collapsible) setMobileExpanded(false);
+};
 
   const handleClear = () => {
     setDepartureCityId("");
@@ -377,8 +383,13 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
     <div className="mx-auto max-w-[900px] px-3 py-4 sm:px-4 md:px-6">
       {/* 標題 */}
       {!flightOnly && (
-        <div className="mb-4 text-center">
-          <h2 className="text-lg font-bold text-gray-900 sm:text-xl">探索你的下一趟旅程</h2>
+        <div className="mb-5 text-center">
+          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl md:text-3xl">
+            出走，找到最美的自己
+          </h2>
+          <p className="mt-1.5 text-sm text-gray-500 sm:text-base">
+            讓旅遊規劃師蓋瑞，為你量身打造專屬行程
+          </p>
         </div>
       )}
 
@@ -432,6 +443,18 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
       {/* ── 行程搜尋 ── */}
       {activeMode === "trip" && (
         <div ref={containerRef} className="relative">
+          {/* 收合態 pill 條（只在手機顯示） */}
+          {collapsible && !mobileExpanded && (
+            <button
+              type="button"
+              onClick={() => setMobileExpanded(true)}
+              className="mb-3 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm sm:hidden"
+            >
+              <span className="text-sm text-gray-500">搜尋行程目的地...</span>
+              <span className="rounded-full bg-sky-500 px-3 py-1 text-xs font-semibold text-white">篩選</span>
+            </button>
+          )}
+          <div className={collapsible && !mobileExpanded ? "hidden sm:block" : ""}>
 
           {/* 關鍵字快速搜尋 */}
           <div ref={keywordRef} className="relative mb-3">
@@ -465,6 +488,20 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
                   </svg>
                 </span>
               )}
+            </div>
+
+            {/* 熱搜 tags */}
+            <div className="mt-2 flex flex-wrap gap-1.5 px-1">
+              {["日本", "韓國", "歐洲", "沖繩", "北海道", "泰國"].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setKeyword(tag)}
+                  className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
 
             {/* 搜尋結果下拉（Portal 渲染到 body，避免被 sticky 元素的 stacking context 蓋住） */}
@@ -756,6 +793,7 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
               document.body
             );
           })()}
+          </div>
         </div>
       )}
 

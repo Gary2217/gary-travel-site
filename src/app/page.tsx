@@ -25,6 +25,8 @@ type Destination = {
   image_url: string;
   display_order: number;
   sub_region?: string;
+  trip_count?: number;
+  min_price?: number | null;
 };
 
 type RouteSection = {
@@ -257,6 +259,11 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
         <>
           <h3 className="text-sm font-bold text-white [text-shadow:_0_1px_6px_rgba(0,0,0,0.9)] sm:text-base">{destination.title}</h3>
           <p className="mt-0.5 text-[11px] text-white/90 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">{destination.subtitle}</p>
+          {destination.min_price && destination.min_price > 0 && (
+            <p className="mt-0.5 text-[11px] font-bold text-amber-300 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">
+              NT${destination.min_price.toLocaleString()} 起
+            </p>
+          )}
         </>
       </div>
     </Link>
@@ -306,7 +313,9 @@ export default function HomePage() {
             subtitle: dest.subtitle || '',
             image_url: dest.image_url,
             display_order: dest.display_order ?? 0,
-            sub_region: dest.sub_region || ''
+            sub_region: dest.sub_region || '',
+            trip_count: dest.trip_count ?? 0,
+            min_price: dest.min_price ?? null,
           }));
           // 同 sub_region 只顯示第一個（display_order 最小的），避免首頁展開子分類
           const seenSubRegions = new Set<string>();
@@ -755,7 +764,7 @@ export default function HomePage() {
       />
 
       {/* Search Section */}
-      <section className="relative overflow-hidden bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)] px-4 pb-8 pt-4">
+      <section className="relative min-h-[220px] overflow-hidden bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)] px-4 pb-8 pt-6">
         {/* 裝飾性飛機 icon */}
         <div className="pointer-events-none absolute -right-4 -top-2 text-sky-200/40">
           <svg className="h-28 w-28 rotate-12" fill="currentColor" viewBox="0 0 24 24">
@@ -768,6 +777,7 @@ export default function HomePage() {
           </svg>
         </div>
         <TravelSearchBar
+          collapsible
           regions={sections.map((s) => ({
             id: s.id,
             categoryLabel: s.categoryLabel,
@@ -776,6 +786,27 @@ export default function HomePage() {
           onSearch={handleSearch}
         />
       </section>
+
+      {/* 手機版快速導航 */}
+      {sections.length > 0 && !filterRegionId && (
+        <div className="md:hidden border-b border-gray-100 bg-white/80 px-4 py-2.5 backdrop-blur-sm">
+          <div className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {sections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById(s.id);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+              >
+                {s.categoryLabel}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 已收藏行程 */}
       {favoriteTrips.length > 0 && (
@@ -842,7 +873,7 @@ export default function HomePage() {
       <div className="mx-auto max-w-site px-4 py-6 md:px-5">
         {/* 熱門推薦 */}
         {popularDestinations.length > 0 && !filterRegionId && (
-          <section className="mx-auto mb-10 max-w-[1180px] rounded-[1.45rem] bg-[linear-gradient(135deg,rgba(251,146,60,0.55)_0%,rgba(250,204,21,0.45)_34%,rgba(244,63,94,0.4)_68%,rgba(56,189,248,0.35)_100%)] p-[1px] shadow-[0_16px_34px_rgba(245,158,11,0.18)]">
+          <section className="mx-auto mb-12 max-w-[1180px] rounded-[1.45rem] bg-[linear-gradient(135deg,rgba(251,146,60,0.55)_0%,rgba(250,204,21,0.45)_34%,rgba(244,63,94,0.4)_68%,rgba(56,189,248,0.35)_100%)] p-[1px] shadow-[0_16px_34px_rgba(245,158,11,0.18)]">
             <div className="rounded-[calc(1.45rem-1px)] bg-white p-2.5 sm:p-3">
             <div className="mb-3 px-1">
               <div className="flex items-center gap-2">
@@ -1068,7 +1099,7 @@ export default function HomePage() {
                   });
                 }
 
-                const hasMore = section.destinations.length > 5;
+                const hasMore = section.destinations.length > 4;
 
                 const renderCard = (destination: Destination, cardIdx: number) => {
                   const destinationIndex = section.destinations.findIndex((item) => item.id === destination.id);
@@ -1121,9 +1152,9 @@ export default function HomePage() {
                         </div>
                       )
                     ) : (
-                      // 收合：固定只顯示前 5 張，不分組
+                      // 收合：固定只顯示前 4 張，不分組
                       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
-                        {section.destinations.slice(0, 5).map(renderCard)}
+                        {section.destinations.slice(0, 4).map(renderCard)}
                       </div>
                     )}
                     {hasMore && (
