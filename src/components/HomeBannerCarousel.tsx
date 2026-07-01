@@ -119,12 +119,14 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
                 priority={i === 0}
                 draggable={false}
               />
+              {/* 透明 overlay 阻止 Chrome 原生下載按鈕 */}
+              <div className="absolute inset-0 z-[1]" />
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
                 <button
                   type="button"
                   onClick={() => void deleteBanner(url)}
-                  className="absolute right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
+                  className="absolute right-3 top-3 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
                   title="刪除此 Banner"
                 >
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +151,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
             <button
               type="button"
               onClick={handlePrev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50"
+              className="absolute left-2 top-1/2 z-[2] -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -158,7 +160,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
             <button
               type="button"
               onClick={handleNext}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50"
+              className="absolute right-2 top-1/2 z-[2] -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
@@ -169,7 +171,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
 
         {/* 底部 dots */}
         {total > 1 && (
-          <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+          <div className="absolute bottom-2.5 left-1/2 z-[2] flex -translate-x-1/2 gap-1.5">
             {banners.map((_, i) => (
               <button
                 key={i}
