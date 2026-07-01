@@ -115,8 +115,9 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
                 alt={`Banner ${i + 1}`}
                 fill
                 sizes="100vw"
-                className="object-cover object-center"
+                className="object-cover object-center select-none pointer-events-none"
                 priority={i === 0}
+                draggable={false}
               />
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
