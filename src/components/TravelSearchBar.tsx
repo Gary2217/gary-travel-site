@@ -382,13 +382,6 @@ export default function TravelSearchBar({ regions = [], onSearch, flightOnly = f
   return (
     <div className="mx-auto max-w-[900px] px-3 py-4 sm:px-4 md:px-6">
       {/* 標題 */}
-      {!flightOnly && (
-        <div className="mb-4 text-center">
-          <p className="text-sm text-gray-500">
-            讓旅遊規劃師蓋瑞，為你量身打造專屬行程
-          </p>
-        </div>
-      )}
 
       {/* 模式 Tab */}
       {!flightOnly && (
