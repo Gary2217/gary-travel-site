@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
+
 
 interface HomeBannerCarouselProps {
   banners: string[];
@@ -110,17 +110,13 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               key={url}
               className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
             >
-              <Image
-                src={url}
-                alt={`Banner ${i + 1}`}
-                fill
-                sizes="100vw"
-                className="object-cover object-center select-none pointer-events-none"
-                priority={i === 0}
-                draggable={false}
+              {/* 用 background-image 取代 <img>，徹底移除 Chrome 原生下載按鈕 */}
+              <div
+                className="absolute inset-0 bg-cover bg-center select-none"
+                style={{ backgroundImage: `url(${url})` }}
+                role="img"
+                aria-label={`Banner ${i + 1}`}
               />
-              {/* 透明 overlay 阻止 Chrome 原生下載按鈕 */}
-              <div className="absolute inset-0 z-[1]" />
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
                 <button
