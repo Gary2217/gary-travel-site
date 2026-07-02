@@ -98,7 +98,10 @@ export default function DestinationPage() {
   // 抓取完成後要查哪些 destination 的 pending changes（全部 tab 時查所有 sibling）
   const scrapeTargetDestsRef = useRef<string[]>([destinationId]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [subAreaFilter, setSubAreaFilter] = useState<string>("");
+  const [subAreaFilter, setSubAreaFilter] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return new URL(window.location.href).searchParams.get('sub_area') || '';
+  });
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
   const [heroDest, setHeroDest] = useState<(Destination & { regions?: { category_label: string; title: string } }) | null>(null);
   const siblingDestsRef = useRef<string[]>([]);
