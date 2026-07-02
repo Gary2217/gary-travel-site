@@ -15,6 +15,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dragCounterRef = useRef(0);
 
   const total = banners.length;
 
@@ -77,11 +78,13 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
     >
     <div
       className="relative w-full overflow-hidden rounded-2xl bg-gray-100"
-      onDragOver={(e) => { if (isDevMode) { e.preventDefault(); setDragOver(true); } }}
-      onDragLeave={() => setDragOver(false)}
+      onDragEnter={(e) => { if (isDevMode) { e.preventDefault(); dragCounterRef.current++; setDragOver(true); } }}
+      onDragOver={(e) => { if (isDevMode) e.preventDefault(); }}
+      onDragLeave={() => { dragCounterRef.current--; if (dragCounterRef.current <= 0) { dragCounterRef.current = 0; setDragOver(false); } }}
       onDrop={(e) => {
         if (!isDevMode) return;
         e.preventDefault();
+        dragCounterRef.current = 0;
         setDragOver(false);
         const file = e.dataTransfer.files[0];
         if (file) void uploadBanner(file);
