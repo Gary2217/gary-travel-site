@@ -58,8 +58,17 @@ export default function DestinationPage() {
   const router = useRouter();
   const destinationId = params.id as string;
 
-  // 從 URL ?tab= 讀取初始 tab（導覽列點選用），不記憶、不寫回
-  const setTabParam = (_tab: string) => { /* no-op */ };
+  // 從 URL ?tab= 讀取/寫入當前 tab（支援深層連結）
+  const setTabParam = (tab: string) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (tab && tab !== '全部') {
+      url.searchParams.set('tab', tab);
+    } else {
+      url.searchParams.delete('tab');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
   const getTabParam = () => {
     if (typeof window === 'undefined') return '';
     return new URL(window.location.href).searchParams.get('tab') || '';
