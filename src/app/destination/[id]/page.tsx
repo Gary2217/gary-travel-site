@@ -98,10 +98,7 @@ export default function DestinationPage() {
   // 抓取完成後要查哪些 destination 的 pending changes（全部 tab 時查所有 sibling）
   const scrapeTargetDestsRef = useRef<string[]>([destinationId]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [subAreaFilter, setSubAreaFilter] = useState<string>(() => {
-    if (typeof window === 'undefined') return '';
-    return new URL(window.location.href).searchParams.get('sub_area') || '';
-  });
+  const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
   const [heroDest, setHeroDest] = useState<(Destination & { regions?: { category_label: string; title: string } }) | null>(null);
   const siblingDestsRef = useRef<string[]>([]);
@@ -153,12 +150,8 @@ export default function DestinationPage() {
   useEffect(() => {
     if (mergedSubAreaTabs.length === 0) return;
     const savedTab = getTabParam();
-    const subAreaParam = typeof window !== 'undefined'
-      ? new URL(window.location.href).searchParams.get('sub_area') || ''
-      : '';
-    const tabToRestore = savedTab || subAreaParam;
-    if (!tabToRestore || tabToRestore === '全部') return;
-    const validTab = mergedSubAreaTabs.find(t => t.label === tabToRestore);
+    if (!savedTab || savedTab === '全部') return;
+    const validTab = mergedSubAreaTabs.find(t => t.label === savedTab);
     if (validTab && validTab.label !== currentTabLabel) {
       setCurrentTabLabel(validTab.label);
       setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
@@ -328,19 +321,12 @@ export default function DestinationPage() {
         setTrips(sortedTrips);
         setRegionTabs(areaTabs);
         if (areaTabs.length > 0) {
-          // 從 URL query param 恢復 tab（優先 ?tab=，其次 ?sub_area=）
+          // 從 URL query param 恢復 tab（merged mode 用 currentTabLabel）
           const savedTab = getTabParam();
-          const subAreaParam = typeof window !== 'undefined'
-            ? new URL(window.location.href).searchParams.get('sub_area') || ''
-            : '';
           const validTab = areaTabs.find(t => t.label === savedTab);
-          const subAreaTab = subAreaParam ? areaTabs.find(t => t.label === subAreaParam) : undefined;
           if (validTab && savedTab !== '全部') {
             setCurrentTabLabel(validTab.label);
             setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
-          } else if (subAreaTab) {
-            setCurrentTabLabel(subAreaTab.label);
-            setSubAreaFilter(subAreaTab.destId.startsWith('filter:') ? subAreaTab.destId.slice(7) : '');
           } else {
             setCurrentTabLabel("全部");
           }
@@ -691,7 +677,6 @@ export default function DestinationPage() {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('all', '1');
-      url.searchParams.delete('sub_area');
       window.history.replaceState({}, '', url.toString());
     }
 
@@ -726,24 +711,13 @@ export default function DestinationPage() {
   const handleTabClick = (tab: { label: string; destId: string }) => {
     if (tab.label === currentTabLabel) return;
     if (tab.destId.startsWith("filter:")) {
-      const area = tab.destId.slice(7);
-      setSubAreaFilter(area);
+      setSubAreaFilter(tab.destId.slice(7));
       setCurrentTabLabel(tab.label);
       setTabParam(tab.label);
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.set('sub_area', area);
-        window.history.replaceState({}, '', url.toString());
-      }
     } else if (tab.destId === "all") {
       setSubAreaFilter("");
       setCurrentTabLabel("全部");
       setTabParam("全部");
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('sub_area');
-        window.history.replaceState({}, '', url.toString());
-      }
     }
   };
 
