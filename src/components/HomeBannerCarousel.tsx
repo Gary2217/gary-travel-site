@@ -206,7 +206,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               </>
             )}
           </button>
-          <span className="text-xs text-gray-400">{total} 張 · 建議尺寸 1440×360px（JPG/PNG/WebP，8MB 以內）</span>
+          <span className="text-xs text-gray-400">{total} 張 · 建議尺寸 1200×340px（JPG/PNG/WebP，8MB 以內）</span>
         </div>
       )}
 
