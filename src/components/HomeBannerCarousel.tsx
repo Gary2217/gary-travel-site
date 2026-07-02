@@ -2,20 +2,30 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
+export interface HomeBanner {
+  url: string;
+  link: string;
+}
 
 interface HomeBannerCarouselProps {
-  banners: string[];
+  banners: HomeBanner[];
   isDevMode?: boolean;
-  onBannersChange?: (banners: string[]) => void;
+  onBannersChange?: (banners: HomeBanner[]) => void;
 }
 
 export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange }: HomeBannerCarouselProps) {
   const [current, setCurrent] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [editLink, setEditLink] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dragCounterRef = useRef(0);
+
+  // 同步當前 banner 的 link 到編輯欄
+  useEffect(() => {
+    setEditLink(banners[current]?.link || '');
+  }, [current, banners]);
 
   const total = banners.length;
 
@@ -69,6 +79,23 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
     setCurrent(0);
   };
 
+  // 儲存連結
+  const saveLink = async () => {
+    const currentLink = banners[current]?.link || '';
+    if (editLink === currentLink) return; // 沒改不送
+    const updated = banners.map((b, i) => i === current ? { ...b, link: editLink } : b);
+    onBannersChange?.(updated);
+    try {
+      const res = await fetch('/api/home-banners', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ banners: updated }),
+      });
+      if (!res.ok) alert('連結儲存失敗');
+    } catch { alert('連結儲存失敗'); }
+  };
+
   // 空狀態（非 DevMode 不顯示）
   if (total === 0 && !isDevMode) return null;
 
@@ -108,22 +135,30 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
             </button>
           </div>
         ) : (
-          banners.map((url, i) => (
+          banners.map((banner, i) => (
             <div
-              key={url}
+              key={banner.url}
               className={`${i === 0 ? 'relative' : 'absolute inset-0'} w-full transition-opacity duration-700 ${i === current ? 'opacity-100 z-[1]' : 'opacity-0 z-0'}`}
             >
               <img
-                src={url}
+                src={banner.url}
                 alt={`Banner ${i + 1}`}
                 className="block w-full h-auto select-none pointer-events-none"
                 draggable={false}
               />
+              {/* 非 DevMode 時，有連結則可點擊導向 */}
+              {!isDevMode && banner.link && (
+                <a
+                  href={banner.link}
+                  className="absolute inset-0 z-[1] cursor-pointer"
+                  {...(banner.link.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                />
+              )}
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
                 <button
                   type="button"
-                  onClick={() => void deleteBanner(url)}
+                  onClick={() => void deleteBanner(banner.url)}
                   className="absolute right-3 top-12 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
                   title="刪除此 Banner"
                 >
@@ -209,6 +244,20 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
             )}
           </button>
           <span className="text-xs text-gray-400">{total} 張 · 建議尺寸 1200×340px（JPG/PNG/WebP，8MB 以內）</span>
+        </div>
+      )}
+      {/* DevMode 連結設定 */}
+      {isDevMode && total > 0 && (
+        <div className="flex items-center gap-2 border-t border-gray-100 bg-gray-50 px-3 py-1.5">
+          <span className="shrink-0 text-xs text-gray-400">🔗 點擊導向</span>
+          <input
+            value={editLink}
+            onChange={(e) => setEditLink(e.target.value)}
+            onBlur={() => void saveLink()}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+            placeholder="輸入連結（如 /destination/xxx 或 https://...）"
+            className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 outline-none focus:border-sky-400"
+          />
         </div>
       )}
 

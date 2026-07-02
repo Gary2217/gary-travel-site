@@ -11,24 +11,33 @@ const MAX_SIZE = 8 * 1024 * 1024; // 8MB
 const BANNER_DIR = 'banners';
 const SETTINGS_KEY = 'home_banners';
 
-async function getBannerUrls(supabase: ReturnType<typeof createServiceClient>): Promise<string[]> {
+interface HomeBanner {
+  url: string;
+  link: string;
+}
+
+async function getBanners(supabase: ReturnType<typeof createServiceClient>): Promise<HomeBanner[]> {
   const { data } = await supabase
     .from('site_settings')
     .select('value')
     .eq('key', SETTINGS_KEY)
     .single();
-  return Array.isArray(data?.value) ? (data.value as string[]) : [];
+  if (!Array.isArray(data?.value)) return [];
+  // 向下相容：舊格式 string[] → 新格式 {url, link}[]
+  return (data.value as (string | HomeBanner)[]).map((item) =>
+    typeof item === 'string' ? { url: item, link: '' } : item
+  );
 }
 
-async function saveBannerUrls(supabase: ReturnType<typeof createServiceClient>, urls: string[]) {
+async function saveBanners(supabase: ReturnType<typeof createServiceClient>, banners: HomeBanner[]) {
   await supabase.from('site_settings').upsert({
     key: SETTINGS_KEY,
-    value: urls,
+    value: banners,
     updated_at: new Date().toISOString(),
   });
 }
 
-// GET: 取得所有 banner
+// GET: 取得所有 banner（回傳 {url, link}[]）
 export async function GET() {
   try {
     const supabase = createAnonClientNoCache();
@@ -37,8 +46,16 @@ export async function GET() {
       .select('value')
       .eq('key', SETTINGS_KEY)
       .single();
-    const urls = Array.isArray(data?.value) ? (data.value as string[]) : [];
-    return NextResponse.json(urls, {
+    if (!Array.isArray(data?.value)) {
+      return NextResponse.json([], {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      });
+    }
+    // 向下相容舊格式
+    const banners: HomeBanner[] = (data.value as (string | HomeBanner)[]).map((item) =>
+      typeof item === 'string' ? { url: item, link: '' } : item
+    );
+    return NextResponse.json(banners, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch (err) {
@@ -76,11 +93,14 @@ export async function POST(request: NextRequest) {
 
     const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
     const url = `${publicUrl}?v=${Date.now()}`;
+    const link = (formData.get('link') as string) || '';
+    const banner: HomeBanner = { url, link };
 
-    const existing = await getBannerUrls(supabase);
-    await saveBannerUrls(supabase, [...existing, url]);
+    const existing = await getBanners(supabase);
+    const updated = [...existing, banner];
+    await saveBanners(supabase, updated);
 
-    return NextResponse.json({ url, banners: [...existing, url] }, {
+    return NextResponse.json({ banner, banners: updated }, {
       headers: { 'Cache-Control': 'no-store' },
     });
   } catch (err) {
@@ -100,9 +120,9 @@ export async function DELETE(request: NextRequest) {
     if (!url) return apiError('缺少 url', 400);
 
     const supabase = createServiceClient();
-    const existing = await getBannerUrls(supabase);
-    const updated = existing.filter((u) => u !== url);
-    await saveBannerUrls(supabase, updated);
+    const existing = await getBanners(supabase);
+    const updated = existing.filter((b) => b.url !== url);
+    await saveBanners(supabase, updated);
 
     // 從 Storage 刪除檔案
     try {
@@ -118,7 +138,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH: 重新排序 banners（body: { urls: string[] }）
+// PATCH: 更新 banners（排序/連結）（body: { banners: {url,link}[] }）
 export async function PATCH(request: NextRequest) {
   const authError = requireDevAuth();
   if (authError) return authError;
@@ -126,13 +146,13 @@ export async function PATCH(request: NextRequest) {
   try {
     if (!hasServiceRoleConfig()) return API_ERRORS.missingConfig();
 
-    const { urls } = await request.json();
-    if (!Array.isArray(urls)) return apiError('缺少 urls', 400);
+    const { banners } = await request.json();
+    if (!Array.isArray(banners)) return apiError('缺少 banners', 400);
 
     const supabase = createServiceClient();
-    await saveBannerUrls(supabase, urls);
+    await saveBanners(supabase, banners);
 
-    return NextResponse.json({ success: true, banners: urls }, {
+    return NextResponse.json({ success: true, banners }, {
       headers: { 'Cache-Control': 'no-store' },
     });
   } catch (err) {

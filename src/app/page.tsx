@@ -11,7 +11,7 @@ import FloatingContact from "@/components/FloatingContact";
 import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
-import HomeBannerCarousel from "@/components/HomeBannerCarousel";
+import HomeBannerCarousel, { type HomeBanner } from "@/components/HomeBannerCarousel";
 
 const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
 const LogoUploader = dynamic(() => import("@/components/LogoUploader"), { ssr: false });
@@ -286,7 +286,7 @@ export default function HomePage() {
   const [filterDate, setFilterDate] = useState('');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [popularDestinations, setPopularDestinations] = useState<Destination[]>([]);
-  const [homeBanners, setHomeBanners] = useState<string[]>([]);
+  const [homeBanners, setHomeBanners] = useState<HomeBanner[]>([]);
   const [favoriteTrips, setFavoriteTrips] = useState<FavoriteTrip[]>([]);
   const [addingRegionId, setAddingRegionId] = useState<string | null>(null);
   const [newDestinationTitle, setNewDestinationTitle] = useState('');
@@ -367,7 +367,13 @@ export default function HomePage() {
   useEffect(() => {
     fetch('/api/home-banners', { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : [])
-      .then((data) => setHomeBanners(Array.isArray(data) ? data : []))
+      .then((data: unknown) => {
+        if (!Array.isArray(data)) { setHomeBanners([]); return; }
+        // 向下相容舊格式 string[]
+        setHomeBanners(data.map((item: string | HomeBanner) =>
+          typeof item === 'string' ? { url: item, link: '' } : item
+        ));
+      })
       .catch(() => {});
   }, []);
 
