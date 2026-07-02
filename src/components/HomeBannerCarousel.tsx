@@ -151,7 +151,6 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
                 <a
                   href={banner.link}
                   className="absolute inset-0 z-[1] cursor-pointer"
-                  {...(banner.link.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 />
               )}
               {/* DevMode 刪除按鈕 */}
