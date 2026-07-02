@@ -80,7 +80,9 @@ export async function POST(request: NextRequest) {
     const existing = await getBannerUrls(supabase);
     await saveBannerUrls(supabase, [...existing, url]);
 
-    return NextResponse.json({ url, banners: [...existing, url] });
+    return NextResponse.json({ url, banners: [...existing, url] }, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (err) {
     return API_ERRORS.internal(err);
   }
@@ -108,7 +110,9 @@ export async function DELETE(request: NextRequest) {
       if (match) await supabase.storage.from('images').remove([match[1]]);
     } catch { /* 靜默失敗 */ }
 
-    return NextResponse.json({ success: true, banners: updated });
+    return NextResponse.json({ success: true, banners: updated }, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (err) {
     return API_ERRORS.internal(err);
   }
@@ -128,7 +132,9 @@ export async function PATCH(request: NextRequest) {
     const supabase = createServiceClient();
     await saveBannerUrls(supabase, urls);
 
-    return NextResponse.json({ success: true, banners: urls });
+    return NextResponse.json({ success: true, banners: urls }, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (err) {
     return API_ERRORS.internal(err);
   }
