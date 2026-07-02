@@ -91,7 +91,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
       }}
     >
       {/* 主圖區 */}
-      <div className="relative h-[160px] w-full sm:h-[220px] md:h-[280px] lg:h-[340px]">
+      <div className="relative w-full" style={{ aspectRatio: '1200/340' }}>
         {total === 0 ? (
           // 空狀態（DevMode）
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50 text-gray-400">
