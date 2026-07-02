@@ -691,6 +691,7 @@ export default function DestinationPage() {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('all', '1');
+      url.searchParams.delete('sub_area');
       window.history.replaceState({}, '', url.toString());
     }
 
@@ -725,13 +726,24 @@ export default function DestinationPage() {
   const handleTabClick = (tab: { label: string; destId: string }) => {
     if (tab.label === currentTabLabel) return;
     if (tab.destId.startsWith("filter:")) {
-      setSubAreaFilter(tab.destId.slice(7));
+      const area = tab.destId.slice(7);
+      setSubAreaFilter(area);
       setCurrentTabLabel(tab.label);
       setTabParam(tab.label);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sub_area', area);
+        window.history.replaceState({}, '', url.toString());
+      }
     } else if (tab.destId === "all") {
       setSubAreaFilter("");
       setCurrentTabLabel("全部");
       setTabParam("全部");
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('sub_area');
+        window.history.replaceState({}, '', url.toString());
+      }
     }
   };
 
