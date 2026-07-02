@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 
 export interface HomeBanner {
   url: string;
@@ -148,7 +149,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               />
               {/* 非 DevMode 時，有連結則可點擊導向 */}
               {!isDevMode && banner.link && (
-                <a
+                <Link
                   href={banner.link}
                   className="absolute inset-0 z-[1] cursor-pointer"
                 />
