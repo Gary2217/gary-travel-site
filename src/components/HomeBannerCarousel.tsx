@@ -91,10 +91,10 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
       }}
     >
       {/* 主圖區 */}
-      <div className="relative w-full" style={{ aspectRatio: '1200/340' }}>
+      <div className="relative w-full overflow-hidden">
         {total === 0 ? (
           // 空狀態（DevMode）
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50 text-gray-400">
+          <div className="flex h-[200px] w-full flex-col items-center justify-center gap-3 bg-gray-50 text-gray-400">
             <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -111,14 +111,13 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
           banners.map((url, i) => (
             <div
               key={url}
-              className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
+              className={`${i === 0 ? 'relative' : 'absolute inset-0'} w-full transition-opacity duration-700 ${i === current ? 'opacity-100 z-[1]' : 'opacity-0 z-0'}`}
             >
-              {/* 用 background-image 取代 <img>，徹底移除 Chrome 原生下載按鈕 */}
-              <div
-                className="absolute inset-0 bg-cover bg-center select-none"
-                style={{ backgroundImage: `url(${url})` }}
-                role="img"
-                aria-label={`Banner ${i + 1}`}
+              <img
+                src={url}
+                alt={`Banner ${i + 1}`}
+                className="block w-full h-auto select-none pointer-events-none"
+                draggable={false}
               />
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
