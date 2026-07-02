@@ -153,8 +153,12 @@ export default function DestinationPage() {
   useEffect(() => {
     if (mergedSubAreaTabs.length === 0) return;
     const savedTab = getTabParam();
-    if (!savedTab || savedTab === '全部') return;
-    const validTab = mergedSubAreaTabs.find(t => t.label === savedTab);
+    const subAreaParam = typeof window !== 'undefined'
+      ? new URL(window.location.href).searchParams.get('sub_area') || ''
+      : '';
+    const tabToRestore = savedTab || subAreaParam;
+    if (!tabToRestore || tabToRestore === '全部') return;
+    const validTab = mergedSubAreaTabs.find(t => t.label === tabToRestore);
     if (validTab && validTab.label !== currentTabLabel) {
       setCurrentTabLabel(validTab.label);
       setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
@@ -324,12 +328,19 @@ export default function DestinationPage() {
         setTrips(sortedTrips);
         setRegionTabs(areaTabs);
         if (areaTabs.length > 0) {
-          // 從 URL query param 恢復 tab（merged mode 用 currentTabLabel）
+          // 從 URL query param 恢復 tab（優先 ?tab=，其次 ?sub_area=）
           const savedTab = getTabParam();
+          const subAreaParam = typeof window !== 'undefined'
+            ? new URL(window.location.href).searchParams.get('sub_area') || ''
+            : '';
           const validTab = areaTabs.find(t => t.label === savedTab);
+          const subAreaTab = subAreaParam ? areaTabs.find(t => t.label === subAreaParam) : undefined;
           if (validTab && savedTab !== '全部') {
             setCurrentTabLabel(validTab.label);
             setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
+          } else if (subAreaTab) {
+            setCurrentTabLabel(subAreaTab.label);
+            setSubAreaFilter(subAreaTab.destId.startsWith('filter:') ? subAreaTab.destId.slice(7) : '');
           } else {
             setCurrentTabLabel("全部");
           }
