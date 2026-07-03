@@ -1172,7 +1172,9 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
 
   const existingDepartures = buildExistingDepartureSnapshot(existingTrip);
   const scrapedDepartures = buildScrapedDepartureSnapshot(scrapedTrip);
-  if (stableStringify(existingDepartures) !== stableStringify(scrapedDepartures)) {
+  // 比對出發日期時忽略機位數（seats_total/seats_available），只比影響前端顯示的欄位
+  const stripSeats = (deps) => deps.map(({ seats_total, seats_available, ...rest }) => rest);
+  if (stableStringify(stripSeats(existingDepartures)) !== stableStringify(stripSeats(scrapedDepartures))) {
     pushChange('departure', 'departures', existingDepartures, scrapedDepartures);
   }
 
