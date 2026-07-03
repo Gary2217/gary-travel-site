@@ -248,8 +248,8 @@ function CompareContent({ change }: { change: ScrapeChangeItem }) {
         <p className="mt-1 text-[11px] text-white/40">
           套用後將把行程標記為 is_active = false，不再公開顯示。
         </p>
-        {current_data?.title && (
-          <p className="mt-2 text-xs text-white/60 font-mono">{String(current_data.title)}</p>
+        {typeof current_data?.title === "string" && current_data.title && (
+          <p className="mt-2 text-xs text-white/60 font-mono">{current_data.title}</p>
         )}
       </div>
     );
