@@ -35,7 +35,7 @@ async function scrapeAirlineWithPuppeteer(pageUrl) {
   try {
     page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-    await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForSelector('.PriceBlock, #flightModal', { timeout: 8000 }).catch(() => {});
     await new Promise(r => setTimeout(r, 2000)); // 等 JS 渲染
 
@@ -113,10 +113,16 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-async function fetchHTML(url) {
-  const response = await fetch(url, { headers: { 'User-Agent': FETCH_UA } });
-  if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
-  return response.text();
+async function fetchHTML(url, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { headers: { 'User-Agent': FETCH_UA }, signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+    return response.text();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function loadEnv() {
@@ -1229,8 +1235,7 @@ const insertedChangeKeys = new Set();
 async function insertPendingChanges(supabase, changes) {
   if (!changes.length) return 0;
 
-  // 去重：同一個 trip/destination + 同一個 change_type + 同一個 field_name 只建一筆
-  // new_trip 加上 source_code 或 trip_title 區分不同行程
+  // 去重 Step 1：記憶體去重（同次執行 + dismissed 記憶）
   const deduped = changes.filter((c) => {
     let key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
     if (c.change_type === 'new_trip') {
@@ -1242,12 +1247,34 @@ async function insertPendingChanges(supabase, changes) {
   });
 
   if (!deduped.length) return 0;
-  const { error } = await supabase.from('pending_changes').insert(deduped);
+
+  // 去重 Step 2：DB 查詢去重（防止跨次執行重複寫入仍為 pending 的相同變更）
+  const tripIds = [...new Set(deduped.map(c => c.trip_id).filter(Boolean))];
+  const destIds = [...new Set(deduped.map(c => c.destination_id).filter(Boolean))];
+  const existingKeys = new Set();
+  if (tripIds.length > 0 || destIds.length > 0) {
+    let query = supabase.from('pending_changes').select('trip_id, destination_id, change_type, field_name, source_code, trip_title').eq('status', 'pending');
+    if (tripIds.length > 0) query = query.in('trip_id', tripIds);
+    const { data: existing } = await query;
+    (existing || []).forEach(c => {
+      let key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
+      if (c.change_type === 'new_trip') key += `_${c.source_code || c.trip_title || ''}`;
+      existingKeys.add(key);
+    });
+  }
+  const finalDeduped = deduped.filter(c => {
+    let key = `${c.trip_id || c.destination_id || 'unknown'}_${c.change_type}_${c.field_name || ''}`;
+    if (c.change_type === 'new_trip') key += `_${c.source_code || c.trip_title || ''}`;
+    return !existingKeys.has(key);
+  });
+
+  if (!finalDeduped.length) return 0;
+  const { error } = await supabase.from('pending_changes').insert(finalDeduped);
   if (error) {
     console.log(`  ⚠️ 寫入 pending_changes 失敗：${error.message}`);
     return 0;
   }
-  return deduped.length;
+  return finalDeduped.length;
 }
 
 const BATCH_SIZE = 1; // 每次自動抓取只處理 1 個區域（2 個以上會超時 30 分鐘）
@@ -1277,7 +1304,7 @@ async function loadDismissedKeys(supabase) {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
   const { data } = await supabase
     .from('pending_changes')
-    .select('trip_id, destination_id, change_type, field_name')
+    .select('trip_id, destination_id, change_type, field_name, source_code, trip_title')
     .eq('status', 'dismissed')
     .gte('created_at', thirtyDaysAgo);
   const keys = new Set();

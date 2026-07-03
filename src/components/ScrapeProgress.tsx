@@ -1,83 +1,68 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import Toast from "./Toast";
+import { useEffect, useState, useCallback } from "react";
 
-interface ScrapeRegionProgress {
-  region: string;
-  status: "completed" | "in_progress" | "pending";
-  completed_trips: number;
-  total_trips: number;
+interface ScrapeProgressProps {
+  refreshKey: number;
+  onRunningChange: (running: boolean) => void;
+  onRetry: () => Promise<void>;
 }
 
 interface ScrapeLog {
-  status?: "running" | "completed" | "failed" | "cancelled" | string;
-  error_message?: string | null;
-  current_region?: string | null;
-  current_trip?: string | null;
-  completed_trips?: number | null;
-  total_trips?: number | null;
-  regions?: ScrapeRegionProgress[] | null;
-  started_at?: string | null;
-  estimated_remaining_seconds?: number | null;
+  id: string;
+  status: string;
+  started_at: string;
+  finished_at?: string;
+  error_message?: string;
+  regions_scraped?: number;
+  total_scraped?: number;
+  total_changes?: number;
 }
 
-interface ScrapeProgressData {
+interface ProgressData {
   running: boolean;
   latest: ScrapeLog | null;
   pending_count: number;
 }
 
-interface ScrapeProgressProps {
-  refreshKey?: number;
-  onRunningChange?: (running: boolean) => void;
-  onRetry?: () => void | Promise<void>;
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+    </svg>
+  );
 }
 
-async function getErrorMessage(res: Response, fallback: string) {
+function formatTime(iso: string): string {
   try {
-    const data = await res.json();
-    return typeof data?.error === "string" && data.error.trim()
-      ? data.error
-      : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }: ScrapeProgressProps) {
-  const [progress, setProgress] = useState<ScrapeProgressData | null>(null);
-  const [cancelling, setCancelling] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  const [waitingForStart, setWaitingForStart] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type?: "success" | "error" | "warning";
-  } | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const previousRunningRef = useRef(false);
-  const cancelRequestedRef = useRef(false);
-  const pollErrorNotifiedRef = useRef(false);
-
-  const formatDateTime = (iso: string | null) => {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    return d.toLocaleString("zh-TW", {
-      year: "numeric",
+    return new Date(iso).toLocaleString("zh-TW", {
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
     });
-  };
+  } catch {
+    return iso;
+  }
+}
 
-  const formatRemaining = (seconds: number | null) => {
-    if (seconds === null || seconds <= 0) return "計算中...";
-    if (seconds < 60) return `約 ${seconds} 秒`;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `約 ${m} 分 ${s} 秒`;
-  };
+function duration(start: string, end?: string): string {
+  const s = new Date(start).getTime();
+  const e = end ? new Date(end).getTime() : Date.now();
+  const diff = Math.round((e - s) / 1000);
+  if (diff < 60) return `${diff} 秒`;
+  const m = Math.floor(diff / 60);
+  const sec = diff % 60;
+  return `${m} 分 ${sec} 秒`;
+}
+
+export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }: ScrapeProgressProps) {
+  const [data, setData] = useState<ProgressData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [retryLoading, setRetryLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const fetchProgress = useCallback(async () => {
     try {
@@ -85,300 +70,199 @@ export default function ScrapeProgress({ refreshKey, onRunningChange, onRetry }:
         cache: "no-store",
         credentials: "include",
       });
-
-      if (!res.ok) {
-        if (!pollErrorNotifiedRef.current) {
-          pollErrorNotifiedRef.current = true;
-          setToast({
-            message: `抓取進度讀取失敗：${await getErrorMessage(res, "請稍後再試")}`,
-            type: "error",
-          });
-        }
-        return;
+      if (res.ok) {
+        const json = (await res.json()) as ProgressData;
+        setData(json);
+        onRunningChange(json.running);
       }
-
-      const data = (await res.json()) as ScrapeProgressData;
-      const previousRunning = previousRunningRef.current;
-      const nextRunning = Boolean(data.running);
-      setProgress(data);
-      onRunningChange?.(nextRunning);
-      if (nextRunning) setWaitingForStart(false);
-      pollErrorNotifiedRef.current = false;
-
-      if (previousRunning && !nextRunning) {
-        const latest = data.latest;
-        const status = latest?.status;
-
-        if (cancelRequestedRef.current || status === "cancelled") {
-          setToast({ message: "抓取已取消", type: "warning" });
-          cancelRequestedRef.current = false;
-        } else if (status === "failed") {
-          setToast({
-            message: `抓取失敗：${latest?.error_message || "請稍後再試"}`,
-            type: "error",
-          });
-        } else {
-          const changedCount = data.pending_count || 0;
-          setToast({
-            message:
-              changedCount > 0
-                ? `抓取完成，發現 ${changedCount} 筆變更`
-                : "抓取完成，所有行程資料一致",
-            type: "success",
-          });
-        }
-      }
-
-      previousRunningRef.current = nextRunning;
-    } catch (error) {
-      if (!pollErrorNotifiedRef.current) {
-        pollErrorNotifiedRef.current = true;
-        setToast({
-          message: `抓取進度讀取失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
-          type: "error",
-        });
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProgress();
-    intervalRef.current = setInterval(fetchProgress, 3000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchProgress, refreshKey]);
-
-  const handleCancel = async () => {
-    setCancelling(true);
-    try {
-      const res = await fetch("/api/scrape/trigger", {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error(await getErrorMessage(res, "請稍後再試"));
-      }
-      cancelRequestedRef.current = true;
-      await fetchProgress();
-    } catch (error) {
-      setToast({
-        message: `取消抓取失敗：${error instanceof Error ? error.message : "請稍後再試"}`,
-        type: "error",
-      });
+    } catch {
+      // 靜默失敗
     } finally {
-      setCancelling(false);
+      setLoading(false);
+    }
+  }, [onRunningChange]);
+
+  // refreshKey 變化時重新 fetch
+  useEffect(() => {
+    setLoading(true);
+    fetchProgress();
+  }, [refreshKey, fetchProgress]);
+
+  // 進行中時每 3 秒輪詢一次
+  useEffect(() => {
+    if (!data?.running) return;
+    const id = setInterval(fetchProgress, 3000);
+    return () => clearInterval(id);
+  }, [data?.running, fetchProgress]);
+
+  const handleRetry = async () => {
+    setRetryLoading(true);
+    try {
+      await onRetry();
+      await fetchProgress();
+    } finally {
+      setRetryLoading(false);
     }
   };
 
-  const latest = progress?.latest ?? null;
-  const completedTrips = latest?.completed_trips ?? 0;
-  const totalTrips = latest?.total_trips ?? 0;
-  const pct = totalTrips > 0 ? Math.round((completedTrips / totalTrips) * 100) : 0;
-  const regions = latest?.regions ?? [];
-  const currentRegion = latest?.current_region ?? "—";
-  const currentTrip = latest?.current_trip ?? null;
-  const startedAt = latest?.started_at ?? null;
-  const remainingSeconds = latest?.estimated_remaining_seconds ?? null;
+  const handleClear = async () => {
+    setClearing(true);
+    try {
+      await fetch("/api/scrape/progress", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      await fetchProgress();
+    } catch {
+      // 靜默失敗
+    } finally {
+      setClearing(false);
+    }
+  };
 
   return (
-    <>
-      {progress?.running ? (
-        <div className="rounded-2xl border border-sky-500/20 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-500" />
-              </span>
-              <h2 className="text-sm font-bold text-white">抓取進行中</h2>
-            </div>
-            <button
-              onClick={handleCancel}
-              disabled={cancelling}
-              className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
-            >
-              {cancelling ? "取消中..." : "取消抓取"}
-            </button>
-          </div>
-
-          <div className="space-y-4 p-4">
-            <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-[10px] text-white/40">目前正在抓取</p>
-              <p className="mt-1 text-sm font-semibold text-sky-300">
-                {currentRegion}
-                {currentTrip && (
-                  <span className="ml-1.5 text-white/60">› {currentTrip}</span>
-                )}
-              </p>
-            </div>
-
-            <div>
-              <div className="mb-1.5 flex items-center justify-between text-xs">
-                <span className="text-white/50">
-                  {completedTrips} / {totalTrips} 行程
-                </span>
-                <span className="font-semibold text-sky-400">{pct}%</span>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-white/5">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all duration-500"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
-                <span className="text-[11px] text-white/40">預估剩餘時間</span>
-                <span className="text-xs font-semibold text-white/70">
-                  {formatRemaining(remainingSeconds)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
-                <span className="text-[11px] text-white/40">開始時間</span>
-                <span className="text-xs font-semibold text-white/70">
-                  {formatDateTime(startedAt)}
-                </span>
-              </div>
-            </div>
-
-            {regions.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-semibold text-white/50">各區域進度</p>
-                <div className="space-y-1">
-                  {regions.map((r) => (
-                    <div
-                      key={r.region}
-                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
-                        r.status === "in_progress"
-                          ? "bg-sky-500/10"
-                          : "bg-white/[0.02]"
-                      }`}
-                    >
-                      <span className="shrink-0">
-                        {r.status === "completed"
-                          ? "✅"
-                          : r.status === "in_progress"
-                            ? "🔄"
-                            : "⏳"}
-                      </span>
-                      <span
-                        className={`flex-1 ${
-                          r.status === "in_progress"
-                            ? "font-semibold text-sky-300"
-                            : r.status === "completed"
-                              ? "text-white/50"
-                              : "text-white/30"
-                        }`}
-                      >
-                        {r.region}
-                      </span>
-                      <span className="text-white/30">
-                        {r.completed_trips}/{r.total_trips}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : waitingForStart ? (
-        <div className="rounded-2xl border border-sky-500/20 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-          <div className="flex items-center gap-3 px-4 py-6">
-            <svg className="h-5 w-5 animate-spin text-sky-400" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <div>
-              <p className="text-sm font-bold text-white">等待 GitHub Actions 啟動...</p>
-              <p className="mt-0.5 text-[11px] text-white/40">通常需要 20-60 秒，啟動後會自動顯示進度</p>
-            </div>
-          </div>
-        </div>
-      ) : latest?.status === "failed" ? (
-        <div className="rounded-2xl border border-red-500/20 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <span className="text-red-400">❌</span>
-              <h2 className="text-sm font-bold text-red-400">上次抓取失敗</h2>
-            </div>
-            <span className="text-[10px] text-white/30">
-              {latest?.started_at ? new Date(latest.started_at).toLocaleString("zh-TW") : ""}
+    <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-bold text-white">抓取進度</h2>
+          {data?.running && (
+            <span className="flex items-center gap-1 rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold text-sky-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+              進行中
             </span>
-          </div>
-          <div className="space-y-3 p-4">
-            <div className="rounded-xl bg-red-500/5 p-3">
-              <p className="text-[10px] font-semibold text-white/40">失敗原因</p>
-              <p className="mt-1 text-sm text-red-300">{latest?.error_message || "未知錯誤"}</p>
+          )}
+          {data?.pending_count != null && data.pending_count > 0 && (
+            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+              待確認 {data.pending_count} 筆
+            </span>
+          )}
+        </div>
+        <button
+          onClick={fetchProgress}
+          disabled={loading}
+          className="rounded-full bg-sky-600/20 px-3 py-1.5 text-xs font-semibold text-sky-400 transition hover:bg-sky-600/30 disabled:opacity-50"
+        >
+          {loading ? "載入中..." : "↻ 重新整理"}
+        </button>
+      </div>
+
+      <div className="px-4 py-4">
+        {loading && !data ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2 text-white/40">
+              <Spinner />
+              <span className="text-sm">載入中...</span>
             </div>
-            {latest?.current_region && (
-              <div className="rounded-xl bg-white/5 p-3">
-                <p className="text-[10px] font-semibold text-white/40">停在哪裡</p>
-                <p className="mt-1 text-sm text-white/70">
-                  區域：{latest.current_region}
-                  {latest.current_trip && <span className="ml-1.5 text-white/40">› {latest.current_trip}</span>}
-                </p>
-                <p className="mt-1 text-[11px] text-white/40">
-                  進度：{latest.completed_trips || 0} / {latest.total_trips || 0} 行程
-                </p>
+          </div>
+        ) : data?.running ? (
+          /* 進行中 */
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-xl bg-sky-500/10 border border-sky-500/20 px-4 py-3">
+              <div className="text-sky-400">
+                <Spinner />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-sky-300">抓取進行中...</p>
+                {data.latest?.started_at && (
+                  <p className="mt-0.5 text-[11px] text-white/40">
+                    開始於 {formatTime(data.latest.started_at)}，已執行 {duration(data.latest.started_at)}
+                  </p>
+                )}
+              </div>
+            </div>
+            {data.latest && (
+              <div className="grid grid-cols-3 gap-2">
+                <StatBox label="已抓取區域" value={data.latest.regions_scraped ?? 0} />
+                <StatBox label="已抓取行程" value={data.latest.total_scraped ?? 0} />
+                <StatBox label="發現變更" value={data.latest.total_changes ?? 0} />
               </div>
             )}
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch("/api/scrape/progress", {
-                      method: "DELETE",
-                      credentials: "include",
-                    });
-                    if (!res.ok) {
-                      throw new Error("清除失敗");
-                    }
-                    setProgress((prev) => prev ? { ...prev, latest: null } : prev);
-                    setToast({ message: "已清除錯誤紀錄", type: "success" });
-                  } catch {
-                    setToast({ message: "清除失敗，請稍後再試", type: "error" });
-                  }
-                }}
-                className="flex-1 rounded-full border border-white/10 py-2.5 text-sm font-semibold text-white/50 transition hover:bg-white/5 hover:text-white/70"
-              >
-                清除
-              </button>
-              <button
-                onClick={async () => {
-                  setRetrying(true);
-                  try {
-                    if (onRetry) {
-                      await onRetry();
-                      setWaitingForStart(true);
-                      setToast({ message: "🔄 已觸發，等待 GitHub Actions 啟動...", type: "success" });
-                    }
-                  } catch {
-                    setToast({ message: "觸發失敗，請稍後再試", type: "error" });
-                  } finally {
-                    setRetrying(false);
-                  }
-                }}
-                disabled={retrying}
-                className="flex-[2] rounded-full bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-              >
-                {retrying ? "⏳ 觸發中..." : "🔄 重新抓取"}
-              </button>
-            </div>
           </div>
-        </div>
-      ) : null}
+        ) : data?.latest ? (
+          data.latest.status === "failed" ? (
+            /* 失敗 */
+            <div className="space-y-3">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
+                <p className="text-sm font-semibold text-red-400">抓取失敗</p>
+                {data.latest.error_message && (
+                  <pre className="mt-1.5 whitespace-pre-wrap text-[11px] text-red-300/70">
+                    {data.latest.error_message}
+                  </pre>
+                )}
+                <p className="mt-1 text-[11px] text-white/40">
+                  {data.latest.started_at && `開始：${formatTime(data.latest.started_at)}`}
+                  {data.latest.finished_at && `　結束：${formatTime(data.latest.finished_at)}`}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRetry}
+                  disabled={retryLoading}
+                  className="flex items-center gap-1.5 rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+                >
+                  {retryLoading ? <><Spinner />重試中...</> : "重新抓取"}
+                </button>
+                <button
+                  onClick={handleClear}
+                  disabled={clearing}
+                  className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white/40 transition hover:bg-white/5 disabled:opacity-50"
+                >
+                  {clearing ? "清除中..." : "清除紀錄"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* 完成 */
+            <div className="space-y-3">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
+                <p className="text-sm font-semibold text-emerald-400">抓取完成</p>
+                <p className="mt-0.5 text-[11px] text-white/40">
+                  {data.latest.started_at && `開始：${formatTime(data.latest.started_at)}`}
+                  {data.latest.finished_at && (
+                    <>
+                      {"　完成：" + formatTime(data.latest.finished_at)}
+                      {"　耗時 " + duration(data.latest.started_at!, data.latest.finished_at)}
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <StatBox label="抓取區域" value={data.latest.regions_scraped ?? 0} />
+                <StatBox label="抓取行程" value={data.latest.total_scraped ?? 0} />
+                <StatBox label="發現變更" value={data.latest.total_changes ?? 0} color={data.latest.total_changes ? "amber" : undefined} />
+              </div>
+            </div>
+          )
+        ) : (
+          /* 無紀錄 */
+          <div className="py-8 text-center text-sm text-white/30">
+            尚未執行過抓取
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-          duration={toast.type === "error" ? 5000 : 3000}
-        />
-      )}
-    </>
+function StatBox({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color?: "amber" | "sky";
+}) {
+  const textClass =
+    color === "amber"
+      ? "text-amber-400"
+      : color === "sky"
+      ? "text-sky-400"
+      : "text-white/90";
+  return (
+    <div className="rounded-xl bg-white/5 px-3 py-2 text-center">
+      <p className={`text-base font-bold ${textClass}`}>{value}</p>
+      <p className="mt-0.5 text-[10px] text-white/40">{label}</p>
+    </div>
   );
 }

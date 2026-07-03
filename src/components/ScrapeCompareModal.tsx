@@ -2,993 +2,394 @@
 
 import { useState } from "react";
 
-// ── Types ────────────────────────────────────────────────
-interface FlightSegment {
-  airline: string;
-  flight_number: string;
-  day_text: string;
-  dep_time: string;
-  dep_airport: string;
-  arr_time: string;
-  arr_airport: string;
-  next_day: boolean;
-}
-
-interface DepartureDate {
-  date: string;
-  price: number;
-  seats_total: number;
-  seats_available: number;
-  label: string;
-  departure_city: string;
-  airline: string;
-}
-
-interface DateChange {
-  date: string;
-  old_price: number;
-  new_price: number;
-}
-
-interface ScrapeChangeDetails {
-  basic_info?: {
-    ours: Record<string, string>;
-    theirs: Record<string, string>;
-  };
-  price_detail?: {
-    ours: string;
-    theirs: string;
-  };
-  flight_segments?: {
-    ours: FlightSegment[];
-    theirs: FlightSegment[];
-  };
-  departure_dates?: {
-    added: DepartureDate[];
-    removed: DepartureDate[];
-    changed: DateChange[];
-    unchanged: DepartureDate[];
-  };
-  combined_fields?: {
-    ours: Record<string, string>;
-    theirs: Record<string, string>;
-  };
-}
-
 export interface ScrapeChangeItem {
   id: string;
-  trip_id: string | null;
-  trip_title: string;
   change_type: string;
-  summary: string;
-  status: string;
-  created_at: string;
-  source_url?: string;
+  trip_id?: string;
+  trip_title?: string;
+  destination_id?: string;
   region_label?: string;
-  destination_id?: string | null;
-  scraped_data?: Record<string, unknown>;
-  details: ScrapeChangeDetails;
-  old_value?: string | null;
-  new_value?: string | null;
   field_name?: string;
+  old_value?: unknown;
+  new_value?: unknown;
+  summary?: string;
+  scraped_data?: Record<string, unknown>;
+  current_data?: Record<string, unknown>;
+  source_url?: string;
+  source_code?: string;
+  created_at: string;
+  status: string;
 }
 
 interface ScrapeCompareModalProps {
   change: ScrapeChangeItem;
   onClose: () => void;
-  onApply: (id: string) => Promise<boolean> | boolean;
-  onIgnore: (id: string) => Promise<boolean> | boolean;
+  onApply: (id: string) => Promise<boolean>;
+  onIgnore: (id: string) => Promise<boolean>;
 }
 
-// ── Helpers ──────────────────────────────────────────────
-const BASIC_FIELD_LABELS: Record<string, string> = {
-  title: "行程標題",
-  subtitle: "副標題",
-  code_label: "團型編號",
-  duration: "旅遊天數",
-  duration_label: "天數標示",
-  min_group_size: "成團人數",
-  airport: "出發機場",
-  airline: "航空公司",
-  departure_label: "出發地",
-  tags: "標籤",
+const CHANGE_TYPE_CONFIG: Record<string, { icon: string; label: string; badgeClass: string }> = {
+  price: { icon: "🟡", label: "價格變更", badgeClass: "bg-amber-500/20 text-amber-400" },
+  new_trip: { icon: "🟢", label: "新行程", badgeClass: "bg-emerald-500/20 text-emerald-400" },
+  removed: { icon: "🔴", label: "行程下架", badgeClass: "bg-red-500/20 text-red-400" },
+  departure: { icon: "🔵", label: "出發日期", badgeClass: "bg-blue-500/20 text-blue-400" },
+  price_detail: { icon: "🟠", label: "售價明細", badgeClass: "bg-orange-500/20 text-orange-400" },
+  info: { icon: "⚪", label: "資訊變更", badgeClass: "bg-white/10 text-white/60" },
+  flight: { icon: "✈️", label: "航班變更", badgeClass: "bg-cyan-500/20 text-cyan-400" },
+  promotion: { icon: "🎁", label: "優惠方案", badgeClass: "bg-pink-500/20 text-pink-400" },
+  new_tab: { icon: "🟣", label: "新分頁/區域", badgeClass: "bg-purple-500/20 text-purple-400" },
+  warning: { icon: "⚠️", label: "抓取異常", badgeClass: "bg-yellow-500/20 text-yellow-400" },
 };
 
-const PRICE_COLS = ["大人", "小孩佔床", "小孩不佔床", "加床", "嬰兒"];
-
-const COMBINED_FIELD_LABELS: Record<string, string> = {
-  price_range: "售價顯示",
-  price_label: "售價標籤",
-  display_order: "排序位置",
-  custom_tour: "客製行程",
-  seats_total: "機位數",
-};
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  if (!value) return null;
-  return (
-    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
-      <p className="text-[10px] text-white/40">{label}</p>
-      <p className="mt-0.5 text-xs text-white/70">{value}</p>
-    </div>
-  );
+function parsePriceDetail(raw: unknown): string[] {
+  if (typeof raw !== "string") return [];
+  return raw.split("\t");
 }
 
-function DiffCell({
-  ours,
-  theirs,
-  label,
-}: {
-  ours: string;
-  theirs: string;
-  label: string;
-}) {
-  const isDiff = ours !== theirs;
+const PRICE_DETAIL_LABELS = ["大人", "小孩佔床", "小孩不佔床", "加床", "嬰兒"];
+
+function PriceDetailTable({ raw, label }: { raw: unknown; label: string }) {
+  const cols = parsePriceDetail(raw);
+  if (cols.length === 0) {
+    return (
+      <div className="text-[11px] text-white/30 italic">（無資料）</div>
+    );
+  }
   return (
-    <div
-      className={`rounded-lg border p-2.5 ${
-        isDiff
-          ? "border-red-400/30 bg-red-500/10"
-          : "border-white/5 bg-white/[0.02]"
-      }`}
-    >
-      <p className="text-[10px] text-white/40">{label}</p>
-      <div className="mt-1 grid grid-cols-2 gap-2">
-        <div>
-          <p className="text-[9px] text-sky-400/70">我的網站</p>
-          <p
-            className={`mt-0.5 text-xs ${isDiff ? "text-red-300" : "text-white/70"}`}
-          >
-            {ours || "—"}
-          </p>
-        </div>
-        <div>
-          <p className="text-[9px] text-amber-400/70">朋威</p>
-          <p
-            className={`mt-0.5 text-xs ${isDiff ? "font-semibold text-amber-300" : "text-white/70"}`}
-          >
-            {theirs || "—"}
-          </p>
-        </div>
+    <div>
+      <p className="mb-1 text-[10px] font-bold text-white/40 uppercase tracking-wider">{label}</p>
+      <div className="grid grid-cols-5 gap-1">
+        {PRICE_DETAIL_LABELS.map((lbl, i) => (
+          <div key={lbl} className="rounded-lg bg-white/5 p-2 text-center">
+            <p className="text-[9px] text-white/40 mb-0.5">{lbl}</p>
+            <p className="text-xs font-semibold text-white/90">{cols[i] || "—"}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ── Main Component ───────────────────────────────────────
+function DepartureList({ raw, label }: { raw: unknown; label: string }) {
+  const list = Array.isArray(raw) ? raw : [];
+  return (
+    <div>
+      <p className="mb-1.5 text-[10px] font-bold text-white/40 uppercase tracking-wider">{label}</p>
+      {list.length === 0 ? (
+        <div className="text-[11px] text-white/30 italic">（無出發日期）</div>
+      ) : (
+        <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+          {list.map((dep: Record<string, unknown>, i: number) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2">
+              <span className="text-[11px] font-mono text-sky-400 shrink-0">
+                {typeof dep.departure_date === "string" ? dep.departure_date : "—"}
+              </span>
+              <span className="text-[11px] text-white/70 flex-1">
+                {typeof dep.departure_city === "string" ? dep.departure_city : ""}
+              </span>
+              <span className="text-[11px] font-semibold text-amber-400 shrink-0">
+                {typeof dep.price === "number"
+                  ? `NT$${dep.price.toLocaleString()}`
+                  : typeof dep.price === "string"
+                  ? dep.price
+                  : "—"}
+              </span>
+              {typeof dep.seats_available === "number" && (
+                <span className="text-[10px] text-white/40 shrink-0">
+                  餘 {dep.seats_available} 位
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FlightList({ raw, label }: { raw: unknown; label: string }) {
+  const list = Array.isArray(raw) ? raw : [];
+  return (
+    <div>
+      <p className="mb-1.5 text-[10px] font-bold text-white/40 uppercase tracking-wider">{label}</p>
+      {list.length === 0 ? (
+        <div className="text-[11px] text-white/30 italic">（無航班資訊）</div>
+      ) : (
+        <div className="space-y-1">
+          {list.map((seg: Record<string, unknown>, i: number) => (
+            <div key={i} className="rounded-lg bg-white/5 px-3 py-2 text-[11px]">
+              <span className="text-sky-400 font-mono mr-2">{String(seg.flight_number || "—")}</span>
+              <span className="text-white/60">
+                {String(seg.departure_airport || "")} {String(seg.departure_time || "")}
+                {" → "}
+                {String(seg.arrival_airport || "")} {String(seg.arrival_time || "")}
+                {seg.next_day ? " (+1天)" : ""}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NewTripPreview({ scraped }: { scraped: Record<string, unknown> | undefined }) {
+  if (!scraped) return <div className="text-[11px] text-white/30 italic">（無資料）</div>;
+  const fields: [string, string][] = [
+    ["標題", String(scraped.title || "—")],
+    ["天數", String(scraped.duration || "—")],
+    ["價格", String(scraped.price_range || "—")],
+    ["出發地", String(scraped.departure_label || "—")],
+    ["航空公司", String(scraped.airline || "—")],
+    ["標籤", Array.isArray(scraped.tags) ? scraped.tags.join("、") : "—"],
+  ];
+  return (
+    <div className="space-y-2">
+      {scraped.cover_image_url && (
+        <img
+          src={String(scraped.cover_image_url)}
+          alt=""
+          className="w-full h-32 object-cover rounded-lg"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        {fields.map(([k, v]) => (
+          <div key={k} className="rounded-lg bg-white/5 p-2">
+            <p className="text-[9px] text-white/40 mb-0.5">{k}</p>
+            <p className="text-[11px] text-white/90 break-words">{v}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ValueDisplay({ value, label }: { value: unknown; label: string }) {
+  const text =
+    typeof value === "string"
+      ? value
+      : typeof value === "number"
+      ? String(value)
+      : value == null
+      ? "（無）"
+      : JSON.stringify(value, null, 2);
+  return (
+    <div>
+      <p className="mb-1 text-[10px] font-bold text-white/40 uppercase tracking-wider">{label}</p>
+      <pre className="whitespace-pre-wrap break-words rounded-lg bg-white/5 p-3 text-[11px] text-white/80">
+        {text}
+      </pre>
+    </div>
+  );
+}
+
+function CompareContent({ change }: { change: ScrapeChangeItem }) {
+  const { change_type, old_value, new_value, scraped_data, current_data, field_name } = change;
+
+  if (change_type === "price") {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <ValueDisplay value={old_value} label="目前價格" />
+        <ValueDisplay value={new_value} label="新價格" />
+      </div>
+    );
+  }
+
+  if (change_type === "price_detail") {
+    const oldDetail = current_data?.price_detail ?? old_value;
+    const newDetail = scraped_data?.price_detail ?? new_value;
+    return (
+      <div className="space-y-4">
+        <PriceDetailTable raw={oldDetail} label="目前售價明細" />
+        <div className="border-t border-white/10" />
+        <PriceDetailTable raw={newDetail} label="新售價明細" />
+      </div>
+    );
+  }
+
+  if (change_type === "departure") {
+    const oldDeps = current_data?.departures ?? old_value;
+    const newDeps = scraped_data?.departures ?? new_value;
+    return (
+      <div className="space-y-4">
+        <DepartureList raw={oldDeps} label="目前出發日期" />
+        <div className="border-t border-white/10" />
+        <DepartureList raw={newDeps} label="新出發日期" />
+      </div>
+    );
+  }
+
+  if (change_type === "flight") {
+    const oldFlights = current_data?.flight_segments ?? old_value;
+    const newFlights = scraped_data?.flight_segments ?? new_value;
+    return (
+      <div className="space-y-4">
+        <FlightList raw={oldFlights} label="目前航班" />
+        <div className="border-t border-white/10" />
+        <FlightList raw={newFlights} label="新航班" />
+      </div>
+    );
+  }
+
+  if (change_type === "new_trip") {
+    return (
+      <div>
+        <p className="mb-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">新行程資訊</p>
+        <NewTripPreview scraped={scraped_data} />
+      </div>
+    );
+  }
+
+  if (change_type === "removed") {
+    return (
+      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
+        <p className="text-sm font-semibold text-red-400">確認下架此行程？</p>
+        <p className="mt-1 text-[11px] text-white/40">
+          套用後將把行程標記為 is_active = false，不再公開顯示。
+        </p>
+        {current_data?.title && (
+          <p className="mt-2 text-xs text-white/60 font-mono">{String(current_data.title)}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (change_type === "promotion") {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <ValueDisplay value={old_value} label="目前優惠方案" />
+        <ValueDisplay value={new_value} label="新優惠方案" />
+      </div>
+    );
+  }
+
+  // info 和其他 change_type
+  return (
+    <div className="space-y-3">
+      {field_name && (
+        <div className="rounded-lg bg-white/5 px-3 py-2">
+          <span className="text-[10px] text-white/40">欄位：</span>
+          <span className="ml-1 text-[11px] font-mono text-sky-400">{field_name}</span>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <ValueDisplay value={old_value} label="目前值" />
+        <ValueDisplay value={new_value} label="新值" />
+      </div>
+    </div>
+  );
+}
+
 export default function ScrapeCompareModal({
   change,
   onClose,
   onApply,
   onIgnore,
 }: ScrapeCompareModalProps) {
-  const [applying, setApplying] = useState(false);
-  const details = change.details || {} as ScrapeChangeDetails;
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [ignoreLoading, setIgnoreLoading] = useState(false);
+
+  const config = CHANGE_TYPE_CONFIG[change.change_type] ?? CHANGE_TYPE_CONFIG.info;
 
   const handleApply = async () => {
-    setApplying(true);
-    const success = await onApply(change.id);
-    if (!success) {
-      setApplying(false);
-    }
+    setApplyLoading(true);
+    const ok = await onApply(change.id);
+    setApplyLoading(false);
+    if (ok) onClose();
   };
 
-  const oursPrice = details.price_detail?.ours?.split("\t") ?? [];
-  const theirsPrice = details.price_detail?.theirs?.split("\t") ?? [];
-
-  const hasDetailsSections = Boolean(
-    details.basic_info || details.price_detail ||
-    details.flight_segments || details.departure_dates ||
-    details.combined_fields
-  );
-  const scraped = change.scraped_data;
-  const scrapedBanner = (scraped?.trip_banner as Record<string, unknown>) || {};
-  const scrapedDepartures = (scraped?.departures as Array<Record<string, unknown>>) || [];
-  const scrapedFlights = (scraped?.flightSegments as FlightSegment[]) || [];
-  const scrapedPriceCols = String(scrapedBanner.price_detail || "").split("\t");
-  const scrapedTags = Array.isArray(scrapedBanner.tags) ? (scrapedBanner.tags as string[]) : [];
-
-  // 按鈕文字根據 change_type 調整
-  const actionLabel =
-    change.change_type === "removed" ? "確認下架" :
-    change.change_type === "new_trip" ? "確認新增" :
-    "確認更新";
+  const handleIgnore = async () => {
+    setIgnoreLoading(true);
+    const ok = await onIgnore(change.id);
+    setIgnoreLoading(false);
+    if (ok) onClose();
+  };
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0f1923] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* 半透明背景 */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal 本體 */}
+      <div className="relative z-10 flex w-full max-w-xl flex-col rounded-2xl border border-white/10 bg-[rgba(14,14,22,0.95)] shadow-2xl max-h-[90vh]">
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
-          <div className="flex items-center gap-3 min-w-0">
-            {scraped?.cover_image_url ? (
-              <img
-                src={String(scraped.cover_image_url)}
-                alt=""
-                className="h-12 w-16 shrink-0 rounded-lg object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            ) : null}
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-bold text-white">
-                {change.trip_title}
-              </h2>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <p className="text-[11px] text-white/40">
-                  變更比對 · 左側為我的網站、右側為朋威最新
-                </p>
-                {change.trip_id && (
-                  <a href={`/trip/${change.trip_id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold text-sky-400 transition hover:bg-sky-500/25">
-                    我的頁面 ↗
-                  </a>
-                )}
-                {change.source_url && (
-                  <a href={change.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400 transition hover:bg-amber-500/25">
-                    朋威原始頁 ↗
-                  </a>
-                )}
-              </div>
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+          <span className="text-lg">{config.icon}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-bold text-white truncate">
+                {change.trip_title || (change.scraped_data?.title as string) || "（未知行程）"}
+              </h3>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${config.badgeClass}`}>
+                {config.label}
+              </span>
             </div>
+            {change.summary && (
+              <p className="mt-0.5 text-[11px] text-white/40 truncate">{change.summary}</p>
+            )}
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+            className="shrink-0 rounded-full p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+            aria-label="關閉"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 space-y-5 overflow-y-auto p-5">
-          {/* ① 基本資訊 */}
-          {details.basic_info && (
-            <section>
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">
-                  ①
-                </span>
-                基本資訊
-              </h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {Object.keys(BASIC_FIELD_LABELS).map((key) => {
-                  const ours = details.basic_info?.ours[key] ?? "";
-                  const theirs = details.basic_info?.theirs[key] ?? "";
-                  if (!ours && !theirs) return null;
-                  return (
-                    <DiffCell
-                      key={key}
-                      ours={ours}
-                      theirs={theirs}
-                      label={BASIC_FIELD_LABELS[key]}
-                    />
-                  );
-                })}
-              </div>
-            </section>
+        {/* 內容 */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <CompareContent change={change} />
+
+          {/* 來源連結 */}
+          {change.source_url && (
+            <div className="mt-4 border-t border-white/10 pt-4">
+              <a
+                href={change.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[11px] text-sky-400 hover:text-sky-300 transition"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                開啟來源頁面
+              </a>
+            </div>
           )}
-
-          {/* ② 售價明細 */}
-          {details.price_detail && (
-            <section>
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">
-                  ②
-                </span>
-                售價明細
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[500px]">
-                  <thead>
-                    <tr className="border-b border-white/10 text-[11px] text-white/40">
-                      <th className="px-3 py-2 text-left">來源</th>
-                      {PRICE_COLS.map((col) => (
-                        <th key={col} className="px-3 py-2 text-center">
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-white/5 text-xs">
-                      <td className="px-3 py-2 text-sky-400/70">我的網站</td>
-                      {PRICE_COLS.map((_, i) => {
-                        const isDiff =
-                          (oursPrice[i] ?? "") !== (theirsPrice[i] ?? "");
-                        return (
-                          <td
-                            key={i}
-                            className={`px-3 py-2 text-center ${isDiff ? "rounded bg-red-500/10 text-red-300" : "text-white/60"}`}
-                          >
-                            {oursPrice[i] || "—"}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                    <tr className="text-xs">
-                      <td className="px-3 py-2 text-amber-400/70">朋威</td>
-                      {PRICE_COLS.map((_, i) => {
-                        const isDiff =
-                          (oursPrice[i] ?? "") !== (theirsPrice[i] ?? "");
-                        return (
-                          <td
-                            key={i}
-                            className={`px-3 py-2 text-center ${isDiff ? "rounded bg-amber-500/10 font-semibold text-amber-300" : "text-white/60"}`}
-                          >
-                            {theirsPrice[i] || "—"}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {/* ③ 航班資訊 */}
-          {details.flight_segments && (
-            <section>
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">
-                  ③
-                </span>
-                航班資訊
-              </h3>
-              <div className="grid gap-3 lg:grid-cols-2">
-                {(["ours", "theirs"] as const).map((side) => {
-                  const segments = details.flight_segments?.[side] ?? [];
-                  return (
-                    <div
-                      key={side}
-                      className="rounded-xl border border-white/5 bg-white/[0.02] p-3"
-                    >
-                      <p
-                        className={`mb-2 text-[10px] font-semibold ${side === "ours" ? "text-sky-400/70" : "text-amber-400/70"}`}
-                      >
-                        {side === "ours" ? "我的網站" : "朋威"}
-                      </p>
-                      {segments.length === 0 ? (
-                        <p className="text-xs text-white/30">無航班資料</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {segments.map((seg, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px]"
-                            >
-                              <span className="text-white/40">{seg.day_text}</span>
-                              <span className="text-sky-300/70">{seg.airline}</span>
-                              <span className="font-semibold text-white/80">
-                                {seg.flight_number}
-                              </span>
-                              <span className="text-white/50">
-                                {seg.dep_time}
-                              </span>
-                              <span className="text-white/40">
-                                {seg.dep_airport}
-                              </span>
-                              <span className="text-white/20">→</span>
-                              <span className="text-white/50">
-                                {seg.arr_time}
-                              </span>
-                              <span className="text-white/40">
-                                {seg.arr_airport}
-                              </span>
-                              {seg.next_day && (
-                                <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-400">
-                                  +1天
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ④ 出發日期 */}
-          {details.departure_dates && (
-            <section>
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">
-                  ④
-                </span>
-                出發日期
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px]">
-                  <thead>
-                    <tr className="border-b border-white/10 text-[11px] text-white/40">
-                      <th className="px-3 py-2 text-left">狀態</th>
-                      <th className="px-3 py-2 text-left">日期</th>
-                      <th className="px-3 py-2 text-center">售價</th>
-                      <th className="px-3 py-2 text-center">機位</th>
-                      <th className="px-3 py-2 text-center">可售</th>
-                      <th className="px-3 py-2 text-center">時段</th>
-                      <th className="px-3 py-2 text-left">出發地</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* 新增 */}
-                    {details.departure_dates.added.map((d) => (
-                      <tr
-                        key={`add-${d.date}`}
-                        className="border-b border-white/5 text-xs"
-                      >
-                        <td className="px-3 py-2">
-                          <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                            🟢 新增
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-emerald-300">
-                          {d.date}
-                        </td>
-                        <td className="px-3 py-2 text-center text-emerald-300">
-                          {d.price.toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/50">
-                          {d.seats_total}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/50">
-                          {d.seats_available}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/50">
-                          {d.label}
-                        </td>
-                        <td className="px-3 py-2 text-white/50">
-                          {d.departure_city}
-                        </td>
-                      </tr>
-                    ))}
-                    {/* 改價 */}
-                    {details.departure_dates.changed.map((d) => (
-                      <tr
-                        key={`chg-${d.date}`}
-                        className="border-b border-white/5 bg-amber-500/5 text-xs"
-                      >
-                        <td className="px-3 py-2">
-                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
-                            🟡 改價
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-white/70">{d.date}</td>
-                        <td className="px-3 py-2 text-center">
-                          <span className="text-red-300 line-through">
-                            {d.old_price.toLocaleString()}
-                          </span>
-                          <span className="ml-1.5 font-semibold text-amber-300">
-                            {d.new_price.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          —
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          —
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          —
-                        </td>
-                        <td className="px-3 py-2 text-white/30">—</td>
-                      </tr>
-                    ))}
-                    {/* 移除 */}
-                    {details.departure_dates.removed.map((d) => (
-                      <tr
-                        key={`rm-${d.date}`}
-                        className="border-b border-white/5 bg-red-500/5 text-xs"
-                      >
-                        <td className="px-3 py-2">
-                          <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
-                            🔴 移除
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-red-300/70 line-through">
-                          {d.date}
-                        </td>
-                        <td className="px-3 py-2 text-center text-red-300/50 line-through">
-                          {d.price.toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          {d.seats_total}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          {d.seats_available}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          {d.label}
-                        </td>
-                        <td className="px-3 py-2 text-white/30">
-                          {d.departure_city}
-                        </td>
-                      </tr>
-                    ))}
-                    {/* 不變 */}
-                    {details.departure_dates.unchanged.map((d) => (
-                      <tr
-                        key={`ok-${d.date}`}
-                        className="border-b border-white/5 text-xs"
-                      >
-                        <td className="px-3 py-2">
-                          <span className="text-[10px] text-white/30">
-                            ✅ 不變
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-white/50">{d.date}</td>
-                        <td className="px-3 py-2 text-center text-white/50">
-                          {d.price.toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          {d.seats_total}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          {d.seats_available}
-                        </td>
-                        <td className="px-3 py-2 text-center text-white/30">
-                          {d.label}
-                        </td>
-                        <td className="px-3 py-2 text-white/30">
-                          {d.departure_city}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {/* ⑤ 組合欄位 */}
-          {details.combined_fields && (
-            <section>
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">
-                  ⑤
-                </span>
-                組合欄位
-              </h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {Object.keys(COMBINED_FIELD_LABELS).map((key) => {
-                  const ours = details.combined_fields?.ours[key] ?? "";
-                  const theirs = details.combined_fields?.theirs[key] ?? "";
-                  if (!ours && !theirs) return null;
-                  return (
-                    <DiffCell
-                      key={key}
-                      ours={ours}
-                      theirs={theirs}
-                      label={COMBINED_FIELD_LABELS[key]}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ── 以下為 details 為空時的 fallback 內容 ── */}
-
-          {/* 行程下架 */}
-          {change.change_type === "removed" && !hasDetailsSections && (
-            <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-base">
-                  🔴
-                </span>
-                <div>
-                  <h3 className="text-sm font-bold text-red-300">行程下架通知</h3>
-                  <p className="text-[11px] text-white/40">
-                    此行程在朋威網站已找不到對應行程
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-lg bg-white/5 p-3">
-                <p className="text-[10px] text-white/40">行程名稱</p>
-                <p className="mt-1 text-sm font-medium text-white/80">
-                  {change.trip_title}
-                </p>
-              </div>
-              {change.source_url && (
-                <a
-                  href={change.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-block text-[11px] text-sky-400 hover:underline"
-                >
-                  查看來源頁面 ↗
-                </a>
-              )}
-              <p className="mt-3 text-[11px] text-white/30">
-                確認後將標記此行程為下架（is_active = false），不會刪除資料
-              </p>
-            </section>
-          )}
-
-          {/* 新行程 */}
-          {change.change_type === "new_trip" && !hasDetailsSections && scraped && (
-            <section>
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-base">
-                  🟢
-                </span>
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-300">新行程</h3>
-                  <p className="text-[11px] text-white/40">
-                    朋威網站新增了此行程，確認後將新增到我們的網站
-                  </p>
-                </div>
-              </div>
-
-              {/* 封面圖 */}
-              {scraped.cover_image_url ? (
-                <div className="mb-4 overflow-hidden rounded-xl">
-                  <img
-                    src={String(scraped.cover_image_url)}
-                    alt=""
-                    className="h-40 w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              ) : null}
-
-              {/* 基本資訊 */}
-              <div className="mb-4 grid gap-2 sm:grid-cols-2">
-                <InfoRow label="行程標題" value={String(scraped.title || "")} />
-                <InfoRow label="副標題" value={String(scraped.subtitle || "")} />
-                <InfoRow label="旅遊天數" value={String(scraped.duration || "")} />
-                <InfoRow label="售價" value={String(scraped.price_range || "")} />
-                <InfoRow label="團型編號" value={String(scrapedBanner.code_label || "")} />
-                <InfoRow label="航空公司" value={String(scrapedBanner.airline || "")} />
-                <InfoRow label="出發機場" value={String(scrapedBanner.airport || "")} />
-                <InfoRow
-                  label="成團人數"
-                  value={scrapedBanner.min_group_size ? `${scrapedBanner.min_group_size}人` : ""}
-                />
-                {scrapedTags.length > 0 && (
-                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5 sm:col-span-2">
-                    <p className="text-[10px] text-white/40">標籤</p>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
-                      {scrapedTags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 售價明細 */}
-              {scrapedPriceCols.length > 1 && scrapedPriceCols.some(Boolean) && (
-                <div className="mb-4">
-                  <h4 className="mb-2 text-[11px] font-semibold text-white/50">售價明細</h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[500px]">
-                      <thead>
-                        <tr className="border-b border-white/10 text-[11px] text-white/40">
-                          {PRICE_COLS.map((col) => (
-                            <th key={col} className="px-3 py-2 text-center">{col}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="text-xs">
-                          {PRICE_COLS.map((_, i) => (
-                            <td key={i} className="px-3 py-2 text-center text-emerald-300">
-                              {scrapedPriceCols[i] || "—"}
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* 航班資訊 */}
-              {scrapedFlights.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="mb-2 text-[11px] font-semibold text-white/50">航班資訊</h4>
-                  <div className="space-y-1.5">
-                    {scrapedFlights.map((seg, i) => (
-                      <div
-                        key={i}
-                        className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px]"
-                      >
-                        <span className="text-white/40">{seg.day_text}</span>
-                        <span className="text-sky-300/70">{seg.airline}</span>
-                        <span className="font-semibold text-white/80">{seg.flight_number}</span>
-                        <span className="text-white/50">{seg.dep_time}</span>
-                        <span className="text-white/40">{seg.dep_airport}</span>
-                        <span className="text-white/20">→</span>
-                        <span className="text-white/50">{seg.arr_time}</span>
-                        <span className="text-white/40">{seg.arr_airport}</span>
-                        {seg.next_day && (
-                          <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-400">+1天</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 出發日期 */}
-              {scrapedDepartures.length > 0 && (
-                <div>
-                  <h4 className="mb-2 text-[11px] font-semibold text-white/50">
-                    出發日期（{scrapedDepartures.length} 個）
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[500px]">
-                      <thead>
-                        <tr className="border-b border-white/10 text-[11px] text-white/40">
-                          <th className="px-3 py-2 text-left">日期</th>
-                          <th className="px-3 py-2 text-center">售價</th>
-                          <th className="px-3 py-2 text-center">機位</th>
-                          <th className="px-3 py-2 text-center">可售</th>
-                          <th className="px-3 py-2 text-center">時段</th>
-                          <th className="px-3 py-2 text-left">出發地</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {scrapedDepartures.map((d, i) => (
-                          <tr key={i} className="border-b border-white/5 text-xs">
-                            <td className="px-3 py-2 text-emerald-300">{String(d.date || "")}</td>
-                            <td className="px-3 py-2 text-center text-emerald-300">
-                              {Number(d.price || 0).toLocaleString()}
-                            </td>
-                            <td className="px-3 py-2 text-center text-white/50">{String(d.seats_total || "")}</td>
-                            <td className="px-3 py-2 text-center text-white/50">{String(d.seats_available || "")}</td>
-                            <td className="px-3 py-2 text-center text-white/50">{String(d.label || "")}</td>
-                            <td className="px-3 py-2 text-white/50">{String(d.departure_city || "")}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* 優惠方案 */}
-          {change.change_type === "promotion" && !hasDetailsSections && (
-            <section>
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-500/20 text-base">
-                  🎁
-                </span>
-                <div>
-                  <h3 className="text-sm font-bold text-pink-300">優惠方案變更</h3>
-                  <p className="text-[11px] text-white/40">優惠文字內容有變更</p>
-                </div>
-              </div>
-              <div className="grid gap-3 lg:grid-cols-2">
-                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                  <p className="mb-2 text-[10px] font-semibold text-sky-400/70">目前優惠</p>
-                  <p className="whitespace-pre-wrap text-xs text-white/60">
-                    {change.old_value || "（無）"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                  <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
-                  <p className="whitespace-pre-wrap text-xs text-amber-300">
-                    {change.new_value || "（無）"}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* 通用 fallback：其他 change type 有 old_value / new_value 但無 details */}
-          {!hasDetailsSections &&
-            change.change_type !== "removed" &&
-            change.change_type !== "new_trip" &&
-            change.change_type !== "promotion" &&
-            (change.old_value || change.new_value) && (() => {
-              // 嘗試智能解析 JSON 格式資料
-              const fieldLabel = change.field_name
-                ? BASIC_FIELD_LABELS[change.field_name] || COMBINED_FIELD_LABELS[change.field_name] || change.field_name
-                : "變更內容";
-
-              let parsedOld: unknown = null;
-              let parsedNew: unknown = null;
-              try { parsedOld = change.old_value ? JSON.parse(change.old_value) : null; } catch { /* not JSON */ }
-              try { parsedNew = change.new_value ? JSON.parse(change.new_value) : null; } catch { /* not JSON */ }
-
-              // flight_segments：渲染為航班表格
-              if (change.field_name === 'flight_segments' && (Array.isArray(parsedOld) || Array.isArray(parsedNew))) {
-                const renderFlightList = (segs: FlightSegment[], colorClass: string) => (
-                  segs.length === 0 ? <p className="text-xs text-white/30">無航班資料</p> : (
-                    <div className="space-y-1.5">
-                      {segs.map((seg, i) => (
-                        <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px]">
-                          {seg.day_text && <span className="text-white/40">{seg.day_text}</span>}
-                          <span className={colorClass}>{seg.airline}</span>
-                          <span className="font-semibold text-white/80">{seg.flight_number}</span>
-                          <span className="text-white/50">{seg.dep_time}</span>
-                          <span className="text-white/40">{seg.dep_airport}</span>
-                          <span className="text-white/20">→</span>
-                          <span className="text-white/50">{seg.arr_time}</span>
-                          <span className="text-white/40">{seg.arr_airport}</span>
-                          {seg.next_day && <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-400">+1天</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )
-                );
-                return (
-                  <section>
-                    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                      <span className="flex h-5 w-5 items-center justify-center rounded bg-cyan-500/20 text-[10px]">✈️</span>
-                      航班資訊
-                    </h3>
-                    <div className="grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                        <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站</p>
-                        {renderFlightList((parsedOld as FlightSegment[]) || [], "text-sky-300/70")}
-                      </div>
-                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                        <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
-                        {renderFlightList((parsedNew as FlightSegment[]) || [], "text-amber-300/70")}
-                      </div>
-                    </div>
-                  </section>
-                );
-              }
-
-              // departures：渲染為出發日期表
-              if (change.field_name === 'departures' && (Array.isArray(parsedOld) || Array.isArray(parsedNew))) {
-                const renderDepartureTable = (deps: DepartureDate[], colorClass: string) => (
-                  deps.length === 0 ? <p className="text-xs text-white/30">無出發日期</p> : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-white/10 text-[10px] text-white/40">
-                            <th className="px-2 py-1.5 text-left">日期</th>
-                            <th className="px-2 py-1.5 text-center">售價</th>
-                            <th className="px-2 py-1.5 text-center">機位</th>
-                            <th className="px-2 py-1.5 text-center">可售</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {deps.map((d, i) => (
-                            <tr key={i} className="border-b border-white/5 text-[11px]">
-                              <td className={`px-2 py-1.5 ${colorClass}`}>{d.date}</td>
-                              <td className={`px-2 py-1.5 text-center ${colorClass}`}>{d.price?.toLocaleString() || '—'}</td>
-                              <td className="px-2 py-1.5 text-center text-white/50">{d.seats_total || '—'}</td>
-                              <td className="px-2 py-1.5 text-center text-white/50">{d.seats_available || '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )
-                );
-                return (
-                  <section>
-                    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                      <span className="flex h-5 w-5 items-center justify-center rounded bg-blue-500/20 text-[10px]">🔵</span>
-                      出發日期
-                    </h3>
-                    <div className="grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                        <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站（{(parsedOld as DepartureDate[])?.length || 0} 筆）</p>
-                        {renderDepartureTable((parsedOld as DepartureDate[]) || [], "text-sky-300")}
-                      </div>
-                      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                        <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新（{(parsedNew as DepartureDate[])?.length || 0} 筆）</p>
-                        {renderDepartureTable((parsedNew as DepartureDate[]) || [], "text-amber-300")}
-                      </div>
-                    </div>
-                  </section>
-                );
-              }
-
-              // price_detail：渲染為售價表格
-              if (change.field_name === 'price_detail') {
-                const oldCols = (change.old_value || '').split('\t');
-                const newCols = (change.new_value || '').split('\t');
-                if (oldCols.length > 1 || newCols.length > 1) {
-                  return (
-                    <section>
-                      <h3 className="mb-3 flex items-center gap-2 text-xs font-bold text-white/70">
-                        <span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/20 text-[10px]">🟠</span>
-                        售價明細
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[500px]">
-                          <thead>
-                            <tr className="border-b border-white/10 text-[11px] text-white/40">
-                              <th className="px-3 py-2 text-left">來源</th>
-                              {PRICE_COLS.map(col => <th key={col} className="px-3 py-2 text-center">{col}</th>)}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b border-white/5 text-xs">
-                              <td className="px-3 py-2 text-sky-400/70">我的網站</td>
-                              {PRICE_COLS.map((_, i) => {
-                                const isDiff = (oldCols[i] ?? '') !== (newCols[i] ?? '');
-                                return <td key={i} className={`px-3 py-2 text-center ${isDiff ? 'rounded bg-red-500/10 text-red-300' : 'text-white/60'}`}>{oldCols[i] || '—'}</td>;
-                              })}
-                            </tr>
-                            <tr className="text-xs">
-                              <td className="px-3 py-2 text-amber-400/70">朋威</td>
-                              {PRICE_COLS.map((_, i) => {
-                                const isDiff = (oldCols[i] ?? '') !== (newCols[i] ?? '');
-                                return <td key={i} className={`px-3 py-2 text-center ${isDiff ? 'rounded bg-amber-500/10 font-semibold text-amber-300' : 'text-white/60'}`}>{newCols[i] || '—'}</td>;
-                              })}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  );
-                }
-              }
-
-              // 其他：顯示文字比對
-              return (
-                <section>
-                  <h3 className="mb-3 text-xs font-bold text-white/70">{fieldLabel}</h3>
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                      <p className="mb-2 text-[10px] font-semibold text-sky-400/70">我的網站</p>
-                      <p className="whitespace-pre-wrap text-xs text-white/60">
-                        {change.old_value || "（無）"}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                      <p className="mb-2 text-[10px] font-semibold text-amber-400/70">朋威最新</p>
-                      <p className="whitespace-pre-wrap text-xs font-semibold text-amber-300">
-                        {change.new_value || "（無）"}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-              );
-            })()}
         </div>
 
-        {/* Footer */}
-        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-white/10 px-5 py-4">
+        {/* Footer 按鈕 */}
+        <div className="flex items-center justify-end gap-3 border-t border-white/10 px-5 py-4">
           <button
-            onClick={() => onIgnore(change.id)}
-            className="rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-white/50 transition hover:bg-white/5 hover:text-white/80"
+            onClick={handleIgnore}
+            disabled={ignoreLoading || applyLoading}
+            className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white/40 transition hover:bg-white/5 hover:text-white/70 disabled:opacity-50"
           >
-            忽略此筆
+            {ignoreLoading ? "處理中..." : "忽略"}
           </button>
           <button
             onClick={handleApply}
-            disabled={applying}
-            className="rounded-full bg-sky-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+            disabled={applyLoading || ignoreLoading}
+            className="flex items-center gap-1.5 rounded-full bg-sky-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
           >
-            {applying ? "處理中..." : `✓ ${actionLabel}`}
+            {applyLoading ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                套用中...
+              </>
+            ) : (
+              "確認更新"
+            )}
           </button>
         </div>
       </div>
