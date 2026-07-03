@@ -145,9 +145,9 @@ function NewTripPreview({ scraped }: { scraped: Record<string, unknown> | undefi
   ];
   return (
     <div className="space-y-2">
-      {scraped.cover_image_url && (
+      {typeof scraped.cover_image_url === "string" && scraped.cover_image_url && (
         <img
-          src={String(scraped.cover_image_url)}
+          src={scraped.cover_image_url}
           alt=""
           className="w-full h-32 object-cover rounded-lg"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
