@@ -151,8 +151,15 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               {!isDevMode && banner.link && (
                 <Link
                   href={banner.link}
-                  className="absolute inset-0 z-[1] cursor-pointer"
-                />
+                  className="absolute inset-0 z-[1] flex items-end justify-end p-4 sm:p-6"
+                >
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-5 py-2.5 text-sm font-bold text-sky-700 shadow-lg backdrop-blur-sm transition hover:bg-white hover:shadow-xl sm:text-base">
+                    立即查看
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </Link>
               )}
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
