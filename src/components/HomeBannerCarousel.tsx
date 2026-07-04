@@ -19,6 +19,8 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [editLink, setEditLink] = useState('');
+  const [savingLink, setSavingLink] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dragCounterRef = useRef(0);
@@ -82,10 +84,11 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
 
   // 儲存連結
   const saveLink = async () => {
+    if (savingLink) return;
     const currentLink = banners[current]?.link || '';
-    if (editLink === currentLink) return; // 沒改不送
-    const updated = banners.map((b, i) => i === current ? { ...b, link: editLink } : b);
-    onBannersChange?.(updated);
+    const nextLink = editLink.trim();
+    const updated = banners.map((b, i) => i === current ? { ...b, link: nextLink } : b);
+    setSavingLink(true);
     try {
       const res = await fetch('/api/home-banners', {
         method: 'PATCH',
@@ -93,8 +96,17 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ banners: updated }),
       });
-      if (!res.ok) alert('連結儲存失敗');
-    } catch { alert('連結儲存失敗'); }
+      if (!res.ok) { alert('連結儲存失敗'); return; }
+      onBannersChange?.(updated);
+      // 儲存成功，畫面中間顯示提示
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 1800);
+    } catch {
+      alert('連結儲存失敗');
+    } finally {
+      setSavingLink(false);
+    }
+    void currentLink;
   };
 
   // 空狀態（非 DevMode 不顯示）
@@ -260,11 +272,28 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
           <input
             value={editLink}
             onChange={(e) => setEditLink(e.target.value)}
-            onBlur={() => void saveLink()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveLink(); } }}
             placeholder="輸入連結（如 /destination/xxx 或 https://...）"
             className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 outline-none focus:border-sky-400"
           />
+          <button
+            type="button"
+            onClick={() => void saveLink()}
+            disabled={savingLink}
+            className="shrink-0 rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+          >
+            {savingLink ? '儲存中...' : '確定'}
+          </button>
+        </div>
+      )}
+
+      {/* 儲存成功提示（畫面中間） */}
+      {showSaved && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+          <div className="flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-base font-semibold text-gray-900 shadow-2xl border border-gray-200">
+            <span className="text-emerald-500">✅</span>
+            <span>儲存成功</span>
+          </div>
         </div>
       )}
 
