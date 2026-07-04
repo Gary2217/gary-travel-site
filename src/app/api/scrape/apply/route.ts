@@ -272,20 +272,38 @@ export async function POST(req: NextRequest) {
               .eq('id', change.trip_id)
               .single();
 
-            const mergedBanner = {
-              ...(existing?.trip_banner || {}),
-              ...(scraped.trip_banner || {}),
+            // 白名單 merge：以既有 trip_banner 為底，只寫入本次 change_type 允許爬蟲更新的欄位。
+            // 手動管理／前端專用欄位（sub_area、departure_info_map、side_image_url、custom_tour、seats_*）
+            // 一律保留既有值，避免爬蟲遺漏（undefined）時把它們清空。
+            const existingBanner: Record<string, unknown> =
+              existing?.trip_banner && typeof existing.trip_banner === 'object'
+                ? { ...(existing.trip_banner as Record<string, unknown>) }
+                : {};
+            const scrapedBanner: Record<string, unknown> =
+              scraped.trip_banner && typeof scraped.trip_banner === 'object'
+                ? (scraped.trip_banner as Record<string, unknown>)
+                : {};
+
+            // 各 change_type 允許爬蟲更新的 trip_banner 欄位（白名單）
+            const BANNER_FIELDS_BY_CHANGE_TYPE: Record<string, string[]> = {
+              info: ['code_label', 'tags', 'departure_label', 'duration_label', 'min_group_size', 'airline', 'airport'],
+              flight: ['airline', 'airport'],
+              price_detail: ['price_detail'],
+              price: [],
+              promotion: [],
             };
 
-            // 保留既有圖片欄位
-            if ((existing?.trip_banner as Record<string, unknown>)?.side_image_url) {
-              (mergedBanner as Record<string, unknown>).side_image_url =
-                (existing?.trip_banner as Record<string, unknown>).side_image_url;
+            const mergedBanner: Record<string, unknown> = { ...existingBanner };
+            for (const key of BANNER_FIELDS_BY_CHANGE_TYPE[change.change_type] ?? []) {
+              const value = scrapedBanner[key];
+              if (value !== undefined && value !== null) {
+                mergedBanner[key] = value;
+              }
             }
 
             // 確保 price_label 與 price_range 同步（防止爬蟲遺漏時不一致）
             if (scraped.price_range) {
-              (mergedBanner as Record<string, unknown>).price_label = scraped.price_range;
+              mergedBanner.price_label = scraped.price_range;
             }
 
             if (change.change_type === 'promotion') {
