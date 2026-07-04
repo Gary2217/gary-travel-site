@@ -1129,16 +1129,7 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushChange('info', 'custom_tour', false, true);
   }
 
-  // 全部「請來電洽詢」→ 建議隱藏行程（is_active=false），已隱藏的不重複標記
-  if (scrapedTrip.all_inquiry_only && existingTrip.is_active !== false) {
-    changes.push({
-      ...buildPendingChangeBase(context),
-      change_type: 'removed',
-      field_name: 'all_inquiry_only',
-      old_value: '出發日期全部為「請來電洽詢」',
-      new_value: '建議隱藏（朋威所有梯次未確定出團）',
-    });
-  }
+  // 註：「請來電洽詢」的行程已在主迴圈提前跳過（不新增/不更新/不下架），此處不再處理
 
   // 售價明細：統一用 tab 分隔後比較
   const oldPD = normalize(existingBanner.price_detail);
@@ -1690,6 +1681,19 @@ async function main() {
         const bucket = scrapedByDestination.get(destination.id) || [];
         bucket.push(scrapedTrip);
         scrapedByDestination.set(destination.id, bucket);
+
+        // 全部「請來電洽詢」→ 完全跳過此行程：不新增、不更新、不下架
+        // 洽詢行程維持現狀（既有的保持顯示、新的不自動加入），是否隱藏由人工在 DevMode 決定
+        // 若已有既有行程，標記為「已匹配」避免被下架偵測誤判
+        if (scrapedTrip.all_inquiry_only) {
+          if (matchedTrip) {
+            consumedTripIds.add(matchedTrip.id);
+            matchedTripIdsByDestination.set(destination.id, consumedTripIds);
+          }
+          console.log(`  ⏭️ 全部洽詢價，跳過此行程（不新增/不更新/不下架）：${scrapedTrip.title}`);
+          completedTrips += 1;
+          continue;
+        }
 
         if (matchedTrip) {
           consumedTripIds.add(matchedTrip.id);
