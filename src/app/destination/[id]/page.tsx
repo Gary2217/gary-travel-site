@@ -102,6 +102,7 @@ export default function DestinationPage() {
   const [scrapePendingIds, setScrapePendingIds] = useState<string[]>([]);
   const [scrapeApplying, setScrapeApplying] = useState(false);
   const [scrapeApplyProgress, setScrapeApplyProgress] = useState('');
+  const [globalPendingCount, setGlobalPendingCount] = useState(0);
   const scrapePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrapeTargetDestRef = useRef(destinationId);
   // 抓取完成後要查哪些 destination 的 pending changes（全部 tab 時查所有 sibling）
@@ -198,6 +199,7 @@ export default function DestinationPage() {
           if (!cancelled) {
             const running = prog.running === true;
             setScrapeRunning(running);
+            setGlobalPendingCount(prog.pending_count ?? 0);
             // 如果正在跑，啟動輪詢
             if (running && !scrapePollingRef.current) {
               scrapePollingRef.current = setInterval(async () => {
@@ -848,6 +850,7 @@ export default function DestinationPage() {
                     if (prog.latest?.status === 'failed') { setToastMessage('抓取失敗'); return; }
             const ids = await fetchPendingForDests(scrapeTargetDestsRef.current);
             setScrapePendingIds(ids);
+            setGlobalPendingCount(prog.pending_count ?? 0);
             setToastMessage(ids.length > 0 ? `抓取完成，${ids.length} 筆待更新` : '抓取完成，無新變更');
           }
         } catch { /* ignore */ }
@@ -1621,7 +1624,7 @@ export default function DestinationPage() {
               disabled={scrapeApplying}
               className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-2 ring-emerald-300 ring-offset-2 animate-pulse transition hover:bg-emerald-400 disabled:opacity-60 disabled:animate-none"
             >
-              {scrapeApplying ? (scrapeApplyProgress || '⏳ 更新中...') : `✅ 更新 (${scrapePendingIds.length} 筆)`}
+              {scrapeApplying ? (scrapeApplyProgress || '⏳ 更新中...') : `✅ 更新此頁 (${scrapePendingIds.length} 筆)`}
             </button>
           )}
           <button
@@ -1631,6 +1634,14 @@ export default function DestinationPage() {
           >
             {scrapeRunning ? '⏳ 抓取進行中...' : scrapeTriggering ? '⏳ 啟動中...' : selectedTripIds.size > 0 ? `🔄 更新抓取已選 (${selectedTripIds.size})` : '🔄 抓取此頁行程'}
           </button>
+          {globalPendingCount > 0 && (
+            <button
+              onClick={() => { window.location.href = '/admin'; }}
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm transition hover:border-gray-300 hover:text-gray-700"
+            >
+              🌐 全站尚有 {globalPendingCount} 筆待確認
+            </button>
+          )}
         </div>
       )}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
