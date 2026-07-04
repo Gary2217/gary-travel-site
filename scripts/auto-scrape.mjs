@@ -277,13 +277,67 @@ function getAirlineCodeFromFlightNumber(flightNumber) {
   return matched ? matched[0].toUpperCase() : '';
 }
 
+// 航空公司名稱 → 正確 IATA 代碼對照。
+// 用途：驗證「從航班號取到的代碼」是否真的屬於這家航空公司，避免張冠李戴。
+// （例：高雄杜拜行程第一段是國泰 CX 轉機，但主航空是阿提哈德 EY，不可把 CX 拼給阿提哈德）
+const AIRLINE_NAME_TO_CODE = {
+  阿提哈德航空: 'EY',
+  阿聯酋航空: 'EK',
+  國泰航空: 'CX',
+  長榮航空: 'BR',
+  中華航空: 'CI',
+  星宇航空: 'JX',
+  台灣虎航: 'IT',
+  日本航空: 'JL',
+  全日空: 'NH',
+  大韓航空: 'KE',
+  韓亞航空: 'OZ',
+  泰國航空: 'TG',
+  新加坡航空: 'SQ',
+  馬來西亞航空: 'MH',
+  中國國際航空: 'CA',
+  中國東方航空: 'MU',
+  中國南方航空: 'CZ',
+  廈門航空: 'MF',
+  四川航空: '3U',
+  海南航空: 'HU',
+  深圳航空: 'ZH',
+  土耳其航空: 'TK',
+  卡達航空: 'QR',
+};
+
+// 單一航段：航空公司名稱 + 正確代碼（優先用名稱對照表，避免拼錯代碼）
 function formatAirlineLabel(airline, flightNumber) {
   const text = sanitizeText(airline);
   if (!text) return '';
+  // 已含括號代碼 → 直接用
   if (/[（(][A-Z0-9]{2,3}[)）]/.test(text)) return text;
 
-  const code = getAirlineCodeFromFlightNumber(flightNumber);
-  return code ? `${text}（${code}）` : text;
+  // 優先用「航空公司名稱」對應的正確代碼（最可靠，不會張冠李戴）
+  const nameKey = text.replace(/[（(].*$/, '').trim();
+  const codeByName = AIRLINE_NAME_TO_CODE[nameKey];
+  if (codeByName) return `${text}（${codeByName}）`;
+
+  // 名稱不在對照表 → 退回用該航段自己的航班號代碼（此時 flightNumber 就是這段的，不會錯配）
+  const codeByFlight = getAirlineCodeFromFlightNumber(flightNumber);
+  return codeByFlight ? `${text}（${codeByFlight}）` : text;
+}
+
+// 主航空公司欄：轉機行程會有多家航空，全部列出（去重、保留順序）。
+// 例：高雄轉香港到阿布達比 → 「國泰航空（CX）＋阿提哈德航空（EY）」
+function buildPrimaryAirlineLabel(flightSegments) {
+  const seen = new Set();
+  const labels = [];
+  for (const seg of flightSegments || []) {
+    const label = sanitizeText(seg.airline);
+    if (!label) continue;
+    // 用去掉代碼的名稱去重（同一家航空的去回程只算一次）
+    const nameKey = label.replace(/[（(].*$/, '').trim();
+    if (seen.has(nameKey)) continue;
+    seen.add(nameKey);
+    labels.push(label);
+  }
+  return labels.join('＋');
 }
 
 function getDepartureCity(airport) {
@@ -974,10 +1028,12 @@ async function scrapeTripDetail(tripSummary) {
     next_day: Boolean(segment.next_day),
   }));
 
-  // primaryAirline: 優先從 PriceBlock「航空公司」欄位取，
-  // fallback 到 flight modal 的第一個航段（朋威多數頁面只有「航班資訊」連結，沒有獨立「航空公司」欄位）
-  let primaryAirline = formatAirlineLabel(basicInfo['航空公司'] || '', enrichedFlightSegments[0]?.flight_number || '')
-    || enrichedFlightSegments[0]?.airline
+  // primaryAirline（主航空公司欄）：
+  // 有航段資料時，列出所有航段的航空公司（轉機行程會有多家，如「國泰航空（CX）＋阿提哈德航空（EY）」），
+  // 各段用自己的航班號取代碼，不會張冠李戴。
+  // 沒有航段資料時，才退回朋威 PriceBlock 的「航空公司」欄（但不硬拼第一段的代碼，避免錯配）。
+  let primaryAirline = buildPrimaryAirlineLabel(enrichedFlightSegments)
+    || formatAirlineLabel(basicInfo['航空公司'] || '', '')
     || '';
 
   // Puppeteer fallback：cheerio 解析不到航班時，用 headless browser 重試
