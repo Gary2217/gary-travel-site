@@ -35,16 +35,16 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   const next = useCallback(() => setCurrent((c) => (c + 1) % Math.max(total, 1)), [total]);
   const prev = useCallback(() => setCurrent((c) => (c - 1 + Math.max(total, 1)) % Math.max(total, 1)), [total]);
 
-  // 自動播放
+  // 自動播放（DevMode 下停止，方便設定每張圖的連結）
   useEffect(() => {
-    if (total <= 1) return;
+    if (isDevMode || total <= 1) return;
     timerRef.current = setInterval(next, 4000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [total, next]);
+  }, [isDevMode, total, next]);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (total > 1) timerRef.current = setInterval(next, 4000);
+    if (!isDevMode && total > 1) timerRef.current = setInterval(next, 4000);
   };
 
   const handlePrev = () => { prev(); resetTimer(); };
