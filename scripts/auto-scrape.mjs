@@ -186,22 +186,41 @@ function normalizeTitle(title) {
     .trim();
 }
 
+// 相鄰字元對（bigram）多重集合，保留字元順序資訊
+function bigrams(str) {
+  const map = new Map();
+  for (let i = 0; i < str.length - 1; i += 1) {
+    const bg = str.slice(i, i + 2);
+    map.set(bg, (map.get(bg) || 0) + 1);
+  }
+  return map;
+}
+
+// 字串相似度：使用 bigram Dice 係數（考慮字元順序，比純字元集合準確）。
+// 舊版用「字元集合重疊 + substring=0.9」會把不同行程誤配（如杜拜阿提哈德↔阿聯酋、
+// 泰國曼谷↔泰國普吉），因為只看字元有無、不看順序。改用 bigram 後這類誤配大幅降低。
+// 注意：code_label 精確比對永遠優先於此函式，similarity 僅作低信心 fallback。
 function similarity(a, b) {
   const na = normalizeTitle(a);
   const nb = normalizeTitle(b);
   if (!na || !nb) return 0;
   if (na === nb) return 1;
-  if (na.includes(nb) || nb.includes(na)) return 0.9;
+  // 太短（<2 字）無法產生 bigram，退回精確比對
+  if (na.length < 2 || nb.length < 2) return na === nb ? 1 : 0;
 
-  const setA = new Set(na);
-  const setB = new Set(nb);
-  let common = 0;
-
-  for (const char of setA) {
-    if (setB.has(char)) common += 1;
+  const bgA = bigrams(na);
+  const bgB = bigrams(nb);
+  let intersection = 0;
+  let totalA = 0;
+  let totalB = 0;
+  for (const count of bgA.values()) totalA += count;
+  for (const count of bgB.values()) totalB += count;
+  for (const [bg, countA] of bgA) {
+    const countB = bgB.get(bg);
+    if (countB) intersection += Math.min(countA, countB);
   }
-
-  return common / Math.max(setA.size, setB.size, 1);
+  // Dice 係數：2 * 交集 / (|A| + |B|)
+  return (2 * intersection) / (totalA + totalB);
 }
 
 function toAbsoluteUrl(url) {
@@ -707,15 +726,21 @@ function buildDestinationResolver(destinations, existingTrips) {
 }
 
 function findExistingTripForScrapedTrip(scrapedTrip, destinationTrips, consumedTripIds) {
-  const byCode = destinationTrips.find((trip) => {
-    if (consumedTripIds.has(trip.id)) return false;
-    return sanitizeText(trip.trip_banner?.code_label) === sanitizeText(scrapedTrip.code_label);
-  });
-  if (byCode) return byCode;
+  const scrapedCode = sanitizeText(scrapedTrip.code_label);
 
+  // ① 團型編號精確比對（最可靠）。兩邊都必須非空，避免空 code_label 互相誤配。
+  if (scrapedCode) {
+    const byCode = destinationTrips.find((trip) => {
+      if (consumedTripIds.has(trip.id)) return false;
+      const tripCode = sanitizeText(trip.trip_banner?.code_label);
+      return tripCode && tripCode === scrapedCode;
+    });
+    if (byCode) return byCode;
+  }
+
+  // ② 標題相似度 fallback（bigram Dice）
   let bestMatch = null;
   let bestScore = 0;
-
   for (const trip of destinationTrips) {
     if (consumedTripIds.has(trip.id)) continue;
     const score = similarity(scrapedTrip.title, trip.title);
@@ -725,7 +750,17 @@ function findExistingTripForScrapedTrip(scrapedTrip, destinationTrips, consumedT
     }
   }
 
-  return bestScore >= 0.7 ? bestMatch : null;
+  if (!bestMatch || bestScore < 0.7) return null;
+
+  // ③ 航空公司一致性防線：標題高度相似但航空公司明顯不同 → 視為不同行程，不配對。
+  // 這擋住「同名不同航空」的誤配（如杜拜行程：阿提哈德版 vs 阿聯酋版，標題只差航空名）。
+  const scrapedAirline = sanitizeText(scrapedTrip.airline);
+  const existingAirline = sanitizeText(bestMatch.trip_banner?.airline);
+  if (scrapedAirline && existingAirline && similarity(scrapedAirline, existingAirline) < 0.5) {
+    return null;
+  }
+
+  return bestMatch;
 }
 
 async function scrapeRegionListings(regionConfig, targetSourceUrl = '', targetDestinationTitle = '', targetSubRegion = '') {
