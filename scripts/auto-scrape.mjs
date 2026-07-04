@@ -302,6 +302,31 @@ function buildSubtitle({ title, airline, tags }) {
   return airlineLabel || summary || cleanedTitle;
 }
 
+// 我們的售價明細固定 5 欄順序：大人、小孩佔床、小孩不佔床、加床、嬰兒
+const PRICE_DETAIL_COLUMNS = ['大人', '小孩佔床', '小孩不佔床', '加床', '嬰兒'];
+
+// 從朋威售價表用 thead 欄名對應到我們的 5 欄（朋威可能只有 4 欄、無加床）。
+// 只取第一個 .LowestPrice table，避免頁面簡表與 Modal 重複。
+function extractPriceDetailByHeader($) {
+  const table = $('.LowestPrice table').first();
+  if (!table.length) return [];
+
+  const headers = [];
+  table.find('thead tr th').each((_, th) => headers.push(sanitizeText($(th).text())));
+  const values = [];
+  table.find('tbody tr td').each((_, td) => values.push(sanitizeText($(td).text())));
+
+  // 建立「欄名 → 價格」對照
+  const priceByLabel = {};
+  headers.forEach((label, i) => {
+    const key = label.replace(/\s/g, '');
+    if (key && values[i] != null) priceByLabel[key] = values[i];
+  });
+
+  // 依我們固定的 5 欄順序取值；朋威沒有的欄（如加床）留空
+  return PRICE_DETAIL_COLUMNS.map((label) => priceByLabel[label] || '');
+}
+
 function buildPriceDetailText(priceDetails) {
   return [0, 1, 2, 3, 4].map((index) => normalizePriceText(priceDetails[index] || '')).join('\t');
 }
@@ -820,8 +845,9 @@ async function scrapeTripDetail(tripSummary) {
   });
 
   // ② 售價明細
-  const priceDetails = [];
-  $('.LowestPrice table tbody tr td').each((_, cell) => priceDetails.push(sanitizeText($(cell).text())));
+  // 頁面有 2 個 .LowestPrice table（頁面簡表 + Modal），只取第一個避免重複。
+  // 用 thead 欄名對應，而非死位置（朋威通常 4 欄：大人/小孩佔床/小孩不佔床/嬰兒，無「加床」）。
+  const priceDetails = extractPriceDetailByHeader($);
 
   // ③ 標籤
   const rawTags = [];
