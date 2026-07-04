@@ -304,23 +304,38 @@ const AIRLINE_NAME_TO_CODE = {
   深圳航空: 'ZH',
   土耳其航空: 'TK',
   卡達航空: 'QR',
+  不丹航空: 'B3',
+  太陽富國航空: '9G',
+  越捷航空: 'VJ',
+  泰國越捷航空: 'VZ',
+  大灣區航空: 'HB',
 };
 
-// 單一航段：航空公司名稱 + 正確代碼（優先用名稱對照表，避免拼錯代碼）
+// 從「航空名可能黏航班號或帶括號代碼」的字串，拆出乾淨航空名 + 代碼
+function cleanAirlineName(raw) {
+  const s = sanitizeText(raw);
+  if (!s) return { name: '', code: '' };
+  // 已有括號代碼 → 取括號前名稱 + 代碼
+  const parenMatch = s.match(/^(.+?)[（(]([A-Z0-9]{2,3})[)）]/);
+  if (parenMatch) return { name: parenMatch[1].trim(), code: parenMatch[2] };
+  // 名稱結尾黏航班號（如「不丹航空B3701」「太陽富國航空9G511」）→ 取代碼、去掉航班號
+  const flightMatch = s.match(/^(.+?)([A-Z0-9]{2}[A-Z]?)\d{2,4}$/i);
+  if (flightMatch) return { name: flightMatch[1].trim(), code: flightMatch[2].toUpperCase() };
+  return { name: s, code: '' };
+}
+
+// 單一航段：航空公司名稱 + 正確代碼（優先用名稱對照表，避免拼錯代碼；並清掉黏著的航班號）
 function formatAirlineLabel(airline, flightNumber) {
-  const text = sanitizeText(airline);
-  if (!text) return '';
-  // 已含括號代碼 → 直接用
-  if (/[（(][A-Z0-9]{2,3}[)）]/.test(text)) return text;
+  const { name, code: codeFromRaw } = cleanAirlineName(airline);
+  if (!name) return '';
 
   // 優先用「航空公司名稱」對應的正確代碼（最可靠，不會張冠李戴）
-  const nameKey = text.replace(/[（(].*$/, '').trim();
-  const codeByName = AIRLINE_NAME_TO_CODE[nameKey];
-  if (codeByName) return `${text}（${codeByName}）`;
+  const codeByName = AIRLINE_NAME_TO_CODE[name];
+  if (codeByName) return `${name}（${codeByName}）`;
 
-  // 名稱不在對照表 → 退回用該航段自己的航班號代碼（此時 flightNumber 就是這段的，不會錯配）
-  const codeByFlight = getAirlineCodeFromFlightNumber(flightNumber);
-  return codeByFlight ? `${text}（${codeByFlight}）` : text;
+  // 名稱不在對照表 → 用航段自己的代碼（先用原字串黏著的，再退回傳入的 flightNumber）
+  const code = codeFromRaw || getAirlineCodeFromFlightNumber(flightNumber);
+  return code ? `${name}（${code}）` : name;
 }
 
 // 主航空公司欄：轉機行程會有多家航空，全部列出（去重、保留順序）。
@@ -329,13 +344,13 @@ function buildPrimaryAirlineLabel(flightSegments) {
   const seen = new Set();
   const labels = [];
   for (const seg of flightSegments || []) {
-    const label = sanitizeText(seg.airline);
-    if (!label) continue;
-    // 用去掉代碼的名稱去重（同一家航空的去回程只算一次）
-    const nameKey = label.replace(/[（(].*$/, '').trim();
-    if (seen.has(nameKey)) continue;
-    seen.add(nameKey);
-    labels.push(label);
+    const { name, code: codeFromRaw } = cleanAirlineName(seg.airline);
+    if (!name) continue;
+    // 用乾淨航空名去重（同一家航空的去回程只算一次）
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const code = AIRLINE_NAME_TO_CODE[name] || codeFromRaw;
+    labels.push(code ? `${name}（${code}）` : name);
   }
   return labels.join('＋');
 }
