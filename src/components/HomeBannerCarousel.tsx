@@ -85,7 +85,6 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   // 儲存連結
   const saveLink = async () => {
     if (savingLink) return;
-    const currentLink = banners[current]?.link || '';
     const nextLink = editLink.trim();
     const updated = banners.map((b, i) => i === current ? { ...b, link: nextLink } : b);
     setSavingLink(true);
@@ -106,7 +105,6 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
     } finally {
       setSavingLink(false);
     }
-    void currentLink;
   };
 
   // 空狀態（非 DevMode 不顯示）
