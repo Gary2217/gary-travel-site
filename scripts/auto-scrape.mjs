@@ -1562,6 +1562,10 @@ async function main() {
 
       const sections = await scrapeRegionListings(regionConfig, targetDestination?.source_url || '', targetDestination?.title || '', targetDestination?.sub_region || '');
       const tripSummaries = sections.flatMap((section) => section.trips);
+
+      // 本區域抓取是否不完整（有詳情頁抓取失敗/逾時/無效資料）。
+      // 只要不完整，就跳過本區域的下架偵測，避免既有行程被誤判下架而消失（保守策略）。
+      let regionScrapeIncomplete = false;
       totalTrips += tripSummaries.length;
       regionDetails = mergeRegionDetail(regionDetails, regionConfig.key, {
         trip_count: tripSummaries.length,
@@ -1600,6 +1604,7 @@ async function main() {
           scrapedTrip = await scrapeTripDetail(tripSummary);
         } catch (detailErr) {
           console.log(`  ⚠️ 抓取失敗，跳過：${tripSummary.title} (${detailErr.message})`);
+          regionScrapeIncomplete = true; // 抓取失敗 → 本區域不完整，稍後跳過下架偵測
           completedTrips += 1;
           continue;
         }
@@ -1633,6 +1638,7 @@ async function main() {
         // 過濾垃圾資料（頁面載入失敗、空標題等）
         if (!scrapedTrip.title || scrapedTrip.title.includes('can\'t be reached') || scrapedTrip.title.includes('not found') || scrapedTrip.title.length < 3) {
           console.log(`  ⚠️ 無效資料，跳過：${scrapedTrip.title || '(空標題)'}`);
+          regionScrapeIncomplete = true; // 無效資料（多為逾時/載入失敗）→ 本區域不完整，稍後跳過下架偵測
           completedTrips += 1;
           continue;
         }
@@ -1792,6 +1798,11 @@ async function main() {
             new_value: '⚠️ 在朋威頁面找不到此行程，可能已下架、改名或移至其他區域',
           }]);
         }
+      } else if (!tripIdSet && regionScrapeIncomplete) {
+        // 本區域抓取不完整（有失敗/逾時/無效資料）→ 完全跳過下架偵測。
+        // 因為抓取不完整時，既有行程可能只是「這次沒抓到」而非真的下架，
+        // 若照樣標記 removed，套用後會讓仍在販售的行程從前台消失（西伯利亞事件的根因）。
+        console.warn(`  ⚠️ 跳過下架偵測：${regionConfig.key} 本次抓取不完整（有失敗/逾時），避免誤判既有行程下架`);
       } else if (!tripIdSet) {
 
       const destinationEntries = targetDestination
