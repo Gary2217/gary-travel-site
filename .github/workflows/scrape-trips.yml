@@ -16,6 +16,10 @@ on:
         description: '指定行程 IDs（逗號分隔）'
         required: false
         default: ''
+      log_id:
+        description: '沿用的 scrape_log ID（由 trigger API 帶入，避免 log 孤兒）'
+        required: false
+        default: ''
 
   # 排程觸發（每日 UTC 19:00 = 台灣凌晨 03:00）
   schedule:
@@ -68,6 +72,7 @@ jobs:
           REGIONS="${{ github.event.inputs.regions || 'all' }}"
           DEST_ID="${{ github.event.inputs.destination_id || '' }}"
           TRIP_IDS="${{ github.event.inputs.trip_ids || '' }}"
+          LOG_ID="${{ github.event.inputs.log_id || '' }}"
           ARGS=""
           if [ -n "$DEST_ID" ]; then
             ARGS="$ARGS --destination-id=$DEST_ID"
@@ -79,6 +84,10 @@ jobs:
             if [ "$REGIONS" != "all" ]; then
               ARGS="--regions=$REGIONS"
             fi
+          fi
+          # 沿用 trigger 建立的 log，避免孤兒 log
+          if [ -n "$LOG_ID" ]; then
+            ARGS="$ARGS --log-id=$LOG_ID"
           fi
           node scripts/auto-scrape.mjs $ARGS
 

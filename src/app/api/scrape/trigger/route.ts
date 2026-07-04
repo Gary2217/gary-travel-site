@@ -68,10 +68,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 組合 workflow inputs
+    // log_id：讓 Actions 內的 auto-scrape 沿用這個 log（而非自建），避免 trigger 建的 log 變孤兒永遠 running
     const workflowInputs: Record<string, string> = {
       regions: regions || 'all',
       destination_id: destinationId || '',
       trip_ids: tripIds?.join(',') || '',
+      log_id: logId,
     };
 
     // 觸發 GitHub Actions workflow_dispatch
