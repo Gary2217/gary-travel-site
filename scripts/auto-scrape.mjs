@@ -1870,6 +1870,14 @@ async function main() {
             }
           }
 
+          // sub_area 統一：新行程繼承「同目的地既有行程」的 sub_area，保持子標籤分類一致。
+          // 朋威的區塊標籤（section_label）不統一（如杜拜/杜拜+阿布達比/高雄出發混用），
+          // 直接用會導致同目的地行程散落在不同子標籤，故改繼承既有行程的一致值。
+          const siblingSubArea = (destinationTrips.find((t) => t.trip_banner?.sub_area)?.trip_banner?.sub_area) || '';
+          if (siblingSubArea) {
+            scrapedTrip.trip_banner = { ...(scrapedTrip.trip_banner || {}), sub_area: siblingSubArea };
+          }
+
           const newTripChange = createNewTripChange({
             logId,
             destinationId: destination.id,
