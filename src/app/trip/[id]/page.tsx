@@ -51,6 +51,42 @@ const INFO_FIELD_LABEL: Record<string, string> = {
   subtitle: '副標題',
   code_label: '團型編號',
 };
+
+// 從行程標題拆出精選賣點當標籤（取 ~/～ 後、以標點/空格分隔、過濾雜訊、限 5 個）
+function extractSellingPoints(title: string): string[] {
+  if (!title) return [];
+  let t = title.includes('|') ? title.split('|').pop()!.trim() : title;
+  t = t.replace(/[【[][^】\]]*[】\]]/g, ''); // 去【】前綴
+  const tildeIdx = t.search(/[~～]/);
+  let pointsPart = tildeIdx >= 0 ? t.slice(tildeIdx + 1) : t;
+  // 若 ~ 後是天數開頭（如「北疆13日(...)」），改抓括號內景點；否則移除括號註記
+  const paren = pointsPart.match(/[（(]([^）)]+)[）)]/);
+  if (/^\S*\d+\s*[天日]/.test(pointsPart.trim()) && paren) {
+    pointsPart = paren[1];
+  } else {
+    pointsPart = pointsPart.replace(/[（(][^）)]*[）)]/g, '');
+  }
+  const rawPoints = pointsPart.split(/[、，,／/.．\s{}｛｝+]+/).map(s => s.trim()).filter(Boolean);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (let p of rawPoints) {
+    p = p.replace(/^[\u4e00-\u9fa5]{2,4}(進出|出發)-?/, ''); // 去「XX進出-」前綴
+    p = p.replace(/^季節限定/, '');
+    p = p.replace(/[一二三四五六七八九十\d]+\s*[天日晚](遊|自由行)?/g, ''); // 去天數/晚數
+    p = p.replace(/自由行/g, '');
+    p = p.replace(/[-－總]+$/, '').trim(); // 去尾綴符號
+    if (!p || p.length < 2 || p.length > 12) continue;
+    if (/^\d+$/.test(p)) continue;
+    if (p.includes('航空') || /航$/.test(p)) continue; // 過濾航空
+    if (/(出發|直飛|飛往)$/.test(p)) continue;
+    if (seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
 function getChangeLabel(change_type: string, field_name?: string): string {
   if (change_type === 'info' && field_name) return INFO_FIELD_LABEL[field_name] ?? field_name;
   return CHANGE_FIELD_LABEL[change_type] ?? change_type;
@@ -394,6 +430,14 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
         changes.push({ field: 'highlights', label: '亮點標籤', oldVal: oldHighlights || '（無）', newVal: newHighlights });
       }
 
+      // 從標題拆賣點標籤（顯示將新增哪些到綠色標籤）
+      const oldTags = Array.isArray(trip.trip_banner?.tags) ? trip.trip_banner!.tags : [];
+      const sellingPoints = extractSellingPoints(parsed.title || trip.title || '');
+      const newTagsToAdd = sellingPoints.filter(p => !oldTags.includes(p));
+      if (newTagsToAdd.length > 0) {
+        changes.push({ field: 'tags', label: '賣點標籤', oldVal: oldTags.length ? oldTags.join('、') : '（無）', newVal: [...oldTags, ...newTagsToAdd].join('、') });
+      }
+
       const newSegmentCount = parsed.flight_segments?.length ?? 0;
       if (newSegmentCount > 0 && departureDates.length > 0) {
         const currentSegmentCount = (departureDates[0] as Record<string, unknown>).flight_segments
@@ -424,8 +468,16 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
 
       // 寫入 trip_banner（含各 banner 欄位）+ title + highlights
       const baseBanner = { ...EMPTY_TRIP_BANNER, ...(trip.trip_banner ?? {}) };
+      // 從標題拆賣點 → 合併進現有標籤（不覆蓋、去重、最多 5 個）
+      const existingTags = Array.isArray(baseBanner.tags) ? baseBanner.tags : [];
+      const sellingPoints = extractSellingPoints(parsed.title || trip.title || '');
+      const mergedTags = [...existingTags];
+      for (const p of sellingPoints) {
+        if (!mergedTags.includes(p)) mergedTags.push(p);
+      }
       const updatedBanner = {
         ...baseBanner,
+        tags: mergedTags,
         departure_info_map: trip.trip_banner?.departure_info_map ?? {},
         ...(parsed.airline != null ? { airline: parsed.airline } : {}),
         ...(parsed.airport != null ? { airport: parsed.airport } : {}),

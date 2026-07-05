@@ -242,6 +242,40 @@ function normalizeTag(value) {
     .trim();
 }
 
+// 從行程標題拆出精選賣點當標籤（取 ~/～ 後、以標點/空格分隔、過濾雜訊、限 5 個）
+function extractSellingPoints(title) {
+  if (!title) return [];
+  let t = title.includes('|') ? title.split('|').pop().trim() : title;
+  t = t.replace(/[【[][^】\]]*[】\]]/g, '');
+  const tildeIdx = t.search(/[~～]/);
+  let pointsPart = tildeIdx >= 0 ? t.slice(tildeIdx + 1) : t;
+  const paren = pointsPart.match(/[（(]([^）)]+)[）)]/);
+  if (/^\S*\d+\s*[天日]/.test(pointsPart.trim()) && paren) {
+    pointsPart = paren[1];
+  } else {
+    pointsPart = pointsPart.replace(/[（(][^）)]*[）)]/g, '');
+  }
+  const rawPoints = pointsPart.split(/[、，,／/.．\s{}｛｝+]+/).map((s) => s.trim()).filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  for (let p of rawPoints) {
+    p = p.replace(/^[\u4e00-\u9fa5]{2,4}(進出|出發)-?/, '');
+    p = p.replace(/^季節限定/, '');
+    p = p.replace(/[一二三四五六七八九十\d]+\s*[天日晚](遊|自由行)?/g, '');
+    p = p.replace(/自由行/g, '');
+    p = p.replace(/[-－總]+$/, '').trim();
+    if (!p || p.length < 2 || p.length > 12) continue;
+    if (/^\d+$/.test(p)) continue;
+    if (p.includes('航空') || /航$/.test(p)) continue;
+    if (/(出發|直飛|飛往)$/.test(p)) continue;
+    if (seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
 function normalizePriceText(value) {
   const text = sanitizeText(value).replace(/\s+/g, '');
   if (!text) return '';
@@ -1080,7 +1114,9 @@ async function scrapeTripDetail(tripSummary) {
       }
     }
   }
-  const tags = rawTags.map(normalizeTag).filter(Boolean);
+  // 標籤：朋威有 .item_tag 就以朋威為準（權威來源）；朋威沒有時才用標題賣點當 fallback
+  const ponwayTags = rawTags.map(normalizeTag).filter(Boolean);
+  const tags = ponwayTags.length > 0 ? ponwayTags : extractSellingPoints(title);
   const priceDetail = buildPriceDetailText(priceDetails);
   const adultPrice = normalizePriceText(priceDetails[0] || '');
   const priceRange = formatPriceRange(adultPrice);
