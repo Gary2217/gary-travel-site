@@ -1137,9 +1137,20 @@ async function scrapeTripDetail(tripSummary) {
       airline: primaryAirline,
       price_detail: priceDetail,
       promo_text: sanitizeText(promoText),
-      sub_area: sanitizeText(tripSummary.section_label || ''),
+      sub_area: cleanSubArea(tripSummary.section_label || ''),
     },
   };
+}
+
+// 清洗 sub_area：強制單值（地點）。朋威 section_label 常有逗號多值或混入出發城市，
+// 這裡拆逗號取「非城市」的第一段當地點，避免污染子標籤分類（配合前端單值邏輯）。
+function cleanSubArea(raw) {
+  const CITY_WORDS = ['高雄出發', '台中出發', '桃園出發', '台北出發'];
+  const s = sanitizeText(raw || '');
+  if (!s) return '';
+  const parts = s.split(/[,，]/).map((p) => p.trim()).filter(Boolean);
+  const place = parts.find((p) => !CITY_WORDS.includes(p)) || parts[0] || '';
+  return place;
 }
 
 function buildPendingChangeBase({ logId, destinationId, tripId, tripTitle, sourceCode, sourceUrl, regionLabel, scrapedData }) {
