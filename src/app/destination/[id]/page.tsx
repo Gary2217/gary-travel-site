@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, invalidateCache, type Destination, type Trip } from "@/lib/supabase";
 import Image from "next/image";
@@ -11,6 +12,47 @@ import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
 import DevModeToggle from "@/components/DevModeToggle";
 import Toast from "@/components/Toast";
+
+type DestScrapeChange = {
+  id: string;
+  change_type: string;
+  field_name?: string;
+  old_value?: unknown;
+  new_value?: unknown;
+  trip_title?: string;
+  trip_id?: string;
+};
+
+const DEST_CHANGE_FIELD_LABEL: Record<string, string> = {
+  price: '價格',
+  price_detail: '售價明細',
+  flight: '航班',
+  departure: '出發日期',
+  promotion: '優惠',
+  removed: '下架',
+  warning: '提示',
+  new_trip: '新行程',
+};
+const DEST_INFO_FIELD_LABEL: Record<string, string> = {
+  title: '標題',
+  cover_image_url: '封面圖',
+  tags: '標籤',
+  airline: '航空公司',
+  airport: '出發機場',
+  duration: '天數',
+  display_order: '排序',
+  subtitle: '副標題',
+  code_label: '團型編號',
+};
+function getDestChangeLabel(change_type: string, field_name?: string): string {
+  if (change_type === 'info' && field_name) return DEST_INFO_FIELD_LABEL[field_name] ?? field_name;
+  return DEST_CHANGE_FIELD_LABEL[change_type] ?? change_type;
+}
+function formatDestDiffValue(value: unknown): string {
+  if (value === null || value === undefined) return '（無）';
+  const str = typeof value === 'string' ? value : JSON.stringify(value);
+  return str.length > 80 ? str.slice(0, 80) + '...' : str;
+}
 
 // 請洽詢行程（custom_tour=true 或無出發日）排最前，同組內依 display_order，再 id 穩定排序
 const isInquiryOnly = (trip: Trip) =>
@@ -116,6 +158,8 @@ export default function DestinationPage() {
   const [scrapePendingIds, setScrapePendingIds] = useState<string[]>([]);
   const [scrapeApplying, setScrapeApplying] = useState(false);
   const [scrapeApplyProgress, setScrapeApplyProgress] = useState('');
+  const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
+  const [scrapePreviewChanges, setScrapePreviewChanges] = useState<DestScrapeChange[]>([]);
   const [globalPendingCount, setGlobalPendingCount] = useState(0);
   const scrapePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrapeTargetDestRef = useRef(destinationId);
@@ -853,6 +897,22 @@ export default function DestinationPage() {
 
   const handleApplyPendingChanges = async () => {
     if (scrapeApplying || scrapePendingIds.length === 0) return;
+    try {
+      // 先 fetch 完整變更明細，給使用者預覽
+      const destId = scrapeTargetDestsRef.current[0] ?? destinationId;
+      const res = await fetch(`/api/scrape/changes?destination_id=${destId}&status=pending`, { credentials: 'include' });
+      if (!res.ok) throw new Error('無法取得變更明細');
+      const allChanges = (await res.json()) as DestScrapeChange[];
+      const changes = allChanges.filter(c => scrapePendingIds.includes(c.id));
+      setScrapePreviewChanges(changes);
+      setShowScrapePreviewModal(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '取得變更明細失敗');
+    }
+  };
+
+  const handleConfirmApply = async () => {
+    setShowScrapePreviewModal(false);
     setScrapeApplying(true);
     const total = scrapePendingIds.length;
     let successCount = 0;
@@ -892,7 +952,7 @@ export default function DestinationPage() {
     if (failCount > 0) {
       setToastMessage(`更新完成：${successCount} 成功、${failCount} 失敗`);
     } else {
-      setToastMessage('更新完成！重新載入中...');
+      setToastMessage('儲存成功！重新載入中...');
     }
     setTimeout(() => window.location.reload(), 800);
     setScrapeApplying(false);
@@ -1635,6 +1695,66 @@ export default function DestinationPage() {
         </div>
       )}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
+
+      {showScrapePreviewModal && createPortal(
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowScrapePreviewModal(false); }}
+        >
+          <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h3 className="text-base font-bold text-gray-900">📋 抓取變更預覽（{scrapePreviewChanges.length} 筆）</h3>
+              <button
+                type="button"
+                onClick={() => setShowScrapePreviewModal(false)}
+                className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+              {scrapePreviewChanges.map(c => (
+                <div key={c.id} className="px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
+                      {getDestChangeLabel(c.change_type, c.field_name)}
+                    </span>
+                    {c.trip_title && (
+                      <span className="truncate text-xs text-gray-500">{c.trip_title}</span>
+                    )}
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
+                    <p className="break-all rounded bg-red-50 px-2 py-1 text-xs text-red-700 line-through">
+                      {formatDestDiffValue(c.old_value)}
+                    </p>
+                    <span className="pt-1 text-xs text-gray-400">→</span>
+                    <p className="break-all rounded bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                      {formatDestDiffValue(c.new_value)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShowScrapePreviewModal(false)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmApply()}
+                className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              >
+                ✅ 確認更新
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </main>
   );
 }

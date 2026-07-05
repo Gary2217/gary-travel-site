@@ -20,6 +20,47 @@ const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel")
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
 
+type ScrapeChange = {
+  id: string;
+  change_type: string;
+  field_name?: string;
+  old_value?: unknown;
+  new_value?: unknown;
+  trip_title?: string;
+  trip_id?: string;
+};
+
+const CHANGE_FIELD_LABEL: Record<string, string> = {
+  price: '價格',
+  price_detail: '售價明細',
+  flight: '航班',
+  departure: '出發日期',
+  promotion: '優惠',
+  removed: '下架',
+  warning: '提示',
+  new_trip: '新行程',
+};
+const INFO_FIELD_LABEL: Record<string, string> = {
+  title: '標題',
+  cover_image_url: '封面圖',
+  tags: '標籤',
+  airline: '航空公司',
+  airport: '出發機場',
+  duration: '天數',
+  display_order: '排序',
+  subtitle: '副標題',
+  code_label: '團型編號',
+};
+function getChangeLabel(change_type: string, field_name?: string): string {
+  if (change_type === 'info' && field_name) return INFO_FIELD_LABEL[field_name] ?? field_name;
+  return CHANGE_FIELD_LABEL[change_type] ?? change_type;
+}
+function formatDiffValue(value: unknown): string {
+  if (value === null || value === undefined) return '（無）';
+  const str = typeof value === 'string' ? value : JSON.stringify(value);
+  return str.length > 80 ? str.slice(0, 80) + '...' : str;
+}
+
 const EMPTY_TRIP_BANNER: TripBanner = {
   code_label: "",
   price_label: "",
@@ -109,8 +150,9 @@ export default function TripPage() {
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
   const [isDevMode, setIsDevMode] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [scrapePhase, setScrapePhase] = useState<'idle' | 'triggering' | 'polling' | 'has_changes' | 'applying' | 'done' | 'no_changes' | 'error'>('idle');
-  const [scrapePendingChanges, setScrapePendingChanges] = useState<{id: string; change_type: string}[]>([]);
+const [scrapePhase, setScrapePhase] = useState<'idle' | 'triggering' | 'polling' | 'has_changes' | 'applying' | 'done' | 'no_changes' | 'error'>('idle');
+const [scrapePendingChanges, setScrapePendingChanges] = useState<ScrapeChange[]>([]);
+const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
   const scrapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrapeTriggerTimeRef = useRef<number>(0);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -259,7 +301,7 @@ export default function TripPage() {
           const changesRes = await fetch('/api/scrape/changes?status=pending', { credentials: 'include' });
           if (!changesRes.ok) { setScrapePhase('error'); return; }
           const allChanges = await changesRes.json();
-          const tripChanges = (allChanges as {id: string; change_type: string; trip_id?: string}[]).filter(c => c.trip_id === tripId);
+          const tripChanges = (allChanges as ScrapeChange[]).filter(c => c.trip_id === tripId);
           if (tripChanges.length > 0) {
             setScrapePendingChanges(tripChanges);
             setScrapePhase('has_changes');
@@ -3073,7 +3115,7 @@ export default function TripPage() {
         <button
           type="button"
           onClick={() => {
-            if (scrapePhase === 'has_changes') void handleApplyChanges();
+            if (scrapePhase === 'has_changes') setShowScrapePreviewModal(true);
             else void handleScrapeThisTrip();
           }}
           disabled={scrapePhase === 'triggering' || scrapePhase === 'polling' || scrapePhase === 'applying' || scrapePhase === 'done' || scrapePhase === 'no_changes'}
@@ -3119,6 +3161,61 @@ export default function TripPage() {
           </div>
         </div>
       </div>
+
+      {showScrapePreviewModal && createPortal(
+        <div
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowScrapePreviewModal(false); }}
+        >
+          <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h3 className="text-base font-bold text-gray-900">📋 抓取變更預覽</h3>
+              <button
+                type="button"
+                onClick={() => setShowScrapePreviewModal(false)}
+                className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+              {scrapePendingChanges.map(c => (
+                <div key={c.id} className="px-5 py-3">
+                  <span className="inline-block rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
+                    {getChangeLabel(c.change_type, c.field_name)}
+                  </span>
+                  <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
+                    <p className="break-all rounded bg-red-50 px-2 py-1 text-xs text-red-700 line-through">
+                      {formatDiffValue(c.old_value)}
+                    </p>
+                    <span className="pt-1 text-xs text-gray-400">→</span>
+                    <p className="break-all rounded bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                      {formatDiffValue(c.new_value)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShowScrapePreviewModal(false)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowScrapePreviewModal(false); void handleApplyChanges(); }}
+                className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              >
+                ✅ 確認更新
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </main>
   );
 }
