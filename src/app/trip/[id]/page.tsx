@@ -321,6 +321,11 @@ export default function TripPage() {
       setEditNightCount(nightParsed ? nightParsed[1] : '');
       setEditBannerTagInput('');
 
+      // PDF 亮點標籤：若 PDF 有抓到且目前行程沒有亮點，預填到亮點編輯欄
+      if (parsed.highlights?.length && !(trip.highlights?.length)) {
+        setEditHighlights(parsed.highlights.join('、'));
+      }
+
       // 若標題與現有不同，也同步到標題編輯欄位
       if (parsed.title && parsed.title !== trip.title) {
         setEditTitle(parsed.title);

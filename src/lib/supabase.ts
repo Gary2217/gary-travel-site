@@ -290,6 +290,7 @@ export type PdfScrapeResult = {
     is_next_day: boolean;
   }>;
   hotels: string[];
+  highlights: string[];
   raw_text: string;
 };
 

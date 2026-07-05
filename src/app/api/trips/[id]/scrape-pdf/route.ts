@@ -70,6 +70,7 @@ function parsePdfText(text: string): {
   min_group_size: number | null;
   flight_segments: PdfFlightSegment[];
   hotels: string[];
+  highlights: string[];
   raw_text: string;
 } {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -140,6 +141,24 @@ function parsePdfText(text: string): {
     hotelMatch = hotelRegex.exec(text);
   }
 
+  // 亮點標籤（highlights）：抓「★/☆/◆/■」開頭的行，或「行程特色/必玩/必訪/精選」區塊的條列
+  const highlights: string[] = [];
+  const seenHl = new Set<string>();
+  for (const line of lines) {
+    // 星號/符號開頭的亮點行
+    const starMatch = line.match(/^[★☆◆■◎●・･]+\s*(.+)$/);
+    if (starMatch) {
+      // 取符號後、第一個標點或「～」前的短語當標籤（避免整段長文）
+      const raw = starMatch[1].trim();
+      const label = raw.split(/[，,。.、！!？?：:；;～~（(]/)[0].trim();
+      if (label && label.length >= 2 && label.length <= 20 && !seenHl.has(label)) {
+        seenHl.add(label);
+        highlights.push(label);
+      }
+    }
+    if (highlights.length >= 8) break; // 最多 8 個亮點標籤
+  }
+
   return {
     title,
     duration,
@@ -149,6 +168,7 @@ function parsePdfText(text: string): {
     min_group_size,
     flight_segments: flightSegments,
     hotels,
+    highlights,
     raw_text: text.slice(0, 2000),
   };
 }
