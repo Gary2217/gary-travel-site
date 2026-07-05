@@ -53,12 +53,17 @@ export async function GET(
       };
     });
 
-    // 有出團日期的排前面，沒有的排後面；同組內維持 display_order
+    // 請洽詢行程（custom_tour=true 或無出發日）排最前，同組依 display_order，再 id 穩定排序
+    const isInquiryOnly = (t: any) =>
+      !!t.trip_banner?.custom_tour || (t.departure_dates?.length ?? 0) === 0;
     trips.sort((a: any, b: any) => {
-      const aHasDates = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
-      const bHasDates = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
-      if (aHasDates !== bHasDates) return aHasDates - bHasDates;
-      return (a.display_order || 99) - (b.display_order || 99);
+      const ap = isInquiryOnly(a) ? 0 : 1;
+      const bp = isInquiryOnly(b) ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      const ao = a.display_order ?? Number.MAX_SAFE_INTEGER;
+      const bo = b.display_order ?? Number.MAX_SAFE_INTEGER;
+      if (ao !== bo) return ao - bo;
+      return (a.id as string).localeCompare(b.id as string);
     });
 
     return NextResponse.json(trips, {

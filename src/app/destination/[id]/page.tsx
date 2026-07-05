@@ -12,6 +12,20 @@ import TripCard from "@/components/TripCard";
 import DevModeToggle from "@/components/DevModeToggle";
 import Toast from "@/components/Toast";
 
+// 請洽詢行程（custom_tour=true 或無出發日）排最前，同組內依 display_order，再 id 穩定排序
+const isInquiryOnly = (trip: Trip) =>
+  !!trip.trip_banner?.custom_tour || (trip.departure_dates?.length ?? 0) === 0;
+
+const compareTrips = (a: Trip, b: Trip): number => {
+  const ap = isInquiryOnly(a) ? 0 : 1;
+  const bp = isInquiryOnly(b) ? 0 : 1;
+  if (ap !== bp) return ap - bp;
+  const ao = a.display_order ?? Number.MAX_SAFE_INTEGER;
+  const bo = b.display_order ?? Number.MAX_SAFE_INTEGER;
+  if (ao !== bo) return ao - bo;
+  return a.id.localeCompare(b.id);
+};
+
 async function handleReorder<T extends { id: string; display_order: number }>(
   table: 'destinations' | 'trips',
   items: T[],
@@ -147,7 +161,7 @@ export default function DestinationPage() {
     const source = subRegionTrips || trips;
     if (!source || source.length === 0) return [];
     const areas: string[] = Array.from(new Set(
-      source.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+      source.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
     ));
     if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
     else if (regionCat === '日本') sortByOrder(areas, JAPAN_SUB_AREA_ORDER);
@@ -302,7 +316,7 @@ export default function DestinationPage() {
         const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
         const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
         const areas: string[] = Array.from(new Set(
-          currentTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+          currentTrips.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
         ));
         const rCat = destData.regions?.category_label || '';
         const orderList = rCat === '港澳大陸' ? CHINA_ORDER : rCat === '日本' ? JAPAN_ORDER : null;
@@ -319,16 +333,8 @@ export default function DestinationPage() {
         const areaTabs = areas.length >= 2
           ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
           : [];
-        // 排序：有出團日期的在前、custom_tour 在最後
-        const sortedTrips = [...currentTrips].sort((a, b) => {
-          const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
-          const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
-          if (aCustom !== bCustom) return aCustom - bCustom;
-          const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
-          const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
-          if (aHas !== bHas) return aHas - bHas;
-          return (a.display_order || 99) - (b.display_order || 99);
-        });
+        // 排序：請洽詢（無出發日或 custom_tour）排最前，同組依 display_order
+        const sortedTrips = [...currentTrips].sort(compareTrips);
         setTrips(sortedTrips);
         setRegionTabs(areaTabs);
         if (areaTabs.length > 0) {
@@ -390,15 +396,7 @@ export default function DestinationPage() {
 
         // MERGED 模式：設定合併行程
         if (hasSiblings && allSibTripsResult && isMergedRegion) {
-          const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort((a, b) => {
-            const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
-            const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
-            if (aCustom !== bCustom) return aCustom - bCustom;
-            const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
-            const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
-            if (aHas !== bHas) return aHas - bHas;
-            return (a.display_order || 99) - (b.display_order || 99);
-          });
+          const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort(compareTrips);
           setSubRegionTrips(merged);
           setActiveDestFilter(destinationId);
         }
@@ -694,7 +692,7 @@ export default function DestinationPage() {
     try {
       const freshTrips = (await getDestinationTrips(destinationId)) as Trip[];
       const areas: string[] = Array.from(new Set(
-        freshTrips.flatMap(t => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim())).filter(Boolean)
+          freshTrips.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
       ));
       // 依區域排序 sub_area tabs
       if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
@@ -703,15 +701,7 @@ export default function DestinationPage() {
         ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
         : [];
 
-      const sorted = [...freshTrips].sort((a, b) => {
-        const aCustom = a.trip_banner?.custom_tour ? 1 : 0;
-        const bCustom = b.trip_banner?.custom_tour ? 1 : 0;
-        if (aCustom !== bCustom) return aCustom - bCustom;
-        const aHas = a.departure_dates && a.departure_dates.length > 0 ? 0 : 1;
-        const bHas = b.departure_dates && b.departure_dates.length > 0 ? 0 : 1;
-        if (aHas !== bHas) return aHas - bHas;
-        return (a.display_order || 99) - (b.display_order || 99);
-      });
+      const sorted = [...freshTrips].sort(compareTrips);
       setTrips(sorted);
       setRegionTabs(areaTabs);
     } catch {
@@ -766,7 +756,7 @@ export default function DestinationPage() {
 
   const handleSelectAll = () => {
     const visibleTrips = subAreaFilter
-      ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
+          ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').trim() === subAreaFilter)
       : displayTrips;
     const allIds = visibleTrips.map(t => t.id);
     const allSelected = allIds.every(id => selectedTripIds.has(id));
@@ -1069,7 +1059,7 @@ export default function DestinationPage() {
                             setSubRegionTrips(tripData as Trip[]);
                             // 計算新 destination 的 sub_area tabs
                             const sibAreas: string[] = Array.from(new Set(
-                              (tripData as Trip[]).flatMap((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").split(",").map((s: string) => s.trim())).filter(Boolean)
+                              (tripData as Trip[]).map((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
                             ));
                             const sibAreaTabs = sibAreas.length >= 2
                               ? [{ label: "全部", destId: "all" }, ...sibAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
@@ -1349,7 +1339,7 @@ export default function DestinationPage() {
 
             <div className="mb-4 flex items-center gap-3 sm:mb-6">
               <h2 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">
-                可選行程（{subAreaFilter ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter)).length : displayTrips.length}）
+                可選行程（{subAreaFilter ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").trim() === subAreaFilter).length : displayTrips.length}）
               </h2>
               {isDevMode && (
                 <button
@@ -1359,7 +1349,7 @@ export default function DestinationPage() {
                 >
                   {(() => {
                     const visibleTrips = subAreaFilter
-                      ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').split(',').map(s => s.trim()).includes(subAreaFilter))
+                      ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').trim() === subAreaFilter)
                       : displayTrips;
                     const allSelected = visibleTrips.length > 0 && visibleTrips.every(t => selectedTripIds.has(t.id));
                     return allSelected ? '取消全選' : '全選';
@@ -1370,7 +1360,7 @@ export default function DestinationPage() {
 
             {(() => {
               const filtered = subAreaFilter
-                ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").split(",").map(s => s.trim()).includes(subAreaFilter))
+                ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").trim() === subAreaFilter)
                 : displayTrips;
               const sorted = dateFilter
                 ? [...filtered].sort((a, b) => {
@@ -1438,7 +1428,7 @@ export default function DestinationPage() {
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                           promoContent={trip.trip_banner?.promo_content || ''}
-                          categoryLabel={subAreaFilter || ((trip.trip_banner?.sub_area as string) || '').split(',')[0].trim() || undefined}
+                          categoryLabel={subAreaFilter || ((trip.trip_banner?.sub_area as string) || '').trim() || undefined}
                           onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}

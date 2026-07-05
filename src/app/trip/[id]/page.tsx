@@ -1903,10 +1903,12 @@ export default function TripPage() {
                             const res = await fetch('/api/destinations', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
                               body: JSON.stringify({ region_id: regionId, title: name }),
                             });
                             if (!res.ok) { alert('建立失敗'); return; }
                             const created = await res.json();
+                            invalidateCache('regions');
                             setAllRegions(prev => prev.map(r => r.id === regionId ? { ...r, destinations: [...(r.destinations || []), created] } : r));
                             setEditDestinationId(created.id);
                             setNewDestName('');
@@ -2140,7 +2142,7 @@ export default function TripPage() {
                     const isLast = i === total - 1 && total > 1;
                     const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
                     const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
-                    const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
+                    const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); if (isNaN(sd.getTime())) return null; const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
                     return (
                       <div key={i} className="grid grid-cols-[84px_1.4fr_1fr_1fr] items-stretch border-b border-gray-200">
                         <div className="flex items-center justify-center gap-2 border-r border-gray-200 px-3 py-3">
@@ -2179,7 +2181,7 @@ export default function TripPage() {
                     const isLast = i === total - 1 && total > 1;
                     const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                     const labelColor = isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600";
-                    const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
+                    const segDate = seg.date ? (() => { const sd = new Date(seg.date + 'T00:00:00'); if (isNaN(sd.getTime())) return null; const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
                     return (
                       <div key={`m-${i}`} className={`px-4 py-3 ${i < total - 1 ? 'border-b border-gray-200' : ''}`}>
                         <div className="flex items-center gap-2 text-xs text-gray-700">
