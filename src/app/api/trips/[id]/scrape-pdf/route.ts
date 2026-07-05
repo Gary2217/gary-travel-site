@@ -17,47 +17,154 @@ interface PdfFlightSegment {
   is_next_day: boolean;
 }
 
-// 解析單一航班行
-function parseFlightLine(line: string): PdfFlightSegment | null {
-  const trimmed = line.trim();
-  if (!/^第[一二三四五六七八九十百千\d]+天/.test(trimmed)) return null;
+interface FlightMatchCandidate {
+  index: number;
+  segment: PdfFlightSegment;
+}
 
-  const tokens = trimmed.split(/\s+/);
-  const day = tokens[0];
+const AIRLINE_ALIASES = [
+  '酷航',
+  '星宇',
+  '長榮',
+  '華航',
+  '國泰',
+  '虎航',
+  '樂桃',
+  '酷鳥',
+  '宿霧',
+  '亞航',
+] as const;
 
-  const flightNumPattern = /^[A-Z]{1,3}-?\d{3,4}[A-Z]?$/;
-  const flightNumIdx = tokens.findIndex(t => flightNumPattern.test(t));
-  if (flightNumIdx === -1) return null;
+const AIRLINE_PATTERN = String.raw`(?:[\u4E00-\u9FFF]{2,10}航空|${AIRLINE_ALIASES.join('|')})`;
+const CITY_PATTERN = String.raw`[\u4E00-\u9FFF]{2,12}(?:國際機場|機場)?(?:\s*[（(][A-Z]{3}[)）]|\s+[A-Z]{3})?`;
+const FLIGHT_NUMBER_PATTERN = String.raw`(?:[A-Z]{1,2}\d?|[A-Z]{3})\s*-?\s*\d{3,4}[A-Z]?`;
+const TIME_PATTERN = String.raw`\d{1,2}:\d{2}`;
 
-  const flightNumber = tokens[flightNumIdx];
+function normalizeFlightText(rawText: string): string {
+  return rawText
+    .replace(/：/g, ':')
+    .replace(/﹕/g, ':')
+    .replace(/＋/g, '+')
+    .replace(/[‐‑‒–—－]/g, '-')
+    .replace(/（/g, '(')
+    .replace(/）/g, ')')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  const timePattern = /^(\d{1,2}:\d{2})(\+1)?$/;
-  const afterFlight = tokens.slice(flightNumIdx + 1);
-  const times = afterFlight
-    .map(t => t.match(timePattern))
-    .filter((m): m is RegExpMatchArray => m !== null);
+function normalizeTime(value: string): string {
+  const [hours, minutes] = value.split(':');
+  return `${hours.padStart(2, '0')}:${minutes}`;
+}
 
-  if (times.length < 2) return null;
+function normalizeFlightNumber(value: string): string {
+  return value
+    .replace(/\s*-\s*/g, '-')
+    .replace(/\s+/g, '')
+    .trim();
+}
 
-  const depTime = times[0][1];
-  const arrRaw = times[1][0];
-  const arrTime = times[1][1];
-  const isNextDay = arrRaw.includes('+1');
+function cleanCity(value: string): string {
+  return value
+    .replace(/\s*[（(][A-Z]{3}[)）]\s*$/u, '')
+    .replace(/\s+[A-Z]{3}\s*$/u, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  const fromCity = tokens[1] ?? '';
-  const toCity = tokens[2] ?? '';
-  const airline = tokens.slice(3, flightNumIdx).join('');
+function buildFlightSegment(groups: RegExpExecArray['groups']): PdfFlightSegment | null {
+  const day = groups?.day?.trim();
+  const fromCity = groups?.from?.trim();
+  const toCity = groups?.to?.trim();
+  const airline = groups?.airline?.trim();
+  const flightNumber = groups?.flight?.trim();
+  const departureTime = groups?.dep?.trim();
+  const arrivalTime = groups?.arr?.trim();
+
+  if (!day || !fromCity || !toCity || !airline || !flightNumber || !departureTime || !arrivalTime) {
+    return null;
+  }
 
   return {
     day,
-    from_city: fromCity,
-    to_city: toCity,
+    from_city: cleanCity(fromCity),
+    to_city: cleanCity(toCity),
     airline,
-    flight_number: flightNumber,
-    departure_time: depTime,
-    arrival_time: arrTime,
-    is_next_day: isNextDay,
+    flight_number: normalizeFlightNumber(flightNumber),
+    departure_time: normalizeTime(departureTime),
+    arrival_time: normalizeTime(arrivalTime),
+    is_next_day: Boolean(groups?.next),
   };
+}
+
+function collectFlightMatches(
+  text: string,
+  pattern: RegExp,
+  matches: FlightMatchCandidate[],
+) {
+  pattern.lastIndex = 0;
+
+  let match = pattern.exec(text);
+  while (match !== null) {
+    const segment = buildFlightSegment(match.groups);
+    if (segment) {
+      matches.push({
+        index: match.index,
+        segment,
+      });
+    }
+
+    match = pattern.exec(text);
+  }
+}
+
+function parseFlightsFromText(rawText: string): PdfFlightSegment[] {
+  const text = normalizeFlightText(rawText);
+  if (!text) return [];
+
+  const patterns = [
+    new RegExp(
+      String.raw`(?<day>第[一二三四五六七八九十百千\d]+天|\d{1,2}/\d{1,2})\s*(?<from>${CITY_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?(?:\s+${TIME_PATTERN})?`,
+      'g',
+    ),
+    new RegExp(
+      String.raw`(?<day>去程|回程)\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<from>${CITY_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?`,
+      'g',
+    ),
+    new RegExp(
+      String.raw`(?<day>D\d{1,2})\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<from>${CITY_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?`,
+      'g',
+    ),
+  ];
+
+  const matches: FlightMatchCandidate[] = [];
+  for (const pattern of patterns) {
+    collectFlightMatches(text, pattern, matches);
+  }
+
+  matches.sort((a, b) => a.index - b.index);
+
+  const uniqueSegments: PdfFlightSegment[] = [];
+  const seen = new Set<string>();
+
+  for (const match of matches) {
+    const key = [
+      match.segment.day,
+      match.segment.from_city,
+      match.segment.to_city,
+      match.segment.airline,
+      match.segment.flight_number,
+      match.segment.departure_time,
+      match.segment.arrival_time,
+      match.segment.is_next_day ? '1' : '0',
+    ].join('|');
+
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniqueSegments.push(match.segment);
+  }
+
+  return uniqueSegments;
 }
 
 // 解析 PDF 文字，回傳結構化資料
@@ -95,11 +202,7 @@ function parsePdfText(text: string): {
     }
   }
 
-  const flightSegments: PdfFlightSegment[] = [];
-  for (const line of lines) {
-    const seg = parseFlightLine(line);
-    if (seg) flightSegments.push(seg);
-  }
+  const flightSegments = parseFlightsFromText(text);
 
   const airport = flightSegments.length > 0 ? flightSegments[0].from_city : null;
 
