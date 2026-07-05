@@ -129,6 +129,10 @@ export default function DestinationPage() {
     if (typeof window === 'undefined') return '';
     return new URL(window.location.href).searchParams.get('tab') || '';
   };
+  const getAllParam = () => {
+    if (typeof window === 'undefined') return false;
+    return new URL(window.location.href).searchParams.get('all') === '1';
+  };
 
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(null);
   const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
@@ -168,6 +172,12 @@ export default function DestinationPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subAreaFilter, setSubAreaFilter] = useState<string>("");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
+
+  // 重設第三排 sub_area 篩選狀態（避免跨頁/切換 tab 時殘留舊篩選）
+  const resetSubAreaState = useCallback(() => {
+    setSubAreaFilter('');
+    setCurrentTabLabel('全部');
+  }, []);
   const [heroDest, setHeroDest] = useState<(Destination & { regions?: { category_label: string; title: string } }) | null>(null);
   const siblingDestsRef = useRef<string[]>([]);
   const siblingDestsDataRef = useRef<Map<string, Destination & { regions?: { category_label: string; title: string } }>>(new Map());
@@ -296,11 +306,16 @@ export default function DestinationPage() {
     let isMounted = true;
 
     async function loadData() {
+      // 初次進頁的 URL restore 狀態（供 Phase 2 補齊資料集合）
+      let restoredGroup: { subRegion: string; destinations: { id: string; label: string }[] } | null = null;
+      let shouldRestoreAll = false;
       try {
         setPopularFallback(null);
         setSubRegionTrips(null);
         setActiveDestFilter(null);
         setHeroDest(null);
+        resetSubAreaState();
+        setRegionTabs([]);
 
         // Phase 1：核心資料 + 全部目的地清單 並行載入（列表用 ref 快取加速切換）
         const destsPromise = destsListCache.current
@@ -348,8 +363,12 @@ export default function DestinationPage() {
           setSubRegionGroups(groups);
           // 從 URL query param 恢復 tab，否則用 currentSR
           const savedTab = getTabParam();
-          const restoredSR = savedTab && groups.some(g => g.subRegion === savedTab) ? savedTab : currentSR;
-          setActiveSubRegion(restoredSR);
+          const hasSavedSubRegion = Boolean(savedTab && groups.some(g => g.subRegion === savedTab));
+          const restoredSR = hasSavedSubRegion ? savedTab : currentSR;
+          // tab 優先於 all=1
+          shouldRestoreAll = !hasSavedSubRegion && getAllParam();
+          restoredGroup = groups.find(g => g.subRegion === restoredSR) || null;
+          setActiveSubRegion(shouldRestoreAll ? '全部' : restoredSR);
         } else {
           setSubRegionGroups([]);
           setActiveSubRegion("");
@@ -451,6 +470,27 @@ export default function DestinationPage() {
           map.set(destinationId, destData);
           (sibDestsResult as ((Destination & { regions?: { category_label: string; title: string } }) | null)[]).forEach(d => { if (d) map.set(d.id, d); });
           siblingDestsDataRef.current = map;
+        }
+
+        // 非 merged mode：補齊初次進頁（URL restore）的 subRegionTrips 資料集合
+        // （merged mode 已在上方處理；此處處理中東亞非等多-destination sub_region 的深層連結）
+        if (hasSiblings && allSibTripsResult && !isMergedRegion) {
+          const allRegionTrips = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort(compareTrips);
+          if (restoredGroup && restoredGroup.destinations.length > 1) {
+            // URL 帶 tab=某多-destination sub_region：載入該 group 所有 destination 行程
+            resetSubAreaState();
+            const groupIds = new Set(restoredGroup.destinations.map(d => d.id));
+            setSubRegionTrips(allRegionTrips.filter(t => groupIds.has(t.destination_id)).sort(compareTrips));
+            setActiveDestFilter(null);
+            const firstDest = siblingDestsDataRef.current.get(restoredGroup.destinations[0].id);
+            if (firstDest) setHeroDest(firstDest);
+          } else if (shouldRestoreAll) {
+            // URL 帶 all=1：載入整個 region 所有行程
+            resetSubAreaState();
+            setSubRegionTrips(allRegionTrips);
+            setActiveDestFilter(null);
+            setHeroDest(null);
+          }
         }
 
         // 推薦行程
@@ -1073,7 +1113,7 @@ export default function DestinationPage() {
                     onClick={async () => {
                       setActiveSubRegion("全部");
                       setActiveDestFilter(null);
-                      setSubAreaFilter("");
+                      resetSubAreaState();
                       setHeroDest(null);
                       setTabParam("全部");
                       setSubRegionLoading(true);
@@ -1131,12 +1171,14 @@ export default function DestinationPage() {
                             if (cachedDest) setHeroDest(cachedDest);
                           }
                         } else {
+                          // 多-destination sub_region：清掉殘留 sub_area 篩選，避免隱藏行程
+                          resetSubAreaState();
                           setSubRegionLoading(true);
                           try {
                             const allTrips = await Promise.all(
                               group.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
                             );
-                            setSubRegionTrips(allTrips.flat());
+                            setSubRegionTrips(allTrips.flat().sort(compareTrips));
                             const cached = siblingDestsDataRef.current.get(group.destinations[0].id);
                             if (cached) setHeroDest(cached);
                           } catch { setSubRegionTrips(null); }
