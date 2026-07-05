@@ -225,7 +225,10 @@ export default function DestinationPage() {
   }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, sortByOrder]);
 
   // mergedSubAreaTabs 載入完成後，從 URL 恢復 tab（解決重整後 tab 錯亂）
+  // 僅限 merged mode（港澳/日本）：多-destination sub_region（中東亞非等）的 URL tab 是 sub_region 名，
+  // 不可當作 sub_area filter，否則 sub_region 名與 sub_area 名撞名時會誤篩（如中東）。
   useEffect(() => {
+    if (!useMergedMode) return;
     if (mergedSubAreaTabs.length === 0) return;
     const savedTab = getTabParam();
     if (!savedTab || savedTab === '全部') return;
@@ -235,7 +238,7 @@ export default function DestinationPage() {
       setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mergedSubAreaTabs]);
+  }, [mergedSubAreaTabs, useMergedMode]);
 
   // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
   const displayTrips = useMemo(() => {
@@ -480,7 +483,8 @@ export default function DestinationPage() {
             // URL 帶 tab=某多-destination sub_region：載入該 group 所有 destination 行程
             resetSubAreaState();
             const groupIds = new Set(restoredGroup.destinations.map(d => d.id));
-            setSubRegionTrips(allRegionTrips.filter(t => groupIds.has(t.destination_id)).sort(compareTrips));
+            const filteredForGroup = allRegionTrips.filter(t => groupIds.has(t.destination_id)).sort(compareTrips);
+            setSubRegionTrips(filteredForGroup);
             setActiveDestFilter(null);
             const firstDest = siblingDestsDataRef.current.get(restoredGroup.destinations[0].id);
             if (firstDest) setHeroDest(firstDest);
