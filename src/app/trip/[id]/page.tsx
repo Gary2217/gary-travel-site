@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, scrapeTripPdf, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
+import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, scrapeTripPdf, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, type PdfScrapeResult, lineHref, lineMessageHref, fbHref, igHref } from "@/lib/supabase";
 import TripCard from "@/components/TripCard";
 import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
@@ -174,6 +174,10 @@ export default function TripPage() {
   const [newDestName, setNewDestName] = useState('');
   const [creatingDest, setCreatingDest] = useState(false);
   const [pdfScraping, setPdfScraping] = useState(false);
+  type PdfPreviewChange = { field: string; label: string; oldVal: string; newVal: string };
+  type PdfPreviewState = { parsed: PdfScrapeResult; changes: PdfPreviewChange[] };
+  const [pdfPreview, setPdfPreview] = useState<PdfPreviewState | null>(null);
+  const [pdfSaving, setPdfSaving] = useState(false);
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -303,12 +307,82 @@ export default function TripPage() {
     try {
       const parsed = await scrapeTripPdf(tripId);
 
-      // 初始化 banner 編輯器，並用 PDF 解析結果覆蓋相應欄位
+      // 計算有變更的欄位（只列出「新值與舊值不同」的欄位）
+      const changes: PdfPreviewChange[] = [];
+
+      const oldTitle = trip.title ?? '';
+      const newTitle = parsed.title ?? '';
+      if (newTitle && newTitle !== oldTitle) {
+        changes.push({ field: 'title', label: '標題', oldVal: oldTitle, newVal: newTitle });
+      }
+
+      const oldDuration = trip.trip_banner?.duration_label ?? trip.duration ?? '';
+      const newDuration = parsed.duration ?? '';
+      if (newDuration && newDuration !== oldDuration) {
+        changes.push({ field: 'duration_label', label: '天數', oldVal: oldDuration || '（無）', newVal: newDuration });
+      }
+
+      const oldAirline = trip.trip_banner?.airline ?? '';
+      const newAirline = parsed.airline ?? '';
+      if (newAirline && newAirline !== oldAirline) {
+        changes.push({ field: 'airline', label: '航空公司', oldVal: oldAirline || '（無）', newVal: newAirline });
+      }
+
+      const oldAirport = trip.trip_banner?.airport ?? '';
+      const newAirport = parsed.airport ?? '';
+      if (newAirport && newAirport !== oldAirport) {
+        changes.push({ field: 'airport', label: '出發機場', oldVal: oldAirport || '（無）', newVal: newAirport });
+      }
+
+      const oldDepartureLabel = trip.trip_banner?.departure_label ?? '';
+      const newDepartureLabel = parsed.departure_label ?? '';
+      if (newDepartureLabel && newDepartureLabel !== oldDepartureLabel) {
+        changes.push({ field: 'departure_label', label: '出發地', oldVal: oldDepartureLabel || '（無）', newVal: newDepartureLabel });
+      }
+
+      const oldMinGroup = trip.trip_banner?.min_group_size != null ? String(trip.trip_banner.min_group_size) : '';
+      const newMinGroup = parsed.min_group_size != null ? String(parsed.min_group_size) : '';
+      if (newMinGroup && newMinGroup !== oldMinGroup) {
+        changes.push({ field: 'min_group_size', label: '成團人數', oldVal: oldMinGroup ? `${oldMinGroup} 人` : '（無）', newVal: `${newMinGroup} 人` });
+      }
+
+      const oldHighlights = (trip.highlights ?? []).join('、');
+      const newHighlights = (parsed.highlights ?? []).join('、');
+      if (newHighlights && newHighlights !== oldHighlights) {
+        changes.push({ field: 'highlights', label: '亮點標籤', oldVal: oldHighlights || '（無）', newVal: newHighlights });
+      }
+
+      const newSegmentCount = parsed.flight_segments?.length ?? 0;
+      if (newSegmentCount > 0 && departureDates.length > 0) {
+        const currentSegmentCount = (departureDates[0] as Record<string, unknown>).flight_segments
+          ? ((departureDates[0] as Record<string, unknown>).flight_segments as unknown[]).length
+          : 0;
+        changes.push({
+          field: 'flight_segments',
+          label: '航班資訊',
+          oldVal: currentSegmentCount > 0 ? `現有 ${currentSegmentCount} 個航段` : '（無）',
+          newVal: `將更新 ${departureDates.length} 個出發日期（${newSegmentCount} 個航段）`,
+        });
+      }
+
+      setPdfPreview({ parsed, changes });
+    } catch (err) {
+      console.error('[handlePdfScrape]', err);
+      alert(err instanceof Error ? err.message : 'PDF 解析失敗');
+    } finally {
+      setPdfScraping(false);
+    }
+  };
+
+  const confirmPdfSave = async () => {
+    if (!pdfPreview || !trip) return;
+    setPdfSaving(true);
+    try {
+      const parsed = pdfPreview.parsed;
+
+      // 寫入 trip_banner（含各 banner 欄位）+ title + highlights
       const baseBanner = { ...EMPTY_TRIP_BANNER, ...(trip.trip_banner ?? {}) };
-      const durationStr = parsed.duration ?? baseBanner.duration_label ?? '';
-      const dayParsed = durationStr.match(/(\d+)\s*天/);
-      const nightParsed = durationStr.match(/(\d+)\s*夜/);
-      setEditTripBanner({
+      const updatedBanner = {
         ...baseBanner,
         departure_info_map: trip.trip_banner?.departure_info_map ?? {},
         ...(parsed.airline != null ? { airline: parsed.airline } : {}),
@@ -316,29 +390,27 @@ export default function TripPage() {
         ...(parsed.departure_label != null ? { departure_label: parsed.departure_label } : {}),
         ...(parsed.min_group_size != null ? { min_group_size: parsed.min_group_size } : {}),
         ...(parsed.duration != null ? { duration_label: parsed.duration } : {}),
-      });
-      setEditDayCount(dayParsed ? dayParsed[1] : '');
-      setEditNightCount(nightParsed ? nightParsed[1] : '');
-      setEditBannerTagInput('');
-
-      // PDF 亮點標籤：若 PDF 有抓到且目前行程沒有亮點，預填到亮點編輯欄
-      if (parsed.highlights?.length && !(trip.highlights?.length)) {
-        setEditHighlights(parsed.highlights.join('、'));
-      }
-
-      // 若標題與現有不同，也同步到標題編輯欄位
+      };
+      const patchPayload: Record<string, unknown> = { trip_banner: updatedBanner };
       if (parsed.title && parsed.title !== trip.title) {
-        setEditTitle(parsed.title);
+        patchPayload.title = parsed.title;
+      }
+      // highlights 只在原本沒有時才填
+      if (parsed.highlights?.length && !(trip.highlights?.length)) {
+        patchPayload.highlights = parsed.highlights;
       }
 
-      setShowBannerEditor(true);
-      setEditDestinationId(trip.destination_id);
-      if (allRegions.length === 0) {
-        getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {});
-      }
+      const patchRes = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(patchPayload),
+      });
+      if (!patchRes.ok) throw new Error('行程資訊儲存失敗，請確認已登入開發者模式');
+      const updated = await patchRes.json();
+      setTrip(prev => prev ? { ...prev, ...updated } : prev);
 
       // 自動寫入航班資訊到所有出發日期
-      let flightMsg = '';
       const segments = parsed.flight_segments;
       if (segments.length > 0 && trip.departure_dates && trip.departure_dates.length > 0) {
         const outboundSegs = segments.filter(s => s.day === segments[0].day);
@@ -377,9 +449,42 @@ export default function TripPage() {
           return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         };
 
+        // 每個 dd 各自算航段日期、保留原本 label 的共用函式
+        const buildUpdateForDd = (dd: DepartureDate) => {
+          const segsForDd = segments.map(s => {
+            const dayNum = parseDayNum(s.day);
+            return {
+              date: (dayNum != null && dd.departure_date) ? addDaysLocal(dd.departure_date, dayNum - 1) : '',
+              airline: s.airline, flight_number: s.flight_number,
+              dep_time: s.departure_time, dep_airport: s.from_city,
+              arr_time: s.arrival_time, arr_airport: s.to_city, next_day: s.is_next_day,
+            };
+          });
+          return {
+            airline: airlineStr,
+            ...(dd.label ? {} : { label: derivedLabel }), // 保留使用者原本設的標籤
+            outbound_flight: firstOut.flight_number,
+            outbound_time: firstOut.departure_time,
+            outbound_from: firstOut.from_city,
+            outbound_to: lastOut.to_city,
+            outbound_arrival_time: lastOut.arrival_time,
+            outbound_next_day: lastOut.is_next_day,
+            ...(firstRet ? {
+              return_flight: firstRet.flight_number,
+              return_time: firstRet.departure_time,
+              return_from: firstRet.from_city,
+            } : {}),
+            ...(lastRet ? {
+              return_to: lastRet.to_city,
+              return_arrival_time: lastRet.arrival_time,
+              return_next_day: lastRet.is_next_day,
+            } : {}),
+            flight_segments: segsForDd,
+          };
+        };
+
         const results = await Promise.all(
           trip.departure_dates.map(dd => {
-            // 每個出發日期各自推算航段實際日期（用該梯次出發日 + 第幾天）
             const dbSegments = segments.map(s => {
               const dayNum = parseDayNum(s.day);
               return {
@@ -396,7 +501,7 @@ export default function TripPage() {
 
             const flightPayload: Record<string, unknown> = {
               airline: airlineStr,
-              // 只在該梯次原本沒有 label 時，才用推算的時段 label；保留使用者手動設的標籤（保證出團/即將成團等）
+              // 只在該梯次原本沒有 label 時，才用推算的時段 label；保留使用者手動設的標籤
               ...(dd.label ? {} : { label: derivedLabel }),
               outbound_flight: firstOut.flight_number,
               outbound_time: firstOut.departure_time,
@@ -425,39 +530,6 @@ export default function TripPage() {
         );
         const okCount = results.filter(r => r.ok).length;
         if (okCount > 0) {
-          // 每個 dd 各自算航段日期、保留原本 label 的共用函式
-          const buildUpdateForDd = (dd: DepartureDate) => {
-            const segsForDd = segments.map(s => {
-              const dayNum = parseDayNum(s.day);
-              return {
-                date: (dayNum != null && dd.departure_date) ? addDaysLocal(dd.departure_date, dayNum - 1) : '',
-                airline: s.airline, flight_number: s.flight_number,
-                dep_time: s.departure_time, dep_airport: s.from_city,
-                arr_time: s.arrival_time, arr_airport: s.to_city, next_day: s.is_next_day,
-              };
-            });
-            return {
-              airline: airlineStr,
-              ...(dd.label ? {} : { label: derivedLabel }), // 保留使用者原本設的標籤
-              outbound_flight: firstOut.flight_number,
-              outbound_time: firstOut.departure_time,
-              outbound_from: firstOut.from_city,
-              outbound_to: lastOut.to_city,
-              outbound_arrival_time: lastOut.arrival_time,
-              outbound_next_day: lastOut.is_next_day,
-              ...(firstRet ? {
-                return_flight: firstRet.flight_number,
-                return_time: firstRet.departure_time,
-                return_from: firstRet.from_city,
-              } : {}),
-              ...(lastRet ? {
-                return_to: lastRet.to_city,
-                return_arrival_time: lastRet.arrival_time,
-                return_next_day: lastRet.is_next_day,
-              } : {}),
-              flight_segments: segsForDd,
-            };
-          };
           setTrip(prev => {
             if (!prev) return prev;
             return {
@@ -465,20 +537,20 @@ export default function TripPage() {
               departure_dates: prev.departure_dates?.map(dd => ({ ...dd, ...buildUpdateForDd(dd) })),
             };
           });
-          // 同步更新 departureDates state（航班顯示用的是這個 state，不是 trip.departure_dates）
+          // 同步更新 departureDates state（航班顯示用的是這個 state）
           setDepartureDates(prev => prev.map(dd => ({ ...dd, ...buildUpdateForDd(dd) })));
-          invalidateCache('trip:');
-          invalidateCache('dest-trips:');
-          flightMsg = `，航班已寫入 ${okCount} 個出發日期`;
         }
       }
 
-      showSaveSuccess(`PDF 解析完成，已預填到編輯器${flightMsg}`);
+      invalidateCache('trip:' + tripId);
+      invalidateCache('dest-trips:');
+      setPdfPreview(null);
+      showSaveSuccess('儲存成功');
     } catch (err) {
-      console.error('[handlePdfScrape]', err);
-      alert(err instanceof Error ? err.message : 'PDF 解析失敗');
+      console.error('[confirmPdfSave]', err);
+      alert(err instanceof Error ? err.message : '儲存失敗，請確認已登入開發者模式');
     } finally {
-      setPdfScraping(false);
+      setPdfSaving(false);
     }
   };
 
@@ -2880,6 +2952,82 @@ export default function TripPage() {
                 } catch { alert('儲存失敗'); } finally { setSavingPromo(false); }
               }} className="w-full rounded-full bg-sky-600 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60">
                 {savingPromo ? '儲存中...' : '儲存'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* PDF 變更預覽 Modal */}
+      {pdfPreview && createPortal(
+        <div
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setPdfPreview(null); }}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 標題列 */}
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">PDF 解析結果預覽</h3>
+                <p className="mt-0.5 text-xs text-gray-500">確認以下變更後按「確認儲存」寫入資料庫</p>
+              </div>
+              <button
+                onClick={() => setPdfPreview(null)}
+                className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 變更列表 */}
+            <div className="max-h-[50vh] overflow-y-auto px-5 py-4">
+              {pdfPreview.changes.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-500">未偵測到任何欄位變更</p>
+              ) : (
+                <div className="space-y-3">
+                  {pdfPreview.changes.map(c => (
+                    <div key={c.field} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-sky-600">{c.label}</p>
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-medium text-gray-400">舊值</p>
+                          <p className="mt-0.5 break-words text-xs text-gray-500 line-through">{c.oldVal}</p>
+                        </div>
+                        <div className="mt-4 shrink-0 text-gray-300">→</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-medium text-emerald-600">新值</p>
+                          <p className="mt-0.5 break-words text-sm font-semibold text-gray-900">{c.newVal}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 底部按鈕 */}
+            <div className="flex gap-3 border-t border-gray-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setPdfPreview(null)}
+                disabled={pdfSaving}
+                className="flex-1 rounded-full border border-gray-200 bg-white py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmPdfSave()}
+                disabled={pdfSaving}
+                className="flex-1 rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+              >
+                {pdfSaving ? '儲存中...' : '✅ 確認儲存'}
               </button>
             </div>
           </div>
