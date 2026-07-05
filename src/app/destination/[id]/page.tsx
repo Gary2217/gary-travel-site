@@ -139,7 +139,7 @@ export default function DestinationPage() {
 
   // 使用 merged sub_area tabs 的區域白名單（sub_area 代表區域內細分，適合合併顯示）
   // 不在名單中的區域（東南亞等）使用兩層 tab：上面國家/地區切換，下面 sub_area 篩選
-  const MERGED_REGIONS = useMemo(() => ['港澳大陸', '日本', '中東亞非'], []);
+  const MERGED_REGIONS = useMemo(() => ['港澳大陸', '日本'], []);
   const regionCat = destination?.regions?.category_label || '';
   const useMergedMode = allSingleDest && MERGED_REGIONS.includes(regionCat);
 
@@ -349,7 +349,7 @@ export default function DestinationPage() {
         // Phase 2（背景載入，不阻塞頁面顯示）
         const hasRelated = destData.region_id && destData.regions?.category_label;
         if (hasRelated) setRelatedLoading(true);
-        const isMergedRegion = ['港澳大陸', '日本', '中東亞非'].includes(rCat);
+        const isMergedRegion = ['港澳大陸', '日本'].includes(rCat);
 
         // 所有 Phase 2 請求並行
         const relatedP = hasRelated
@@ -994,7 +994,7 @@ export default function DestinationPage() {
               ))}
             </div>
           ) : useMergedMode && mergedSubAreaTabs.length > 0 ? (
-            /* merged mode（港澳大陸/日本/中東亞非）：直接用 sub_area tabs */
+            /* merged mode（港澳大陸/日本）：直接用 sub_area tabs */
             <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
                 {mergedSubAreaTabs.map((tab) => (
