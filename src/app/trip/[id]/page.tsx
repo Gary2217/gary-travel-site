@@ -362,99 +362,111 @@ export default function TripPage() {
         const firstRet = returnSegs.length > 0 ? returnSegs[0] : null;
         const lastRet = returnSegs.length > 0 ? returnSegs[returnSegs.length - 1] : null;
 
-        // 轉換成 FlightSegment 格式
-        const dbSegments = segments.map(s => ({
-          date: s.day,
-          airline: s.airline,
-          flight_number: s.flight_number,
-          dep_time: s.departure_time,
-          dep_airport: s.from_city,
-          arr_time: s.arrival_time,
-          arr_airport: s.to_city,
-          next_day: s.is_next_day,
-        }));
-
-        const flightPayload: Record<string, unknown> = {
-          airline: airlineStr,
-          label: derivedLabel,
-          outbound_flight: firstOut.flight_number,
-          outbound_time: firstOut.departure_time,
-          outbound_from: firstOut.from_city,
-          outbound_to: lastOut.to_city,
-          outbound_arrival_time: lastOut.arrival_time,
-          outbound_next_day: lastOut.is_next_day,
-          flight_segments: dbSegments,
+        // 「第X天」→ 數字（推算航段實際日期用）
+        const parseDayNum = (dayText: string): number | null => {
+          const m = String(dayText || '').match(/第\s*(\d+)\s*天/);
+          if (m) return parseInt(m[1], 10);
+          const cnMap: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+          const cn = String(dayText || '').match(/第\s*([一二三四五六七八九十]+)\s*天/);
+          if (cn) { const t = cn[1]; if (t === '十') return 10; if (t.length === 1) return cnMap[t] ?? null; if (t.startsWith('十')) return 10 + (cnMap[t[1]] ?? 0); if (t.includes('十')) { const [a, b] = t.split('十'); return (cnMap[a] ?? 1) * 10 + (cnMap[b] ?? 0); } }
+          return null;
         };
-        if (firstRet && lastRet) {
-          flightPayload.return_flight = firstRet.flight_number;
-          flightPayload.return_time = firstRet.departure_time;
-          flightPayload.return_from = firstRet.from_city;
-          flightPayload.return_to = lastRet.to_city;
-          flightPayload.return_arrival_time = lastRet.arrival_time;
-          flightPayload.return_next_day = lastRet.is_next_day;
-        }
+        const addDaysLocal = (dateStr: string, n: number): string => {
+          const d = new Date(dateStr + 'T12:00:00');
+          d.setDate(d.getDate() + n);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
 
         const results = await Promise.all(
-          trip.departure_dates.map(dd =>
-            fetch(`/api/trips/${tripId}/departure-dates?dateId=${dd.id}`, {
+          trip.departure_dates.map(dd => {
+            // 每個出發日期各自推算航段實際日期（用該梯次出發日 + 第幾天）
+            const dbSegments = segments.map(s => {
+              const dayNum = parseDayNum(s.day);
+              return {
+                date: (dayNum != null && dd.departure_date) ? addDaysLocal(dd.departure_date, dayNum - 1) : '',
+                airline: s.airline,
+                flight_number: s.flight_number,
+                dep_time: s.departure_time,
+                dep_airport: s.from_city,
+                arr_time: s.arrival_time,
+                arr_airport: s.to_city,
+                next_day: s.is_next_day,
+              };
+            });
+
+            const flightPayload: Record<string, unknown> = {
+              airline: airlineStr,
+              // 只在該梯次原本沒有 label 時，才用推算的時段 label；保留使用者手動設的標籤（保證出團/即將成團等）
+              ...(dd.label ? {} : { label: derivedLabel }),
+              outbound_flight: firstOut.flight_number,
+              outbound_time: firstOut.departure_time,
+              outbound_from: firstOut.from_city,
+              outbound_to: lastOut.to_city,
+              outbound_arrival_time: lastOut.arrival_time,
+              outbound_next_day: lastOut.is_next_day,
+              flight_segments: dbSegments,
+            };
+            if (firstRet && lastRet) {
+              flightPayload.return_flight = firstRet.flight_number;
+              flightPayload.return_time = firstRet.departure_time;
+              flightPayload.return_from = firstRet.from_city;
+              flightPayload.return_to = lastRet.to_city;
+              flightPayload.return_arrival_time = lastRet.arrival_time;
+              flightPayload.return_next_day = lastRet.is_next_day;
+            }
+
+            return fetch(`/api/trips/${tripId}/departure-dates?dateId=${dd.id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
               body: JSON.stringify(flightPayload),
-            })
-          )
+            });
+          })
         );
         const okCount = results.filter(r => r.ok).length;
         if (okCount > 0) {
+          // 每個 dd 各自算航段日期、保留原本 label 的共用函式
+          const buildUpdateForDd = (dd: DepartureDate) => {
+            const segsForDd = segments.map(s => {
+              const dayNum = parseDayNum(s.day);
+              return {
+                date: (dayNum != null && dd.departure_date) ? addDaysLocal(dd.departure_date, dayNum - 1) : '',
+                airline: s.airline, flight_number: s.flight_number,
+                dep_time: s.departure_time, dep_airport: s.from_city,
+                arr_time: s.arrival_time, arr_airport: s.to_city, next_day: s.is_next_day,
+              };
+            });
+            return {
+              airline: airlineStr,
+              ...(dd.label ? {} : { label: derivedLabel }), // 保留使用者原本設的標籤
+              outbound_flight: firstOut.flight_number,
+              outbound_time: firstOut.departure_time,
+              outbound_from: firstOut.from_city,
+              outbound_to: lastOut.to_city,
+              outbound_arrival_time: lastOut.arrival_time,
+              outbound_next_day: lastOut.is_next_day,
+              ...(firstRet ? {
+                return_flight: firstRet.flight_number,
+                return_time: firstRet.departure_time,
+                return_from: firstRet.from_city,
+              } : {}),
+              ...(lastRet ? {
+                return_to: lastRet.to_city,
+                return_arrival_time: lastRet.arrival_time,
+                return_next_day: lastRet.is_next_day,
+              } : {}),
+              flight_segments: segsForDd,
+            };
+          };
           setTrip(prev => {
             if (!prev) return prev;
             return {
               ...prev,
-              departure_dates: prev.departure_dates?.map(dd => ({
-                ...dd,
-                airline: airlineStr,
-                label: derivedLabel,
-                outbound_flight: firstOut.flight_number,
-                outbound_time: firstOut.departure_time,
-                outbound_from: firstOut.from_city,
-                outbound_to: lastOut.to_city,
-                outbound_arrival_time: lastOut.arrival_time,
-                ...(firstRet ? {
-                  return_flight: firstRet.flight_number,
-                  return_time: firstRet.departure_time,
-                  return_from: firstRet.from_city,
-                } : {}),
-                ...(lastRet ? {
-                  return_to: lastRet.to_city,
-                  return_arrival_time: lastRet.arrival_time,
-                } : {}),
-                flight_segments: dbSegments,
-              })),
+              departure_dates: prev.departure_dates?.map(dd => ({ ...dd, ...buildUpdateForDd(dd) })),
             };
           });
           // 同步更新 departureDates state（航班顯示用的是這個 state，不是 trip.departure_dates）
-          const flightUpdate = {
-            airline: airlineStr,
-            label: derivedLabel,
-            outbound_flight: firstOut.flight_number,
-            outbound_time: firstOut.departure_time,
-            outbound_from: firstOut.from_city,
-            outbound_to: lastOut.to_city,
-            outbound_arrival_time: lastOut.arrival_time,
-            outbound_next_day: lastOut.is_next_day,
-            ...(firstRet ? {
-              return_flight: firstRet.flight_number,
-              return_time: firstRet.departure_time,
-              return_from: firstRet.from_city,
-            } : {}),
-            ...(lastRet ? {
-              return_to: lastRet.to_city,
-              return_arrival_time: lastRet.arrival_time,
-              return_next_day: lastRet.is_next_day,
-            } : {}),
-            flight_segments: dbSegments,
-          };
-          setDepartureDates(prev => prev.map(dd => ({ ...dd, ...flightUpdate })));
+          setDepartureDates(prev => prev.map(dd => ({ ...dd, ...buildUpdateForDd(dd) })));
           invalidateCache('trip:');
           invalidateCache('dest-trips:');
           flightMsg = `，航班已寫入 ${okCount} 個出發日期`;
