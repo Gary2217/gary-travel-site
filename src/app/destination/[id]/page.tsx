@@ -460,11 +460,11 @@ export default function DestinationPage() {
           siblingTripsCache.current = cache;
         }
 
-        // MERGED 模式：設定合併行程
+        // MERGED 模式：設定合併行程（初始顯示全部合併行程，用 sub_area tabs 篩選）
         if (hasSiblings && allSibTripsResult && isMergedRegion) {
           const merged = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort(compareTrips);
           setSubRegionTrips(merged);
-          setActiveDestFilter(destinationId);
+          setActiveDestFilter(null);
         }
 
         // 兄弟 destination 資料快取（hero 切換用）
