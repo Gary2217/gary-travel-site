@@ -488,6 +488,14 @@ export default function DestinationPage() {
             setActiveDestFilter(null);
             const firstDest = siblingDestsDataRef.current.get(restoredGroup.destinations[0].id);
             if (firstDest) setHeroDest(firstDest);
+          } else if (restoredGroup && restoredGroup.destinations.length === 1 && restoredGroup.destinations[0].id !== destinationId) {
+            // URL 帶 tab=某單-destination sub_region（西伯利亞/高雄出發等）：載入該 destination 行程
+            resetSubAreaState();
+            const targetId = restoredGroup.destinations[0].id;
+            setSubRegionTrips(allRegionTrips.filter(t => t.destination_id === targetId).sort(compareTrips));
+            setActiveDestFilter(null);
+            const firstDest = siblingDestsDataRef.current.get(targetId);
+            if (firstDest) setHeroDest(firstDest);
           } else if (shouldRestoreAll) {
             // URL 帶 all=1：載入整個 region 所有行程
             resetSubAreaState();
