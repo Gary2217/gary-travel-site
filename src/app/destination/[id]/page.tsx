@@ -212,17 +212,26 @@ export default function DestinationPage() {
   const useMergedMode = allSingleDest && MERGED_REGIONS.includes(regionCat);
 
   const mergedSubAreaTabs = useMemo(() => {
+    // 子標籤採「固定 canonical 清單」：即使某標籤下暫無行程也永遠顯示，不會消失。
+    const order = regionCat === '港澳大陸' ? CHINA_SUB_AREA_ORDER
+      : regionCat === '日本' ? JAPAN_SUB_AREA_ORDER
+      : null;
     const source = subRegionTrips || trips;
-    if (!source || source.length === 0) return [];
-    const areas: string[] = Array.from(new Set(
-      source.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+    const tripAreas = Array.from(new Set(
+      (source || []).map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
     ));
-    if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
-    else if (regionCat === '日本') sortByOrder(areas, JAPAN_SUB_AREA_ORDER);
+    let areas: string[];
+    if (order) {
+      // 固定清單全列，並補上不在清單中的實際 trip 子標籤（避免行程被藏起來）
+      const extra = tripAreas.filter(a => !order.includes(a)).sort((a, b) => a.localeCompare(b));
+      areas = [...order, ...extra];
+    } else {
+      areas = [...tripAreas];
+    }
     return areas.length >= 2
       ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
       : [];
-  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, sortByOrder]);
+  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER]);
 
   // mergedSubAreaTabs 載入完成後，從 URL 恢復 tab（解決重整後 tab 錯亂）
   // 僅限 merged mode（港澳/日本）：多-destination sub_region（中東亞非等）的 URL tab 是 sub_region 名，
@@ -1484,7 +1493,11 @@ export default function DestinationPage() {
                   })
                 : filtered;
 
-              return (
+              return sorted.length === 0 ? (
+                <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center text-sm text-gray-500 shadow-sm">
+                  此分類目前沒有行程，敬請期待，或聯繫蓋瑞為您規劃。
+                </div>
+              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sorted.map((trip) => {
                     const hasMatchingDate = Boolean(
