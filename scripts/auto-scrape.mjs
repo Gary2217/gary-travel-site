@@ -236,10 +236,17 @@ function sanitizeText(value) {
 }
 
 function normalizeTag(value) {
-  return sanitizeText(value)
+  const t = sanitizeText(value)
     .replace(/^#/, '')
-    .replace(/^\((國外|國內)\)/, '')
+    .replace(/^\((國外|國內|首頁)\)/, '')
     .trim();
+  if (!t) return '';
+  if (t.length > 14) return ''; // 過長非賣點（多為備註/贈品說明）
+  // 過濾雜訊標籤（非賣點）：航空公司名、贈品/備品/服務備註
+  // 註：下午茶/按摩/貴賓室等「可能是正當體驗賣點」的詞不硬濾，改靠「贈」攔截贈品版本
+  if (t.includes('航空') || /航$/.test(t)) return '';
+  if (/網卡|SIM|上網|分享器|插頭|束帶|收納|盥洗|傳輸線|礦泉水|翻譯機|WIFI|wifi|無限供應|價值[\d]|贈/.test(t)) return '';
+  return t;
 }
 
 // 從行程標題拆出精選賣點當標籤（取 ~/～ 後、以標點/空格分隔、過濾雜訊、限 5 個）
