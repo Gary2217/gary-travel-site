@@ -479,7 +479,13 @@ export default function DestinationPage() {
         // （merged mode 已在上方處理；此處處理中東亞非等多-destination sub_region 的深層連結）
         if (hasSiblings && allSibTripsResult && !isMergedRegion) {
           const allRegionTrips = [...sortedTrips, ...(allSibTripsResult as Trip[][]).flat()].sort(compareTrips);
-          if (restoredGroup && restoredGroup.destinations.length > 1) {
+          if (shouldRestoreAll) {
+            // URL 帶 all=1：載入整個 region 所有行程（優先於 tab，避免當前 destination 屬多-dest group 時被 group 篩選蓋掉）
+            resetSubAreaState();
+            setSubRegionTrips(allRegionTrips);
+            setActiveDestFilter(null);
+            setHeroDest(null);
+          } else if (restoredGroup && restoredGroup.destinations.length > 1) {
             // URL 帶 tab=某多-destination sub_region：載入該 group 所有 destination 行程
             resetSubAreaState();
             const groupIds = new Set(restoredGroup.destinations.map(d => d.id));
@@ -496,12 +502,6 @@ export default function DestinationPage() {
             setActiveDestFilter(null);
             const firstDest = siblingDestsDataRef.current.get(targetId);
             if (firstDest) setHeroDest(firstDest);
-          } else if (shouldRestoreAll) {
-            // URL 帶 all=1：載入整個 region 所有行程
-            resetSubAreaState();
-            setSubRegionTrips(allRegionTrips);
-            setActiveDestFilter(null);
-            setHeroDest(null);
           }
         }
 
