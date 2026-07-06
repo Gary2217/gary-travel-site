@@ -921,6 +921,241 @@ Admin 頁面「待確認變更」列表
 
 ---
 
+## 20. 選擇行程頁完整規則（`src/app/destination/[id]/page.tsx`）
+
+> 這是全站最複雜的頁面（約 1814 行），維護「當前 destination 行程」與「合併兄弟行程」雙狀態源。**修改此頁前必讀本章全部。**
+
+### 20.0 頁面職責
+
+- 顯示某目的地（destination）底下的所有行程卡片
+- 支援三層 tab 篩選、多目的地合併顯示（merged mode）、深層連結（URL 參數）
+- DevMode 下可新增/刪除/複製/隱藏/恢復/排序/編輯行程、觸發自動抓取
+
+### 20.1 雙狀態源（最高優先規則，違反 = 資料不同步）
+
+此頁同時維護兩個行程狀態：
+
+| State | 型別 | 意義 |
+|---|---|---|
+| `trips` | `Trip[]` | 當前 destination 的行程 |
+| `subRegionTrips` | `Trip[] \| null` | 合併的兄弟 destination 行程（merged mode / 多-dest sub_region 顯示用；`null` 表示未啟用合併） |
+
+**規則：**
+- **任何修改行程的 handler 都必須同時更新 `setTrips` 和 `setSubRegionTrips`。** 漏更新 `subRegionTrips` → 港澳大陸 / 日本 / 中東亞非等合併區域的 UI 不會反映變更。
+- **欄位更新**一律走共用函式 `updateTrip(tripId, updater)`（它已同時 map 兩個 state）。
+- **新增 / 刪除 / 隱藏 / 恢復 / 複製**等增減操作，必須分別對 `setTrips` 和 `setSubRegionTrips` 各做一次（`subRegionTrips` 為 `null` 時要保留 `null`，寫成 `prev => prev ? ... : null`）。
+- **新增任何 handler 時，必須搜尋 `setTrips` 確認是否也需要 `setSubRegionTrips`。**
+
+### 20.2 三層 Tab 系統（層級規則）
+
+| 層級 | 名稱 | 顯示條件 | 分組依據 |
+|---|---|---|---|
+| 第一層 | Sub_Region tabs | `subRegionGroups.length > 1` | 依 `sub_region`（中東 / 中亞 / 西伯利亞…） |
+| 第二層 | Destination tabs | `activeSubRegion !== '全部'` 且該 group 有 **2+ 個** destination | 個別 destination |
+| 第三層 | Sub_Area tabs | `regionTabs.length > 0` 且 `activeSubRegion !== '全部'` 且該 sub_region 下 **只有 1 個** destination | 依 `sub_area`（曼谷 / 清邁…） |
+
+**層級限制規則（不可違反）：**
+- sub_region 下有 **2+ 個** destination 時，**只顯示第二層 destination tabs，不顯示第三層 sub_area tabs**（避免重複篩選）。
+- sub_region 下只有 **1 個** destination 時，才顯示第三層 sub_area 細分。
+
+### 20.3 Merged Mode（合併顯示）
+
+- **白名單**：`MERGED_REGIONS = ['港澳大陸', '日本']`。只有這兩區走 merged mode。
+- **啟用條件**：`allSingleDest`（所有 sub_region 都只有 1 個 destination）且 region 在白名單內。
+- **行為**：跳過第一層 sub_region tabs，直接用 sub_area tabs（張家界 / 九寨溝…），初始顯示全部合併行程。
+- sub_area 排序依 `CHINA_SUB_AREA_ORDER` / `JAPAN_SUB_AREA_ORDER` 常數，**新增 sub_area 要同步更新這兩個常數陣列**，否則新區塊排序會落到最後。
+- **中東亞非不是 merged mode**：它是多-destination sub_region，走第二層 destination tabs。
+
+### 20.4 URL 參數與深層連結
+
+| 參數 | 函式 | 意義 |
+|---|---|---|
+| `?tab=` | `setTabParam()` / `getTabParam()` | 當前 sub_region 或 sub_area tab |
+| `?all=1` | `getAllParam()` | 顯示整個 region 全部行程 |
+
+- 所有 tab 點擊都要透過 `setTabParam` 寫入 URL，支援深層連結與返回。
+- **`all=1` 優先於 tab restore**（修復多-dest region 全部標籤）。
+- **sub_region 與 sub_area 撞名處理**：非 merged mode 的 URL `?tab=` 視為 **sub_region 名**，不可當 sub_area filter（否則撞名時誤篩，例如中東）。只有 merged mode 才從 URL 恢復 sub_area tab。
+
+### 20.5 行程排序（`compareTrips`）
+
+- 判定：`isInquiryOnly(trip) = trip.trip_banner?.custom_tour === true || trip.departure_dates?.length === 0`
+- 排序優先級：**有出發日行程排前面 → 洽詢（無出發日 / custom_tour）排最後 → 同組依 `display_order` → 再依 `id` 穩定排序**。
+- **前後端一致**：`compareTrips`（此頁）與 `/api/destinations/[id]/trips/route.ts` 的 server 端排序邏輯**必須完全一致**，改一邊要同步改另一邊。
+- 所有合併行程的地方（Phase 1 初始、合併兄弟、合併 group、切換 destination）都要 `.sort(compareTrips)`。
+
+### 20.6 資料載入（兩階段）
+
+- **Phase 1（阻塞）**：並行 `getDestination` + `getDestinationTrips` + `/api/destinations`（全部目的地清單）。設好 `destination`/`trips`/`subRegionGroups`/`regionTabs`，從 URL 恢復 tab，排序後**立即 `setLoading(false)`**。
+- **Phase 2（背景）**：載入推薦行程、隱藏行程（DevMode）、兄弟 destination 行程與資訊（快取到 `siblingTripsCache` / `siblingDestsDataRef`）。merged mode 或有深層連結時，合併補齊 `subRegionTrips`。
+- 讀取會被 DevMode 改動的資料一律 `cache: 'no-store'`。
+
+### 20.7 DevMode 寫入 Handler 規則（逐一遵守 §4.1）
+
+| Handler | 寫入方式 | `credentials:'include'` | `invalidateCache` | 更新雙狀態 |
+|---|---|---|---|---|
+| `updateTrip`（欄位更新共用） | — | — | 由呼叫端負責 | ✅ 同時更新兩者 |
+| `handleCustomTourToggle` | PATCH `/api/trips/{id}` | ✅ | `dest-trips:`（切換後排序會變，另清 `trip:`） | ✅ |
+| `handleHideTrip` | PATCH `{is_active:false}` | ✅ | `dest-trips:` + `trip:` | ✅ 移除 |
+| `handleRestoreTrip` | PATCH `{is_active:true}` | ✅ | `dest-trips:` + `trip:` | ✅ 加回 |
+| `handleAddTrip` | `createTrip()`（lib） | lib 內處理 | 由 lib / API 處理 | ✅ 加入 |
+| `handleDeleteTrip` | `deleteTrip()`（lib） | lib 內處理 | 由 lib / API 處理 | ✅ 移除 |
+| `handleDuplicateTrip` | `cloneTrip()`（lib） | lib 內處理 | 由 lib / API 處理 | ✅ 加入 |
+| `handleReorder` / `handleTripReorder` | POST `/api/reorder` | ✅ | 排序即時樂觀更新，失敗回滾 | ✅（setItems） |
+
+> 透過 `src/lib/supabase.ts` 的 `createTrip`/`deleteTrip`/`cloneTrip` 寫入時，`credentials` 與 `invalidateCache` 由 lib 統一處理；**不要在 handler 內重複清快取或漏加**。直接 fetch 的 handler（Hide/Restore/CustomTour/Reorder）則必須自帶 `credentials:'include'`。
+
+### 20.8 UI 區塊清單（由上到下）
+
+1. Loading spinner（`loading`）→ Error 頁（`error || !destination`）
+2. **Hero 圖區**：目的地大圖 + 標題 + subtitle（切 tab 時 `heroDest` 跟著換）
+3. **第一層 Sub_Region tabs** → **第二層 Destination tabs** → **第三層 / Merged Sub_Area tabs**
+4. **搜尋條件 Banner**（`dateFilter || cityFilter`）+ 無符合梯次提示
+5. **客製洽詢區塊**（無行程且非 DevMode）
+6. **相關行程（同地區 / 同類別）**
+7. **主行程列表**（TripCard 網格；DevMode 有上下移 / 拖曳 / 多選 / 新增按鈕）
+8. **已隱藏行程區塊**（DevMode，`#hidden-trips-section`）
+9. **熱門推薦 / fallback**
+10. `SocialCta` + `FloatingContact`
+11. **DevMode 浮動按鈕組**：「🔄 抓取此頁行程」「✅ 更新此頁 (N 筆)」
+12. `Toast` + **抓取變更預覽 Modal**（套用前顯示每筆新舊值對照，確認才更新）
+
+### 20.9 自動抓取（DevMode）
+
+- 「全部」tab → 用 region key 觸發整區；否則觸發單一 destination（可帶 `selectedTripIds` 多選）。
+- 觸發前檢查 destination 的 `source_url` 是否設定，未設定不可抓。
+- 流程：POST `/api/scrape/trigger`（帶 `credentials`）→ 5 秒輪詢 `/api/scrape/progress` → `/api/scrape/changes` 取待確認 → **預覽 Modal 顯示新舊值** → 確認後逐筆 POST `/api/scrape/apply` → 清 `dest-trips:` / `trip:` / `regions` → 重新整理。
+- 詳見 §16 自動抓取系統。
+
+### 20.10 修改此頁 Checklist（每次都跑）
+
+- [ ] 若動到行程狀態：`setTrips` 與 `setSubRegionTrips` 都更新了（欄位改用 `updateTrip`）
+- [ ] 直接 fetch 寫入有 `credentials:'include'`
+- [ ] 寫入成功後清了對的 `invalidateCache` prefix（見 §4.1 對照表）
+- [ ] 若動到排序邏輯，前端 `compareTrips` 與 API route 同步
+- [ ] 若新增 sub_area，更新了 `CHINA_SUB_AREA_ORDER` / `JAPAN_SUB_AREA_ORDER`
+- [ ] tab 點擊有寫入 URL（`setTabParam`）
+- [ ] 跑 `lsp_diagnostics`（此檔）確認乾淨
+
+---
+
+## 21. 行程檔案頁完整規則（`src/app/trip/[id]/page.tsx`）
+
+> 全站改動最多、狀態最多的頁面（約 3273 行、59 個 useState）。負責單一行程的完整展示與 DevMode 深度編輯。**修改此頁前必讀本章全部。**
+
+### 21.0 頁面職責
+
+- 展示單一行程：Banner 資訊、售價明細、出發日期、航班、每日行程 / PDF、優惠、諮詢 CTA、側邊媒體、推薦行程
+- DevMode 下可編輯上述所有欄位、上傳 / 刪除 PDF、從 PDF 抓取、觸發自動抓取、編輯限時優惠
+
+### 21.1 資料模型（欄位歸屬，改前務必分清）
+
+| 欄位群 | 存放位置 | 說明 |
+|---|---|---|
+| 基本 | `trips.{title, subtitle, price_range, duration, cover_image_url, destination_id, document_url}` | 行程主體 |
+| Banner | `trips.trip_banner.{code_label, duration_label, min_group_size, airport, airline, tags, departure_label, price_label, seats_total, seats_available, deposit_label, side_image_url, custom_tour, promo_enabled, promo_content}` | 團型資訊區塊 |
+| 售價明細 | `trip_banner.departure_info_map[departureId].price_detail`（JSON 字串） | 5 欄價格 + 訂金 / 房差 / 簽證 / 說明 |
+| 出發日期 | `trip_departure_dates` 表（每梯次一列） | 日期 / 團位 / 價格 / 標籤 / 航段 |
+| 航班 | `trip_departure_dates.flight_segments` + `outbound_*` / `return_*`（舊格式） | 航段陣列 |
+
+- **售價明細必經 `parsePriceDetail` / `stringifyPriceDetail` 轉換**，不要直接手拼 JSON。
+- **`airport` 欄位不在前端顯示**，僅供 PDF 抓取 / 比對，不要新增顯示它的 UI。
+
+### 21.2 出發日期選擇邏輯
+
+- `selectedDepartureId` 決定當前顯示的價格、航班、售價明細。
+- 初始選梯次時，**優先選「有航班資料」的梯次**（有 `flight_segments` 或舊格式航班），不要盲選第一筆。
+- API 已過濾：只回傳 `is_active` 且 `departure_date >= today` 的梯次，並依日期升冪排序。
+
+### 21.3 航班顯示優先序
+
+1. `selectedDeparture.flight_segments`（新格式，含 `date/airline/flight_number/dep_time/dep_airport/arr_time/arr_airport/next_day/day`）
+2. 其他有航班的梯次 fallback
+3. 舊格式 `outbound_*` / `return_*`
+
+- **跨日班機**用 `next_day` 顯示「+1天」，不可省略。
+- 時段標籤（早去 / 午去 / 晚去 + 早回 / 午回 / 晚回）由 `getScheduleLabel` 依起飛 / 抵達時間推算，不要硬編。
+
+### 21.4 每日行程 vs PDF（互斥顯示）
+
+- `trip.trip_days.length > 0` → 顯示 `DayItinerary`（每日摺疊面板）。
+- 否則且有 `document_url` → 延遲載入 `PdfViewer`（滾動進視窗 600px 才載 pdfjs）。
+- 兩者皆無 → 顯示「無行程」提示。
+- **本專案行程主要用 PDF 取代每日行程**（見 §15），`trip_days` 通常為空。
+
+### 21.5 DevMode 寫入 Handler 規則（全部遵守 §4.1）
+
+所有寫入 handler **必須** `credentials:'include'`，成功後清 `invalidateCache('trip:'+tripId)` **和** `invalidateCache('dest-trips:')`（列表頁價格 / 標籤跟著行程走）：
+
+| Handler | 用途 | 端點 |
+|---|---|---|
+| `saveSelectedDepartureInfo` | 編輯現有梯次 + banner | PATCH `/api/trips/{id}` + PATCH `.../departure-dates?dateId=` |
+| `saveDepartureInfoAsFirstDeparture` | 新增第一個梯次 | POST `.../departure-dates` + PATCH `/api/trips/{id}` |
+| `saveTripBannerOnly` | 只存 banner | PATCH `/api/trips/{id}` |
+| （售價明細 Modal 儲存） | 5 欄價格 + 說明 | PATCH `/api/trips/{id}` + `.../departure-dates?dateId=` |
+| （編輯行程資訊 Modal） | title/subtitle/price_range/destination_id | PATCH `/api/trips/{id}` |
+| （優惠編輯） | `promo_enabled` / `promo_content` | PATCH `/api/trips/{id}` |
+| PDF 上傳 | `uploadTripDocument()` | POST `.../upload-document`（清 `trip:`） |
+| PDF 刪除 | `deleteTripDocument()` | DELETE `.../document`（清 `trip:`） |
+| `confirmPdfSave`（PDF 抓取套用） | 寫入解析出的欄位 | PATCH `/api/trips/{id}` + 所有梯次 `.../departure-dates` |
+| `handleApplyChanges`（自動抓取套用） | 套用待確認變更 | POST `/api/scrape/apply` |
+| 建立目的地 | 編輯資訊時新增 destination | POST `/api/destinations`（清 `regions`） |
+
+### 21.6 售價明細 5 欄（不可遺漏）
+
+- 大人、小孩佔床、小孩不佔床、加床、嬰兒 —— 五欄都要能編輯與顯示。
+- 用戶端「售價說明」彈窗（`showPriceInfoModal`）與 DevMode 編輯 Modal（`showPriceDetailModal`）共用同一份 `price_detail` 資料。
+- 抓取來源寫什麼就填什麼，**不可自行填「洽詢」**（見 §15）。
+
+### 21.7 PDF 抓取（`handlePdfScrape` → 預覽 → `confirmPdfSave`）
+
+- 「📄 從 PDF 抓取」→ 解析 PDF → **變更預覽 Modal（每欄位新舊值對照，確認才儲存）** → 寫入。
+- 自動更新欄位：`title / duration_label / airline / airport / departure_label / min_group_size / highlights / tags / flight_segments`。
+- 寫入航班時**保留使用者原本的出發日標籤**（保證出團等），航段 date 用實際日期（非「第X天」文字）。
+
+### 21.8 UI 區塊清單（由上到下）
+
+1. `StickyHeader`（含 DevMode 切換）+ `InquiryButtons`（floating）
+2. **標題區**：麵包屑 + 標題 + subtitle（DevMode 有「編輯資訊」）
+3. **主格線**：左欄 `SideMediaCarousel` + 產品資訊卡（標籤 / 團號 / 航空 / 時段 / 日期 / 出發地 / 目的地 / 團位 / 成團人數 / 售價說明）；右欄出發日期表格（月份篩選 + LINE 詢問）；手機版合併卡
+4. `DepartureDates` 卡片
+5. **航班資訊**（桌面表格 / 手機卡片，去回程 / 轉機分色）
+6. `DayItinerary` **或** `PdfViewer`（互斥）→ 無則「無行程」提示
+7. **推薦行程**（懶載入，最多 6 筆，只收有出發日、排除客製與當前行程）
+8. 分享 / 下載按鈕 → `InquiryButtons`（inline）→ `SocialCta`
+9. **底部固定 CTA**：價格文字 + LINE 詢問（客製行程顯示「歡迎詢問出團資訊」）
+10. **Modal 群**：編輯資訊 / 出發日期編輯 / 售價明細編輯 / 售價說明 / 手機日期選擇 / 下載門檻 / 分享門檻 / 限時優惠編輯 / 限時優惠彈窗 / PDF 變更預覽 / 抓取變更預覽
+
+### 21.9 下載 / 分享門檻
+
+- 首次下載 PDF 或分享前，顯示社群追蹤門檻（LINE / FB / IG）。
+- 追蹤後設 `localStorage.social_followed='true'`，之後直接放行。
+- PDF 下載走 `/api/download-trip-pdf?url=...&name=...`。
+
+### 21.10 側邊媒體輪播（`SideMediaCarousel`）
+
+- 資料存 `trip_banner.side_image_url`；輪播連結由元件自身管理。
+- 高度對齊右欄（`videoMatchHeight`，測量 `rightColumnRef` - `titleRef`）。
+- DevMode 下停止自動輪播，方便設定連結（見 §16 相關 commit）。
+
+### 21.11 CTA 價格 / 訊息組建
+
+- `ctaPriceText`：客製 → 「歡迎詢問出團資訊」；有選梯次 → `NT$ {price}`；否則 → `price_range` 或「歡迎詢問最新價格」。
+- LINE 訊息一律帶「行程標題 + 團號 + 出發日期（非客製才有）+ 價格」。
+
+### 21.12 修改此頁 Checklist（每次都跑）
+
+- [ ] 改對欄位群位置（trips / trip_banner / departure_info_map / trip_departure_dates，見 §21.1）
+- [ ] 寫入 fetch 有 `credentials:'include'`
+- [ ] 成功後清 `invalidateCache('trip:'+tripId)` **和** `invalidateCache('dest-trips:')`（PDF 操作至少清 `trip:`）
+- [ ] 對應 API route 有 `requireDevAuth()` 與 `Cache-Control: no-store`
+- [ ] 前端 state 同步（`setTrip` / `setDepartureDates`）
+- [ ] 售價明細經 `parse/stringifyPriceDetail`，五欄齊全
+- [ ] 錯誤有 alert / Toast，不靜默失敗
+- [ ] 跑 `lsp_diagnostics`（此檔）確認乾淨
+
+---
+
 ## 最終規則
 
 不得忽略以上任何規則。所有回覆與修改都必須完全遵守。
