@@ -53,12 +53,12 @@ export async function GET(
       };
     });
 
-    // 請洽詢行程（custom_tour=true 或無出發日）排最前，同組依 display_order，再 id 穩定排序
+    // 有正常出發日的行程排前面，請洽詢行程（custom_tour=true 或無出發日）排最後，同組依 display_order，再 id 穩定排序
     const isInquiryOnly = (t: any) =>
       !!t.trip_banner?.custom_tour || (t.departure_dates?.length ?? 0) === 0;
     trips.sort((a: any, b: any) => {
-      const ap = isInquiryOnly(a) ? 0 : 1;
-      const bp = isInquiryOnly(b) ? 0 : 1;
+      const ap = isInquiryOnly(a) ? 1 : 0;
+      const bp = isInquiryOnly(b) ? 1 : 0;
       if (ap !== bp) return ap - bp;
       const ao = a.display_order ?? Number.MAX_SAFE_INTEGER;
       const bo = b.display_order ?? Number.MAX_SAFE_INTEGER;
