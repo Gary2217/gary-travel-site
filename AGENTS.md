@@ -839,6 +839,7 @@ Admin 頁面「待確認變更」列表
 - **圖片自動上傳**：`cover_image_url` 若為外部 URL，套用時自動下載並上傳 Supabase Storage
 - **`side_image_url` 保留**：合併 trip_banner 時，既有的 `side_image_url` 和 `departure_info_map` 不被覆蓋
 - **PDF 自動清除**：套用 `price`/`price_detail`/`info`/`departure`/`flight`/`new_trip` 變更後，清除 `document_url` 讓下次自動重抓
+- **標籤套用時再清洗**：`info`／`new_trip` 寫入 `trip_banner.tags` 前會用 `resolveBannerTags` 再清一次（去 `(首頁)` 前綴／航空名／贈品備品／促銷雜訊，>14 字剔除），清空則用標題 `extractSellingPoints` 補上——與 `auto-scrape.mjs` 的 `normalizeTag` 同一套規則。**確保不論 pending_changes 何時抓取、從後台或 DevMode 套用，寫進 DB 的標籤都乾淨一致。改清洗規則時三處要同步**（`auto-scrape.mjs` normalizeTag、`api/scrape/apply` cleanTag、此規則）。
 
 ### 抓取欄位 → 前端欄位對應表
 

@@ -217,6 +217,65 @@ async function rebuildDepartureInfoMap(
   return updateBannerErr?.message;
 }
 
+// 標籤清洗（與 scripts/auto-scrape.mjs normalizeTag 一致）：套用時再清一次，
+// 確保不論 pending_changes 何時抓取，寫入 DB 的標籤都乾淨（去 (首頁)/航空名/贈品/促銷雜訊）
+function cleanTag(raw: unknown): string | null {
+  const t = String(raw ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^#/, '')
+    .replace(/^\((國外|國內|首頁)\)/, '')
+    .trim();
+  if (!t) return null;
+  if (t.length > 14) return null;
+  if (t.includes('航空') || /航$/.test(t)) return null;
+  if (/網卡|SIM|上網|分享器|插頭|束帶|收納|盥洗|傳輸線|礦泉水|翻譯機|WIFI|wifi|無限供應|價值[\d]|贈/.test(t)) return null;
+  return t;
+}
+
+// 從標題拆賣點（與 auto-scrape.mjs extractSellingPoints 一致），供標籤清空後 fallback
+function extractSellingPoints(title: string): string[] {
+  if (!title) return [];
+  let t = title.includes('|') ? title.split('|').pop()!.trim() : title;
+  t = t.replace(/[【[][^】\]]*[】\]]/g, '');
+  const tildeIdx = t.search(/[~～]/);
+  let pointsPart = tildeIdx >= 0 ? t.slice(tildeIdx + 1) : t;
+  const paren = pointsPart.match(/[（(]([^）)]+)[）)]/);
+  if (/^\S*\d+\s*[天日]/.test(pointsPart.trim()) && paren) pointsPart = paren[1];
+  else pointsPart = pointsPart.replace(/[（(][^）)]*[）)]/g, '');
+  const rawPoints = pointsPart.split(/[、，,／/.．\s{}｛｝+]+/).map((s) => s.trim()).filter(Boolean);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (let p of rawPoints) {
+    p = p.replace(/^[\u4e00-\u9fa5]{2,4}(進出|出發)-?/, '');
+    p = p.replace(/^季節限定/, '');
+    p = p.replace(/[一二三四五六七八九十\d]+\s*[天日晚](遊|自由行)?/g, '');
+    p = p.replace(/自由行/g, '');
+    p = p.replace(/[-－總]+$/, '').trim();
+    if (!p || p.length < 2 || p.length > 12) continue;
+    if (/^\d+$/.test(p)) continue;
+    if (p.includes('航空') || /航$/.test(p)) continue;
+    if (/(出發|直飛|飛往)$/.test(p)) continue;
+    if (seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
+// 清洗 banner.tags；若清完為空則用標題拆賣點補上（與 DB 正常清洗狀態一致）
+function resolveBannerTags(banner: Record<string, unknown>, title: string): void {
+  if (!Array.isArray(banner.tags)) return;
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+  for (const tg of banner.tags as unknown[]) {
+    const c = cleanTag(tg);
+    if (c && !seen.has(c)) { seen.add(c); cleaned.push(c); }
+  }
+  banner.tags = cleaned.length > 0 ? cleaned : extractSellingPoints(title);
+}
+
 // POST: 確認變更，寫入正式 DB
 export async function POST(req: NextRequest) {
   const authError = requireDevAuth();
@@ -300,6 +359,8 @@ export async function POST(req: NextRequest) {
                 mergedBanner[key] = value;
               }
             }
+            // 標籤套用前再清洗一次（去航空名/贈品/(首頁) 等雜訊，空則用標題補），與正常清洗狀態一致
+            resolveBannerTags(mergedBanner, scraped.title);
 
             // 確保 price_label 與 price_range 同步（防止爬蟲遺漏時不一致）
             if (scraped.price_range) {
@@ -524,6 +585,8 @@ export async function POST(req: NextRequest) {
             if (hasNoDepartures) {
               (newTripBanner as Record<string, unknown>).custom_tour = true;
             }
+            // 標籤套用前再清洗一次（去航空名/贈品/(首頁) 等雜訊，空則用標題補），與正常清洗狀態一致
+            resolveBannerTags(newTripBanner as Record<string, unknown>, scraped.title);
 
             const { data: inserted, error: insertErr } = await supabase
               .from('trips')
