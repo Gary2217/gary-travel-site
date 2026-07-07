@@ -756,6 +756,39 @@ const DESTINATIONS = {
 
 ---
 
+### 手動抓取 / 貼內容產生行程的一致性規則（AI 直接寫 DB 時必守）
+
+> **情境**：使用者不走後台/DevMode，而是**直接貼一段內容、或叫 AI 去抓朋威某區（例：「幫我抓九寨溝＋當地酒店」），由 AI 寫 script 直接寫進 DB**。
+> 這條路徑**繞過** `auto-scrape.mjs` 與 `api/scrape/apply` 的自動清洗，所以 **AI 必須在 script 內自己套用下列同一套規則**，否則產出的卡片會與正常狀態不一致（髒標籤、排序錯、缺欄位）。
+
+**產卡/更新時，以下每一項都必做（與自動管線輸出完全一致）：**
+
+1. **標籤清洗（與 §16 `normalizeTag`／`api/scrape/apply` `cleanTag` 同一套）**：寫入 `trip_banner.tags` 前一律過濾，清空則用標題拆賣點補上。直接複製此函式：
+   ```js
+   function cleanTag(raw) {
+     const t = String(raw ?? '').replace(/\s+/g, ' ').trim()
+       .replace(/^#/, '').replace(/^\((國外|國內|首頁)\)/, '').trim();
+     if (!t || t.length > 14) return null;
+     if (t.includes('航空') || /航$/.test(t)) return null;
+     if (/網卡|SIM|上網|分享器|插頭|束帶|收納|盥洗|傳輸線|礦泉水|翻譯機|WIFI|wifi|無限供應|價值[\d]|贈/.test(t)) return null;
+     return t;
+   }
+   // 清空時 fallback：extractSellingPoints(title)（見 auto-scrape.mjs 同名函式，取 ~ 後賣點、限 5 個 2–12 字）
+   ```
+2. **排序旗標 `custom_tour`**：`departures.length === 0`（無出發日）→ `trip_banner.custom_tour = true`（洽詢加LINE，排最後）；有出發日 → 不設/為 false（排前面）。對齊 §20.5。
+3. **`display_order`**：依朋威頁面顯示順序 1、2、3…（上→下、左→右）。
+4. **`sub_area` 單一值**：不可含逗號（`張家界`，非「張家界,九寨溝」）；同目的地新行程**繼承既有行程的 `sub_area`**，避免子標籤分類散落。
+5. **更新既有行程走白名單 merge**：`{ ...既有trip_banner, 只改必要欄位 }`，**保留** `side_image_url`／`departure_info_map`／`custom_tour`／`seats_*` 等手動欄位，不可整包覆蓋。
+6. **圖片必上 Supabase Storage**：`cover_image_url` 一律下載後上傳 Storage，禁止外部 CDN（見 §4）。
+7. **售價明細 5 欄**（大人/小孩佔床/小孩不佔床/加床/嬰兒）＋ 依出發日重建 `departure_info_map`（見 §15 欄位清單、§21.1）。
+8. **出發日期**：寫 `trip_departure_dates`（含 `flight_segments` 與 `outbound_*`/`return_*`），日期只留今日以後。
+
+**驗證（寫完必做）**：打線上 API（帶 cache-buster）確認 ① 標籤乾淨無雜訊 ② 排序正確（洽詢加LINE 在後、其餘在前）③ sub_area 正確歸類 ④ 售價明細 5 欄齊全。
+
+**一句話**：手動路徑要「手工複刻」自動管線的清洗與欄位規則——**標籤清洗、custom_tour、display_order、sub_area、白名單 merge、圖片上傳、售價 5 欄** 一個都不能少。
+
+---
+
 ## 16. 自動抓取系統（Auto-Scrape）
 
 ### 系統架構
