@@ -53,9 +53,9 @@ export async function GET(
       };
     });
 
-    // 有正常出發日的行程排前面，請洽詢行程（custom_tour=true 或無出發日）排最後，同組依 display_order，再 id 穩定排序
+    // 只有「洽詢加LINE」(custom_tour) 的行程排最後；其餘（含目前無出發日期）一律排前面，同組依 display_order，再 id 穩定排序
     const isInquiryOnly = (t: any) =>
-      !!t.trip_banner?.custom_tour || (t.departure_dates?.length ?? 0) === 0;
+      !!t.trip_banner?.custom_tour;
     trips.sort((a: any, b: any) => {
       const ap = isInquiryOnly(a) ? 1 : 0;
       const bp = isInquiryOnly(b) ? 1 : 0;

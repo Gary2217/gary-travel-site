@@ -54,9 +54,9 @@ function formatDestDiffValue(value: unknown): string {
   return str.length > 80 ? str.slice(0, 80) + '...' : str;
 }
 
-// 有正常出發日的行程排前面，請洽詢行程（custom_tour=true 或無出發日）排最後，同組內依 display_order，再 id 穩定排序
+// 只有「洽詢加LINE」(custom_tour) 的行程排最後；其餘（含目前無出發日期）一律排前面，同組內依 display_order，再 id 穩定排序
 const isInquiryOnly = (trip: Trip) =>
-  !!trip.trip_banner?.custom_tour || (trip.departure_dates?.length ?? 0) === 0;
+  !!trip.trip_banner?.custom_tour;
 
 const compareTrips = (a: Trip, b: Trip): number => {
   const ap = isInquiryOnly(a) ? 1 : 0;

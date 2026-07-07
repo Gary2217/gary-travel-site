@@ -979,8 +979,9 @@ Admin 頁面「待確認變更」列表
 
 ### 20.5 行程排序（`compareTrips`）
 
-- 判定：`isInquiryOnly(trip) = trip.trip_banner?.custom_tour === true || trip.departure_dates?.length === 0`
-- 排序優先級：**有出發日行程排前面 → 洽詢（無出發日 / custom_tour）排最後 → 同組依 `display_order` → 再依 `id` 穩定排序**。
+- 判定：`isInquiryOnly(trip) = trip.trip_banner?.custom_tour === true`（**只看洽詢加LINE 旗標**，不看有無出發日期）
+- 排序優先級：**只有「洽詢加LINE」(custom_tour) 的行程排最後 → 其餘（含目前無出發日期）一律排前面 → 同組依 `display_order` → 再依 `id` 穩定排序**。
+- 注意：日期過期但未設 custom_tour 的真實產品仍排前面，不因無出發日被埋到後段。
 - **前後端一致**：`compareTrips`（此頁）與 `/api/destinations/[id]/trips/route.ts` 的 server 端排序邏輯**必須完全一致**，改一邊要同步改另一邊。
 - 所有合併行程的地方（Phase 1 初始、合併兄弟、合併 group、切換 destination）都要 `.sort(compareTrips)`。
 
