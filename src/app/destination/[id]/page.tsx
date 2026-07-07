@@ -633,8 +633,8 @@ export default function DestinationPage() {
     try {
       const newTrip = await createTrip(destinationId);
       const tripWithFlag = { ...newTrip, document_is_available: false } as Trip;
-      setTrips(prev => [...prev, tripWithFlag]);
-      setSubRegionTrips(prev => prev ? [...prev, tripWithFlag] : null);
+      setTrips(prev => [...prev, tripWithFlag].sort(compareTrips));
+      setSubRegionTrips(prev => prev ? [...prev, tripWithFlag].sort(compareTrips) : null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "新增失敗";
       alert(`新增行程失敗：${msg}`);
@@ -682,8 +682,9 @@ export default function DestinationPage() {
       const restored = hiddenTrips.find(t => t.id === tripId);
       setHiddenTrips(prev => prev.filter(t => t.id !== tripId));
       if (restored) {
-        setTrips(prev => [...prev, restored]);
-        setSubRegionTrips(prev => prev ? [...prev, restored] : null);
+        // 恢復後依 compareTrips 重新排序，卡片回到正確位置（不跳到最底部）
+        setTrips(prev => [...prev, restored].sort(compareTrips));
+        setSubRegionTrips(prev => prev ? [...prev, restored].sort(compareTrips) : null);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "恢復失敗";
@@ -716,8 +717,8 @@ export default function DestinationPage() {
   const handleDuplicateTrip = async (tripId: string) => {
     try {
       const newTrip = await cloneTrip(tripId);
-      setTrips(prev => [...prev, newTrip]);
-      setSubRegionTrips(prev => prev ? [...prev, newTrip] : null);
+      setTrips(prev => [...prev, newTrip].sort(compareTrips));
+      setSubRegionTrips(prev => prev ? [...prev, newTrip].sort(compareTrips) : null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "複製失敗";
       alert(`複製行程失敗：${msg}`);
