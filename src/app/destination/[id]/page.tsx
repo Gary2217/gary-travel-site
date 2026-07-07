@@ -190,8 +190,17 @@ export default function DestinationPage() {
   const allSingleDest = subRegionGroups.length > 0 && subRegionGroups.every(g => g.destinations.length === 1);
 
   // sub_area tabs（從合併行程或當前行程動態計算）
-  const CHINA_SUB_AREA_ORDER = useMemo(() => ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'], []);
+  const SUB_AREA_CHILDREN = useMemo<Record<string, string[]>>(() => ({
+    新疆: ['北疆', '南疆'],
+  }), []);
+  const CHINA_SUB_AREA_ORDER = useMemo(() => ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'], []);
   const JAPAN_SUB_AREA_ORDER = useMemo(() => ['北海道', '仙台', '東京', '名古屋/小松', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'], []);
+  const SUB_AREA_PARENT_MAP = useMemo(() => {
+    const entries = Object.entries(SUB_AREA_CHILDREN).flatMap(([parent, children]) =>
+      children.map((child) => [child, parent] as const)
+    );
+    return new Map<string, string>(entries);
+  }, [SUB_AREA_CHILDREN]);
 
   /** 依指定順序排列 sub_area 標籤（不在清單中的排末尾） */
   const sortByOrder = useCallback((areas: string[], order: string[]) => {
@@ -211,6 +220,32 @@ export default function DestinationPage() {
   const regionCat = destination?.regions?.category_label || '';
   const useMergedMode = allSingleDest && MERGED_REGIONS.includes(regionCat);
 
+  const normalizeSubArea = useCallback((value: string | null | undefined) => (value || '').trim(), []);
+  const getParentSubArea = useCallback((label: string) => {
+    const normalizedLabel = normalizeSubArea(label);
+    return SUB_AREA_PARENT_MAP.get(normalizedLabel) || null;
+  }, [SUB_AREA_PARENT_MAP, normalizeSubArea]);
+  const isParentSubArea = useCallback((label: string) => {
+    const normalizedLabel = normalizeSubArea(label);
+    return normalizedLabel in SUB_AREA_CHILDREN;
+  }, [SUB_AREA_CHILDREN, normalizeSubArea]);
+  const getMainSubAreaLabel = useCallback((label: string) => {
+    const normalizedLabel = normalizeSubArea(label);
+    return getParentSubArea(normalizedLabel) || normalizedLabel;
+  }, [getParentSubArea, normalizeSubArea]);
+  const tripMatchesFilter = useCallback((trip: Trip, filter: string) => {
+    const normalizedFilter = normalizeSubArea(filter);
+    if (!normalizedFilter) return true;
+    const tripSubArea = normalizeSubArea(trip.trip_banner?.sub_area as string | undefined);
+    const childAreas = SUB_AREA_CHILDREN[normalizedFilter];
+    if (childAreas?.length) return childAreas.includes(tripSubArea);
+    return tripSubArea === normalizedFilter;
+  }, [SUB_AREA_CHILDREN, normalizeSubArea]);
+  const filterTripsBySubArea = useCallback((tripList: Trip[], filter: string) => {
+    const normalizedFilter = normalizeSubArea(filter);
+    return normalizedFilter ? tripList.filter((trip) => tripMatchesFilter(trip, normalizedFilter)) : tripList;
+  }, [normalizeSubArea, tripMatchesFilter]);
+
   const mergedSubAreaTabs = useMemo(() => {
     // 子標籤採「固定 canonical 清單」：即使某標籤下暫無行程也永遠顯示，不會消失。
     const order = regionCat === '港澳大陸' ? CHINA_SUB_AREA_ORDER
@@ -218,20 +253,33 @@ export default function DestinationPage() {
       : null;
     const source = subRegionTrips || trips;
     const tripAreas = Array.from(new Set(
-      (source || []).map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+      (source || []).map(t => normalizeSubArea(t.trip_banner?.sub_area as string | undefined)).filter(Boolean)
     ));
+    const mainTripAreas = Array.from(new Set(tripAreas.map(getMainSubAreaLabel)));
     let areas: string[];
     if (order) {
       // 固定清單全列，並補上不在清單中的實際 trip 子標籤（避免行程被藏起來）
-      const extra = tripAreas.filter(a => !order.includes(a)).sort((a, b) => a.localeCompare(b));
+      const extra = mainTripAreas.filter(a => !order.includes(a)).sort((a, b) => a.localeCompare(b));
       areas = [...order, ...extra];
     } else {
-      areas = [...tripAreas];
+      areas = [...mainTripAreas];
     }
     return areas.length >= 2
       ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
       : [];
-  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER]);
+  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, getMainSubAreaLabel, normalizeSubArea]);
+
+  const mergedChildTabs = useMemo(() => {
+    if (!useMergedMode || !isParentSubArea(currentTabLabel)) return [];
+    const source = subRegionTrips || trips;
+    const childAreas = SUB_AREA_CHILDREN[currentTabLabel] || [];
+    const availableChildren = childAreas.filter((child) =>
+      source.some((trip) => normalizeSubArea(trip.trip_banner?.sub_area as string | undefined) === child)
+    );
+    return availableChildren.length > 0
+      ? [{ label: '全部', value: currentTabLabel }, ...availableChildren.map((child) => ({ label: child, value: child }))]
+      : [];
+  }, [SUB_AREA_CHILDREN, currentTabLabel, isParentSubArea, normalizeSubArea, subRegionTrips, trips, useMergedMode]);
 
   // mergedSubAreaTabs 載入完成後，從 URL 恢復 tab（解決重整後 tab 錯亂）
   // 僅限 merged mode（港澳/日本）：多-destination sub_region（中東亞非等）的 URL tab 是 sub_region 名，
@@ -241,13 +289,20 @@ export default function DestinationPage() {
     if (mergedSubAreaTabs.length === 0) return;
     const savedTab = getTabParam();
     if (!savedTab || savedTab === '全部') return;
-    const validTab = mergedSubAreaTabs.find(t => t.label === savedTab);
-    if (validTab && validTab.label !== currentTabLabel) {
+    const parentTab = getParentSubArea(savedTab);
+    const matchedParent = parentTab ? mergedSubAreaTabs.find((tab) => tab.label === parentTab) : null;
+    const validTab = mergedSubAreaTabs.find((tab) => tab.label === savedTab);
+    if (parentTab && matchedParent) {
+      if (currentTabLabel !== parentTab || subAreaFilter !== savedTab) {
+        setCurrentTabLabel(parentTab);
+        setSubAreaFilter(savedTab);
+      }
+    } else if (validTab && (validTab.label !== currentTabLabel || subAreaFilter !== savedTab)) {
       setCurrentTabLabel(validTab.label);
       setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mergedSubAreaTabs, useMergedMode]);
+  }, [currentTabLabel, getParentSubArea, mergedSubAreaTabs, subAreaFilter, useMergedMode]);
 
   // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
   const displayTrips = useMemo(() => {
@@ -388,7 +443,7 @@ export default function DestinationPage() {
 
         // sub_area tabs 在 Phase 2 await 之前就計算好（避免 React render 時序問題）
         const currentTrips = tripsData as Trip[];
-        const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '北疆', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
+        const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
         const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
         const areas: string[] = Array.from(new Set(
           currentTrips.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
@@ -815,11 +870,30 @@ export default function DestinationPage() {
     }
   };
 
+  const handleMergedChildTabClick = (value: string) => {
+    const normalizedValue = normalizeSubArea(value);
+    if (!normalizedValue) return;
+    setCurrentTabLabel(getParentSubArea(normalizedValue) || normalizedValue);
+    setSubAreaFilter(normalizedValue);
+    setTabParam(normalizedValue);
+  };
+
   const handleTabClick = (tab: { label: string; destId: string }) => {
-    if (tab.label === currentTabLabel) return;
+    if (tab.destId === 'all' && currentTabLabel === '全部' && !subAreaFilter) return;
+    if (tab.destId.startsWith('filter:')) {
+      const filterValue = tab.destId.slice(7);
+      const nextCurrentLabel = useMergedMode ? (getParentSubArea(filterValue) || tab.label) : tab.label;
+      if (tab.label === currentTabLabel && subAreaFilter === filterValue && nextCurrentLabel === currentTabLabel) return;
+    }
     if (tab.destId.startsWith("filter:")) {
-      setSubAreaFilter(tab.destId.slice(7));
-      setCurrentTabLabel(tab.label);
+      const filterValue = tab.destId.slice(7);
+      if (useMergedMode) {
+        setSubAreaFilter(filterValue);
+        setCurrentTabLabel(getParentSubArea(filterValue) || tab.label);
+      } else {
+        setSubAreaFilter(filterValue);
+        setCurrentTabLabel(tab.label);
+      }
       setTabParam(tab.label);
     } else if (tab.destId === "all") {
       setSubAreaFilter("");
@@ -861,9 +935,7 @@ export default function DestinationPage() {
   };
 
   const handleSelectAll = () => {
-    const visibleTrips = subAreaFilter
-          ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').trim() === subAreaFilter)
-      : displayTrips;
+    const visibleTrips = filterTripsBySubArea(displayTrips, subAreaFilter);
     const allIds = visibleTrips.map(t => t.id);
     const allSelected = allIds.every(id => selectedTripIds.has(id));
     if (allSelected) {
@@ -1107,23 +1179,45 @@ export default function DestinationPage() {
             </div>
           ) : useMergedMode && mergedSubAreaTabs.length > 0 ? (
             /* merged mode（港澳大陸/日本）：直接用 sub_area tabs */
-            <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
-                {mergedSubAreaTabs.map((tab) => (
-                  <button
-                    key={tab.label}
-                    type="button"
-                    onClick={() => { setActiveDestFilter(null); handleTabClick(tab); }}
-                    className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
-                      currentTabLabel === tab.label
-                        ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
-                        : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+            <div>
+              <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                  {mergedSubAreaTabs.map((tab) => (
+                    <button
+                      key={tab.label}
+                      type="button"
+                      onClick={() => { setActiveDestFilter(null); handleTabClick(tab); }}
+                      className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
+                        currentTabLabel === tab.label
+                          ? "bg-gradient-to-b from-[#0ea5e9] to-[#0369a1] text-white shadow-md shadow-sky-500/20 ring-1 ring-sky-400/30"
+                          : "border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 text-gray-600 shadow-sm ring-1 ring-sky-100/50 hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+              {mergedChildTabs.length > 0 && (
+                <div className="mt-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex flex-wrap justify-center gap-1.5 px-1 pb-1">
+                    {mergedChildTabs.map((tab) => (
+                      <button
+                        key={tab.label}
+                        type="button"
+                        onClick={() => handleMergedChildTabClick(tab.value)}
+                        className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-wide transition-all ${
+                          subAreaFilter === tab.value
+                            ? "bg-sky-100 text-sky-700 ring-1 ring-sky-300"
+                            : "border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-sky-200 hover:text-sky-600 hover:shadow"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             /* multi-dest sub_regions（中東亞非等）：sub_region tabs + destination tabs */
@@ -1463,7 +1557,7 @@ export default function DestinationPage() {
 
             <div className="mb-4 flex items-center gap-3 sm:mb-6">
               <h2 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">
-                可選行程（{subAreaFilter ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").trim() === subAreaFilter).length : displayTrips.length}）
+                可選行程（{filterTripsBySubArea(displayTrips, subAreaFilter).length}）
               </h2>
               {isDevMode && (
                 <button
@@ -1472,9 +1566,7 @@ export default function DestinationPage() {
                   className="shrink-0 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 transition hover:bg-purple-100"
                 >
                   {(() => {
-                    const visibleTrips = subAreaFilter
-                      ? displayTrips.filter(t => ((t.trip_banner?.sub_area as string) || '').trim() === subAreaFilter)
-                      : displayTrips;
+                    const visibleTrips = filterTripsBySubArea(displayTrips, subAreaFilter);
                     const allSelected = visibleTrips.length > 0 && visibleTrips.every(t => selectedTripIds.has(t.id));
                     return allSelected ? '取消全選' : '全選';
                   })()}
@@ -1483,9 +1575,7 @@ export default function DestinationPage() {
             </div>
 
             {(() => {
-              const filtered = subAreaFilter
-                ? displayTrips.filter((t) => ((t.trip_banner?.sub_area as string) || "").trim() === subAreaFilter)
-                : displayTrips;
+              const filtered = filterTripsBySubArea(displayTrips, subAreaFilter);
               const sorted = dateFilter
                 ? [...filtered].sort((a, b) => {
                     const aMatch = a.departure_dates?.some((d) => d.departure_date === dateFilter) ? 0 : 1;
