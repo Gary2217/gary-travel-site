@@ -11,9 +11,8 @@ interface StatsOverview { total_views: number; total_downloads: number; total_sh
 interface StatsTrend    { date: string; views: number; downloads: number; shares: number }
 interface StatsTrip     { trip_id: string; trip_title: string; views: number; downloads: number; shares: number; dl_line: number; dl_fb: number; dl_ig: number; share_line: number; share_fb: number; share_ig: number }
 interface StatsPlatform { line: number; facebook: number; instagram: number }
-interface StatsFlight   { flight_id: string; flight_route: string; views: number; inquiries: number; line: number; fb: number; ig: number }
 interface StatsRecent   { created_at: string; event_type: string; platform: string | null; trip_title: string | null; flight_route: string | null }
-interface Stats { overview: StatsOverview; trend: StatsTrend[]; trips: StatsTrip[]; platform: StatsPlatform; flights: StatsFlight[]; recent: StatsRecent[] }
+interface Stats { overview: StatsOverview; trend: StatsTrend[]; trips: StatsTrip[]; platform: StatsPlatform; recent: StatsRecent[] }
 interface CleanupResult {
   dry_run: boolean;
   max_delete: number;
@@ -222,11 +221,10 @@ export default function AdminPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [checking,       setChecking]       = useState(true);
-  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "flights" | "events" | "health" | "forms" | "scrape">("overview");
+  const [activeTab,      setActiveTab]      = useState<"overview" | "trips" | "events" | "health" | "forms" | "scrape">("overview");
   const [stats,          setStats]          = useState<Stats | null>(null);
   const [statsLoading,   setStatsLoading]   = useState(false);
   const [selectedTrip,   setSelectedTrip]   = useState<string | null>(null);
-  const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [cleanupError, setCleanupError] = useState<string | null>(null);
   const [cleanupResult, setCleanupResult] = useState<CleanupResult | null>(null);
@@ -323,7 +321,6 @@ export default function AdminPage() {
     // 3. 頁面檢查（並行，不影響端點量測）
     const pageList = [
       { name: "首頁", desc: "網站首頁（目的地總覽）", url: "/" },
-      { name: "機票頁", desc: "機票資訊頁面", url: "/flights" },
       { name: "文件服務", desc: "代辦文件服務頁面", url: "/document-services" },
       { name: "迷你轉機票", desc: "迷你轉機票頁面", url: "/mini-transit-tickets" },
     ];
@@ -452,7 +449,6 @@ export default function AdminPage() {
   const trend    = stats?.trend    ?? Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); return { date: `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`, views: 0, downloads: 0, shares: 0 }; });
   const trips    = stats?.trips    ?? [];
   const platform = stats?.platform ?? { line: 0, facebook: 0, instagram: 0 };
-  const flights  = stats?.flights  ?? [];
   const recent   = stats?.recent   ?? [];
 
   const overviewCards = [
@@ -463,7 +459,6 @@ export default function AdminPage() {
   ];
 
   const maxViews       = Math.max(...trips.map(t => t.views), 1);
-  const maxFlightViews = Math.max(...flights.map(f => f.views), 1);
 
   return (
     <main className="min-h-screen bg-[#0f1923] text-white">
@@ -490,7 +485,7 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-6">
-          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["flights", "✈️ 機票統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"], ["forms", "📬 諮詢表單"], ["scrape", "🔄 行程抓取"]] as const).map(([tab, label]) => (
+          {([["overview", "📊 總覽"], ["trips", "🗺 行程統計"], ["events", "📋 最新動態"], ["health", "🏥 系統健康"], ["forms", "📬 諮詢表單"], ["scrape", "🔄 行程抓取"]] as const).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeTab === tab ? "bg-sky-600 text-white" : "text-white/50 hover:text-white/80"}`}>
               {label}
@@ -743,84 +738,6 @@ export default function AdminPage() {
                     <div key={item.label} className="rounded-xl bg-white/5 p-3 text-center">
                       <p className="text-2xl font-bold" style={{ color: item.color }}>{item.value}</p>
                       <p className="mt-0.5 text-[11px] text-white/40">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Flights Tab ── */}
-        {activeTab === "flights" && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] backdrop-blur-[12px]">
-              <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
-                <h2 className="text-sm font-bold text-white">機票航線瀏覽統計</h2>
-                <span className="text-[10px] text-white/30">點擊航線查看詢問明細</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[420px]">
-                  <thead>
-                    <tr className="border-b border-white/5 text-[11px] text-white/40">
-                      <th className="px-4 py-2.5 text-left">航線</th>
-                      <th className="px-4 py-2.5 text-center">👁 瀏覽次數</th>
-                      <th className="px-4 py-2.5 text-center">💬 詢問次數</th>
-                      <th className="px-4 py-2.5 text-center">轉換率</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flights.length === 0 && (
-                      <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-white/30">尚無資料</td></tr>
-                    )}
-                    {flights.map((f, i) => {
-                      const isOpen = selectedFlight === f.flight_id;
-                      return (
-                        <Fragment key={f.flight_id}>
-                          <tr onClick={() => setSelectedFlight(isOpen ? null : f.flight_id)}
-                            className={`cursor-pointer border-b border-white/5 text-sm transition hover:bg-white/5 ${isOpen ? "bg-white/5" : ""}`}>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                {i === 0 && <span className="rounded-full bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">TOP</span>}
-                                <span className="text-white/90">{f.flight_route}</span>
-                                <svg className={`ml-auto h-3.5 w-3.5 shrink-0 text-white/30 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold text-sky-300">{f.views}</td>
-                            <td className="px-4 py-3 text-center font-semibold text-amber-300">{f.inquiries}</td>
-                            <td className="px-4 py-3 text-center text-white/60">{f.views > 0 ? Math.round((f.inquiries / f.views) * 100) : 0}%</td>
-                          </tr>
-                          {isOpen && (
-                            <tr className="border-b border-white/5 bg-white/[0.03]">
-                              <td colSpan={4} className="px-4 py-4">
-                                <PlatformBars line={f.line} fb={f.fb} ig={f.ig} label="💬 詢問來源（LINE / FB / IG）" />
-                                <p className="mt-2 text-[11px] text-white/30">詢問合計：<span className="text-amber-400">{f.line + f.fb + f.ig}</span></p>
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {flights.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-[rgba(20,20,30,0.55)] p-4 backdrop-blur-[12px]">
-                <h2 className="mb-4 text-sm font-bold text-white">航線瀏覽排行</h2>
-                <div className="space-y-3">
-                  {flights.map(f => (
-                    <div key={f.flight_id} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/70">{f.flight_route}</span>
-                        <span className="font-semibold text-sky-300">{f.views}</span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                        <div className="h-full rounded-full bg-sky-500/60 transition-all duration-500" style={{ width: `${(f.views / maxFlightViews) * 100}%` }} />
-                      </div>
                     </div>
                   ))}
                 </div>
