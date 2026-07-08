@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/travel-logo.svg',
   },
-  manifest: '/manifest.json',
+  manifest: '/manifest.webmanifest',
   alternates: {
     canonical: BASE_URL,
   },
