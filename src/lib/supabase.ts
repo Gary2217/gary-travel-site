@@ -456,7 +456,7 @@ export async function uploadTripBannerImage(tripId: string, file: File): Promise
   return data.url;
 }
 
-// 上傳行程檔案（僅限 PDF）— 直傳 Supabase，不經過 Vercel，無大小限制
+// 上傳行程檔案（僅限 PDF）— 直傳 R2，不經過 Vercel，無大小限制
 export async function uploadTripDocument(tripId: string, file: File): Promise<{ url: string; document_is_available: boolean }> {
   // 前端檢查：僅接受 PDF
   const ext = file.name.split('.').pop()?.toLowerCase();
@@ -479,16 +479,16 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<{ 
 
   const { signedUrl, publicUrl } = await urlRes.json();
 
-  // Step 2: 直接上傳到 Supabase Storage
+  // Step 2: 直接上傳到 R2（presigned PUT，Content-Type 必須與簽章一致）
   const uploadRes = await fetch(signedUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': file.type || 'application/pdf' },
+    headers: { 'Content-Type': 'application/pdf' },
     body: file,
   });
 
   if (!uploadRes.ok) {
     const errText = await uploadRes.text().catch(() => '');
-    console.error('Supabase upload failed:', uploadRes.status, errText);
+    console.error('R2 upload failed:', uploadRes.status, errText);
     throw new Error(`檔案上傳失敗（${uploadRes.status}），請稍後再試`);
   }
 

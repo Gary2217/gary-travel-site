@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDevAuth } from "@/lib/api-auth";
 import { validateFileSignature } from "@/lib/file-validation";
-import { createAnonClient, createServiceClient, hasServiceRoleConfig, hasSupabaseConfig } from "@/lib/supabase-server";
+import { r2Delete, r2List, r2PublicUrl, r2Upload, type R2Object } from "@/lib/r2";
+import { hasServiceRoleConfig, hasSupabaseConfig } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
-const FOLDER = "document-services";
+const FOLDER = "images/document-services";
 const SERVICE_IDS = ["roc0001", "roc0002", "tcc0001"] as const;
 const IMAGE_TYPES = ["list", "detail"] as const;
 
@@ -23,20 +24,18 @@ function isImageType(value: string): value is ImageType {
 }
 
 function filePrefix(serviceId: ServiceId, imageType: ImageType) {
-  return `${serviceId}-${imageType}-`;
+  return `${FOLDER}/${serviceId}-${imageType}-`;
 }
 
-function createReadClient() {
-  return createAnonClient();
+function buildPublicUrl(key: string) {
+  return `${r2PublicUrl(key)}?v=${Date.now()}`;
 }
 
-function createAdminClient() {
-  return createServiceClient();
-}
-
-function buildPublicUrl(path: string) {
-  const { data } = createReadClient().storage.from("images").getPublicUrl(path);
-  return `${data.publicUrl}?v=${Date.now()}`;
+function latestByPrefix(files: R2Object[], prefix: string): string | null {
+  const matched = files
+    .filter((f) => f.key.startsWith(prefix))
+    .sort((a, b) => (b.lastModified?.getTime() ?? 0) - (a.lastModified?.getTime() ?? 0));
+  return matched[0]?.key ?? null;
 }
 
 export async function GET() {
@@ -45,29 +44,17 @@ export async function GET() {
       return NextResponse.json({ images: {} });
     }
 
-    const supabase = createReadClient();
-    const { data: files, error } = await supabase.storage.from("images").list(FOLDER, { limit: 200 });
-    if (error || !files) {
-      return NextResponse.json({ images: {} });
-    }
+    const files = await r2List(`${FOLDER}/`);
 
     const listImages: Record<string, string> = {};
     const detailImages: Record<string, string> = {};
 
     for (const serviceId of SERVICE_IDS) {
-      const listMatched = files
-        .filter((f) => f.name && f.name.startsWith(filePrefix(serviceId, "list")))
-        .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
-      if (listMatched[0]?.name) {
-        listImages[serviceId] = buildPublicUrl(`${FOLDER}/${listMatched[0].name}`);
-      }
+      const listKey = latestByPrefix(files, filePrefix(serviceId, "list"));
+      if (listKey) listImages[serviceId] = buildPublicUrl(listKey);
 
-      const detailMatched = files
-        .filter((f) => f.name && f.name.startsWith(filePrefix(serviceId, "detail")))
-        .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
-      if (detailMatched[0]?.name) {
-        detailImages[serviceId] = buildPublicUrl(`${FOLDER}/${detailMatched[0].name}`);
-      }
+      const detailKey = latestByPrefix(files, filePrefix(serviceId, "detail"));
+      if (detailKey) detailImages[serviceId] = buildPublicUrl(detailKey);
     }
 
     return NextResponse.json(
@@ -122,37 +109,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "檔案內容與類型不符" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const files = await r2List(`${FOLDER}/`);
 
-    const { data: files, error: listError } = await supabase.storage.from("images").list(FOLDER, { limit: 200 });
-    if (listError) {
-      return NextResponse.json({ error: listError.message }, { status: 500 });
-    }
-
-    const oldPaths = (files || [])
-      .filter((f) => f.name && f.name.startsWith(filePrefix(serviceIdRaw, imageTypeRaw)))
-      .map((f) => `${FOLDER}/${f.name}`);
+    const oldKeys = files
+      .filter((f) => f.key.startsWith(filePrefix(serviceIdRaw, imageTypeRaw)))
+      .map((f) => f.key);
 
     // 先刪除舊圖，再上傳新圖
-    if (oldPaths.length > 0) {
-      const { error: removeError } = await supabase.storage.from("images").remove(oldPaths);
-      if (removeError) {
-        return NextResponse.json({ error: `刪除舊圖失敗：${removeError.message}` }, { status: 500 });
+    if (oldKeys.length > 0) {
+      try {
+        await r2Delete(oldKeys);
+      } catch (removeErr) {
+        return NextResponse.json({ error: `刪除舊圖失敗：${removeErr}` }, { status: 500 });
       }
     }
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
     const path = `${FOLDER}/${serviceIdRaw}-${imageTypeRaw}-${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage.from("images").upload(path, buffer, {
-      contentType: file.type,
-      cacheControl: "0",
-      upsert: false,
-    });
-
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
-    }
+    await r2Upload(path, buffer, file.type);
 
     return NextResponse.json({ service_id: serviceIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path) });
   } catch {

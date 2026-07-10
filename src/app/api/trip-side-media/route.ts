@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
-import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { r2Delete, r2KeyFromUrl } from '@/lib/r2';
 import { createAnonClient, createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -129,11 +129,12 @@ export async function DELETE(request: NextRequest) {
   }
 
   if (targetMedia.media_type === 'image') {
-    const oldStoragePath = getStoragePathFromPublicUrl(targetMedia.url || '');
-    if (oldStoragePath) {
-      const { error: removeError } = await supabase.storage.from('images').remove([oldStoragePath]);
-      if (removeError) {
-        console.error('Failed to remove trip side media image:', removeError.message);
+    const oldKey = r2KeyFromUrl(targetMedia.url || '');
+    if (oldKey) {
+      try {
+        await r2Delete([oldKey]);
+      } catch (removeErr) {
+        console.error('Failed to remove trip side media image:', removeErr);
       }
     }
   }

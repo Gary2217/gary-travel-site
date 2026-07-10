@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
-import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { r2Delete, r2KeyFromUrl, r2PresignedPut, r2PublicUrl } from '@/lib/r2';
 import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 const ALLOWED_EXTENSIONS = ['pdf'];
+const PDF_CONTENT_TYPE = 'application/pdf';
 
-// POST: 建立 signed upload URL（檔案不經過 Vercel）
+// POST: 建立 R2 presigned upload URL（PDF 直傳 R2，不經過 Vercel）
 export async function POST(request: NextRequest) {
   const authError = requireDevAuth();
   if (authError) return authError;
@@ -33,28 +34,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServiceClient();
-
-    const fileName = `${trip_id}-${Date.now()}.${sanitizedExt}`;
-    const filePath = `documents/${fileName}`;
-
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('images')
-      .createSignedUploadUrl(filePath);
-
-    if (signedError || !signedData) {
-      return signedError ? API_ERRORS.dbError(signedError) : apiError('無法建立上傳連結', 500);
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('images')
-      .getPublicUrl(filePath);
+    const filePath = `images/documents/${trip_id}-${Date.now()}.${sanitizedExt}`;
+    const signedUrl = await r2PresignedPut(filePath, PDF_CONTENT_TYPE);
 
     return NextResponse.json({
-      signedUrl: signedData.signedUrl,
-      token: signedData.token,
+      signedUrl,
       path: filePath,
-      publicUrl,
+      publicUrl: r2PublicUrl(filePath),
     });
   } catch (err) {
     return API_ERRORS.internal(err);
@@ -97,10 +83,14 @@ export async function DELETE(request: NextRequest) {
       return API_ERRORS.dbError(updateError);
     }
 
-    // 刪除 Storage 中的檔案
-    const oldStoragePath = getStoragePathFromPublicUrl(existingTrip?.document_url || '');
-    if (oldStoragePath) {
-      await supabase.storage.from('images').remove([oldStoragePath]);
+    // 刪除 R2 中的檔案
+    const oldKey = r2KeyFromUrl(existingTrip?.document_url || '');
+    if (oldKey) {
+      try {
+        await r2Delete([oldKey]);
+      } catch (removeErr) {
+        console.error('Failed to remove old trip document:', removeErr);
+      }
     }
 
     return NextResponse.json({ success: true });
@@ -163,11 +153,15 @@ export async function PUT(request: NextRequest) {
     }
 
     // 刪除舊檔案
-    const oldStoragePath = getStoragePathFromPublicUrl(existingTrip?.document_url || '');
-    const newStoragePath = getStoragePathFromPublicUrl(url);
+    const oldKey = r2KeyFromUrl(existingTrip?.document_url || '');
+    const newKey = r2KeyFromUrl(url);
 
-    if (oldStoragePath && oldStoragePath !== newStoragePath) {
-      await supabase.storage.from('images').remove([oldStoragePath]);
+    if (oldKey && oldKey !== newKey) {
+      try {
+        await r2Delete([oldKey]);
+      } catch (removeErr) {
+        console.error('Failed to remove old trip document:', removeErr);
+      }
     }
 
     return NextResponse.json({ url, document_is_available: true, trip: updatedTrip });

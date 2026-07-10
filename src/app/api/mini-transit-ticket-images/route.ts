@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDevAuth } from "@/lib/api-auth";
 import { validateFileSignature } from "@/lib/file-validation";
-import { createAnonClient, createServiceClient } from "@/lib/supabase-server";
+import { r2Delete, r2List, r2PublicUrl, r2Upload, type R2Object } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
-const FOLDER = "mini-transit-tickets";
+const FOLDER = "images/mini-transit-tickets";
 const TICKET_IDS = ["mtl001", "mtl002", "mtl003", "mtl004", "mtl005"] as const;
 const IMAGE_TYPES = ["list", "detail"] as const;
 
@@ -23,47 +23,33 @@ function isImageType(value: string): value is ImageType {
 }
 
 function filePrefix(ticketId: TicketId, imageType: ImageType) {
-  return `${ticketId}-${imageType}-`;
+  return `${FOLDER}/${ticketId}-${imageType}-`;
 }
 
-function createReadClient() {
-  return createAnonClient();
+function buildPublicUrl(key: string) {
+  return `${r2PublicUrl(key)}?v=${Date.now()}`;
 }
 
-function createAdminClient() {
-  return createServiceClient();
-}
-
-function buildPublicUrl(path: string) {
-  const { data } = createReadClient().storage.from("images").getPublicUrl(path);
-  return `${data.publicUrl}?v=${Date.now()}`;
+function latestByPrefix(files: R2Object[], prefix: string): string | null {
+  const matched = files
+    .filter((f) => f.key.startsWith(prefix))
+    .sort((a, b) => (b.lastModified?.getTime() ?? 0) - (a.lastModified?.getTime() ?? 0));
+  return matched[0]?.key ?? null;
 }
 
 export async function GET() {
   try {
-    const supabase = createReadClient();
-    const { data: files, error } = await supabase.storage.from("images").list(FOLDER, { limit: 500 });
-    if (error || !files) {
-      return NextResponse.json({ list_images: {}, detail_images: {} }, { headers: { "Cache-Control": "no-store" } });
-    }
+    const files = await r2List(`${FOLDER}/`);
 
     const listImages: Record<string, string> = {};
     const detailImages: Record<string, string> = {};
 
     for (const ticketId of TICKET_IDS) {
-      const listMatched = files
-        .filter((f) => f.name && f.name.startsWith(filePrefix(ticketId, "list")))
-        .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
-      if (listMatched[0]?.name) {
-        listImages[ticketId] = buildPublicUrl(`${FOLDER}/${listMatched[0].name}`);
-      }
+      const listKey = latestByPrefix(files, filePrefix(ticketId, "list"));
+      if (listKey) listImages[ticketId] = buildPublicUrl(listKey);
 
-      const detailMatched = files
-        .filter((f) => f.name && f.name.startsWith(filePrefix(ticketId, "detail")))
-        .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
-      if (detailMatched[0]?.name) {
-        detailImages[ticketId] = buildPublicUrl(`${FOLDER}/${detailMatched[0].name}`);
-      }
+      const detailKey = latestByPrefix(files, filePrefix(ticketId, "detail"));
+      if (detailKey) detailImages[ticketId] = buildPublicUrl(detailKey);
     }
 
     return NextResponse.json({ list_images: listImages, detail_images: detailImages }, { headers: { "Cache-Control": "no-store" } });
@@ -103,32 +89,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "檔案內容與類型不符" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
-    const { data: files, error: listError } = await supabase.storage.from("images").list(FOLDER, { limit: 500 });
-    if (listError) {
-      return NextResponse.json({ error: listError.message }, { status: 500 });
-    }
+    const files = await r2List(`${FOLDER}/`);
 
-    const oldPaths = (files || [])
-      .filter((f) => f.name && f.name.startsWith(filePrefix(ticketIdRaw, imageTypeRaw)))
-      .map((f) => `${FOLDER}/${f.name}`);
-    if (oldPaths.length > 0) {
-      const { error: removeError } = await supabase.storage.from("images").remove(oldPaths);
-      if (removeError) {
-        return NextResponse.json({ error: `刪除舊圖失敗：${removeError.message}` }, { status: 500 });
+    const oldKeys = files
+      .filter((f) => f.key.startsWith(filePrefix(ticketIdRaw, imageTypeRaw)))
+      .map((f) => f.key);
+    if (oldKeys.length > 0) {
+      try {
+        await r2Delete(oldKeys);
+      } catch (removeErr) {
+        return NextResponse.json({ error: `刪除舊圖失敗：${removeErr}` }, { status: 500 });
       }
     }
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
     const path = `${FOLDER}/${ticketIdRaw}-${imageTypeRaw}-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("images").upload(path, buffer, {
-      contentType: file.type,
-      cacheControl: "0",
-      upsert: false,
-    });
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
-    }
+    await r2Upload(path, buffer, file.type);
 
     return NextResponse.json({ ticket_id: ticketIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path) });
   } catch {

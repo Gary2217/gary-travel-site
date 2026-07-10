@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { validateFileSignature } from '@/lib/file-validation';
-import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { r2Delete, r2KeyFromUrl, r2PublicUrl, r2Upload } from '@/lib/r2';
 import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -57,26 +57,12 @@ export async function POST(request: NextRequest) {
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const sanitizedExt = fileExt.replace(/[^a-z0-9]/g, '');
     const fileName = `${destinationId}-${Date.now()}.${sanitizedExt}`;
-    const filePath = `destinations/${fileName}`;
+    const filePath = `images/destinations/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('images')
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        cacheControl: 'no-cache',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      return API_ERRORS.dbError(uploadError);
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('images')
-      .getPublicUrl(filePath);
+    await r2Upload(filePath, buffer, file.type);
 
     // 加版本號確保 CDN 每次都視為全新 cache key，避免舊圖快取
-    const versionedUrl = `${publicUrl}?v=${Date.now()}`;
+    const versionedUrl = `${r2PublicUrl(filePath)}?v=${Date.now()}`;
 
     const { data: updatedDestination, error: updateError } = await supabase
       .from('destinations')
@@ -89,15 +75,13 @@ export async function POST(request: NextRequest) {
       return API_ERRORS.dbError(updateError);
     }
 
-    const oldStoragePath = getStoragePathFromPublicUrl(existingDestination?.image_url || '');
+    const oldKey = r2KeyFromUrl(existingDestination?.image_url || '');
 
-    if (oldStoragePath && oldStoragePath !== filePath) {
-      const { error: removeError } = await supabase.storage
-        .from('images')
-        .remove([oldStoragePath]);
-
-      if (removeError) {
-        console.error('Failed to remove old image:', removeError.message);
+    if (oldKey && oldKey !== filePath) {
+      try {
+        await r2Delete([oldKey]);
+      } catch (removeErr) {
+        console.error('Failed to remove old image:', removeErr);
       }
     }
 

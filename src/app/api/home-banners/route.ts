@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
 import { validateFileSignature } from '@/lib/file-validation';
+import { r2Delete, r2KeyFromUrl, r2PublicUrl, r2Upload } from '@/lib/r2';
 import { createAnonClientNoCache, createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -82,17 +83,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient();
     const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-    const filePath = `${BANNER_DIR}/banner-${Date.now()}.${ext}`;
+    const filePath = `images/${BANNER_DIR}/banner-${Date.now()}.${ext}`;
 
-    const { error: uploadErr } = await supabase.storage.from('images').upload(filePath, buffer, {
-      contentType: file.type,
-      cacheControl: '0',
-      upsert: false,
-    });
-    if (uploadErr) return API_ERRORS.dbError(uploadErr);
+    await r2Upload(filePath, buffer, file.type);
 
-    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
-    const url = `${publicUrl}?v=${Date.now()}`;
+    const url = `${r2PublicUrl(filePath)}?v=${Date.now()}`;
     const link = (formData.get('link') as string) || '';
     const banner: HomeBanner = { url, link };
 
@@ -124,10 +119,10 @@ export async function DELETE(request: NextRequest) {
     const updated = existing.filter((b) => b.url !== url);
     await saveBanners(supabase, updated);
 
-    // 從 Storage 刪除檔案
+    // 從 R2 刪除檔案
     try {
-      const match = url.match(/\/images\/([^?]+)/);
-      if (match) await supabase.storage.from('images').remove([match[1]]);
+      const key = r2KeyFromUrl(url);
+      if (key) await r2Delete([key]);
     } catch { /* 靜默失敗 */ }
 
     return NextResponse.json({ success: true, banners: updated }, {

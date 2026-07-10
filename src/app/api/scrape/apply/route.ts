@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { r2PublicUrl, r2Upload, R2_PUBLIC_BASE } from '@/lib/r2';
 import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
@@ -13,21 +13,6 @@ function createSupabase() {
     global: {
       fetch: (url: RequestInfo | URL, options?: RequestInit) =>
         fetch(url, { ...options, cache: 'no-store' }),
-    },
-  });
-}
-
-const R2_ACCOUNT_ID = 'a85c4f2e46761d22faa6ad37731d6d92';
-const R2_BUCKET = 'gary-travel-media';
-const R2_PUBLIC_BASE = 'https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev';
-
-function createR2Client() {
-  return new S3Client({
-    region: 'auto',
-    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
     },
   });
 }
@@ -59,14 +44,8 @@ async function ensureR2Image(
     }
 
     const key = `images/trips/${tripId}-${Date.now()}.${ext}`;
-    await createR2Client().send(new PutObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: key,
-      Body: buf,
-      ContentType: ct,
-    }));
-
-    return `${R2_PUBLIC_BASE}/${key}`;
+    await r2Upload(key, buf, ct);
+    return r2PublicUrl(key);
   } catch (err) {
     console.warn(`[ensureR2Image] 錯誤: ${err}`);
     return null;
