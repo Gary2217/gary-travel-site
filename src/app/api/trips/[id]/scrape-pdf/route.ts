@@ -186,7 +186,7 @@ function parsePdfText(text: string): {
 } {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-  const title = lines[0] ?? '';
+  const title = lines.find(l => l.length >= 6 && /[一-鿿]/.test(l)) ?? lines[0] ?? '';
 
   let duration: string | null = null;
   const dayNightMatch = text.match(/(\d+)\s*天\s*(\d+)\s*夜/);

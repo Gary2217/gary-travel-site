@@ -65,7 +65,7 @@ const compareTrips = (a: Trip, b: Trip): number => {
   const ao = a.display_order ?? Number.MAX_SAFE_INTEGER;
   const bo = b.display_order ?? Number.MAX_SAFE_INTEGER;
   if (ao !== bo) return ao - bo;
-  return a.id.localeCompare(b.id);
+  return 0;
 };
 
 async function handleReorder<T extends { id: string; display_order: number }>(
@@ -1422,9 +1422,9 @@ export default function DestinationPage() {
               <>
                 {/* 同地區其他行程（按 sub_region 分組）— 選中 sub_region tab 時隱藏 */}
                 {!subRegionTrips && relatedTrips && relatedTrips.regionTrips.length > 0 && (() => {
-                  const trips = relatedTrips.regionTrips as any[];
+                  const trips = relatedTrips.regionTrips;
                   const hasSubRegions = trips.some((t) => t.destinations?.sub_region);
-                  const groups: { label: string; trips: any[] }[] = [];
+                  const groups: { label: string; trips: Trip[] }[] = [];
                   if (hasSubRegions) {
                     const seen = new Set<string>();
                     trips.forEach((t) => {
@@ -1472,14 +1472,14 @@ export default function DestinationPage() {
 
                 {/* 同類別熱門行程（按 region title 分組） */}
                 {relatedTrips && relatedTrips.categoryTrips.length > 0 && (() => {
-                  const trips = relatedTrips.categoryTrips as any[];
-                  const groups: { label: string; trips: any[] }[] = [];
+                  const trips = relatedTrips.categoryTrips;
+                  const groups: { label: string; trips: Trip[] }[] = [];
                   const seen = new Set<string>();
                   trips.forEach((t) => {
-                    const key = (t.destinations as any)?.regions?.title || '';
+                    const key = t.destinations?.regions?.title || '';
                     if (!seen.has(key)) {
                       seen.add(key);
-                      groups.push({ label: key, trips: trips.filter((x) => ((x.destinations as any)?.regions?.title || '') === key) });
+                      groups.push({ label: key, trips: trips.filter((x) => (x.destinations?.regions?.title || '') === key) });
                     }
                   });
                   return (

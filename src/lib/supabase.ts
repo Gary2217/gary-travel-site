@@ -107,6 +107,8 @@ export type Destination = {
   click_count: number;
   created_at: string;
   updated_at: string;
+  sub_region?: string | null;
+  regions?: { id?: string; title: string };
 };
 
 export type Region = {
