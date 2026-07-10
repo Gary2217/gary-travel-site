@@ -243,7 +243,7 @@ src/
 | 社群連結統一管理 | `lineHref`、`fbHref`、`igHref` 從 `src/lib/supabase.ts` import，不在元件裡重新定義 |
 | 環境變數 | 社群連結用 `NEXT_PUBLIC_LINE_ID`、`NEXT_PUBLIC_FB_URL`、`NEXT_PUBLIC_IG_URL`，不硬編碼 |
 | 所有資料來自 Supabase | DB 為唯一真實來源，不用本地暫存當資料來源 |
-| 圖片必須存 Cloudflare R2 | 從朋威或任何外部來源抓取的圖片，**必須下載後上傳 Cloudflare R2**（bucket：`gary-travel-media`），`cover_image_url` 只能存 R2 公開 URL（`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/...`），**禁止直接引用外部 CDN 連結**（如 `dcimg.travel.net.tw`）。⚠️ `scrape/apply` API 的 `ensureSupabaseImage()` 目前仍上傳到 Supabase Storage，待後續遷移至 R2。 |
+| 圖片必須存 Cloudflare R2 | 從朋威或任何外部來源抓取的圖片，**必須下載後上傳 Cloudflare R2**（bucket：`gary-travel-media`），`cover_image_url` 只能存 R2 公開 URL（`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/...`），**禁止直接引用外部 CDN 連結**（如 `dcimg.travel.net.tw`）。所有上傳／爬取路由（含 `scrape/apply`）皆透過 `src/lib/r2.ts` 上傳至 R2，物件 key 一律含 `images/` 前綴。 |
 | next.config.mjs 白名單 | `remotePatterns` 與 CSP `img-src` 已含 `*.r2.dev`，新增其他圖片來源時需同步更新這兩處 |
 | 前端只負責顯示 | 不持有核心資料邏輯 |
 
@@ -755,7 +755,7 @@ Admin 頁面「待確認變更」列表
 - **`departure_info_map` 重建**：`price`、`price_detail`、`departure`、`new_trip` 變更都會觸發重建，確保前端售價 Modal 顯示最新資料
 - **`display_order` 保護**：套用 `price`/`flight`/`promotion` 等非排序變更時，不會覆寫手動調整的排序
 - **`promo_text` 轉換**：新行程自動將 `promo_text` 轉為 `promo_content`/`promo_enabled`；既有行程走 `promotion` 變更類型處理
-- **圖片自動上傳**：`cover_image_url` 若為外部 URL，套用時 `ensureSupabaseImage()` 自動下載並上傳（⚠️ 目前仍寫入 Supabase Storage，待遷移至 R2）
+- **圖片自動上傳**：`cover_image_url` 若為外部 URL，套用時 `ensureR2Image()` 自動下載並上傳至 R2（透過 `src/lib/r2.ts`）
 - **`side_image_url` 保留**：合併 trip_banner 時，既有的 `side_image_url` 和 `departure_info_map` 不被覆蓋
 - **PDF 自動清除**：套用 `price`/`price_detail`/`info`/`departure`/`flight`/`new_trip` 變更後，清除 `document_url` 讓下次自動重抓
 
@@ -858,7 +858,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 
 | 項目 | 說明 | 優先度 |
 |------|------|--------|
-| `ensureSupabaseImage()` 遷移至 R2 | `src/app/api/scrape/apply/route.ts` 仍將新爬取圖片上傳至 Supabase Storage，應改為上傳 R2 | 中 |
+| R2 bucket CORS（PDF 直傳） | `upload-trip-document` 用 R2 presigned PUT 讓瀏覽器直傳，需在 Cloudflare 為 `gary-travel-media` 設定 CORS（允許 production/localhost 的 PUT），否則 PDF 上傳被瀏覽器擋 | 高 |
 | Supabase Storage 空間監控 | 已清空 `images` bucket，但帳單週期警告仍存在，下個週期應自動恢復 | 低 |
 
 ---
