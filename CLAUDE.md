@@ -12,6 +12,7 @@
 - **部署**：Vercel（唯一正式環境，禁止依賴 localhost）
 - **用戶流程**：LINE 六宮格入口 → 瀏覽目的地 → 查看行程 → 索取 PDF / 諮詢報價
 - **UI 語言**：繁體中文（zh-TW）
+- **媒體存儲**：Cloudflare R2（`gary-travel-media` bucket，公開 URL：`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev`）— 2025/07 從 Supabase Storage 完整遷移，Supabase Storage `images` bucket 已清空
 
 ---
 
@@ -80,7 +81,7 @@
 | git 操作 | commit、push、寫 commit message |
 | 行程資料修正 | 改價格、改排序、移動行程到其他目的地、停用行程 |
 | 寫/改匯入 Script | 參照現有 `scripts/*.mjs` 模板，改資料內容 |
-| 圖片更換 | 換 `cover_image_url`、上傳 Supabase Storage |
+| 圖片更換 | 換 `cover_image_url`、上傳 Cloudflare R2 |
 | DB 單筆資料操作 | 改某行程 `trip_banner`、更新 `display_order` |
 
 #### 🟡 Sonnet（需要跨檔理解或新功能）
@@ -122,17 +123,20 @@
 ```
 src/
 ├── app/
-│   ├── page.tsx                              # 首頁（目的地總覽）
+│   ├── page.tsx                              # 首頁（目的地總覽 + 熱門行程）
 │   ├── layout.tsx                            # Root layout
 │   ├── loading.tsx                           # 全域 loading 頁
 │   ├── not-found.tsx                         # 404 頁
+│   ├── error.tsx                             # 全域 error 頁
 │   ├── globals.css                           # 全域樣式（亮色主題）
+│   ├── manifest.ts                           # PWA manifest
+│   ├── robots.ts                             # SEO robots.txt
+│   ├── sitemap.ts                            # SEO sitemap
 │   ├── destination/[id]/page.tsx             # 目的地詳情 → 行程列表
 │   ├── destination/[id]/layout.tsx           # 目的地 layout
 │   ├── trip/[id]/page.tsx                    # 行程詳情 → 每日行程 + 諮詢
-│   ├── flights/page.tsx                      # 機票頁
-│   ├── flights/[id]/page.tsx                 # 機票詳情
-│   ├── flights/layout.tsx                    # 機票 layout
+│   ├── search/page.tsx                       # 搜尋頁
+│   ├── privacy/page.tsx                      # 隱私政策頁
 │   ├── document-services/page.tsx            # 文件服務頁
 │   ├── document-services/[id]/page.tsx       # 文件服務詳情
 │   ├── mini-transit-tickets/page.tsx         # 迷你轉機票頁
@@ -140,14 +144,53 @@ src/
 │   ├── admin/page.tsx                        # 後台管理頁
 │   └── api/                                  # API Routes
 │       ├── regions/route.ts
+│       ├── regions/[id]/related-trips/route.ts
 │       ├── destinations/route.ts
 │       ├── destinations/[id]/route.ts
 │       ├── destinations/[id]/trips/route.ts
+│       ├── trips/route.ts
 │       ├── trips/[id]/route.ts
+│       ├── trips/[id]/departure-dates/route.ts
+│       ├── trips/[id]/clone/route.ts
+│       ├── trips/[id]/scrape-pdf/route.ts
+│       ├── trips/[id]/extract-text/route.ts
 │       ├── inquiries/route.ts
+│       ├── contact-forms/route.ts
 │       ├── track-click/route.ts
-│       ├── upload-image/route.ts
+│       ├── analytics/route.ts
+│       ├── search/route.ts
+│       ├── search-trips/route.ts
 │       ├── popular-trips/route.ts
+│       ├── popular-order/route.ts
+│       ├── home-banners/route.ts
+│       ├── reorder/route.ts
+│       ├── upload-image/route.ts
+│       ├── upload-trip-image/route.ts
+│       ├── upload-trip-banner-image/route.ts
+│       ├── upload-trip-document/route.ts
+│       ├── download-trip-pdf/route.ts
+│       ├── document-services/[id]/content/route.ts
+│       ├── document-service-images/route.ts
+│       ├── mini-transit-tickets/[id]/content/route.ts
+│       ├── mini-transit-ticket-images/route.ts
+│       ├── site-logo/route.ts
+│       ├── site-logo/image/route.ts
+│       ├── trip-side-media/route.ts
+│       ├── maintenance/route.ts
+│       ├── health/route.ts
+│       ├── admin/stats/route.ts
+│       ├── admin/optimize/route.ts
+│       ├── admin/cleanup/route.ts
+│       ├── admin/cleanup-orphan-images/route.ts
+│       ├── dev-auth/start/route.ts
+│       ├── dev-auth/line/route.ts
+│       ├── dev-auth/logout/route.ts
+│       ├── dev-auth/status/route.ts
+│       ├── scrape/trigger/route.ts
+│       ├── scrape/progress/route.ts
+│       ├── scrape/changes/route.ts
+│       ├── scrape/apply/route.ts
+│       ├── scrape/settings/route.ts
 │       └── og/route.tsx
 ├── components/
 │   ├── StickyHeader.tsx                      # 頂部固定導航（含社群按鈕）
@@ -156,24 +199,32 @@ src/
 │   ├── ContactFormModal.tsx                  # 聯絡表單 Modal
 │   ├── ContactInquiries.tsx                  # 諮詢管理（Dev mode）
 │   ├── InquiryButtons.tsx                    # 諮詢按鈕（floating / inline）
-│   ├── InquiryForm.tsx                       # 線上諮詢表單
 │   ├── TripCard.tsx                          # 行程卡片
 │   ├── DayItinerary.tsx                      # 每日行程摺疊面板
 │   ├── DepartureDates.tsx                    # 出發日期選擇
-│   ├── FlightDepartureDates.tsx              # 機票出發日期
+│   ├── HomeBannerCarousel.tsx                # 首頁 Banner 輪播
 │   ├── SideMediaCarousel.tsx                 # 側邊媒體輪播
 │   ├── TravelSearchBar.tsx                   # 旅遊搜尋列
 │   ├── Skeleton.tsx                          # 骨架屏元件
 │   ├── PdfViewer.tsx                         # PDF 檢視器
 │   ├── FavoriteButton.tsx                    # 收藏按鈕
 │   ├── ShareButton.tsx                       # 分享按鈕
-│   ├── ScrollToTop.tsx                       # 回到頂部按鈕
 │   ├── LegalNotice.tsx                       # 免責聲明
 │   ├── MaintenanceGuard.tsx                  # 維護中守衛
 │   ├── ImageEditor.tsx                       # 開發者模式圖片編輯器
 │   ├── LogoUploader.tsx                      # Logo 上傳器
 │   ├── DevModeToggle.tsx                     # 開發者模式切換
-│   └── Toast.tsx                             # Toast 通知
+│   ├── Toast.tsx                             # Toast 通知
+│   ├── ScrapeChanges.tsx                     # 待確認變更列表（Admin）
+│   ├── ScrapeProgress.tsx                    # 抓取進度（Admin）
+│   ├── ScrapeCompareModal.tsx                # 變更比對 Modal（Admin）
+│   ├── ScrapeSettings.tsx                    # 抓取設定（Admin）
+│   └── trip/                                 # 行程詳情頁子元件
+│       ├── GateModals.tsx                    # 諮詢/聯絡 Gate Modal
+│       ├── PriceInfoModal.tsx                # 售價明細 Modal
+│       ├── PromoEditorPanel.tsx              # 優惠方案編輯（Dev mode）
+│       ├── tripShared.ts                     # 行程頁共用型別/常數
+│       └── useTripPageReducer.ts             # 行程頁狀態管理 reducer
 └── lib/
     ├── supabase.ts                           # 型別定義 + fetch 輔助函式 + 社群連結常數
     └── external-link.ts                      # 外部連結安全開啟工具
@@ -191,8 +242,9 @@ src/
 | API route 獨立 client | 每個 request handler 內 `createClient(...)`，不共用 instance |
 | 社群連結統一管理 | `lineHref`、`fbHref`、`igHref` 從 `src/lib/supabase.ts` import，不在元件裡重新定義 |
 | 環境變數 | 社群連結用 `NEXT_PUBLIC_LINE_ID`、`NEXT_PUBLIC_FB_URL`、`NEXT_PUBLIC_IG_URL`，不硬編碼 |
-| 所有資料來自 Supabase | DB / Storage 為唯一真實來源，不用本地暫存當資料來源 |
-| 圖片必須存 Supabase Storage | 從朋威或任何外部來源抓取的圖片，**必須下載後上傳 Supabase Storage**，`cover_image_url` 只能存 Supabase 的公開 URL，**禁止直接引用外部 CDN 連結**（如 `dcimg.travel.net.tw`）。apply API 已內建 `ensureSupabaseImage()` 自動處理。 |
+| 所有資料來自 Supabase | DB 為唯一真實來源，不用本地暫存當資料來源 |
+| 圖片必須存 Cloudflare R2 | 從朋威或任何外部來源抓取的圖片，**必須下載後上傳 Cloudflare R2**（bucket：`gary-travel-media`），`cover_image_url` 只能存 R2 公開 URL（`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/...`），**禁止直接引用外部 CDN 連結**（如 `dcimg.travel.net.tw`）。⚠️ `scrape/apply` API 的 `ensureSupabaseImage()` 目前仍上傳到 Supabase Storage，待後續遷移至 R2。 |
+| next.config.mjs 白名單 | `remotePatterns` 與 CSP `img-src` 已含 `*.r2.dev`，新增其他圖片來源時需同步更新這兩處 |
 | 前端只負責顯示 | 不持有核心資料邏輯 |
 
 ---
@@ -363,6 +415,18 @@ export async function GET(
 3. 為什麼這樣做
 4. 風險評估
 5. 下一步建議
+
+### Git Push 格式（強制）
+
+每次 `git push` 完成後，回覆最後**必須**附上：
+
+```
+✅ 已推送：{短 hash} — {中文說明（8-15字）}
+```
+
+範例：`✅ 已推送：53f4498 — 允許 Cloudflare R2 圖片（Next.js + CSP）`
+
+目的：讓用戶在 Vercel Dashboard 的 Source 欄位快速比對 commit，確認部署同步。
 
 ---
 
@@ -587,7 +651,8 @@ const DESTINATIONS = {
 #### 注意事項
 
 - **SUPABASE_SERVICE_ROLE_KEY**：從 `.env.local` 讀取，**禁止硬編碼在 script 中**
-- **圖片處理**：先下載到本地 → 上傳 Supabase Storage → 取得公開 URL
+- **圖片處理**：先下載到本地 → 上傳 **Cloudflare R2**（`gary-travel-media` bucket，key 格式：`images/trips/<filename>`）→ 公開 URL 格式：`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/trips/<filename>`
+- **R2 上傳需 AWS SDK**：`import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'`，R2 endpoint：`https://a85c4f2e46761d22faa6ad37731d6d92.r2.cloudflarestorage.com`（Access Key 從 `.env.local` 的 `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY` 讀取，或參考 `scripts/migrate-to-r2.mjs`）
 - **價格以朋威詳情頁為準**：列表頁價格可能過時，一律以點進去的詳情頁為正確值
 - **售價明細 5 欄全填**：大人、小孩佔床、小孩不佔床、加床、嬰兒 — 來源寫什麼就填什麼，不可自行填「洽詢」
 - **出發日期全部重建**：更新時先 `DELETE` 舊日期，再 `INSERT` 新日期
@@ -690,7 +755,7 @@ Admin 頁面「待確認變更」列表
 - **`departure_info_map` 重建**：`price`、`price_detail`、`departure`、`new_trip` 變更都會觸發重建，確保前端售價 Modal 顯示最新資料
 - **`display_order` 保護**：套用 `price`/`flight`/`promotion` 等非排序變更時，不會覆寫手動調整的排序
 - **`promo_text` 轉換**：新行程自動將 `promo_text` 轉為 `promo_content`/`promo_enabled`；既有行程走 `promotion` 變更類型處理
-- **圖片自動上傳**：`cover_image_url` 若為外部 URL，套用時自動下載並上傳 Supabase Storage
+- **圖片自動上傳**：`cover_image_url` 若為外部 URL，套用時 `ensureSupabaseImage()` 自動下載並上傳（⚠️ 目前仍寫入 Supabase Storage，待遷移至 R2）
 - **`side_image_url` 保留**：合併 trip_banner 時，既有的 `side_image_url` 和 `departure_info_map` 不被覆蓋
 - **PDF 自動清除**：套用 `price`/`price_detail`/`info`/`departure`/`flight`/`new_trip` 變更後，清除 `document_url` 讓下次自動重抓
 
@@ -772,6 +837,29 @@ Admin 頁面「待確認變更」列表
 | 自由行 | 東京、大阪、首爾等 | ✅ |
 | 高爾夫 | 泰國高爾夫、日本高爾夫、越南高爾夫 | ✅ |
 | 客製旅遊 | 家庭旅遊、蜜月旅遊、公司旅遊、小團包車 | ❌ 不需抓取 |
+
+---
+
+## 20. MCP 工具（已安裝）
+
+Claude Code 已安裝以下 MCP，可直接呼叫：
+
+| 工具 | 用途 | 何時用 |
+|------|------|--------|
+| **Context7** | 即時抓取第三方套件官方文件 | 查 Next.js / Supabase / Tailwind API、版本特定行為、deprecated 替換方案 |
+| **Playwright** | 控制瀏覽器自動化 | 爬蟲測試、截圖驗證、UI 自動化（不可用於繞過 CAPTCHA） |
+| **GitHub** | 操作 GitHub API | 查 issue / PR、建立 PR、查 Actions 執行狀態 |
+
+> Context7 使用規則：遇到任何第三方 library API 問題，**優先呼叫 Context7 取得新文件**，不靠訓練資料記憶，避免版本過時的錯誤。
+
+---
+
+## 21. 已知待處理事項
+
+| 項目 | 說明 | 優先度 |
+|------|------|--------|
+| `ensureSupabaseImage()` 遷移至 R2 | `src/app/api/scrape/apply/route.ts` 仍將新爬取圖片上傳至 Supabase Storage，應改為上傳 R2 | 中 |
+| Supabase Storage 空間監控 | 已清空 `images` bucket，但帳單週期警告仍存在，下個週期應自動恢復 | 低 |
 
 ---
 
