@@ -185,6 +185,7 @@ export default function DestinationPage() {
   const destsListCache = useRef<{ id: string; title: string; region_id: string; display_order: number; sub_region?: string }[] | null>(null);
   const recommendRef = useRef<HTMLDivElement>(null);
   const relatedFetched = useRef(false);
+  const originalRegionTabsRef = useRef<{ label: string; destId: string }[]>([]);
 
   // 所有 sub_region 是否都只有 1 個 destination（港澳大陸等：直接用 sub_area tabs 取代 sub_region tabs）
   const allSingleDest = subRegionGroups.length > 0 && subRegionGroups.every(g => g.destinations.length === 1);
@@ -467,6 +468,7 @@ export default function DestinationPage() {
         const sortedTrips = [...currentTrips].sort(compareTrips);
         setTrips(sortedTrips);
         setRegionTabs(areaTabs);
+        originalRegionTabsRef.current = areaTabs;
         if (areaTabs.length > 0) {
           // 從 URL query param 恢復 tab（merged mode 用 currentTabLabel）
           const savedTab = getTabParam();
@@ -562,7 +564,16 @@ export default function DestinationPage() {
             // URL 帶 tab=某單-destination sub_region（西伯利亞/高雄出發等）：載入該 destination 行程
             resetSubAreaState();
             const targetId = restoredGroup.destinations[0].id;
-            setSubRegionTrips(allRegionTrips.filter(t => t.destination_id === targetId).sort(compareTrips));
+            const targetTrips = allRegionTrips.filter(t => t.destination_id === targetId).sort(compareTrips);
+            setSubRegionTrips(targetTrips);
+            // 計算並套用該 destination 的 sub_area tabs
+            const targetAreas: string[] = Array.from(new Set(
+              targetTrips.map((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+            ));
+            const targetAreaTabs = targetAreas.length >= 2
+              ? [{ label: "全部", destId: "all" }, ...targetAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
+              : [];
+            setRegionTabs(targetAreaTabs);
             setActiveDestFilter(null);
             const firstDest = siblingDestsDataRef.current.get(targetId);
             if (firstDest) setHeroDest(firstDest);
@@ -1265,7 +1276,7 @@ export default function DestinationPage() {
                           if (destId === destinationId) {
                             setSubRegionTrips(null);
                             setHeroDest(null);
-                            // 恢復當前 destination 的 sub_area tabs
+                            setRegionTabs(originalRegionTabsRef.current);
                             setSubAreaFilter("");
                             setCurrentTabLabel("全部");
                           } else {
