@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { requireDevAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
@@ -16,18 +17,28 @@ function createSupabase() {
   });
 }
 
-/**
- * 外部圖片自動上傳 Supabase Storage
- * 如果 URL 已經是 Supabase 的就直接回傳，否則下載後上傳
- */
-async function ensureSupabaseImage(
-  supabase: ReturnType<typeof createSupabase>,
+const R2_ACCOUNT_ID = 'a85c4f2e46761d22faa6ad37731d6d92';
+const R2_BUCKET = 'gary-travel-media';
+const R2_PUBLIC_BASE = 'https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev';
+
+function createR2Client() {
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    },
+  });
+}
+
+/** 外部圖片自動上傳 Cloudflare R2；已是 R2 URL 則直接回傳 */
+async function ensureR2Image(
   imageUrl: string | null | undefined,
   tripId: string,
 ): Promise<string | null> {
   if (!imageUrl) return null;
-  // 已經是 Supabase Storage 的 URL → 不需處理（嚴格檢查）
-  if (imageUrl.startsWith(supabaseUrl) || imageUrl.includes('.supabase.co/storage')) return imageUrl;
+  if (imageUrl.startsWith(R2_PUBLIC_BASE)) return imageUrl;
 
   try {
     const res = await fetch(imageUrl, {
@@ -35,34 +46,30 @@ async function ensureSupabaseImage(
       redirect: 'follow',
     });
     if (!res.ok) {
-      console.warn(`[ensureSupabaseImage] 下載失敗 HTTP ${res.status}: ${imageUrl}`);
-      return null; // 下載失敗不保留外部 URL，避免違反規範
+      console.warn(`[ensureR2Image] 下載失敗 HTTP ${res.status}: ${imageUrl}`);
+      return null;
     }
 
     const ct = res.headers.get('content-type') || 'image/jpeg';
     const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : 'jpg';
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length < 1000) {
-      console.warn(`[ensureSupabaseImage] 圖片過小 ${buf.length} bytes: ${imageUrl}`);
-      return null; // 太小，可能不是真圖
+      console.warn(`[ensureR2Image] 圖片過小 ${buf.length} bytes: ${imageUrl}`);
+      return null;
     }
 
-    const path = `trips/${tripId}-${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from('images').upload(path, buf, {
-      contentType: ct,
-      cacheControl: 'public, max-age=31536000',
-      upsert: true,
-    });
-    if (uploadErr) {
-      console.warn(`[ensureSupabaseImage] 上傳失敗: ${uploadErr.message}`);
-      return null; // 上傳失敗也不保留外部 URL
-    }
+    const key = `images/trips/${tripId}-${Date.now()}.${ext}`;
+    await createR2Client().send(new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      Body: buf,
+      ContentType: ct,
+    }));
 
-    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(path);
-    return `${publicUrl}?v=${Date.now()}`;
+    return `${R2_PUBLIC_BASE}/${key}`;
   } catch (err) {
-    console.warn(`[ensureSupabaseImage] 錯誤: ${err}`);
-    return null; // 任何錯誤都不保留外部 URL，禁止直接引用外部 CDN
+    console.warn(`[ensureR2Image] 錯誤: ${err}`);
+    return null;
   }
 }
 
@@ -400,8 +407,7 @@ export async function POST(req: NextRequest) {
               }
             }
 
-            // 外部圖片自動上傳 Supabase Storage
-            const resolvedImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, change.trip_id);
+            const resolvedImageUrl = await ensureR2Image(scraped.cover_image_url, change.trip_id);
 
             // 組合更新欄位
             // trip_banner 永遠透過 merge 更新；直接欄位依 change_type 決定範圍
@@ -570,8 +576,7 @@ export async function POST(req: NextRequest) {
               continue;
             }
 
-            // 新增行程時，先用 placeholder ID 上傳圖片，插入後再用真正 ID 重新上傳
-            const tempImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, `new-${Date.now()}`);
+            const tempImageUrl = await ensureR2Image(scraped.cover_image_url, `new-${Date.now()}`);
 
             // 新行程：將 promo_text 轉換為前端讀取的 promo_content / promo_enabled
             const newTripBanner = { ...scraped.trip_banner };
@@ -613,7 +618,7 @@ export async function POST(req: NextRequest) {
 
             // 用真正的 trip ID 重新上傳圖片（替換 placeholder ID 的路徑）
             if (scraped.cover_image_url && inserted.id) {
-              const finalImageUrl = await ensureSupabaseImage(supabase, scraped.cover_image_url, inserted.id);
+              const finalImageUrl = await ensureR2Image(scraped.cover_image_url, inserted.id);
               if (finalImageUrl && finalImageUrl !== tempImageUrl) {
                 await supabase.from('trips').update({ cover_image_url: finalImageUrl }).eq('id', inserted.id);
               }
