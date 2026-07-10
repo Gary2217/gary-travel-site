@@ -39,7 +39,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' https://*.supabase.co https://*.r2.dev https://images.unsplash.com data: blob:",
-              "connect-src 'self' https://*.supabase.co https://*.r2.dev https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
+              "connect-src 'self' https://*.supabase.co https://*.r2.dev https://*.r2.cloudflarestorage.com https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
               "font-src 'self'",
               "worker-src 'self' blob:",
               "frame-src 'none'",
