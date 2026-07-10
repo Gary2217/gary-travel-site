@@ -282,27 +282,28 @@ export default function TripCard({
               )
             ) : (
               <div className="space-y-2">
-                {categoryLabel && (
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-sky-50 to-emerald-50 border border-sky-200/60 px-2 py-0.5 text-[11px] font-bold text-sky-700 sm:text-xs">
-                      <svg className="h-3 w-3 text-sky-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
-                      {categoryLabel}
-                    </span>
-                    <div className="shrink-0">
-                      <ShareButton title={title} url={`/trip/${id}`} small />
-                    </div>
+                {/* 地名 + 天數 + 分享（始終在第一行，確保天數不被標題 clamp 遮住） */}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    {categoryLabel && (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-sky-200/60 bg-gradient-to-r from-sky-50 to-emerald-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 sm:text-xs">
+                        <svg className="h-3 w-3 text-sky-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+                        {categoryLabel}
+                      </span>
+                    )}
+                    {duration && (
+                      <span className="inline-flex items-center rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-bold text-white sm:text-[11px]">
+                        {duration}
+                      </span>
+                    )}
                   </div>
-                )}
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
-                    {title}
-                  </h3>
-                  {!categoryLabel && (
-                    <div className="shrink-0">
-                      <ShareButton title={title} url={`/trip/${id}`} small />
-                    </div>
-                  )}
+                  <div className="shrink-0">
+                    <ShareButton title={title} url={`/trip/${id}`} small />
+                  </div>
                 </div>
+                <h3 className="line-clamp-2 min-w-0 text-sm font-bold leading-snug tracking-[0.08em] text-gray-900 sm:text-base md:text-[1.1rem]">
+                  {title}
+                </h3>
 
                 {!isDevMode && departure_dates && departure_dates.filter(dd => dd.departure_date).length > 0 && (
                   <div className="space-y-1">
