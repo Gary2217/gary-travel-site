@@ -15,7 +15,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.supabase.co',
       },
-
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+      },
     ],
   },
   async headers() {
@@ -35,7 +38,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' https://*.supabase.co https://images.unsplash.com data: blob:",
+              "img-src 'self' https://*.supabase.co https://*.r2.dev https://images.unsplash.com data: blob:",
               "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
               "font-src 'self'",
               "worker-src 'self' blob:",
