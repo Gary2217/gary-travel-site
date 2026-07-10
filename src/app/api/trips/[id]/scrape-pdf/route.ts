@@ -123,16 +123,20 @@ function parseFlightsFromText(rawText: string): PdfFlightSegment[] {
   if (!text) return [];
 
   const patterns = [
+    // 格式：天數 出發城市 抵達城市 航空公司 航班 出發時間 抵達時間 [飛行時間]
+    // 天數支援：D.1 / D1 / 第X天 / 日期(m/d)
     new RegExp(
-      String.raw`(?<day>第[一二三四五六七八九十百千\d]+天|\d{1,2}/\d{1,2})\s*(?<from>${CITY_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?(?:\s+${TIME_PATTERN})?`,
+      String.raw`(?<day>第[一二三四五六七八九十百千\d]+天|\d{1,2}/\d{1,2}|D\.?\d{1,2})\s*(?<from>${CITY_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?(?:\s+${TIME_PATTERN})?`,
       'g',
     ),
+    // 格式：去程/回程 航空公司 航班 出發城市 抵達城市 出發時間 抵達時間
     new RegExp(
       String.raw`(?<day>去程|回程)\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<from>${CITY_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?`,
       'g',
     ),
+    // 格式：D1/D.1 航空公司 航班 出發城市 出發時間 抵達城市 抵達時間（另一種排列）
     new RegExp(
-      String.raw`(?<day>D\d{1,2})\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<from>${CITY_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?`,
+      String.raw`(?<day>D\.?\d{1,2})\s+(?<airline>${AIRLINE_PATTERN})\s+(?<flight>${FLIGHT_NUMBER_PATTERN})\s+(?<from>${CITY_PATTERN})\s+(?<dep>${TIME_PATTERN})\s+(?<to>${CITY_PATTERN})\s+(?<arr>${TIME_PATTERN})(?<next>\+1)?`,
       'g',
     ),
   ];
