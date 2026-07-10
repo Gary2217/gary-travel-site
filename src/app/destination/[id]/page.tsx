@@ -433,7 +433,9 @@ export default function DestinationPage() {
           // 從 URL query param 恢復 tab，否則用 currentSR
           const savedTab = getTabParam();
           const hasSavedSubRegion = Boolean(savedTab && groups.some(g => g.subRegion === savedTab));
-          const hasSavedSubArea = Boolean(savedTab && areaTabs.some(t => t.label === savedTab));
+          const hasSavedSubArea = Boolean(savedTab && (tripsData as Trip[]).some(
+            t => ((t.trip_banner?.sub_area as string) || "").trim() === savedTab
+          ));
           const restoredSR = hasSavedSubRegion ? savedTab : currentSR;
           // sub_area tab（如富國島）也阻止 all=1 覆蓋，確保子標籤深層連結有效
           shouldRestoreAll = !hasSavedSubRegion && !hasSavedSubArea && getAllParam();
