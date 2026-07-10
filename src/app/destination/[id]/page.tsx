@@ -987,8 +987,15 @@ export default function DestinationPage() {
     const targetDestId = activeDestFilter || heroDest?.id || destinationId;
     const targetDestData = siblingDestsDataRef.current.get(targetDestId) || destination;
 
-    if (selectedTripIds.size === 0 && !isAllTab && !targetDestData?.source_url) {
-      alert('此目的地尚未設定朋威對應 URL（source_url），無法抓取。\n請到 Supabase 設定此目的地的 source_url 後再試。');
+    // 目的地本身沒有 source_url，但底下行程有 → 改用行程 direct scrape
+    // （涵蓋中東埃及/土耳其/伊朗這類 dest 無 url、trip 有 url，以及手動建卡設了來源網址的情況）
+    const selectedIds = Array.from(selectedTripIds);
+    const destTripsWithUrl = !isAllTab && !targetDestData?.source_url
+      ? displayTrips.filter(t => t.destination_id === targetDestId && t.is_active && t.source_url).map(t => t.id)
+      : [];
+
+    if (selectedIds.length === 0 && !isAllTab && !targetDestData?.source_url && destTripsWithUrl.length === 0) {
+      alert('此目的地與其行程都尚未設定朋威來源網址，無法抓取。\n可到行程頁用「🔗 設定來源」貼上朋威網址，或到 Supabase 設定此目的地的 source_url。');
       return;
     }
 
@@ -998,7 +1005,8 @@ export default function DestinationPage() {
     setScrapeTriggering(true);
     setScrapePendingIds([]);
     try {
-      const tripIds = Array.from(selectedTripIds);
+      // 優先手動勾選；否則若目的地無 url 則用底下有 url 的行程做 direct scrape
+      const tripIds = selectedIds.length > 0 ? selectedIds : destTripsWithUrl;
       // 「全部」tab → 用 region key 觸發整區；否則觸發單一 destination
       const regionKey = destination?.source_url?.match(/\/([^/]+)\/$/)?.[1] || '';
       const body = isAllTab && regionKey && tripIds.length === 0

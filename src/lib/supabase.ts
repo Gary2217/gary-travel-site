@@ -134,6 +134,7 @@ export type Trip = {
   document_url?: string;
   document_is_available?: boolean;
   document_text?: string;
+  source_url?: string | null;
   highlights: string[];
   trip_banner?: TripBanner | null;
   is_active: boolean;

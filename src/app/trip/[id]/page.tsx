@@ -189,6 +189,9 @@ export default function TripPage() {
 const [scrapePhase, setScrapePhase] = useState<'idle' | 'triggering' | 'polling' | 'has_changes' | 'applying' | 'done' | 'no_changes' | 'error'>('idle');
 const [scrapePendingChanges, setScrapePendingChanges] = useState<ScrapeChange[]>([]);
 const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
+const [showSourceUrlModal, setShowSourceUrlModal] = useState(false);
+const [sourceUrlDraft, setSourceUrlDraft] = useState('');
+const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   const scrapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrapeTriggerTimeRef = useRef<number>(0);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -300,6 +303,34 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
         .catch(() => alert(`請複製此連結分享給好友：${pageUrl}`));
     }
 
+  };
+
+  const openSourceUrlModal = () => {
+    setSourceUrlDraft(trip?.source_url || '');
+    setShowSourceUrlModal(true);
+  };
+
+  const handleSaveSourceUrl = async () => {
+    if (!trip || savingSourceUrl) return;
+    const trimmed = sourceUrlDraft.trim();
+    setSavingSourceUrl(true);
+    try {
+      const res = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ source_url: trimmed || null }),
+      });
+      if (!res.ok) throw new Error('儲存失敗，請確認已登入開發者模式');
+      const updated = await res.json();
+      setTrip(prev => prev ? { ...prev, source_url: updated.source_url ?? null } : prev);
+      setShowSourceUrlModal(false);
+      showSaveSuccess('朋威來源網址已儲存');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '儲存失敗');
+    } finally {
+      setSavingSourceUrl(false);
+    }
   };
 
   const handleScrapeThisTrip = async () => {
@@ -3157,6 +3188,19 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
       {isDevMode && (
         <button
           type="button"
+          onClick={openSourceUrlModal}
+          title={trip?.source_url ? `朋威來源：${trip.source_url}` : '尚未設定朋威來源網址'}
+          className={`fixed bottom-48 right-4 z-[56] flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg transition ${
+            trip?.source_url ? 'bg-slate-600 hover:bg-slate-500' : 'bg-orange-500 hover:bg-orange-400'
+          }`}
+        >
+          {trip?.source_url ? '🔗 來源網址' : '🔗 設定來源'}
+        </button>
+      )}
+
+      {isDevMode && (
+        <button
+          type="button"
           onClick={() => void handlePdfScrape()}
           disabled={pdfScraping || !trip?.document_url}
           title={!trip?.document_url ? '請先上傳 PDF' : undefined}
@@ -3216,6 +3260,58 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
           </div>
         </div>
       </div>
+
+      {showSourceUrlModal && createPortal(
+        <div
+          className="fixed inset-0 z-modal-top flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowSourceUrlModal(false); }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h3 className="text-base font-bold text-gray-900">🔗 朋威來源網址</h3>
+              <button
+                type="button"
+                onClick={() => setShowSourceUrlModal(false)}
+                className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="mb-2 text-xs leading-relaxed text-gray-500">
+                貼上此行程在朋威旅行社的<strong className="text-gray-700">行程詳情頁</strong>網址（例：
+                <span className="break-all text-sky-600">https://www.pwgotravel.com.tw/products/group/...</span>）。
+                設定後即可用「🔄 抓取此行程」自動更新價格、出發日期、航班等資料。
+              </p>
+              <input
+                type="url"
+                value={sourceUrlDraft}
+                onChange={e => setSourceUrlDraft(e.target.value)}
+                placeholder="https://www.pwgotravel.com.tw/products/group/..."
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSourceUrlModal(false)}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-500 transition hover:bg-gray-100"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveSourceUrl()}
+                  disabled={savingSourceUrl}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60"
+                >
+                  {savingSourceUrl ? '儲存中...' : '儲存'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {showScrapePreviewModal && createPortal(
         <div
