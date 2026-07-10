@@ -24,8 +24,8 @@ async function closePuppeteerBrowser() {
 }
 
 /**
- * Puppeteer fallback：從 JS 渲染的頁面提取航空公司和航班資訊
- * 只在 cheerio 無法取得時呼叫
+ * Puppeteer fallback：從 JS 渲染的頁面提取航空公司、航班資訊和出發日期
+ * 在 cheerio 無法取得航班或出發日期時呼叫
  */
 async function scrapeAirlineWithPuppeteer(pageUrl) {
   const browser = await getPuppeteerBrowser();
@@ -36,8 +36,8 @@ async function scrapeAirlineWithPuppeteer(pageUrl) {
     page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
     await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForSelector('.PriceBlock, #flightModal', { timeout: 8000 }).catch(() => {});
-    await new Promise(r => setTimeout(r, 2000)); // 等 JS 渲染
+    await page.waitForSelector('.PriceBlock, #flightModal, #search-table', { timeout: 8000 }).catch(() => {});
+    await new Promise(r => setTimeout(r, 3000)); // 等 JS 渲染（出發日期表通常比航班慢）
 
     const result = await page.evaluate(() => {
       // 從 PriceBlock 取航空公司
@@ -64,11 +64,28 @@ async function scrapeAirlineWithPuppeteer(pageUrl) {
         });
       });
 
-      // 從出發日期表取
+      // 從出發日期表取完整資料（JS 渲染）
+      const departures = [];
+      document.querySelectorAll('#search-table tbody tr').forEach(tr => {
+        const date = tr.querySelector('.YMD')?.textContent?.trim() || '';
+        if (!date) return;
+        const rowText = tr.textContent?.trim() || '';
+        departures.push({
+          date,
+          departure_airport: tr.querySelector('.airport')?.textContent?.trim() || '',
+          airline: tr.querySelector('.plane-abbr')?.textContent?.trim() || '',
+          label: tr.querySelector('.plane-sche')?.textContent?.trim() || '',
+          seats_total: Number((tr.querySelector('.TotalSeat')?.textContent || '').replace(/[^\d]/g, '') || 0),
+          seats_available: Number((tr.querySelector('.AvailableSeat')?.textContent || '').replace(/[^\d]/g, '') || 0),
+          price: Number((tr.querySelector('.TourPrice')?.textContent || '').replace(/[^\d]/g, '') || 0),
+          inquiry_only: rowText.includes('請來電洽詢'),
+        });
+      });
+
       const departurePlane = document.querySelector('.plane-abbr');
       const planeAbbr = departurePlane ? departurePlane.textContent.trim() : '';
 
-      return { airline, segments, planeAbbr };
+      return { airline, segments, planeAbbr, departures };
     });
 
     return result;
@@ -1093,21 +1110,22 @@ async function scrapeTripDetail(tripSummary) {
     || formatAirlineLabel(basicInfo['航空公司'] || '', '')
     || '';
 
-  // Puppeteer fallback：cheerio 解析不到航班時，用 headless browser 重試
-  if (!primaryAirline && enrichedFlightSegments.length === 0) {
+  // Puppeteer fallback：cheerio 解析不到航班或出發日期時，用 headless browser 重試
+  const needPuppeteer = (!primaryAirline && enrichedFlightSegments.length === 0) || rawDepartures.length === 0;
+  if (needPuppeteer) {
     const fullUrl = tripSummary.href?.startsWith('http') ? tripSummary.href : `${BASE_URL}${tripSummary.href}`;
-    console.log(`    🔄 Cheerio 無航班資料，嘗試 Puppeteer fallback...`);
+    const reason = rawDepartures.length === 0 ? '無出發日期' : '無航班資料';
+    console.log(`    🔄 Cheerio ${reason}，嘗試 Puppeteer fallback...`);
     const puppeteerResult = await scrapeAirlineWithPuppeteer(fullUrl);
     if (puppeteerResult) {
-      // 用 Puppeteer 結果補充航班資訊
-      if (puppeteerResult.airline) {
+      // 補充航班資訊（若 cheerio 沒拿到）
+      if (!primaryAirline && puppeteerResult.airline) {
         primaryAirline = puppeteerResult.airline;
         console.log(`    ✅ Puppeteer 取得航空公司：${primaryAirline}`);
       }
-      if (puppeteerResult.segments.length > 0) {
+      if (enrichedFlightSegments.length === 0 && puppeteerResult.segments.length > 0) {
         const seg = puppeteerResult.segments[0];
         primaryAirline = primaryAirline || formatAirlineLabel(seg.airline, seg.flight_number);
-        // 補充 flight segments
         for (const seg of puppeteerResult.segments) {
           enrichedFlightSegments.push({
             day_text: '',
@@ -1118,6 +1136,13 @@ async function scrapeTripDetail(tripSummary) {
           });
         }
         console.log(`    ✅ Puppeteer 取得 ${puppeteerResult.segments.length} 個航段`);
+      }
+      // 補充出發日期（cheerio 沒拿到時，回填 rawDepartures，補 padDate 正規化）
+      if (rawDepartures.length === 0 && puppeteerResult.departures?.length > 0) {
+        for (const dep of puppeteerResult.departures) {
+          rawDepartures.push({ ...dep, date: padDate(sanitizeText(dep.date)) });
+        }
+        console.log(`    ✅ Puppeteer 取得 ${puppeteerResult.departures.length} 筆出發日期`);
       }
     }
   }
