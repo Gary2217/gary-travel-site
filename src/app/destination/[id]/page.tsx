@@ -120,6 +120,7 @@ export default function DestinationPage() {
     const url = new URL(window.location.href);
     if (tab && tab !== '全部') {
       url.searchParams.set('tab', tab);
+      url.searchParams.delete('all');
     } else {
       url.searchParams.delete('tab');
     }
@@ -432,9 +433,10 @@ export default function DestinationPage() {
           // 從 URL query param 恢復 tab，否則用 currentSR
           const savedTab = getTabParam();
           const hasSavedSubRegion = Boolean(savedTab && groups.some(g => g.subRegion === savedTab));
+          const hasSavedSubArea = Boolean(savedTab && areaTabs.some(t => t.label === savedTab));
           const restoredSR = hasSavedSubRegion ? savedTab : currentSR;
-          // tab 優先於 all=1
-          shouldRestoreAll = !hasSavedSubRegion && getAllParam();
+          // sub_area tab（如富國島）也阻止 all=1 覆蓋，確保子標籤深層連結有效
+          shouldRestoreAll = !hasSavedSubRegion && !hasSavedSubArea && getAllParam();
           restoredGroup = groups.find(g => g.subRegion === restoredSR) || null;
           setActiveSubRegion(shouldRestoreAll ? '全部' : restoredSR);
         } else {
