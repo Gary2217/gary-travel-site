@@ -2125,7 +2125,7 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
                     {saving ? '儲存中...' : isCreatingNewDeparture ? '建立新梯次' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
                   </button>
                   {selectedDeparture && !isCreatingNewDeparture && (
-                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
+                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); setDepartureEditorDate(`${new Date().getFullYear()}-01-01`); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
                   )}
                   {isCreatingNewDeparture && (
                     <button type="button" onClick={() => setIsCreatingNewDeparture(false)} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-100">取消新增</button>
@@ -2296,7 +2296,10 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
             <div className="hidden flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-xl border border-b-0 border-gray-200 bg-white px-4 py-3 sm:flex sm:rounded-tl-none">
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span className="text-sm font-bold text-gray-900">出團日期：{formatFullDate(flightSource.departure_date)}</span>
+                <span className="text-sm font-bold text-gray-900">出團日期：{formatFullDate(selectedDeparture?.departure_date || flightSource.departure_date)}</span>
+                {selectedDeparture && !hasFlight(selectedDeparture) && (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700">以其他梯次為參考</span>
+                )}
                 {getScheduleLabel(flightSource) && (
                   <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-bold text-sky-600">{getScheduleLabel(flightSource)}</span>
                 )}
@@ -2607,7 +2610,7 @@ const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
           <button
             onClick={() => {
               if (typeof window !== 'undefined' && localStorage.getItem('social_followed')) {
-                // 已追蹤過，直接分享
+                track({ event_type: 'trip_share', platform: 'LINE', trip_id: tripId, trip_title: trip.title });
                 handleFollowAndShare(lineHref);
                 return;
               }
