@@ -1964,9 +1964,23 @@ async function main() {
           consumedTripIds.add(matchedTrip.id);
           matchedTripIdsByDestination.set(destination.id, consumedTripIds);
 
-          // 自動回填 source_url（metadata，不走 pending_changes）
-          if (scrapedTrip.source_url && scrapedTrip.source_url !== matchedTrip.source_url) {
-            await supabase.from('trips').update({ source_url: scrapedTrip.source_url }).eq('id', matchedTrip.id);
+          const hadSourceUrl = Boolean(sanitizeText(matchedTrip.source_url));
+
+          // 自動綁定 source_url：僅在卡片原本沒有時回填（用團號/標題認出後把朋威 URL 綁上，
+          // 之後永久走 ⓪ 網址配對）。絕不覆蓋既有的 source_url（可能是人工設定或已驗證過）。
+          if (!hadSourceUrl && scrapedTrip.source_url) {
+            await supabase
+              .from('trips')
+              .update({ source_url: scrapedTrip.source_url, scrape_managed: true })
+              .eq('id', matchedTrip.id);
+          }
+
+          // 無 URL 的卡這次只綁定、不套用內容變更：等綁上 URL 後，下次靠 ⓪ 網址精準抓才更新，
+          // 避免用團號/標題「猜」出的配對去改動尚未確認對應的卡（防誤更新）。
+          if (!hadSourceUrl) {
+            console.log(`  🔗 已綁定來源網址，暫不更新內容（下次靠 URL 精準抓）：${scrapedTrip.title}`);
+            completedTrips += 1;
+            continue;
           }
 
           const changes = buildComparisonChanges({

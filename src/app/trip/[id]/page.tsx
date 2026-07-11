@@ -3290,6 +3290,16 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                 placeholder="https://www.pwgotravel.com.tw/products/group/..."
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
+              {sourceUrlDraft.trim().startsWith('http') && (
+                <a
+                  href={sourceUrlDraft.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-start gap-1 break-all text-xs font-semibold text-sky-600 transition hover:text-sky-500"
+                >
+                  ↗ 在朋威開啟此行程（點擊確認是不是同一個行程）
+                </a>
+              )}
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button
                   type="button"
