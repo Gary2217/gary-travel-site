@@ -259,6 +259,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   type PdfPreviewState = { parsed: PdfScrapeResult; changes: PdfPreviewChange[] };
   const [pdfPreview, setPdfPreview] = useState<PdfPreviewState | null>(null);
   const [pdfSaving, setPdfSaving] = useState(false);
+  const [pdfSelectedFields, setPdfSelectedFields] = useState<Set<string>>(new Set());
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
@@ -483,6 +484,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       }
 
       setPdfPreview({ parsed, changes });
+      setPdfSelectedFields(new Set(changes.map(c => c.field)));
     } catch (err) {
       console.error('[handlePdfScrape]', err);
       alert(err instanceof Error ? err.message : 'PDF 解析失敗');
@@ -506,22 +508,23 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       for (const p of sellingPoints) {
         if (!mergedTags.includes(p)) mergedTags.push(p);
       }
+      const sel = pdfSelectedFields;
       const updatedBanner = {
         ...baseBanner,
-        tags: mergedTags,
+        ...(sel.has('tags') ? { tags: mergedTags } : {}),
         departure_info_map: trip.trip_banner?.departure_info_map ?? {},
-        ...(parsed.airline != null ? { airline: parsed.airline } : {}),
-        ...(parsed.airport != null ? { airport: parsed.airport } : {}),
-        ...(parsed.departure_label != null ? { departure_label: parsed.departure_label } : {}),
-        ...(parsed.min_group_size != null ? { min_group_size: parsed.min_group_size } : {}),
-        ...(parsed.duration != null ? { duration_label: parsed.duration } : {}),
+        ...(sel.has('airline') && parsed.airline != null ? { airline: parsed.airline } : {}),
+        ...(sel.has('airport') && parsed.airport != null ? { airport: parsed.airport } : {}),
+        ...(sel.has('departure_label') && parsed.departure_label != null ? { departure_label: parsed.departure_label } : {}),
+        ...(sel.has('min_group_size') && parsed.min_group_size != null ? { min_group_size: parsed.min_group_size } : {}),
+        ...(sel.has('duration_label') && parsed.duration != null ? { duration_label: parsed.duration } : {}),
       };
       const patchPayload: Record<string, unknown> = { trip_banner: updatedBanner };
-      if (parsed.title && parsed.title !== trip.title) {
+      if (sel.has('title') && parsed.title && parsed.title !== trip.title) {
         patchPayload.title = parsed.title;
       }
       // highlights 只在原本沒有時才填
-      if (parsed.highlights?.length && !(trip.highlights?.length)) {
+      if (sel.has('highlights') && parsed.highlights?.length && !(trip.highlights?.length)) {
         patchPayload.highlights = parsed.highlights;
       }
 
@@ -537,7 +540,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
 
       // 自動寫入航班資訊到所有出發日期
       const segments = parsed.flight_segments;
-      if (segments.length > 0 && trip.departure_dates && trip.departure_dates.length > 0) {
+      if (sel.has('flight_segments') && segments.length > 0 && trip.departure_dates && trip.departure_dates.length > 0) {
         const outboundSegs = segments.filter(s => s.day === segments[0].day);
         const returnSegs = segments.filter(s => s.day !== segments[0].day);
 
@@ -3120,20 +3123,32 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               ) : (
                 <div className="space-y-3">
                   {pdfPreview.changes.map(c => (
-                    <div key={c.field} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-sky-600">{c.label}</p>
-                      <div className="flex items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-medium text-gray-400">舊值</p>
-                          <p className="mt-0.5 break-words text-xs text-gray-500 line-through">{c.oldVal}</p>
-                        </div>
-                        <div className="mt-4 shrink-0 text-gray-300">→</div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-medium text-emerald-600">新值</p>
-                          <p className="mt-0.5 break-words text-sm font-semibold text-gray-900">{c.newVal}</p>
+                    <label key={c.field} className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition hover:bg-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={pdfSelectedFields.has(c.field)}
+                        onChange={() => setPdfSelectedFields(prev => {
+                          const next = new Set(prev);
+                          if (next.has(c.field)) next.delete(c.field); else next.add(c.field);
+                          return next;
+                        })}
+                        className="mt-1 h-4 w-4 shrink-0 accent-sky-600"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1.5 text-xs font-semibold tracking-wide text-sky-600">{c.label}</p>
+                        <div className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-gray-400">舊值</p>
+                            <p className="mt-0.5 break-words text-xs text-gray-500 line-through">{c.oldVal}</p>
+                          </div>
+                          <div className="mt-4 shrink-0 text-gray-300">→</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-emerald-600">新值</p>
+                            <p className="mt-0.5 break-words text-sm font-semibold text-gray-900">{c.newVal}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </label>
                   ))}
                 </div>
               )}
@@ -3152,7 +3167,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               <button
                 type="button"
                 onClick={() => void confirmPdfSave()}
-                disabled={pdfSaving}
+                disabled={pdfSaving || pdfSelectedFields.size === 0}
                 className="flex-1 rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
               >
                 {pdfSaving ? '儲存中...' : '✅ 確認儲存'}
