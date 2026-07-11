@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     if (city) {
       // 過濾 PostgREST 特殊字元，防止 filter injection
-      const safeCity = city.replace(/[(),."\\]/g, '');
+      const safeCity = city.replace(/[(),."\\%_]/g, '');
       dateQuery = dateQuery.or(`departure_city.ilike.%${safeCity}%,outbound_from.ilike.%${safeCity}%`);
     }
 
