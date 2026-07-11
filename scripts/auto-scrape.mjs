@@ -1748,6 +1748,18 @@ async function main() {
     console.log(`🚀 開始自動抓取，log_id=${logId}`);
 
     const resolveDestination = buildDestinationResolver(destinations, existingTrips);
+    // blk-* ID → destination 反查：朋威改版後 section 標題與 breadcrumb 目的地層級都失效，
+    // 改用 source_url 的 blk ID（同 region 內唯一）精準定位 destination。
+    const resolveDestinationByBlockId = (blockId, regionCfg) => {
+      const bid = sanitizeText(blockId);
+      if (!bid || !regionCfg) return null;
+      const matches = destinations.filter((d) => {
+        if (getSourceBlockId(d.source_url) !== bid) return false;
+        const dr = getRegionConfigBySourceUrl(d.source_url);
+        return dr && dr.url === regionCfg.url;
+      });
+      return matches.length === 1 ? matches[0] : null;
+    };
     const tripsByDestinationId = existingTrips.reduce((accumulator, trip) => {
       const list = accumulator.get(trip.destination_id) || [];
       list.push(trip);
@@ -1773,7 +1785,9 @@ async function main() {
       });
 
       const sections = await scrapeRegionListings(regionConfig, targetDestination?.source_url || '', targetDestination?.title || '', targetDestination?.sub_region || '');
-      const tripSummaries = sections.flatMap((section) => section.trips);
+      const tripSummaries = sections.flatMap((section) =>
+        section.trips.map((trip) => ({ ...trip, block_id: section.block_id })),
+      );
 
       // 本區域抓取是否不完整（有詳情頁抓取失敗/逾時/無效資料）。
       // 只要不完整，就跳過本區域的下架偵測，避免既有行程被誤判下架而消失（保守策略）。
@@ -1855,7 +1869,10 @@ async function main() {
           continue;
         }
 
-        const destination = targetDestination || resolveDestination(scrapedTrip.destination_label, regionConfig.url) || resolveDestination(tripSummary.section_label, regionConfig.url);
+        const destination = targetDestination
+          || resolveDestinationByBlockId(tripSummary.block_id, regionConfig)
+          || resolveDestination(scrapedTrip.destination_label, regionConfig.url)
+          || resolveDestination(tripSummary.section_label, regionConfig.url);
         if (!destination) {
           // 找不到 destination → 可能是朋威新增的 tab/區域，寫通知不中斷
           const missingLabel = scrapedTrip.destination_label || tripSummary.section_label;
@@ -1890,6 +1907,13 @@ async function main() {
           changesFound += 1;
           completedTrips += 1;
           continue;
+        }
+
+        // 朋威改版後 section 標題移除、breadcrumb 只到 region 層級，sub_area 抓到空字串
+        // → 用解析到的 destination sub_region 補上目的地層級分類（更細的子分頁仍手動維護）。
+        // 既有行程的 sub_area 不在 buildComparisonChanges 比對範圍，不會被覆蓋；僅影響新行程。
+        if (scrapedTrip.trip_banner && !sanitizeText(scrapedTrip.trip_banner.sub_area)) {
+          scrapedTrip.trip_banner.sub_area = sanitizeText(destination.sub_region) || sanitizeText(destination.title) || '';
         }
 
         const destinationTrips = tripsByDestinationId.get(destination.id) || [];
