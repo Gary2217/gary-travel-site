@@ -1359,8 +1359,11 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushChange('info', 'tags', existingBanner.tags || [], scrapedTrip.tags);
   }
 
-  // custom_tour：只在從 false→true 時通知（有出發日變無出發日）
-  if (!Boolean(existingBanner.custom_tour) && Boolean(scrapedTrip.custom_tour)) {
+  // custom_tour：只在從 false→true 時通知（有出發日變無出發日）。
+  // 但既有行程有出發日期而這次抓到 0 筆時，custom_tour=true 很可能是「抓不到」而非「改為洽詢」，不通知。
+  const existingHasDepartures = (existingTrip.departure_dates || []).length > 0;
+  const scrapedNoDepartures = (scrapedTrip.departures || []).length === 0;
+  if (!Boolean(existingBanner.custom_tour) && Boolean(scrapedTrip.custom_tour) && !(existingHasDepartures && scrapedNoDepartures)) {
     pushChange('info', 'custom_tour', false, true);
   }
 
@@ -1392,7 +1395,10 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   const existingFlights = extractExistingFlightSegments(existingTrip);
   const existingFlightsNorm = existingFlights.map(normalizeFlightForCompare);
   const scrapedFlightsNorm = (scrapedTrip.flight_segments || []).map(normalizeFlightForCompare);
-  if (stableStringify(existingFlightsNorm) !== stableStringify(scrapedFlightsNorm)) {
+  // 清空防護：抓到 0 段而既有非空 → 視為抓取缺漏，不產生「清空航班」變更
+  if (scrapedFlightsNorm.length === 0 && existingFlightsNorm.length > 0) {
+    // skip
+  } else if (stableStringify(existingFlightsNorm) !== stableStringify(scrapedFlightsNorm)) {
     pushChange('flight', 'flight_segments', existingFlights, scrapedTrip.flight_segments);
   }
 
@@ -1400,7 +1406,11 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
   const scrapedDepartures = buildScrapedDepartureSnapshot(scrapedTrip);
   // 比對出發日期時忽略機位數（seats_total/seats_available），只比影響前端顯示的欄位
   const stripSeats = (deps) => deps.map(({ seats_total, seats_available, ...rest }) => rest);
-  if (stableStringify(stripSeats(existingDepartures)) !== stableStringify(stripSeats(scrapedDepartures))) {
+  // 清空防護：抓到 0 筆而既有非空 → 不產生「清空出發日期」變更（套用會 DELETE 全部再 INSERT 0 筆）。
+  // 驗證護欄仍會發「驟減到 0 筆」warning 供人工判斷。真下架由 removed 偵測處理。
+  if (scrapedDepartures.length === 0 && existingDepartures.length > 0) {
+    // skip
+  } else if (stableStringify(stripSeats(existingDepartures)) !== stableStringify(stripSeats(scrapedDepartures))) {
     pushChange('departure', 'departures', existingDepartures, scrapedDepartures);
   }
 
@@ -1714,6 +1724,29 @@ async function main() {
               field_name: 'scrape_invalid',
               old_value: trip.title,
               new_value: '⚠️ 朋威頁面回傳無效資料，行程可能已下架或 URL 已變更',
+            }]);
+            completedTrips += 1;
+            continue;
+          }
+
+          // 全部「請來電洽詢」→ 跳過比對（與主迴圈一致）：0 筆有效日期時比對會產生
+          // 「清空出發日期」的災難性變更（2026-07-11 張家界卡 17 筆日期被清空的根因）
+          if (scrapedTrip.all_inquiry_only) {
+            console.log(`  ⏭️ 全部洽詢價，跳過此行程（不更新）：${scrapedTrip.title}`);
+            changesFound += await insertPendingChanges(supabase, [{
+              scrape_log_id: logId,
+              destination_id: trip.destination_id,
+              trip_id: trip.id,
+              trip_title: trip.title,
+              source_code: sanitizeText(trip.trip_banner?.code_label),
+              source_url: trip.source_url,
+              region_label: 'direct',
+              scraped_data: { source_url: trip.source_url },
+              status: 'pending',
+              change_type: 'warning',
+              field_name: 'all_inquiry_only',
+              old_value: trip.title,
+              new_value: '⚠️ 朋威此團所有梯次為「請來電洽詢」，未更新任何資料（避免清空既有出發日期）',
             }]);
             completedTrips += 1;
             continue;
