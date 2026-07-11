@@ -586,6 +586,7 @@ export async function POST(req: NextRequest) {
                 cover_image_url: tempImageUrl,
                 trip_banner: newTripBanner,
                 source_url: scraped.source_url || null,
+                scrape_managed: true,
               })
               .select('id')
               .single();
@@ -677,6 +678,20 @@ export async function POST(req: NextRequest) {
           default:
             results.push({ id: changeId, success: false, error: `未知的 change_type: ${change.change_type}` });
             continue;
+        }
+
+        // 接管：套用「非下架/非通知」變更代表此卡已對應朋威 → 轉為系統管理，日後朋威撤除才會建議下架
+        if (
+          change.trip_id &&
+          change.change_type !== 'removed' &&
+          change.change_type !== 'warning' &&
+          change.change_type !== 'new_tab'
+        ) {
+          await supabase
+            .from('trips')
+            .update({ scrape_managed: true })
+            .eq('id', change.trip_id)
+            .eq('scrape_managed', false);
         }
 
         // PDF 保留：不再自動清除 document_url

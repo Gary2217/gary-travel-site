@@ -740,6 +740,7 @@ async function loadExistingTrips(supabase) {
       display_order,
       is_active,
       source_url,
+      scrape_managed,
       trip_banner,
       departure_dates:trip_departure_dates (
         trip_id,
@@ -853,8 +854,30 @@ function buildDestinationResolver(destinations, existingTrips) {
   };
 }
 
+// 從朋威行程 URL 取路徑末段的團號（如 …/mold-new/CAI5AA10D?sacct_no=x → CAI5AA10D），忽略 query 參數
+function extractUrlCode(url) {
+  try {
+    const parts = new URL(url, BASE_URL).pathname.split('/').filter(Boolean);
+    const last = parts[parts.length - 1] || '';
+    return /^[A-Z][A-Z0-9]{4,}$/i.test(last) ? last.toUpperCase() : '';
+  } catch {
+    return '';
+  }
+}
+
 function findExistingTripForScrapedTrip(scrapedTrip, destinationTrips, consumedTripIds) {
   const scrapedCode = sanitizeText(scrapedTrip.code_label);
+
+  // ⓪ 來源網址團號比對（最強）：手動卡片貼了來源網址、但還沒抓過（無 code_label）時，
+  // 用網址路徑末段的團號比對，忽略 ?sacct_no= 等 query 差異，避免全區抓取重複建卡。
+  const scrapedUrlCode = extractUrlCode(scrapedTrip.source_url);
+  if (scrapedUrlCode) {
+    const byUrl = destinationTrips.find((trip) => {
+      if (consumedTripIds.has(trip.id)) return false;
+      return extractUrlCode(trip.source_url) === scrapedUrlCode;
+    });
+    if (byUrl) return byUrl;
+  }
 
   // ① 團型編號精確比對（最可靠）。兩邊都必須非空，避免空 code_label 互相誤配。
   if (scrapedCode) {
@@ -2074,6 +2097,7 @@ async function main() {
         for (const trip of destinationTrips) {
           if (matchedIds.has(trip.id)) continue;
           if (!trip.is_active) continue; // 已隱藏的行程不重複標記下架
+          if (!trip.scrape_managed) continue; // 手動卡（員工搶先建、朋威未上架）不做下架偵測
 
           // 下架保護：先跨 destination 反查，確認此行程在整個區域都找不到才標記下架
           const tripCode = sanitizeText(trip.trip_banner?.code_label);

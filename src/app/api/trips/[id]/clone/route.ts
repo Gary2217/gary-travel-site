@@ -38,6 +38,7 @@ export async function POST(
         ...tripFields,
         title: `${original.title}（複製）`,
         is_active: true,
+        scrape_managed: false,
       })
       .select()
       .single();
