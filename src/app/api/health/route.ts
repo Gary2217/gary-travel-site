@@ -33,10 +33,10 @@ export async function GET() {
       fix: '請在 Vercel 環境變數設定 NEXT_PUBLIC_IG_URL',
     },
     {
-      name: '開發者模式密碼',
-      ok: Boolean(process.env.NEXT_PUBLIC_DEV_PASSWORD),
-      impact: '無法進入開發者模式管理網站內容',
-      fix: '請在 Vercel 環境變數設定 NEXT_PUBLIC_DEV_PASSWORD',
+      name: '開發者模式登入',
+      ok: Boolean(process.env.DEV_AUTH_SECRET) && Boolean(process.env.DEV_LINE_USER_ID),
+      impact: '無法進入開發者模式管理網站內容（開發者模式透過 LINE 登入驗證，非密碼）',
+      fix: '請在 Vercel 環境變數設定 DEV_AUTH_SECRET 和 DEV_LINE_USER_ID',
     },
   ];
 
