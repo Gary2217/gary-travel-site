@@ -186,9 +186,9 @@ export default function TripCard({
               </button>
             )}
 
-            {/* 國家 + 天數標籤 */}
+            {/* 天數標籤 */}
             <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm sm:px-2.5 sm:text-xs">
-              {countries && countries.length > 0 ? `${countries.join('、')} · ${duration}` : duration}
+              {duration}
             </div>
 
             {isDevMode && document_url && document_is_available && (
@@ -297,6 +297,11 @@ export default function TripCard({
                         {duration}
                       </span>
                     )}
+                    {countries && countries.length > 0 && countries.map((country, i) => (
+                      <span key={`${country}-${i}`} className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600 sm:text-[11px]">
+                        {country}
+                      </span>
+                    ))}
                   </div>
                   <div className="shrink-0">
                     <ShareButton title={title} url={`/trip/${id}`} small />
