@@ -126,6 +126,7 @@ export default function SearchPage() {
                   document_url={trip.document_url}
                   document_is_available={trip.document_is_available}
                   departure_dates={trip.departure_dates}
+                  countries={trip.trip_banner?.countries}
                   isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                   promoContent={trip.trip_banner?.promo_content || ""}
                 />

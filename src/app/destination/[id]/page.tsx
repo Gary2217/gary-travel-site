@@ -1476,7 +1476,7 @@ export default function DestinationPage() {
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
                                   price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
                                   document_url={trip.document_url} document_is_available={trip.document_is_available}
-                                  departure_dates={trip.departure_dates} tags={trip.trip_banner?.tags} isDevMode={false} />
+                                  departure_dates={trip.departure_dates} tags={trip.trip_banner?.tags} countries={trip.trip_banner?.countries} isDevMode={false} />
                               </div>
                             ))}
                           </div>
@@ -1488,7 +1488,7 @@ export default function DestinationPage() {
                               <TripCard id={trip.id} title={trip.title} duration={trip.duration}
                                 price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
                                 document_url={trip.document_url} document_is_available={trip.document_is_available}
-                                departure_dates={trip.departure_dates} tags={trip.trip_banner?.tags} isDevMode={false} />
+                                departure_dates={trip.departure_dates} tags={trip.trip_banner?.tags} countries={trip.trip_banner?.countries} isDevMode={false} />
                             </div>
                           ))}
                         </div>
@@ -1523,7 +1523,7 @@ export default function DestinationPage() {
                                 <TripCard id={trip.id} title={trip.title} duration={trip.duration}
                                   price_range={getTripCardPrice(trip)} cover_image_url={trip.cover_image_url}
                                   document_url={trip.document_url} document_is_available={trip.document_is_available}
-                                  departure_dates={trip.departure_dates} tags={trip.trip_banner?.tags} isDevMode={false} />
+                                  departure_dates={trip.departure_dates} tags={trip.trip_banner?.tags} countries={trip.trip_banner?.countries} isDevMode={false} />
                               </div>
                             ))}
                           </div>
@@ -1667,6 +1667,7 @@ export default function DestinationPage() {
                           document_is_available={trip.document_is_available}
                           departure_dates={trip.departure_dates}
                           tags={trip.trip_banner?.tags}
+                          countries={trip.trip_banner?.countries}
                           isDevMode={isDevMode}
                           isSelected={selectedTripIds.has(trip.id)}
                           onSelect={handleSelectTrip}
@@ -1791,6 +1792,7 @@ export default function DestinationPage() {
                     document_is_available={trip.document_is_available}
                     departure_dates={trip.departure_dates}
                     tags={trip.trip_banner?.tags}
+                    countries={trip.trip_banner?.countries}
                     isDevMode={false}
                   />
                 </div>
