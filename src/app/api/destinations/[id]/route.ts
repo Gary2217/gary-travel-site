@@ -169,7 +169,6 @@ export async function DELETE(
 
     if (tripIds.length > 0) {
       await Promise.all([
-        supabase.from('trip_days').delete().in('trip_id', tripIds),
         supabase.from('trip_departure_dates').delete().in('trip_id', tripIds),
         supabase.from('trip_side_media').delete().in('trip_id', tripIds),
       ]);

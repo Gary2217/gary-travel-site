@@ -139,7 +139,6 @@ export async function DELETE(
 
     // 刪除所有關聯資料
     await Promise.all([
-      supabase.from('trip_days').delete().eq('trip_id', params.id),
       supabase.from('trip_departure_dates').delete().eq('trip_id', params.id),
       supabase.from('trip_side_media').delete().eq('trip_id', params.id),
     ]);
