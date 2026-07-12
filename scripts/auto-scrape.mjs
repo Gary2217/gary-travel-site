@@ -1092,9 +1092,10 @@ async function scrapeTripDetail(tripSummary) {
     });
   });
 
-  // 過濾掉全部「請來電洽詢」的出發日（表示未確定出團，不顯示在前端）
+  // 「請來電洽詢」只是朋威的出團狀態文字，日期本身可能仍有真實的價格/機位資料，一樣照抓
+  // all_inquiry_only 只當作情境旗標（用於新行程比對時避免誤建、以及提示訊息），不再拿來清空已抓到的日期
   const allInquiryOnly = rawDepartures.length > 0 && rawDepartures.every(d => d.inquiry_only);
-  const validDepartures = allInquiryOnly ? [] : rawDepartures;
+  const validDepartures = rawDepartures;
 
   // 頁面標題和封面圖
   const title = sanitizeText($('h1').first().text());
