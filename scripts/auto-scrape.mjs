@@ -1448,7 +1448,9 @@ function buildComparisonChanges({ logId, destinationId, existingTrip, scrapedTri
     pushWarning(
       'validation_check_departures',
       `原本 ${existingDepartures.length} 筆出發日期`,
-      '⚠️ 出發日期從 N 筆驟減到 0 筆'
+      scrapedTrip.all_inquiry_only
+        ? 'ℹ️ 朋威目前所有梯次顯示「請來電洽詢」，出發日期保留原資料未更新（其他欄位已正常比對）'
+        : '⚠️ 出發日期從 N 筆驟減到 0 筆'
     );
   }
 
@@ -1736,27 +1738,10 @@ async function main() {
             continue;
           }
 
-          // 全部「請來電洽詢」→ 跳過比對（與主迴圈一致）：0 筆有效日期時比對會產生
-          // 「清空出發日期」的災難性變更（2026-07-11 張家界卡 17 筆日期被清空的根因）
+          // 全部「請來電洽詢」不代表要跳過整團比對——只有出發日期本身受「清空防護」保護
+          // （buildComparisonChanges 內部已處理，不會清空既有日期），其餘欄位（航班/標籤/售價明細等）照常比對更新
           if (scrapedTrip.all_inquiry_only) {
-            console.log(`  ⏭️ 全部洽詢價，跳過此行程（不更新）：${scrapedTrip.title}`);
-            changesFound += await insertPendingChanges(supabase, [{
-              scrape_log_id: logId,
-              destination_id: trip.destination_id,
-              trip_id: trip.id,
-              trip_title: trip.title,
-              source_code: sanitizeText(trip.trip_banner?.code_label),
-              source_url: trip.source_url,
-              region_label: 'direct',
-              scraped_data: { source_url: trip.source_url },
-              status: 'pending',
-              change_type: 'warning',
-              field_name: 'all_inquiry_only',
-              old_value: trip.title,
-              new_value: '⚠️ 朋威此團所有梯次為「請來電洽詢」，未更新任何資料（避免清空既有出發日期）',
-            }]);
-            completedTrips += 1;
-            continue;
+            console.log(`  ℹ️ 全部洽詢價，出發日期保留現況，仍比對其他欄位：${scrapedTrip.title}`);
           }
 
           const changes = buildComparisonChanges({
@@ -1987,17 +1972,15 @@ async function main() {
         bucket.push(scrapedTrip);
         scrapedByDestination.set(destination.id, bucket);
 
-        // 全部「請來電洽詢」→ 完全跳過此行程：不新增、不更新、不下架
-        // 洽詢行程維持現狀（既有的保持顯示、新的不自動加入），是否隱藏由人工在 DevMode 決定
-        // 若已有既有行程，標記為「已匹配」避免被下架偵測誤判
-        if (scrapedTrip.all_inquiry_only) {
-          if (matchedTrip) {
-            consumedTripIds.add(matchedTrip.id);
-            matchedTripIdsByDestination.set(destination.id, consumedTripIds);
-          }
-          console.log(`  ⏭️ 全部洽詢價，跳過此行程（不新增/不更新/不下架）：${scrapedTrip.title}`);
+        // 全部「請來電洽詢」時，若朋威找不到對應的既有行程（無法比對），才完全跳過，避免誤判新增；
+        // 若已有既有行程，照常走下方比對流程——出發日期本身受清空防護保護，但航班/標籤/售價明細等仍會更新。
+        if (scrapedTrip.all_inquiry_only && !matchedTrip) {
+          console.log(`  ⏭️ 全部洽詢價且找不到既有行程，跳過新增：${scrapedTrip.title}`);
           completedTrips += 1;
           continue;
+        }
+        if (scrapedTrip.all_inquiry_only) {
+          console.log(`  ℹ️ 全部洽詢價，出發日期保留現況，仍比對其他欄位：${scrapedTrip.title}`);
         }
 
         if (matchedTrip) {
