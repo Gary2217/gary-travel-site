@@ -190,6 +190,7 @@ export default function TripPage() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
 const [scrapePhase, setScrapePhase] = useState<'idle' | 'triggering' | 'polling' | 'has_changes' | 'applying' | 'done' | 'no_changes' | 'error'>('idle');
 const [scrapePendingChanges, setScrapePendingChanges] = useState<ScrapeChange[]>([]);
+const [scrapeSelectedChangeIds, setScrapeSelectedChangeIds] = useState<Set<string>>(new Set());
 const [showScrapePreviewModal, setShowScrapePreviewModal] = useState(false);
 const [showSourceUrlModal, setShowSourceUrlModal] = useState(false);
 const [sourceUrlDraft, setSourceUrlDraft] = useState('');
@@ -209,6 +210,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   const [editDayCount, setEditDayCount] = useState('');
   const [editNightCount, setEditNightCount] = useState('');
   const [editBannerTagInput, setEditBannerTagInput] = useState('');
+  const [editBannerCountryInput, setEditBannerCountryInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [departureDates, setDepartureDates] = useState<DepartureDate[]>([]);
   const [selectedDepartureId, setSelectedDepartureId] = useState<string | null>(null);
@@ -255,7 +257,9 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   const [editDestinationId, setEditDestinationId] = useState('');
   const [showNewDestInput, setShowNewDestInput] = useState(false);
   const [newDestName, setNewDestName] = useState('');
+  const [newDestSubRegion, setNewDestSubRegion] = useState('');
   const [creatingDest, setCreatingDest] = useState(false);
+  const [deletingDest, setDeletingDest] = useState(false);
   const [pdfScraping, setPdfScraping] = useState(false);
   type PdfPreviewChange = { field: string; label: string; oldVal: string; newVal: string };
   type PdfPreviewState = { parsed: PdfScrapeResult; changes: PdfPreviewChange[] };
@@ -374,6 +378,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
           const tripChanges = (allChanges as ScrapeChange[]).filter(c => c.trip_id === tripId);
           if (tripChanges.length > 0) {
             setScrapePendingChanges(tripChanges);
+            setScrapeSelectedChangeIds(new Set(tripChanges.map(c => c.id)));
             setScrapePhase('has_changes');
           } else {
             setScrapePhase('no_changes');
@@ -389,14 +394,15 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   };
 
   const handleApplyChanges = async () => {
-    if (scrapePhase !== 'has_changes' || scrapePendingChanges.length === 0) return;
+    const selectedIds = scrapePendingChanges.filter(c => scrapeSelectedChangeIds.has(c.id)).map(c => c.id);
+    if (scrapePhase !== 'has_changes' || selectedIds.length === 0) return;
     setScrapePhase('applying');
     try {
       const applyRes = await fetch('/api/scrape/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ changeIds: scrapePendingChanges.map(c => c.id) }),
+        body: JSON.stringify({ changeIds: selectedIds }),
       });
       if (!applyRes.ok) throw new Error('套用失敗');
       invalidateCache('trip:' + tripId);
@@ -712,6 +718,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     setEditDayCount(editorDayParsed ? editorDayParsed[1] : '');
     setEditNightCount(editorNightParsed ? editorNightParsed[1] : '');
     setEditBannerTagInput('');
+    setEditBannerCountryInput('');
   };
 
   const openTripInfoEditor = () => {
@@ -2095,6 +2102,43 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     <button type="button" onClick={() => setShowNewDestInput(v => !v)} className={`shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition ${showNewDestInput ? 'bg-sky-100 text-sky-600' : 'border border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}>
                       {showNewDestInput ? '取消' : '+ 新增'}
                     </button>
+                    <button
+                      type="button"
+                      disabled={deletingDest}
+                      onClick={async () => {
+                        const targetId = editDestinationId || trip?.destination_id || '';
+                        if (!targetId) return;
+                        if (targetId === trip?.destination_id) {
+                          alert('不能刪除目前這個行程所屬的目的地，請先把行程改到其他目的地，再回來刪除這個');
+                          return;
+                        }
+                        const targetDest = allRegions.flatMap(r => r.destinations || []).find(d => d.id === targetId);
+                        if (!targetDest) return;
+                        const count = targetDest.trip_count ?? 0;
+                        if (count > 0) {
+                          const typed = prompt(`「${targetDest.title}」底下還有 ${count} 筆行程，刪除目的地會把這些行程也一併永久刪除，且無法復原。\n\n請輸入目的地名稱「${targetDest.title}」以確認刪除：`);
+                          if (typed !== targetDest.title) {
+                            if (typed !== null) alert('輸入不符，已取消刪除');
+                            return;
+                          }
+                        } else if (!confirm(`確定要刪除「${targetDest.title}」嗎？此操作無法復原。`)) {
+                          return;
+                        }
+                        setDeletingDest(true);
+                        try {
+                          const res = await fetch(`/api/destinations/${targetId}`, { method: 'DELETE', credentials: 'include' });
+                          if (!res.ok) { alert('刪除失敗'); return; }
+                          invalidateCache('regions');
+                          setAllRegions(prev => prev.map(r => ({ ...r, destinations: (r.destinations || []).filter(d => d.id !== targetId) })));
+                          if (editDestinationId === targetId) setEditDestinationId(trip?.destination_id || '');
+                          alert('已刪除');
+                        } catch { alert('刪除失敗'); }
+                        finally { setDeletingDest(false); }
+                      }}
+                      className="shrink-0 rounded-xl border border-red-200 bg-white px-2.5 py-2 text-[11px] font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deletingDest ? '刪除中...' : '刪除'}
+                    </button>
                   </div>
                 </div>
                 {showNewDestInput && (
@@ -2105,6 +2149,13 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                         value={newDestName}
                         onChange={e => setNewDestName(e.target.value)}
                         placeholder="輸入新目的地名稱，如：埃及"
+                        className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-create-dest')?.click(); } }}
+                      />
+                      <input
+                        value={newDestSubRegion}
+                        onChange={e => setNewDestSubRegion(e.target.value)}
+                        placeholder="子分類（選填，如：華中）"
                         className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 outline-none focus:border-sky-400"
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-create-dest')?.click(); } }}
                       />
@@ -2124,7 +2175,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               credentials: 'include',
-                              body: JSON.stringify({ region_id: regionId, title: name }),
+                              body: JSON.stringify({ region_id: regionId, title: name, sub_region: newDestSubRegion.trim() }),
                             });
                             if (!res.ok) { alert('建立失敗'); return; }
                             const created = await res.json();
@@ -2132,6 +2183,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                             setAllRegions(prev => prev.map(r => r.id === regionId ? { ...r, destinations: [...(r.destinations || []), created] } : r));
                             setEditDestinationId(created.id);
                             setNewDestName('');
+                            setNewDestSubRegion('');
                             setShowNewDestInput(false);
                           } catch { alert('建立失敗'); }
                           finally { setCreatingDest(false); }
@@ -2157,12 +2209,25 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                   </div>
                 </div>
 
+                <div>
+                  <div className="mb-1 text-xs text-gray-500">國家標籤（Enter 新增，卡片右上角會顯示）</div>
+                  <div className="flex flex-wrap gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-2">
+                    {(editTripBanner.countries || []).map((country, i) => (
+                      <span key={`${country}-${i}`} className="flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs text-sky-600">
+                        {country}
+                        <button type="button" onClick={() => setEditTripBanner(prev => ({ ...prev, countries: (prev.countries || []).filter((_, idx) => idx !== i) }))} className="ml-0.5 text-gray-400 hover:text-red-500">×</button>
+                      </span>
+                    ))}
+                    <input value={editBannerCountryInput} onChange={e => setEditBannerCountryInput(e.target.value)} placeholder="輸入國家名，如：烏茲別克..." className="min-w-[80px] flex-1 bg-transparent px-1 py-0.5 text-sm text-gray-900 outline-none" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const val = editBannerCountryInput.trim(); if (!val) return; setEditTripBanner(prev => ({ ...prev, countries: [...(prev.countries || []), val] })); setEditBannerCountryInput(''); } }} />
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap justify-center gap-2">
                   <button onClick={isCreatingNewDeparture ? saveDepartureInfoAsFirstDeparture : (selectedDeparture ? saveSelectedDepartureInfo : saveDepartureInfoAsFirstDeparture)} disabled={saving} className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-60">
                     {saving ? '儲存中...' : isCreatingNewDeparture ? '建立新梯次' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
                   </button>
                   {selectedDeparture && !isCreatingNewDeparture && (
-                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); setDepartureEditorDate(`${new Date().getFullYear()}-01-01`); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
+                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); const t = new Date(); setDepartureEditorDate(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`); setDepartureEditorGroupCode(''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
                   )}
                   {isCreatingNewDeparture && (
                     <button type="button" onClick={() => setIsCreatingNewDeparture(false)} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-100">取消新增</button>
@@ -2627,6 +2692,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     document_url={rt.document_url}
                     document_is_available={rt.document_is_available}
                     departure_dates={rt.departure_dates}
+                    countries={rt.trip_banner?.countries}
                     isDevMode={false}
                   />
                 </div>
@@ -3357,22 +3423,48 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                 ✕
               </button>
             </div>
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-2">
+              <span className="text-xs text-gray-500">已選 {scrapeSelectedChangeIds.size} / {scrapePendingChanges.length} 項，取消打勾的不會更新</span>
+              <button
+                type="button"
+                onClick={() => setScrapeSelectedChangeIds(
+                  scrapeSelectedChangeIds.size === scrapePendingChanges.length
+                    ? new Set()
+                    : new Set(scrapePendingChanges.map(c => c.id))
+                )}
+                className="text-xs font-medium text-sky-600 hover:text-sky-500"
+              >
+                {scrapeSelectedChangeIds.size === scrapePendingChanges.length ? '取消全選' : '全選'}
+              </button>
+            </div>
             <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
               {scrapePendingChanges.map(c => (
-                <div key={c.id} className="px-5 py-3">
-                  <span className="inline-block rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
-                    {getChangeLabel(c.change_type, c.field_name)}
-                  </span>
-                  <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
-                    <p className="break-all rounded bg-red-50 px-2 py-1 text-xs text-red-700 line-through">
-                      {formatDiffValue(c.old_value)}
-                    </p>
-                    <span className="pt-1 text-xs text-gray-400">→</span>
-                    <p className="break-all rounded bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                      {formatDiffValue(c.new_value)}
-                    </p>
+                <label key={c.id} className="flex cursor-pointer items-start gap-2.5 px-5 py-3 hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={scrapeSelectedChangeIds.has(c.id)}
+                    onChange={() => {
+                      const next = new Set(scrapeSelectedChangeIds);
+                      if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
+                      setScrapeSelectedChangeIds(next);
+                    }}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="inline-block rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
+                      {getChangeLabel(c.change_type, c.field_name)}
+                    </span>
+                    <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
+                      <p className="break-all rounded bg-red-50 px-2 py-1 text-xs text-red-700 line-through">
+                        {formatDiffValue(c.old_value)}
+                      </p>
+                      <span className="pt-1 text-xs text-gray-400">→</span>
+                      <p className="break-all rounded bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                        {formatDiffValue(c.new_value)}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </label>
               ))}
             </div>
             <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-5 py-4">
@@ -3385,10 +3477,11 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               </button>
               <button
                 type="button"
+                disabled={scrapeSelectedChangeIds.size === 0}
                 onClick={() => { setShowScrapePreviewModal(false); void handleApplyChanges(); }}
-                className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                ✅ 確認更新
+                ✅ 確認更新 ({scrapeSelectedChangeIds.size})
               </button>
             </div>
           </div>

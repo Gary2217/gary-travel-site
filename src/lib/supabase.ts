@@ -109,6 +109,7 @@ export type Destination = {
   updated_at: string;
   sub_region?: string | null;
   regions?: { id?: string; title: string };
+  trip_count?: number;
 };
 
 export type Region = {
@@ -219,6 +220,7 @@ export type TripBanner = {
   sub_area?: string;
   airline?: string;
   airport?: string;
+  countries?: string[];
 };
 
 export type DepartureBannerInfo = {

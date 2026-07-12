@@ -36,6 +36,7 @@ interface TripCardProps {
   document_is_available?: boolean;
   departure_dates?: DepartureDateInfo[];
   tags?: string[];
+  countries?: string[];
   isDevMode?: boolean;
   isSelected?: boolean;
   onSelect?: (tripId: string) => void;
@@ -73,6 +74,7 @@ export default function TripCard({
   document_is_available,
   departure_dates,
   tags,
+  countries,
   isDevMode = false,
   isSelected = false,
   onSelect,
@@ -185,9 +187,9 @@ export default function TripCard({
               </button>
             )}
 
-            {/* 天數標籤 */}
+            {/* 國家 + 天數標籤 */}
             <div className="absolute right-1.5 top-1.5 rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm sm:px-2.5 sm:text-xs">
-              {duration}
+              {countries && countries.length > 0 ? `${countries.join('、')} · ${duration}` : duration}
             </div>
 
             {isDevMode && document_url && document_is_available && (
