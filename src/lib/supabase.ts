@@ -330,27 +330,6 @@ export async function getTripWithDays(tripId: string) {
   return data;
 }
 
-// 提交諮詢
-export async function submitInquiry(data: {
-  trip_id?: string;
-  trip_title: string;
-  customer_name: string;
-  customer_phone?: string;
-  customer_email?: string;
-  message?: string;
-  source: string;
-}) {
-  const res = await fetch('/api/inquiries', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    throw new Error('提交失敗，請稍後再試');
-  }
-  return res.json();
-}
-
 // 取得同地區 + 同類別相關行程（目的地無行程時使用）
 export async function getRelatedTrips(
   regionId: string,

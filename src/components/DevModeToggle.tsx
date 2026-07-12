@@ -359,6 +359,16 @@ export default function DevModeToggle({ onToggle }: DevModeToggleProps) {
             </svg>
             重登
           </button>
+          <button
+            onClick={() => { window.location.href = "/api/dev-auth/logout"; }}
+            className="inline-flex h-7 items-center gap-1 rounded-full bg-red-500/80 px-2.5 text-[11px] font-semibold text-white transition hover:bg-red-500 sm:h-8 sm:px-3 sm:text-xs"
+            title="登出開發者模式"
+          >
+            <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            登出
+          </button>
         </>
       )}
       <button
