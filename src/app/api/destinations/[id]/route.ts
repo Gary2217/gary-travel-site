@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ERRORS, apiError } from '@/lib/api-error';
 import { requireDevAuth } from '@/lib/api-auth';
-import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { r2Delete, r2KeyFromUrl } from '@/lib/r2';
 import { createAnonClientNoCache, createServiceClient, hasServiceRoleConfig, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -125,24 +125,24 @@ export async function DELETE(
     const tripIds = (trips || []).map((trip) => trip.id);
 
     const storagePaths = new Set<string>();
-    const destinationImagePath = getStoragePathFromPublicUrl(destination.image_url || '');
+    const destinationImagePath = r2KeyFromUrl(destination.image_url || '');
     if (destinationImagePath) {
       storagePaths.add(destinationImagePath);
     }
 
     for (const trip of trips || []) {
-      const coverPath = getStoragePathFromPublicUrl(trip.cover_image_url || '');
+      const coverPath = r2KeyFromUrl(trip.cover_image_url || '');
       if (coverPath) {
         storagePaths.add(coverPath);
       }
 
-      const documentPath = getStoragePathFromPublicUrl(trip.document_url || '');
+      const documentPath = r2KeyFromUrl(trip.document_url || '');
       if (documentPath) {
         storagePaths.add(documentPath);
       }
 
       const banner = trip.trip_banner as Record<string, unknown> | null;
-      const sideImagePath = getStoragePathFromPublicUrl(String(banner?.side_image_url || ''));
+      const sideImagePath = r2KeyFromUrl(String(banner?.side_image_url || ''));
       if (sideImagePath) {
         storagePaths.add(sideImagePath);
       }
@@ -160,7 +160,7 @@ export async function DELETE(
       }
 
       for (const media of sideMedia || []) {
-        const mediaPath = getStoragePathFromPublicUrl(media.url || '');
+        const mediaPath = r2KeyFromUrl(media.url || '');
         if (mediaPath) {
           storagePaths.add(mediaPath);
         }
@@ -194,12 +194,10 @@ export async function DELETE(
     }
 
     if (storagePaths.size > 0) {
-      const { error: removeError } = await supabase.storage
-        .from('images')
-        .remove([...storagePaths]);
-
-      if (removeError) {
-        console.error('Failed to remove destination-related storage files:', removeError.message);
+      try {
+        await r2Delete([...storagePaths]);
+      } catch (removeErr) {
+        console.error('Failed to remove destination-related R2 files:', removeErr instanceof Error ? removeErr.message : removeErr);
       }
     }
 
