@@ -115,10 +115,9 @@ export default function TripCard({
     }
   };
 
-  const navigateToTrip = (departureId?: string) => {
+  const navigateToTrip = () => {
     const from = encodeURIComponent(window.location.pathname + window.location.search);
-    const departureQuery = departureId ? `&departureId=${encodeURIComponent(departureId)}` : '';
-    router.push(`/trip/${id}?from=${from}${departureQuery}`);
+    router.push(`/trip/${id}?from=${from}`);
   };
 
   const handleFollowAndDownload = (socialUrl: string) => {
@@ -388,6 +387,20 @@ export default function TripCard({
 
           {/* 按鈕區 */}
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">
+
+            {/* Dev mode 進入行程頁編輯（標籤、國家、出發日期、PDF 抓取等都在行程頁裡） */}
+            {isDevMode && (
+              <button
+                type="button"
+                onClick={navigateToTrip}
+                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-700 shadow transition hover:bg-sky-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
+              >
+                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                進入行程頁編輯
+              </button>
+            )}
 
             {/* Dev mode 包團/客製切換 */}
             {isDevMode && onCustomTourToggle && (
