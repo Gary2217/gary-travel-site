@@ -186,7 +186,12 @@ function parsePdfText(text: string): {
 } {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-  const title = lines.find(l => l.length >= 6 && /[一-鿿]/.test(l)) ?? lines[0] ?? '';
+  // 表格表頭誤判防護：一行含 3+ 個欄位名關鍵詞（天數/起飛城市/航班編號...）是表頭不是標題
+  const isTableHeaderLine = (l: string) => {
+    const kw = ['天數', '起飛', '抵達', '航空公司', '航班', '出發時間', '抵達時間', '出發日期', '城市', '機場'];
+    return kw.filter(k => l.includes(k)).length >= 3;
+  };
+  const title = lines.find(l => l.length >= 6 && /[一-鿿]/.test(l) && !isTableHeaderLine(l)) ?? lines[0] ?? '';
 
   let duration: string | null = null;
   const dayNightMatch = text.match(/(\d+)\s*天\s*(\d+)\s*夜/);

@@ -174,7 +174,9 @@ export default function TripPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const tripId = params.id as string;
-  const from = searchParams.get("from");
+  // from 僅接受站內相對路徑（拒絕 https://... 與 //host 形式，防外部導向）
+  const fromRaw = searchParams.get("from");
+  const from = fromRaw && fromRaw.startsWith("/") && !fromRaw.startsWith("//") ? fromRaw : null;
   const requestedDepartureId = searchParams.get("departureId");
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -484,7 +486,8 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       }
 
       setPdfPreview({ parsed, changes });
-      setPdfSelectedFields(new Set(changes.map(c => c.field)));
+      // 預設只勾「航班資訊」：PDF 抓取定位為補航班表，標題/標籤等由人工維護或朋威抓取更新
+      setPdfSelectedFields(new Set(changes.filter(c => c.field === 'flight_segments').map(c => c.field)));
     } catch (err) {
       console.error('[handlePdfScrape]', err);
       alert(err instanceof Error ? err.message : 'PDF 解析失敗');

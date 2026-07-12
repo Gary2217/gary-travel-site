@@ -1008,7 +1008,11 @@ export default function DestinationPage() {
       // 優先手動勾選；否則若目的地無 url 則用底下有 url 的行程做 direct scrape
       const tripIds = selectedIds.length > 0 ? selectedIds : destTripsWithUrl;
       // 「全部」tab → 用 region key 觸發整區；否則觸發單一 destination
-      const regionKey = destination?.source_url?.match(/\/([^/]+)\/$/)?.[1] || '';
+      // 從 pathname 取 region key（source_url 可能帶 #blk- hash，直接對全字串 match 會失敗）
+      const regionKey = (() => {
+        try { return new URL(destination?.source_url || '').pathname.match(/\/([^/]+)\/$/)?.[1] || ''; }
+        catch { return ''; }
+      })();
       const body = isAllTab && regionKey && tripIds.length === 0
         ? { regions: regionKey }
         : { destinationId: targetDestId, tripIds: tripIds.length > 0 ? tripIds : undefined };

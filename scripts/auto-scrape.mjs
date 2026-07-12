@@ -1675,6 +1675,13 @@ async function main() {
         for (const trip of tripsWithUrl) {
           console.log(`  🔍 [${completedTrips + 1}/${tripsWithUrl.length}] ${trip.title}`);
 
+          // 洽詢模式卡由人工管理，不抓取更新
+          if (trip.trip_banner?.custom_tour) {
+            console.log(`  ⏭️ 洽詢模式卡，跳過抓取：${trip.title}`);
+            completedTrips += 1;
+            continue;
+          }
+
           const tripSummary = {
             title: trip.title,
             href: trip.source_url,
@@ -2016,6 +2023,13 @@ async function main() {
             continue;
           }
 
+          // 洽詢模式卡由人工管理：不產生任何內容變更（已標記 matched，不會被誤判下架）
+          if (matchedTrip.trip_banner?.custom_tour) {
+            console.log(`  ⏭️ 洽詢模式卡，跳過更新：${matchedTrip.title}`);
+            completedTrips += 1;
+            continue;
+          }
+
           const changes = buildComparisonChanges({
             logId,
             destinationId: destination.id,
@@ -2145,6 +2159,7 @@ async function main() {
           if (matchedIds.has(trip.id)) continue;
           if (!trip.is_active) continue; // 已隱藏的行程不重複標記下架
           if (!trip.scrape_managed) continue; // 手動卡（員工搶先建、朋威未上架）不做下架偵測
+          if (trip.trip_banner?.custom_tour) continue; // 洽詢模式卡由人工管理，不建議下架
 
           // 下架保護：先跨 destination 反查，確認此行程在整個區域都找不到才標記下架
           const tripCode = sanitizeText(trip.trip_banner?.code_label);

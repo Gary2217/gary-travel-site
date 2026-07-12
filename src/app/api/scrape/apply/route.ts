@@ -62,6 +62,7 @@ interface ScrapedTrip {
   cover_image_url?: string;
   source_url?: string;
   promo_text?: string;
+  airline?: string;
   trip_banner: Record<string, unknown>;
   departures: Array<{
     date: string;
@@ -436,6 +437,41 @@ export async function POST(req: NextRequest) {
               if (rebuildErr) {
                 results.push({ id: changeId, success: false, error: rebuildErr });
                 continue;
+              }
+            }
+
+            // flight 變更：航班段同步寫入所有現售出發日期。
+            // 前端航班表讀的是 departure_dates.flight_segments，只 merge trip_banner 會造成
+            // 「套用成功但頁面航班沒更新」（2026-07-12 北疆卡案例）。
+            if (change.change_type === 'flight') {
+              const flightSegs = scraped.flightSegments || [];
+              if (flightSegs.length > 0) {
+                const fOut = flightSegs[0];
+                const fRet = flightSegs[flightSegs.length - 1];
+                const { error: flightDepErr } = await supabase
+                  .from('trip_departure_dates')
+                  .update({
+                    airline: scraped.airline || null,
+                    outbound_flight: fOut?.flight_number || null,
+                    outbound_time: fOut?.dep_time || null,
+                    outbound_from: fOut?.dep_airport || null,
+                    outbound_arrival_time: fOut?.arr_time || null,
+                    outbound_to: fOut?.arr_airport || null,
+                    outbound_next_day: fOut?.next_day || false,
+                    return_flight: fRet?.flight_number || null,
+                    return_time: fRet?.dep_time || null,
+                    return_from: fRet?.dep_airport || null,
+                    return_arrival_time: fRet?.arr_time || null,
+                    return_to: fRet?.arr_airport || null,
+                    return_next_day: fRet?.next_day || false,
+                    flight_segments: flightSegs,
+                  })
+                  .eq('trip_id', change.trip_id)
+                  .eq('is_active', true);
+                if (flightDepErr) {
+                  results.push({ id: changeId, success: false, error: flightDepErr.message });
+                  continue;
+                }
               }
             }
             break;
