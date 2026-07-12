@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDevAuth } from "@/lib/api-auth";
-import { getStoragePathFromPublicUrl } from "@/lib/storage";
-import { createServiceClient } from "@/lib/supabase-server";
+import { r2Delete, r2KeyFromUrl, r2PublicUrl, r2Upload } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +44,6 @@ function isServiceId(value: string): value is ServiceId {
 
 function isContractKey(value: string): value is ContractKey {
   return CONTRACT_KEYS.includes(value as ContractKey);
-}
-
-function createAdminClient() {
-  return createServiceClient();
 }
 
 function getContentPath(serviceId: ServiceId) {
@@ -101,16 +96,10 @@ function sanitizeContent(input: unknown): DocumentServiceEditableContent | null 
 }
 
 async function readContent(serviceId: ServiceId) {
-  const supabase = createAdminClient();
-  const { data, error } = await supabase.storage.from("images").download(getContentPath(serviceId));
-
-  if (error || !data) {
-    return null;
-  }
-
-  const raw = await data.text();
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const res = await fetch(`${r2PublicUrl(getContentPath(serviceId))}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const parsed = (await res.json()) as unknown;
     return sanitizeContent(parsed);
   } catch {
     return null;
@@ -118,17 +107,8 @@ async function readContent(serviceId: ServiceId) {
 }
 
 async function writeContent(serviceId: ServiceId, content: DocumentServiceEditableContent) {
-  const supabase = createAdminClient();
   const bytes = Buffer.from(JSON.stringify(content, null, 2), "utf-8");
-  const { error } = await supabase.storage.from("images").upload(getContentPath(serviceId), bytes, {
-    contentType: "application/json; charset=utf-8",
-    cacheControl: "0",
-    upsert: true,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  await r2Upload(getContentPath(serviceId), bytes, "application/json; charset=utf-8");
 }
 
 export async function GET(_: NextRequest, context: { params: { id: string } }) {
@@ -195,22 +175,11 @@ export async function POST(request: NextRequest, context: { params: { id: string
       return NextResponse.json({ error: "僅支援 PDF / DOC / DOCX / JPG / JPEG / PNG / WEBP" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
     const path = `${FILE_FOLDER}/${serviceIdRaw}/${contractKeyRaw}-${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const { error: uploadError } = await supabase.storage.from("images").upload(path, buffer, {
-      contentType: file.type || "application/octet-stream",
-      cacheControl: "0",
-      upsert: false,
-    });
-
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
-    }
-
-    const { data } = supabase.storage.from("images").getPublicUrl(path);
-    const newUrl = data.publicUrl;
+    await r2Upload(path, buffer, file.type || "application/octet-stream");
+    const newUrl = r2PublicUrl(path);
 
     const existing = (await readContent(serviceIdRaw)) || {
       title: "",
@@ -232,7 +201,7 @@ export async function POST(request: NextRequest, context: { params: { id: string
     };
 
     const oldContract = existing.contracts.find((item) => item.key === contractKeyRaw);
-    const oldPath = getStoragePathFromPublicUrl(oldContract?.url || "");
+    const oldPath = r2KeyFromUrl(oldContract?.url || "");
 
     const nextContracts = CONTRACT_KEYS.map((key) => {
       const prev = existing.contracts.find((item) => item.key === key);
@@ -251,7 +220,7 @@ export async function POST(request: NextRequest, context: { params: { id: string
     await writeContent(serviceIdRaw, nextContent);
 
     if (oldPath && oldPath !== path) {
-      await supabase.storage.from("images").remove([oldPath]);
+      await r2Delete([oldPath]);
     }
 
     return NextResponse.json({ content: nextContent, uploaded_url: newUrl });
@@ -281,9 +250,8 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
       return NextResponse.json({ error: "尚無可刪除內容" }, { status: 404 });
     }
 
-    const supabase = createAdminClient();
     const target = existing.contracts.find((item) => item.key === contractKeyRaw);
-    const targetPath = getStoragePathFromPublicUrl(target?.url || "");
+    const targetPath = r2KeyFromUrl(target?.url || "");
 
     const nextContent: DocumentServiceEditableContent = {
       ...existing,
@@ -300,7 +268,7 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
     await writeContent(serviceIdRaw, nextContent);
 
     if (targetPath) {
-      await supabase.storage.from("images").remove([targetPath]);
+      await r2Delete([targetPath]);
     }
 
     return NextResponse.json({ content: nextContent });
