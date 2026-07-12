@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireDevAuth } from '@/lib/api-auth';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { createAnonClient } from '@/lib/supabase-server';
+import { createAnonClient, createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,7 +85,9 @@ export async function GET(request: NextRequest) {
   const month = searchParams.get('month');
 
   try {
-    const supabase = createAnonClient();
+    // 讀取聯絡表單需走 service role：客戶個資（電話/LINE/Email）不應仰賴
+    // anon RLS 授權，dev auth 已在上方驗證身分
+    const supabase = createServiceClient();
 
     let query = supabase
       .from('contact_forms')
@@ -143,7 +145,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少 id' }, { status: 400 });
     }
 
-    const supabase = createAnonClient();
+    const supabase = createServiceClient();
 
     const { data: existingForm, error: existingError } = await supabase
       .from('contact_forms')
