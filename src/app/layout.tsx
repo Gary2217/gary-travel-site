@@ -82,7 +82,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
           id="ga-config"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MWGKSWE0Q8');`,
+            // 未投放 Google 廣告：關閉廣告訊號/個人化，停止向 doubleclick 等發送再行銷請求
+            // （消除被 CSP 擋下的無用請求；不影響 GA4 流量統計）
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MWGKSWE0Q8',{allow_google_signals:false,allow_ad_personalization_signals:false});`,
           }}
         />
         <Script
