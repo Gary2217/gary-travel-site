@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDevAuth } from "@/lib/api-auth";
 import { r2Delete, r2KeyFromUrl, r2PublicUrl, r2Upload } from "@/lib/r2";
+import { createServiceClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 const SERVICE_IDS = ["roc0001", "roc0002", "tcc0001"] as const;
-const CONTENT_FOLDER = "document-services-content";
 const FILE_FOLDER = "document-services-files";
 const FILE_MAX_SIZE = 15 * 1024 * 1024;
 const FILE_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"];
@@ -46,8 +46,8 @@ function isContractKey(value: string): value is ContractKey {
   return CONTRACT_KEYS.includes(value as ContractKey);
 }
 
-function getContentPath(serviceId: ServiceId) {
-  return `${CONTENT_FOLDER}/${serviceId}.json`;
+function settingsKey(serviceId: ServiceId) {
+  return `document_service_content_${serviceId}`;
 }
 
 function sanitizeContent(input: unknown): DocumentServiceEditableContent | null {
@@ -95,20 +95,22 @@ function sanitizeContent(input: unknown): DocumentServiceEditableContent | null 
   };
 }
 
+// 結構化文字內容（標題/價格/條款等）走 DB（site_settings，同 home_banners 的模式）；
+// 只有實際上傳的合約檔案本體走 R2。
 async function readContent(serviceId: ServiceId) {
-  try {
-    const res = await fetch(`${r2PublicUrl(getContentPath(serviceId))}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const parsed = (await res.json()) as unknown;
-    return sanitizeContent(parsed);
-  } catch {
-    return null;
-  }
+  const supabase = createServiceClient();
+  const { data } = await supabase.from("site_settings").select("value").eq("key", settingsKey(serviceId)).single();
+  return sanitizeContent(data?.value);
 }
 
 async function writeContent(serviceId: ServiceId, content: DocumentServiceEditableContent) {
-  const bytes = Buffer.from(JSON.stringify(content, null, 2), "utf-8");
-  await r2Upload(getContentPath(serviceId), bytes, "application/json; charset=utf-8");
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("site_settings").upsert({
+    key: settingsKey(serviceId),
+    value: content,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function GET(_: NextRequest, context: { params: { id: string } }) {

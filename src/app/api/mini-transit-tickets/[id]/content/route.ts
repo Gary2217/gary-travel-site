@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDevAuth } from "@/lib/api-auth";
 import { r2Delete, r2KeyFromUrl, r2PublicUrl, r2Upload } from "@/lib/r2";
+import { createServiceClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 const TICKET_IDS = ["mtl001", "mtl002", "mtl003", "mtl004", "mtl005"] as const;
-const CONTENT_FOLDER = "mini-transit-tickets-content";
 const FILE_FOLDER = "mini-transit-tickets-files";
 const FILE_MAX_SIZE = 15 * 1024 * 1024;
 const FILE_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"];
@@ -44,8 +44,8 @@ function isContractKey(value: string): value is ContractKey {
   return CONTRACT_KEYS.includes(value as ContractKey);
 }
 
-function contentPath(ticketId: TicketId) {
-  return `${CONTENT_FOLDER}/${ticketId}.json`;
+function settingsKey(ticketId: TicketId) {
+  return `mini_transit_ticket_content_${ticketId}`;
 }
 
 function sanitizeContent(input: unknown): EditableContent | null {
@@ -100,19 +100,22 @@ function sanitizeContent(input: unknown): EditableContent | null {
   };
 }
 
+// 結構化文字內容（標題/價格/條款等）走 DB（site_settings，同 home_banners 的模式）；
+// 只有實際上傳的合約檔案本體走 R2。
 async function readContent(ticketId: TicketId) {
-  try {
-    const res = await fetch(`${r2PublicUrl(contentPath(ticketId))}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    return sanitizeContent(await res.json());
-  } catch {
-    return null;
-  }
+  const supabase = createServiceClient();
+  const { data } = await supabase.from("site_settings").select("value").eq("key", settingsKey(ticketId)).single();
+  return sanitizeContent(data?.value);
 }
 
 async function writeContent(ticketId: TicketId, content: EditableContent) {
-  const bytes = Buffer.from(JSON.stringify(content, null, 2), "utf-8");
-  await r2Upload(contentPath(ticketId), bytes, "application/json; charset=utf-8");
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("site_settings").upsert({
+    key: settingsKey(ticketId),
+    value: content,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function GET(_: NextRequest, context: { params: { id: string } }) {
