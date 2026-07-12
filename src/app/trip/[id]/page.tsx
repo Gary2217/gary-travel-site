@@ -1665,11 +1665,11 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     return (
                       <>
                         {originalPrice && (
-                          <span className="relative text-2xl font-bold text-gray-600">NT$ {originalPrice.toLocaleString('zh-TW')}<span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2px] border-red-600 -rotate-6"></span></span></span>
+                          <span className="whitespace-nowrap text-2xl font-bold text-gray-600 line-through decoration-red-600 decoration-2">NT${originalPrice.toLocaleString('zh-TW')}</span>
                         )}
                         <div className="text-right">
-                          <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-3xl font-black tracking-tight text-transparent">
-                            {displayPrice ? `NT$ ${displayPrice.toLocaleString('zh-TW')}` : '洽詢'}
+                          <span className="whitespace-nowrap bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-3xl font-black tracking-tight text-transparent">
+                            {displayPrice ? `NT$${displayPrice.toLocaleString('zh-TW')}` : '洽詢'}
                           </span>
                           <span className="ml-1 text-xs text-gray-500">起/人</span>
                         </div>
@@ -1953,10 +1953,10 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                       return (
                         <>
                           {originalPrice && (
-                            <span className="relative text-lg font-bold text-gray-500">NT$ {originalPrice.toLocaleString('zh-TW')}<span className="absolute inset-0 flex items-center" aria-hidden="true"><span className="w-full border-t-[2px] border-red-600 -rotate-6"></span></span></span>
+                            <span className="whitespace-nowrap text-lg font-bold text-gray-500 line-through decoration-red-600 decoration-2">NT${originalPrice.toLocaleString('zh-TW')}</span>
                           )}
-                          <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-2xl font-black tracking-tight text-transparent">
-                            {displayPrice ? `NT$ ${displayPrice.toLocaleString('zh-TW')}` : '洽詢'}
+                          <span className="whitespace-nowrap bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-2xl font-black tracking-tight text-transparent">
+                            {displayPrice ? `NT$${displayPrice.toLocaleString('zh-TW')}` : '洽詢'}
                           </span>
                         </>
                       );
