@@ -1059,11 +1059,14 @@ export default function DestinationPage() {
   const handleApplyPendingChanges = async () => {
     if (scrapeApplying || scrapePendingIds.length === 0) return;
     try {
-      // 先 fetch 完整變更明細，給使用者預覽
-      const destId = scrapeTargetDestsRef.current[0] ?? destinationId;
-      const res = await fetch(`/api/scrape/changes?destination_id=${destId}&status=pending`, { credentials: 'include' });
-      if (!res.ok) throw new Error('無法取得變更明細');
-      const allChanges = (await res.json()) as DestScrapeChange[];
+      // 先 fetch 完整變更明細，給使用者預覽（掃描所有目標目的地，避免整個區域抓取時漏掉非第一個目的地的變更）
+      const destIds = scrapeTargetDestsRef.current.length > 0 ? scrapeTargetDestsRef.current : [destinationId];
+      const results = await Promise.all(destIds.map(async (did) => {
+        const r = await fetch(`/api/scrape/changes?destination_id=${did}&status=pending`, { credentials: 'include' });
+        if (!r.ok) return [];
+        return (await r.json()) as DestScrapeChange[];
+      }));
+      const allChanges = results.flat();
       const changes = allChanges.filter(c => scrapePendingIds.includes(c.id));
       setScrapePreviewChanges(changes);
       setShowScrapePreviewModal(true);
