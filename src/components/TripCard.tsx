@@ -197,6 +197,14 @@ export default function TripCard({
               </div>
             )}
 
+            {/* 非開發者模式：右下角綠點，標示已上傳行程 PDF */}
+            {!isDevMode && document_url && document_is_available && (
+              <div
+                className="absolute bottom-1.5 right-1.5 z-10 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white/80 shadow-sm sm:h-3 sm:w-3"
+                title="已有行程表 PDF"
+              />
+            )}
+
             {/* 收藏按鈕 */}
             {!isDevMode && <FavoriteButton tripId={id} />}
 
