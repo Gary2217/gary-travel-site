@@ -1048,7 +1048,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     setDetailQuoteNote(parsedDetail.quoteNote);
     setDetailVisaNote(parsedDetail.visaNote);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDepartureId, selectedDeparture]);
+  }, [selectedDepartureId, selectedDeparture, showBannerEditor]);
 
   useEffect(() => {
     getSiteLogo().then(setSiteLogoUrl).catch(() => {});
@@ -1841,7 +1841,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               {/* Dev mode 按鈕 */}
               {isDevMode && (
                 <div className="flex justify-end gap-1.5 px-4 pt-2.5 pb-1">
-                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(new Date().toLocaleDateString('sv-SE')); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
+                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(selectedDeparture?.departure_date || new Date().toLocaleDateString('sv-SE')); setDepartureEditorGroupCode(selectedDepartureInfo.group_code || ''); setDepartureEditorPrice(selectedDeparture?.price ? String(selectedDeparture.price) : ''); setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : ''); setDepartureEditorLabel(selectedDeparture?.label || ''); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
                   <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
                 </div>
               )}
@@ -2227,7 +2227,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     {saving ? '儲存中...' : isCreatingNewDeparture ? '建立新梯次' : selectedDeparture ? '儲存目前梯次' : '建立首梯並儲存'}
                   </button>
                   {selectedDeparture && !isCreatingNewDeparture && (
-                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); const t = new Date(); setDepartureEditorDate(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`); setDepartureEditorGroupCode(''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
+                    <button type="button" disabled={saving} onClick={() => { setIsCreatingNewDeparture(true); setDepartureEditorDate(selectedDeparture?.departure_date || new Date().toLocaleDateString('sv-SE')); setDepartureEditorGroupCode(selectedDepartureInfo.group_code || ''); setDepartureEditorPrice(selectedDeparture?.price ? String(selectedDeparture.price) : ''); setDepartureEditorWaitlist(typeof selectedDepartureInfo.waitlist_count === 'number' ? String(selectedDepartureInfo.waitlist_count) : ''); setDepartureEditorLabel(selectedDeparture?.label || ''); }} className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-600 transition hover:bg-sky-100 disabled:opacity-60">+ 新增梯次</button>
                   )}
                   {isCreatingNewDeparture && (
                     <button type="button" onClick={() => setIsCreatingNewDeparture(false)} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-100">取消新增</button>
