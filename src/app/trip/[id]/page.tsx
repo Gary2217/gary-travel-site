@@ -1000,7 +1000,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
 
   useEffect(() => {
     if (!selectedDeparture) {
-      setDepartureEditorDate('');
+      setDepartureEditorDate(new Date().toLocaleDateString('sv-SE'));
       setDepartureEditorPrice('');
       setDepartureEditorGroupCode('');
       setDepartureEditorWaitlist('');
@@ -1841,7 +1841,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               {/* Dev mode 按鈕 */}
               {isDevMode && (
                 <div className="flex justify-end gap-1.5 px-4 pt-2.5 pb-1">
-                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(''); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
+                  <button type="button" onClick={() => { setShowBannerEditor(true); setIsCreatingNewDeparture(true); setDepartureEditorDate(new Date().toLocaleDateString('sv-SE')); setDepartureEditorGroupCode(''); setDepartureEditorPrice(''); setDepartureEditorWaitlist(''); setDepartureEditorLabel(''); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100">新增</button>
                   <button type="button" onClick={() => { if (showBannerEditor) setIsCreatingNewDeparture(false); setShowBannerEditor((v) => !v); setEditDestinationId(trip.destination_id); if (allRegions.length === 0) getRegionsWithDestinations().then((d: Region[]) => setAllRegions(d)).catch(() => {}); }} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition ${showBannerEditor ? "bg-sky-100 text-sky-600 hover:bg-sky-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"}`}>{showBannerEditor ? "關閉編輯" : "編輯"}</button>
                 </div>
               )}
