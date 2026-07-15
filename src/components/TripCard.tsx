@@ -109,13 +109,7 @@ export default function TripCard({
   }, [id, isDevMode, isCustomTour, router]);
 
   const handleCoverClick = () => {
-    if (!isDevMode && !isCustomTour) {
-      const from = encodeURIComponent(window.location.pathname + window.location.search);
-      router.push(`/trip/${id}?from=${from}`);
-    }
-  };
-
-  const navigateToTrip = () => {
+    if (!isDevMode && isCustomTour) return;
     const from = encodeURIComponent(window.location.pathname + window.location.search);
     router.push(`/trip/${id}?from=${from}`);
   };
@@ -150,7 +144,7 @@ export default function TripCard({
         <div className={`group relative flex flex-row md:flex-col overflow-hidden rounded-xl border ${isDevMode && isSelected ? 'border-purple-400 ring-2 ring-purple-300' : 'border-gray-200'} bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md`}>
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative min-h-[160px] w-[140px] shrink-0 self-stretch overflow-hidden sm:min-h-[200px] sm:w-48 md:w-full md:h-[200px]${!isDevMode ? ' cursor-pointer' : ''}`}
+          className={`relative min-h-[160px] w-[140px] shrink-0 self-stretch overflow-hidden sm:min-h-[200px] sm:w-48 md:w-full md:h-[200px]${isDevMode || !isCustomTour ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
           {...(!isDevMode && !isCustomTour ? { role: 'link', 'aria-label': title } : {})}
         >
@@ -400,20 +394,6 @@ export default function TripCard({
 
           {/* 按鈕區 */}
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-2">
-
-            {/* Dev mode 進入行程頁編輯（標籤、國家、出發日期、PDF 抓取等都在行程頁裡） */}
-            {isDevMode && (
-              <button
-                type="button"
-                onClick={navigateToTrip}
-                className="flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-semibold text-sky-700 shadow transition hover:bg-sky-100 active:scale-95 sm:min-h-9 sm:w-auto sm:px-5 sm:py-2 sm:text-sm"
-              >
-                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                進入行程頁編輯
-              </button>
-            )}
 
             {/* Dev mode 包團/客製切換 */}
             {isDevMode && onCustomTourToggle && (
