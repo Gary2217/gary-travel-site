@@ -58,6 +58,10 @@ function formatDestDiffValue(value: unknown): string {
 const isInquiryOnly = (trip: Trip) =>
   !!trip.trip_banner?.custom_tour;
 
+/** 取行程的子區域標籤（trim；無值回空字串）。與元件內的 normalizeSubArea 同義，供元件外/內共用 */
+const getTripSubArea = (trip: Trip): string =>
+  ((trip.trip_banner?.sub_area as string) || '').trim();
+
 const compareTrips = (a: Trip, b: Trip): number => {
   const ap = isInquiryOnly(a) ? 1 : 0;
   const bp = isInquiryOnly(b) ? 1 : 0;
@@ -238,7 +242,7 @@ export default function DestinationPage() {
   const tripMatchesFilter = useCallback((trip: Trip, filter: string) => {
     const normalizedFilter = normalizeSubArea(filter);
     if (!normalizedFilter) return true;
-    const tripSubArea = normalizeSubArea(trip.trip_banner?.sub_area as string | undefined);
+    const tripSubArea = getTripSubArea(trip);
     const childAreas = SUB_AREA_CHILDREN[normalizedFilter];
     if (childAreas?.length) return childAreas.includes(tripSubArea);
     return tripSubArea === normalizedFilter;
@@ -255,7 +259,7 @@ export default function DestinationPage() {
       : null;
     const source = subRegionTrips || trips;
     const tripAreas = Array.from(new Set(
-      (source || []).map(t => normalizeSubArea(t.trip_banner?.sub_area as string | undefined)).filter(Boolean)
+      (source || []).map(getTripSubArea).filter(Boolean)
     ));
     const mainTripAreas = Array.from(new Set(tripAreas.map(getMainSubAreaLabel)));
     let areas: string[];
@@ -269,19 +273,19 @@ export default function DestinationPage() {
     return areas.length >= 2
       ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
       : [];
-  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, getMainSubAreaLabel, normalizeSubArea]);
+  }, [subRegionTrips, trips, regionCat, CHINA_SUB_AREA_ORDER, JAPAN_SUB_AREA_ORDER, getMainSubAreaLabel]);
 
   const mergedChildTabs = useMemo(() => {
     if (!useMergedMode || !isParentSubArea(currentTabLabel)) return [];
     const source = subRegionTrips || trips;
     const childAreas = SUB_AREA_CHILDREN[currentTabLabel] || [];
     const availableChildren = childAreas.filter((child) =>
-      source.some((trip) => normalizeSubArea(trip.trip_banner?.sub_area as string | undefined) === child)
+      source.some((trip) => getTripSubArea(trip) === child)
     );
     return availableChildren.length > 0
       ? [{ label: '全部', value: currentTabLabel }, ...availableChildren.map((child) => ({ label: child, value: child }))]
       : [];
-  }, [SUB_AREA_CHILDREN, currentTabLabel, isParentSubArea, normalizeSubArea, subRegionTrips, trips, useMergedMode]);
+  }, [SUB_AREA_CHILDREN, currentTabLabel, isParentSubArea, subRegionTrips, trips, useMergedMode]);
 
   // mergedSubAreaTabs 載入完成後，從 URL 恢復 tab（解決重整後 tab 錯亂）
   // 僅限 merged mode（港澳/日本）：多-destination sub_region（中東亞非等）的 URL tab 是 sub_region 名，
@@ -434,7 +438,7 @@ export default function DestinationPage() {
           const savedTab = getTabParam();
           const hasSavedSubRegion = Boolean(savedTab && groups.some(g => g.subRegion === savedTab));
           const hasSavedSubArea = Boolean(savedTab && (tripsData as Trip[]).some(
-            t => ((t.trip_banner?.sub_area as string) || "").trim() === savedTab
+            t => getTripSubArea(t) === savedTab
           ));
           const restoredSR = hasSavedSubRegion ? savedTab : currentSR;
           // sub_area tab（如富國島）也阻止 all=1 覆蓋，確保子標籤深層連結有效
@@ -451,7 +455,7 @@ export default function DestinationPage() {
         const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
         const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
         const areas: string[] = Array.from(new Set(
-          currentTrips.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+          currentTrips.map(getTripSubArea).filter(Boolean)
         ));
         const rCat = destData.regions?.category_label || '';
         const orderList = rCat === '港澳大陸' ? CHINA_ORDER : rCat === '日本' ? JAPAN_ORDER : null;
@@ -579,7 +583,7 @@ export default function DestinationPage() {
             setSubRegionTrips(targetTrips);
             // 計算並套用該 destination 的 sub_area tabs
             const targetAreas: string[] = Array.from(new Set(
-              targetTrips.map((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+              targetTrips.map(getTripSubArea).filter(Boolean)
             ));
             const targetAreaTabs = targetAreas.length >= 2
               ? [{ label: "全部", destId: "all" }, ...targetAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
@@ -875,7 +879,7 @@ export default function DestinationPage() {
     try {
       const freshTrips = (await getDestinationTrips(destinationId)) as Trip[];
       const areas: string[] = Array.from(new Set(
-          freshTrips.map(t => ((t.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+          freshTrips.map(getTripSubArea).filter(Boolean)
       ));
       // 依區域排序 sub_area tabs
       if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
@@ -1312,7 +1316,7 @@ export default function DestinationPage() {
                             setSubRegionTrips(tripData as Trip[]);
                             // 計算新 destination 的 sub_area tabs
                             const sibAreas: string[] = Array.from(new Set(
-                              (tripData as Trip[]).map((tr: Trip) => ((tr.trip_banner?.sub_area as string) || "").trim()).filter(Boolean)
+                              (tripData as Trip[]).map(getTripSubArea).filter(Boolean)
                             ));
                             const sibAreaTabs = sibAreas.length >= 2
                               ? [{ label: "全部", destId: "all" }, ...sibAreas.map((a: string) => ({ label: a, destId: `filter:${a}` }))]
@@ -1684,7 +1688,7 @@ export default function DestinationPage() {
                           isCustomTour={trip.trip_banner?.custom_tour ?? false}
                           isPromoEnabled={trip.trip_banner?.promo_enabled ?? false}
                           promoContent={trip.trip_banner?.promo_content || ''}
-                          categoryLabel={subAreaFilter || ((trip.trip_banner?.sub_area as string) || '').trim() || undefined}
+                          categoryLabel={subAreaFilter || getTripSubArea(trip) || undefined}
                           onCustomTourToggle={handleCustomTourToggle}
                           onImageUpdate={handleTripImageUpdate}
                           onDocumentUpdate={handleTripDocumentUpdate}
