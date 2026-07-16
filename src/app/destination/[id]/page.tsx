@@ -504,11 +504,17 @@ export default function DestinationPage() {
         const allSibTripsP = hasSiblings && siblingIds.length > 0
           ? Promise.all(siblingIds.map(id => getDestinationTrips(id).catch(() => [])))
           : Promise.resolve(null);
-        const sibDestsP = hasSiblings
-          ? Promise.all(siblingIds.map(id => getDestination(id).catch(() => null)))
-          : Promise.resolve(null);
 
-        const [relatedResult, hiddenResult, allSibTripsResult, sibDestsResult] = await Promise.all([relatedP, hiddenP, allSibTripsP, sibDestsP]);
+        // 兄弟 destination 資料直接複用上方已取得的完整清單（destsData），不再對每個兄弟各打一次 API。
+        // /api/destinations 與 /api/destinations/[id] 的快取策略相同（s-maxage=300, SWR=600），新鮮度等價；
+        // 清單 select 也已涵蓋 hero 會用到的欄位（image_url / title / subtitle / source_url / regions.category_label），
+        // 因此可省下每次進頁 N 個（每個兄弟一個）重複請求。
+        const sibDestsResult: (Destination & { regions?: { category_label: string; title: string } })[] | null = hasSiblings
+          ? (destsData as (Destination & { regions?: { category_label: string; title: string } })[])
+              .filter((d) => d.region_id === destData.region_id && d.id !== destinationId)
+          : null;
+
+        const [relatedResult, hiddenResult, allSibTripsResult] = await Promise.all([relatedP, hiddenP, allSibTripsP]);
         if (!isMounted) return;
 
         // 隱藏行程
@@ -537,11 +543,12 @@ export default function DestinationPage() {
           setActiveDestFilter(null);
         }
 
-        // 兄弟 destination 資料快取（hero 切換用）
+        // 兄弟 destination 資料快取（hero 切換用）。
+        // 當前 destination 仍用單筆 API 的 destData（最完整），兄弟則用清單資料。
         if (sibDestsResult) {
           const map = new Map<string, Destination & { regions?: { category_label: string; title: string } }>();
           map.set(destinationId, destData);
-          (sibDestsResult as ((Destination & { regions?: { category_label: string; title: string } }) | null)[]).forEach(d => { if (d) map.set(d.id, d); });
+          sibDestsResult.forEach(d => { if (d) map.set(d.id, d); });
           siblingDestsDataRef.current = map;
         }
 
