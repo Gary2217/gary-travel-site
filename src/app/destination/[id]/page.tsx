@@ -159,9 +159,6 @@ export default function DestinationPage() {
   const [relatedTrips, setRelatedTrips] = useState<{ regionTrips: Trip[]; categoryTrips: Trip[] } | null>(null);
   const [popularFallback, setPopularFallback] = useState<Trip[] | null>(null);
   const [relatedLoading, setRelatedLoading] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [isPC, setIsPC] = useState(false);
   const [scrapeTriggering, setScrapeTriggering] = useState(false);
   const [scrapeRunning, setScrapeRunning] = useState(false);
   const [scrapePendingIds, setScrapePendingIds] = useState<string[]>([]);
@@ -188,8 +185,6 @@ export default function DestinationPage() {
   const siblingDestsDataRef = useRef<Map<string, Destination & { regions?: { category_label: string; title: string } }>>(new Map());
   const siblingTripsCache = useRef<Map<string, Trip[]>>(new Map());
   const destsListCache = useRef<{ id: string; title: string; region_id: string; display_order: number; sub_region?: string }[] | null>(null);
-  const recommendRef = useRef<HTMLDivElement>(null);
-  const relatedFetched = useRef(false);
   const originalRegionTabsRef = useRef<{ label: string; destId: string }[]>([]);
 
   // 所有 sub_region 是否都只有 1 個 destination（港澳大陸等：直接用 sub_area tabs 取代 sub_region tabs）
@@ -407,7 +402,6 @@ export default function DestinationPage() {
         setDestination(destData);
         setTrips(tripsData);
 
-        const isChinaRegion = destData.regions?.title === '港澳大陸';
         const isDevOn = typeof window !== 'undefined' && localStorage.getItem('dev_mode_enabled') === '1';
 
         // 建立同區域兄弟目的地清單
@@ -638,25 +632,6 @@ export default function DestinationPage() {
     setIsDevMode(localStorage.getItem('dev_mode_enabled') === '1');
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia('(pointer: fine)');
-    const updateIsPC = (event?: MediaQueryListEvent) => {
-      setIsPC(event?.matches ?? mediaQuery.matches);
-    };
-
-    updateIsPC();
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', updateIsPC);
-      return () => mediaQuery.removeEventListener('change', updateIsPC);
-    }
-
-    mediaQuery.addListener(updateIsPC);
-    return () => mediaQuery.removeListener(updateIsPC);
-  }, []);
-
   const updateTrip = (tripId: string, updater: (t: Trip) => Trip) => {
     setTrips(prev => prev.map(t => t.id === tripId ? updater(t) : t));
     setSubRegionTrips(prev => prev ? prev.map(t => t.id === tripId ? updater(t) : t) : null);
@@ -814,86 +789,11 @@ export default function DestinationPage() {
     }
   };
 
-  function handleDragStart(index: number) {
-    return (e: React.DragEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('input, textarea, [contenteditable]')) {
-        e.preventDefault();
-        return;
-      }
-      setDragIndex(index);
-      setDragOverIndex(index);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(index));
-    };
-  }
-
-  function handleDragOver(index: number) {
-    return (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setDragOverIndex(index);
-    };
-  }
-
-  const handleDragEnd = () => {
-    setDragIndex(null);
-    setDragOverIndex(null);
-  };
-
-  function handleDrop(dropIndex: number) {
-    return async (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-
-      if (dragIndex === null || dragIndex === dropIndex) {
-        handleDragEnd();
-        return;
-      }
-
-      try {
-        await handleReorder('trips', trips, dragIndex, dropIndex, setTrips);
-      } catch (error) {
-        alert(error instanceof Error ? error.message : '排序失敗');
-      } finally {
-        handleDragEnd();
-      }
-    };
-  }
-
   const clearFilters = () => {
     setDateFilter('');
     setCityFilter('');
     const isAll = currentTabLabel === "全部";
     router.replace(`/destination/${destinationId}${isAll ? '?all=1' : ''}`);
-  };
-
-  const handleShowAll = async () => {
-    setCurrentTabLabel("全部");
-    setSubAreaFilter("");
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('all', '1');
-      window.history.replaceState({}, '', url.toString());
-    }
-
-    try {
-      const freshTrips = (await getDestinationTrips(destinationId)) as Trip[];
-      const areas: string[] = Array.from(new Set(
-          freshTrips.map(getTripSubArea).filter(Boolean)
-      ));
-      // 依區域排序 sub_area tabs
-      if (regionCat === '港澳大陸') sortByOrder(areas, CHINA_SUB_AREA_ORDER);
-      else if (regionCat === '日本') sortByOrder(areas, JAPAN_SUB_AREA_ORDER);
-      const areaTabs = areas.length >= 2
-        ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-        : [];
-
-      const sorted = [...freshTrips].sort(compareTrips);
-      setTrips(sorted);
-      setRegionTabs(areaTabs);
-    } catch {
-      // 保持目前行程不變
-    }
   };
 
   const handleMergedChildTabClick = (value: string) => {
