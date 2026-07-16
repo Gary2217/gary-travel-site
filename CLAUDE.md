@@ -220,13 +220,10 @@ src/
 │   ├── ScrapeCompareModal.tsx                # 變更比對 Modal（Admin）
 │   ├── ScrapeSettings.tsx                    # 抓取設定（Admin）
 │   └── trip/                                 # 行程詳情頁子元件
-│       ├── GateModals.tsx                    # 諮詢/聯絡 Gate Modal
-│       ├── PriceInfoModal.tsx                # 售價明細 Modal
-│       ├── PromoEditorPanel.tsx              # 優惠方案編輯（Dev mode）
-│       ├── tripShared.ts                     # 行程頁共用型別/常數
-│       └── useTripPageReducer.ts             # 行程頁狀態管理 reducer
+│       └── PriceInfoModal.tsx                # 售價說明 Modal（使用者端）
 └── lib/
     ├── supabase.ts                           # 型別定義 + fetch 輔助函式 + 社群連結常數
+    ├── trip-format.ts                        # 行程頁共用純函式（售價/日期格式化）+ 售價明細型別
     └── external-link.ts                      # 外部連結安全開啟工具
 ```
 
