@@ -15,7 +15,6 @@ import DevModeToggle from "@/components/DevModeToggle";
 import SocialCta from "@/components/SocialCta";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
-const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
 const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel"), { ssr: false });
 import { track } from "@/lib/analytics";
 import { openExternalLink } from "@/lib/external-link";
