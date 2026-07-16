@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts, PDFName, PDFArray } from 'pdf-lib';
+import { R2_PUBLIC_BASE } from '@/lib/r2';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,17 +16,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '缺少 url 參數' }, { status: 400 });
   }
 
-  // SSRF 防護：只允許 fetch Supabase storage 的 URL
+  // SSRF 防護：只允許 fetch 我方媒體來源
+  // - Cloudflare R2（現行 PDF 儲存位置，2025/07 遷移後所有 document_url 皆為 R2，key 前綴 images/）
+  // - Supabase Storage（遷移前的舊 PDF；bucket 已清空，保留以防仍有殘留連結）
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) {
-    return NextResponse.json({ error: '伺服器設定錯誤' }, { status: 500 });
+  const allowList: Array<{ origin: string; pathPrefix: string }> = [
+    { origin: new URL(R2_PUBLIC_BASE).origin, pathPrefix: '/images/' },
+  ];
+  if (supabaseUrl) {
+    allowList.push({ origin: new URL(supabaseUrl).origin, pathPrefix: '/storage/' });
   }
 
   try {
     const parsedUrl = new URL(url);
-    const allowedOrigin = new URL(supabaseUrl).origin;
+    const allowed = allowList.some(
+      (entry) => parsedUrl.origin === entry.origin && parsedUrl.pathname.startsWith(entry.pathPrefix),
+    );
 
-    if (parsedUrl.origin !== allowedOrigin || !parsedUrl.pathname.startsWith('/storage/')) {
+    if (!allowed) {
       return NextResponse.json({ error: '不允許的檔案來源' }, { status: 403 });
     }
   } catch {
