@@ -27,15 +27,17 @@ function filePrefix(serviceId: ServiceId, imageType: ImageType) {
   return `${FOLDER}/${serviceId}-${imageType}-`;
 }
 
-function buildPublicUrl(key: string) {
-  return `${r2PublicUrl(key)}?v=${Date.now()}`;
+// 版本號用檔案 lastModified（穩定），檔案沒換就不變 → CDN/瀏覽器能快取，
+// 換圖時 lastModified 改變自然 cache-bust。不可用 Date.now()（每次 GET 都變會讓圖永遠無法快取）。
+function buildPublicUrl(key: string, version: string) {
+  return `${r2PublicUrl(key)}?v=${version}`;
 }
 
-function latestByPrefix(files: R2Object[], prefix: string): string | null {
+function latestByPrefix(files: R2Object[], prefix: string): R2Object | null {
   const matched = files
     .filter((f) => f.key.startsWith(prefix))
     .sort((a, b) => (b.lastModified?.getTime() ?? 0) - (a.lastModified?.getTime() ?? 0));
-  return matched[0]?.key ?? null;
+  return matched[0] ?? null;
 }
 
 export async function GET() {
@@ -50,11 +52,11 @@ export async function GET() {
     const detailImages: Record<string, string> = {};
 
     for (const serviceId of SERVICE_IDS) {
-      const listKey = latestByPrefix(files, filePrefix(serviceId, "list"));
-      if (listKey) listImages[serviceId] = buildPublicUrl(listKey);
+      const listFile = latestByPrefix(files, filePrefix(serviceId, "list"));
+      if (listFile) listImages[serviceId] = buildPublicUrl(listFile.key, String(listFile.lastModified?.getTime() ?? 0));
 
-      const detailKey = latestByPrefix(files, filePrefix(serviceId, "detail"));
-      if (detailKey) detailImages[serviceId] = buildPublicUrl(detailKey);
+      const detailFile = latestByPrefix(files, filePrefix(serviceId, "detail"));
+      if (detailFile) detailImages[serviceId] = buildPublicUrl(detailFile.key, String(detailFile.lastModified?.getTime() ?? 0));
     }
 
     return NextResponse.json(
@@ -129,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     await r2Upload(path, buffer, file.type);
 
-    return NextResponse.json({ service_id: serviceIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path) });
+    return NextResponse.json({ service_id: serviceIdRaw, image_type: imageTypeRaw, url: buildPublicUrl(path, String(Date.now())) });
   } catch {
     return NextResponse.json({ error: "伺服器內部錯誤" }, { status: 500 });
   }

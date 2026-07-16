@@ -107,7 +107,7 @@ export default function ContactFormModal({ isOpen, onClose }: ContactFormModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" onClick={handleClose}>
+    <div className="fixed inset-0 z-modal-top flex items-center justify-center px-4" onClick={handleClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl sm:p-6"
