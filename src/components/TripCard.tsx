@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -64,7 +64,7 @@ function formatShortDate(dateStr: string) {
   return `${mm}/${dd}(${weekday})`;
 }
 
-export default function TripCard({
+function TripCard({
   id,
   title,
   duration,
@@ -564,4 +564,8 @@ export default function TripCard({
     </>
   );
 }
+
+// memo：列表中大量渲染的顯示卡片。前台（非開發者）傳入的都是穩定 props（無 callback），
+// 父層更新行程時用 map 產生新物件（新參照），故 memo 能正確跳過未變動卡片的重複渲染。
+export default memo(TripCard);
 
