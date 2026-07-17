@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireDevAuth } from '@/lib/api-auth';
-import { getStoragePathFromPublicUrl } from '@/lib/storage';
+import { r2Delete, r2KeyFromUrl } from '@/lib/r2';
 import { createAnonClientNoCache, createServiceClient, hasServiceRoleConfig, hasSupabaseConfig } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -112,17 +112,17 @@ export async function DELETE(
       return NextResponse.json({ error: '找不到行程' }, { status: 404 });
     }
 
-    // 收集需清理的 Storage 路徑
+    // 收集此行程引用的 R2 object key
     const storagePaths = new Set<string>();
 
-    const coverPath = getStoragePathFromPublicUrl(trip.cover_image_url || '');
+    const coverPath = r2KeyFromUrl(trip.cover_image_url || '');
     if (coverPath) storagePaths.add(coverPath);
 
-    const documentPath = getStoragePathFromPublicUrl(trip.document_url || '');
+    const documentPath = r2KeyFromUrl(trip.document_url || '');
     if (documentPath) storagePaths.add(documentPath);
 
     const banner = trip.trip_banner as Record<string, unknown> | null;
-    const sideImagePath = getStoragePathFromPublicUrl(String(banner?.side_image_url || ''));
+    const sideImagePath = r2KeyFromUrl(String(banner?.side_image_url || ''));
     if (sideImagePath) storagePaths.add(sideImagePath);
 
     // 取得 trip_side_media 圖片路徑
@@ -133,8 +133,36 @@ export async function DELETE(
       .eq('media_type', 'image');
 
     for (const media of sideMedia || []) {
-      const mediaPath = getStoragePathFromPublicUrl((media as any).url || '');
+      const mediaPath = r2KeyFromUrl(String((media as { url?: string }).url || ''));
       if (mediaPath) storagePaths.add(mediaPath);
+    }
+
+    // 反查其他行程是否仍在引用同一個 R2 檔案。
+    // 早期「複製卡片」會讓副本與原卡共用同一份 R2 檔（已於 503ab86 改為複製一份新檔），
+    // 但在那之前產生的卡片仍存在共用情形。若不做此反查，刪除其中一張卡片
+    // 會讓另一張仍上架的行程變成破圖。
+    let sharedKeys = new Set<string>();
+    if (storagePaths.size > 0) {
+      const [{ data: otherTrips }, { data: otherMedia }] = await Promise.all([
+        supabase.from('trips').select('cover_image_url, document_url, trip_banner').neq('id', params.id),
+        supabase.from('trip_side_media').select('url').neq('trip_id', params.id),
+      ]);
+
+      const referencedElsewhere = new Set<string>();
+      for (const other of otherTrips || []) {
+        const otherBanner = other.trip_banner as Record<string, unknown> | null;
+        for (const url of [other.cover_image_url, other.document_url, otherBanner?.side_image_url]) {
+          const key = r2KeyFromUrl(String(url || ''));
+          if (key) referencedElsewhere.add(key);
+        }
+      }
+      for (const media of otherMedia || []) {
+        const key = r2KeyFromUrl(String((media as { url?: string }).url || ''));
+        if (key) referencedElsewhere.add(key);
+      }
+
+      sharedKeys = new Set([...storagePaths].filter((key) => referencedElsewhere.has(key)));
+      for (const key of sharedKeys) storagePaths.delete(key);
     }
 
     // 刪除所有關聯資料
@@ -153,14 +181,17 @@ export async function DELETE(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // 清理 Storage 檔案
+    // 清理 R2 檔案（僅限沒有其他行程引用的）。
+    // DB 已刪除成功，此處失敗不應讓整個請求失敗 —— 最壞情況只是留下孤兒檔。
     if (storagePaths.size > 0) {
-      const { error: removeError } = await supabase.storage
-        .from('images')
-        .remove([...storagePaths]);
-      if (removeError) {
-        console.error('Failed to remove trip storage files:', removeError.message);
+      try {
+        await r2Delete([...storagePaths]);
+      } catch (removeErr) {
+        console.error('Failed to remove trip R2 files:', removeErr instanceof Error ? removeErr.message : removeErr);
       }
+    }
+    if (sharedKeys.size > 0) {
+      console.warn(`Kept ${sharedKeys.size} R2 file(s) still referenced by other trips:`, [...sharedKeys]);
     }
 
     return NextResponse.json({ success: true });
