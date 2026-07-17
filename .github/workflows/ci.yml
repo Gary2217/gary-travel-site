@@ -32,6 +32,10 @@ jobs:
       - name: Type check
         run: npm run type-check
 
+      # 放在 Build 之前：測試約 1 秒、build 約 1 分鐘，讓失敗盡早出現
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
         env:
