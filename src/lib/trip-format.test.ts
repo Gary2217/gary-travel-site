@@ -104,27 +104,32 @@ describe('parsePriceDetail — 邊界行為', () => {
   });
 });
 
-describe('Bug B — 售價欄位無法清空', () => {
+describe('Bug B — 售價欄位無法清空（已修復）', () => {
   /**
-   * parsePriceDetail 目前使用 `parsed.X || DEFAULT.X`。
+   * 原因：parsePriceDetail 曾使用 `parsed.X || DEFAULT.X`，
    * `||` 把空字串視為假值，導致「存 '' → 讀回預設值」，round-trip 不是 identity。
+   * 後果：開發者清空某個售價欄位並儲存後，重開編輯器該欄位又變回預設文字。
    *
-   * 後果：開發者清空某個售價欄位並儲存後，重開編輯器該欄位又變回預設文字，
-   * 也就是欄位「清不掉」。
-   *
-   * it.fails = 此測試描述「應該要成立、但目前不成立」的行為。
-   * Stage 3 修好後移除 .fails，它就會轉為一般的綠燈測試。
+   * 修法：6 個售價欄位改用 `??`，只有 undefined 才套預設值。
    */
-  it.fails('round-trip 應為 identity：存什麼就該讀回什麼', () => {
+  it('round-trip 為 identity：存什麼就讀回什麼', () => {
     const cleared: PriceDetailContent = { ...DEFAULT_PRICE_DETAIL, infantPrice: '', adultPrice: '' };
     expect(parsePriceDetail(stringifyPriceDetail(cleared))).toEqual(cleared);
   });
 
-  it('現況記錄：清空的售價欄位會被預設值蓋回去', () => {
-    const cleared: PriceDetailContent = { ...DEFAULT_PRICE_DETAIL, infantPrice: '', adultPrice: '' };
+  it('清空的售價欄位會原樣保留，不再被預設值蓋回去', () => {
+    const cleared: PriceDetailContent = { ...DEFAULT_PRICE_DETAIL, infantPrice: '', adultPrice: '', singleRoom: '' };
     const readBack = parsePriceDetail(stringifyPriceDetail(cleared));
-    expect(readBack.infantPrice).toBe(DEFAULT_PRICE_DETAIL.infantPrice);
-    expect(readBack.adultPrice).toBe(DEFAULT_PRICE_DETAIL.adultPrice);
+    expect(readBack.infantPrice).toBe('');
+    expect(readBack.adultPrice).toBe('');
+    expect(readBack.singleRoom).toBe('');
+  });
+
+  it('欄位不存在（undefined）時仍套用預設值 —— ?? 只攔 undefined', () => {
+    const parsed = parsePriceDetail(JSON.stringify({ title: '只有標題' }));
+    expect(parsed.adultPrice).toBe(DEFAULT_PRICE_DETAIL.adultPrice);
+    expect(parsed.infantPrice).toBe(DEFAULT_PRICE_DETAIL.infantPrice);
+    expect(parsed.singleRoom).toBe(DEFAULT_PRICE_DETAIL.singleRoom);
   });
 
   it('關鍵前提：顯示層對空字串自有 fallback，所以 parse 回傳空字串時客人仍看到「洽詢」', () => {

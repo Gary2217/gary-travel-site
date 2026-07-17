@@ -221,14 +221,19 @@ export const parsePriceDetail = (detail: string): PriceDetailContent => {
       return {
         title: parsed.title || DEFAULT_PRICE_DETAIL.title,
         subtitle: parsed.subtitle || DEFAULT_PRICE_DETAIL.subtitle,
-        adultPrice: parsed.adultPrice || DEFAULT_PRICE_DETAIL.adultPrice,
-        childWithBedPrice: parsed.childWithBedPrice || DEFAULT_PRICE_DETAIL.childWithBedPrice,
-        childNoBedPrice: parsed.childNoBedPrice || DEFAULT_PRICE_DETAIL.childNoBedPrice,
-        childExtraBedPrice: parsed.childExtraBedPrice || DEFAULT_PRICE_DETAIL.childExtraBedPrice,
-        infantPrice: parsed.infantPrice || DEFAULT_PRICE_DETAIL.infantPrice,
+        // 以下 6 個售價欄位用 ??（而非 ||）：空字串代表使用者「刻意清空」，
+        // 必須原樣保留，否則欄位永遠清不掉。顯示層（formatPerPersonPrice /
+        // formatSingleRoomText）對空字串自有 fallback「洽詢」，與這裡的
+        // DEFAULT_PRICE_DETAIL 輸出相同，故客人看到的畫面不變。
+        // 其餘欄位維持 || —— 它們沒有顯示層 fallback，改了會讓畫面開天窗。
+        adultPrice: parsed.adultPrice ?? DEFAULT_PRICE_DETAIL.adultPrice,
+        childWithBedPrice: parsed.childWithBedPrice ?? DEFAULT_PRICE_DETAIL.childWithBedPrice,
+        childNoBedPrice: parsed.childNoBedPrice ?? DEFAULT_PRICE_DETAIL.childNoBedPrice,
+        childExtraBedPrice: parsed.childExtraBedPrice ?? DEFAULT_PRICE_DETAIL.childExtraBedPrice,
+        infantPrice: parsed.infantPrice ?? DEFAULT_PRICE_DETAIL.infantPrice,
         pricingNote: parsed.pricingNote || DEFAULT_PRICE_DETAIL.pricingNote,
         deposit: parsed.deposit || DEFAULT_PRICE_DETAIL.deposit,
-        singleRoom: parsed.singleRoom || DEFAULT_PRICE_DETAIL.singleRoom,
+        singleRoom: parsed.singleRoom ?? DEFAULT_PRICE_DETAIL.singleRoom,
         visaFee: parsed.visaFee || DEFAULT_PRICE_DETAIL.visaFee,
         surcharge: parsed.surcharge || DEFAULT_PRICE_DETAIL.surcharge,
         groupNote: parsed.groupNote || parsed.included || DEFAULT_PRICE_DETAIL.groupNote,
