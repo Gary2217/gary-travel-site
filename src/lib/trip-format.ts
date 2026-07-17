@@ -2,7 +2,7 @@
 // 這些原本定義在 trip/[id]/page.tsx 的元件函式內（每次 render 重建），
 // 且行程頁抽出的子元件（PriceInfoModal 等）也需要共用，故集中於此。
 // 全部為純函式：輸入即輸出、不閉包任何 state。
-import type { DepartureDate, TripBanner } from "@/lib/supabase";
+import type { DepartureBannerInfo, DepartureDate, TripBanner } from "@/lib/supabase";
 
 export type PriceDetailContent = {
   title: string;
@@ -234,3 +234,52 @@ export const parsePriceDetail = (detail: string): PriceDetailContent => {
 };
 
 export const stringifyPriceDetail = (detail: PriceDetailContent) => JSON.stringify(detail);
+
+/** 售價編輯器的草稿：對應行程頁的 departureEditor* 與 detail* 這批 state */
+export type DepartureInfoDraft = {
+  groupCode: string;
+  /** 候補人數，來自 input 故為字串；空字串代表未填 */
+  waitlist: string;
+  detail: PriceDetailContent;
+};
+
+/**
+ * 由編輯器草稿組出要寫入 trip_banner.departure_info_map[depId] 的內容。
+ *
+ * 這是「什麼售價資料會被寫進 DB」的唯一決策點，寫錯會靜默污染正式資料，
+ * 故抽為純函式以便測試。行為與抽出前完全一致，包含下列既有 quirk：
+ *
+ * - 所有欄位一律 trim()
+ * - waitlist 空字串 → 0（不是 null）
+ * - deposit 走 `草稿 || banner 的 deposit_label || 預設值` 的三層 fallback，
+ *   意即**訂金欄位清空後會被 banner 值或預設值蓋回**，無法真正清成空字串。
+ *   這與 parsePriceDetail 讀取端曾有的問題同類，但兩者互相獨立；
+ *   此處維持原行為，僅以測試將其釘住（見 trip-format.test.ts）。
+ */
+export function buildDepartureInfoPayload(
+  draft: DepartureInfoDraft,
+  depositLabelFallback: string | number | null | undefined,
+): DepartureBannerInfo {
+  const d = draft.detail;
+  return {
+    group_code: draft.groupCode.trim(),
+    waitlist_count: draft.waitlist ? Number(draft.waitlist) : 0,
+    price_detail: stringifyPriceDetail({
+      title: d.title.trim(),
+      subtitle: d.subtitle.trim(),
+      adultPrice: d.adultPrice.trim(),
+      childWithBedPrice: d.childWithBedPrice.trim(),
+      childNoBedPrice: d.childNoBedPrice.trim(),
+      childExtraBedPrice: d.childExtraBedPrice.trim(),
+      infantPrice: d.infantPrice.trim(),
+      pricingNote: d.pricingNote.trim(),
+      deposit: (d.deposit.trim() || String(depositLabelFallback || '').trim() || DEFAULT_PRICE_DETAIL.deposit),
+      singleRoom: d.singleRoom.trim(),
+      visaFee: d.visaFee.trim(),
+      surcharge: d.surcharge.trim(),
+      groupNote: d.groupNote.trim(),
+      quoteNote: d.quoteNote.trim(),
+      visaNote: d.visaNote.trim(),
+    }),
+  };
+}

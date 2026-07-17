@@ -32,7 +32,7 @@ import {
   formatFullDate,
   getScheduleLabel,
   parsePriceDetail,
-  stringifyPriceDetail,
+  buildDepartureInfoPayload as buildDepartureInfoPayloadPure,
 } from "@/lib/trip-format";
 
 type ScrapeChange = {
@@ -899,27 +899,32 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     return () => obs.disconnect();
   }, [pdfVisible, trip]);
 
-  const buildDepartureInfoPayload = (): DepartureBannerInfo => ({
-    group_code: departureEditorGroupCode.trim(),
-    waitlist_count: departureEditorWaitlist ? Number(departureEditorWaitlist) : 0,
-    price_detail: stringifyPriceDetail({
-      title: detailTitle.trim(),
-      subtitle: detailSubtitle.trim(),
-      adultPrice: detailAdultPrice.trim(),
-      childWithBedPrice: detailChildWithBedPrice.trim(),
-      childNoBedPrice: detailChildNoBedPrice.trim(),
-      childExtraBedPrice: detailChildExtraBedPrice.trim(),
-      infantPrice: detailInfantPrice.trim(),
-      pricingNote: detailPricingNote.trim(),
-      deposit: (detailDeposit.trim() || String(editTripBanner.deposit_label || '').trim() || DEFAULT_PRICE_DETAIL.deposit),
-      singleRoom: detailSingleRoom.trim(),
-      visaFee: detailVisaFee.trim(),
-      surcharge: detailSurcharge.trim(),
-      groupNote: detailGroupNote.trim(),
-      quoteNote: detailQuoteNote.trim(),
-      visaNote: detailVisaNote.trim(),
-    }),
-  });
+  /** 把散在各處的編輯器 state 收攏成草稿，交由 lib 的純函式組出 DB payload */
+  const buildDepartureInfoPayload = (): DepartureBannerInfo =>
+    buildDepartureInfoPayloadPure(
+      {
+        groupCode: departureEditorGroupCode,
+        waitlist: departureEditorWaitlist,
+        detail: {
+          title: detailTitle,
+          subtitle: detailSubtitle,
+          adultPrice: detailAdultPrice,
+          childWithBedPrice: detailChildWithBedPrice,
+          childNoBedPrice: detailChildNoBedPrice,
+          childExtraBedPrice: detailChildExtraBedPrice,
+          infantPrice: detailInfantPrice,
+          pricingNote: detailPricingNote,
+          deposit: detailDeposit,
+          singleRoom: detailSingleRoom,
+          visaFee: detailVisaFee,
+          surcharge: detailSurcharge,
+          groupNote: detailGroupNote,
+          quoteNote: detailQuoteNote,
+          visaNote: detailVisaNote,
+        },
+      },
+      editTripBanner.deposit_label,
+    );
 
   const saveSelectedDepartureInfo = async (): Promise<boolean> => {
     if (!selectedDepartureId || !selectedDeparture) {

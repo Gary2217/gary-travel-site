@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   parsePriceDetail,
   stringifyPriceDetail,
+  buildDepartureInfoPayload,
   DEFAULT_PRICE_DETAIL,
   displayAdultUnit,
   displayChildPrice,
   displayInfantUnit,
   formatSingleRoomText,
   type PriceDetailContent,
+  type DepartureInfoDraft,
 } from './trip-format';
 import realPriceDetails from './__fixtures__/price-detail-real.json';
 
@@ -148,5 +150,77 @@ describe('Bug B — 售價欄位無法清空（已修復）', () => {
     // 改成 ?? 會讓空字串直接穿透到畫面，且破壞 legacy 回填。
     const parsed = parsePriceDetail(JSON.stringify({ groupNote: '', included: '含早餐' }));
     expect(parsed.groupNote).toBe('含早餐');
+  });
+});
+
+describe('buildDepartureInfoPayload — 寫入 DB 的售價 payload', () => {
+  const draft = (over: Partial<PriceDetailContent> = {}, rest: Partial<DepartureInfoDraft> = {}): DepartureInfoDraft => ({
+    groupCode: 'ABC123',
+    waitlist: '',
+    detail: { ...DEFAULT_PRICE_DETAIL, ...over },
+    ...rest,
+  });
+
+  it('所有欄位都會被 trim', () => {
+    const p = buildDepartureInfoPayload(
+      draft({ adultPrice: '  49900  ', groupNote: '\t備註\n' }, { groupCode: '  ABC123  ' }),
+      null,
+    );
+    expect(p.group_code).toBe('ABC123');
+    const d = JSON.parse(p.price_detail);
+    expect(d.adultPrice).toBe('49900');
+    expect(d.groupNote).toBe('備註');
+  });
+
+  it('waitlist 空字串 → 0（不是 null，也不是 NaN）', () => {
+    expect(buildDepartureInfoPayload(draft({}, { waitlist: '' }), null).waitlist_count).toBe(0);
+    expect(buildDepartureInfoPayload(draft({}, { waitlist: '5' }), null).waitlist_count).toBe(5);
+  });
+
+  it('round-trip：寫進去的 payload 讀回來要一致', () => {
+    const detail: PriceDetailContent = { ...DEFAULT_PRICE_DETAIL, adultPrice: '49900', infantPrice: '10000' };
+    const p = buildDepartureInfoPayload(draft(detail), null);
+    const readBack = parsePriceDetail(p.price_detail);
+    expect(readBack.adultPrice).toBe('49900');
+    expect(readBack.infantPrice).toBe('10000');
+  });
+
+  describe('deposit 的三層 fallback（既有行為，非期望行為）', () => {
+    /**
+     * deposit 走 `草稿 || banner的deposit_label || 預設值`。
+     * 用 || 意即空字串會穿透到下一層 —— 訂金欄位「清不掉」。
+     * 這與 parsePriceDetail 讀取端曾有的問題同類，但兩者獨立。
+     * 此處僅釘住現況；要修需另案處理（會改變既有行程的訂金顯示）。
+     */
+    it('草稿有值 → 用草稿', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '5000' }), '9999');
+      expect(JSON.parse(p.price_detail).deposit).toBe('5000');
+    });
+
+    it('草稿為空 → 落到 banner 的 deposit_label（← 清不掉的原因）', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '' }), '9999');
+      expect(JSON.parse(p.price_detail).deposit).toBe('9999');
+    });
+
+    it('草稿與 banner 皆空 → 落到預設值', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '' }), null);
+      expect(JSON.parse(p.price_detail).deposit).toBe(DEFAULT_PRICE_DETAIL.deposit);
+    });
+
+    it('depositLabel 為數字型別也能處理（DB 可能存 number）', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '' }), 8000);
+      expect(JSON.parse(p.price_detail).deposit).toBe('8000');
+    });
+
+    it('depositLabel 為 0 時視為未設定（|| 的既有行為）', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '' }), 0);
+      expect(JSON.parse(p.price_detail).deposit).toBe(DEFAULT_PRICE_DETAIL.deposit);
+    });
+  });
+
+  it('產出的 price_detail 是合法 JSON 且含全部 15 個欄位', () => {
+    const p = buildDepartureInfoPayload(draft(), null);
+    const d = JSON.parse(p.price_detail);
+    expect(Object.keys(d).sort()).toEqual(Object.keys(DEFAULT_PRICE_DETAIL).sort());
   });
 });
