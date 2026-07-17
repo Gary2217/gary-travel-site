@@ -16,8 +16,8 @@ const r2 = new S3Client({
   region: 'auto',
   endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: '497e72faeee79a92131728721db2eaba',
-    secretAccessKey: 'f61c4806fc4af2e861eda1ec6948bc5cfca5b59f3c615aba1d5b006edb41573e',
+    accessKeyId: getEnv('R2_ACCESS_KEY_ID'),
+    secretAccessKey: getEnv('R2_SECRET_ACCESS_KEY'),
   },
 });
 

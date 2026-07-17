@@ -26,6 +26,10 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
 
+      # 放在最前面：這個 repo 是 public，金鑰一旦推上來就等於公開發佈
+      - name: Check for hardcoded secrets
+        run: node scripts/check-secrets.mjs
+
       - name: Lint
         run: npm run lint
 

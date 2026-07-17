@@ -452,6 +452,36 @@ export async function GET(
 - 優先選擇最安全、最穩定方案
 - 禁止隱藏 fallback 或不可靠 hack
 
+### 🔴 金鑰處理鐵則
+
+> **這個 repo 是 public。任何寫進程式碼的東西 = 公開發佈給全世界。**
+
+| 規則 | 說明 |
+|------|------|
+| 金鑰只能放 `.env.local` | 該檔已被 `.gitignore` 排除且從未被提交過，是唯一安全的位置 |
+| 正式環境金鑰放 Vercel | Settings → Environment Variables，程式用 `process.env.X` 讀取 |
+| **絕不寫進任何 `.ts` / `.mjs` / `.md`** | 包含「暫時的」「一次性的」腳本 —— 事故就是這樣發生的 |
+| 權限給最小 | R2 token 用 Object Read & Write（不是 Admin），且只綁 `gary-travel-media` |
+| 不要把金鑰貼進聊天視窗 | 包含**截圖**。對話紀錄無法事後刪除 |
+
+#### 事故紀錄：2026-07-10 ~ 07-17，R2 金鑰外洩 7 天
+
+`scripts/migrate-to-r2.mjs`（commit `61c34fe`）把 R2 的 Access Key ID 與
+Secret Access Key **明文硬編碼**在程式碼裡，推上 public repo，**公開 7 天**才被發現。
+該金鑰可對 `gary-travel-media` 的所有物件讀寫刪除 —— 亦即可刪光全站圖片與 PDF。
+
+- **發現經過**：想稽核 R2 孤兒檔時，發現 `.env.local` 根本沒有 R2 憑證，
+  追查文件為何說「應該有」時翻到那個檔。**是意外撞見的，不是任何機制擋下來的。**
+- **處置**：Cloudflare 撤銷舊 token → 建立新 token（權限收斂）→ 更新 Vercel →
+  實測上傳確認 → 撤銷舊 token → **實際用外洩金鑰打 R2 確認回傳 Unauthorized**
+- **止血**：`scripts/migrate-to-r2.mjs` 已刪除
+- **未造成損害**：帳單 $0.00、2,040 個物件完好，無異常存取跡象
+- **僥倖之處**：該 token 權限本就收斂（非 Admin、僅綁單一 bucket），
+  否則攻擊者可刪除整個 bucket 或觸及其他 Cloudflare 服務
+
+**教訓**：刪掉檔案沒有用 —— commit 永遠留在歷史裡，且早已被公開索引。
+**唯一有效的補救是讓金鑰失效。** 所以一開始就不要寫進去。
+
 ---
 
 ## 10. 開發流程（執行任務前必須先判斷）
@@ -711,9 +741,14 @@ const DESTINATIONS = {
 
 #### 注意事項
 
-- **SUPABASE_SERVICE_ROLE_KEY**：從 `.env.local` 讀取，**禁止硬編碼在 script 中**
+- 🔴 **所有金鑰一律從 `.env.local` 讀取，禁止硬編碼在 script 中** —— 適用於
+  `SUPABASE_SERVICE_ROLE_KEY`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、
+  `DEV_AUTH_SECRET`、`GH_PAT`，以及任何未來新增的憑證。**沒有例外**。
+  詳見 §9 的實際事故紀錄。
 - **圖片處理**：先下載到本地 → 上傳 **Cloudflare R2**（`gary-travel-media` bucket，key 格式：`images/trips/<filename>`）→ 公開 URL 格式：`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/trips/<filename>`
-- **R2 上傳需 AWS SDK**：`import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'`，R2 endpoint：`https://a85c4f2e46761d22faa6ad37731d6d92.r2.cloudflarestorage.com`（Access Key 從 `.env.local` 的 `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY` 讀取，或參考 `scripts/migrate-to-r2.mjs`）
+- **R2 上傳需 AWS SDK**：`import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'`，R2 endpoint：`https://a85c4f2e46761d22faa6ad37731d6d92.r2.cloudflarestorage.com`
+  （Access Key 從 `.env.local` 的 `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY` 讀取。
+  可參考 `src/lib/r2.ts` 的寫法 —— 它示範了正確的 `process.env` 讀取方式。）
 - **價格以朋威詳情頁為準**：列表頁價格可能過時，一律以點進去的詳情頁為正確值
 - **售價明細 5 欄全填**：大人、小孩佔床、小孩不佔床、加床、嬰兒 — 來源寫什麼就填什麼，不可自行填「洽詢」
 - **出發日期全部重建**：更新時先 `DELETE` 舊日期，再 `INSERT` 新日期
