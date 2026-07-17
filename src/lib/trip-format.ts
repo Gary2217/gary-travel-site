@@ -129,6 +129,29 @@ export const renderDaysNights = (dayText: string, nightText: string) => {
 
 export const getDepartureBannerInfoMap = (source?: TripBanner | null) => source?.departure_info_map || {};
 
+/** 本地時區的今天，YYYY-MM-DD（與 DB 的 departure_date 同格式） */
+export const todayLocalISO = () => new Date().toLocaleDateString('sv-SE');
+
+/**
+ * 濾掉已出發的梯次 —— 僅供顯示層使用，不會動到 DB。
+ *
+ * 背景：出團日期過期後仍會留在 trip_departure_dates（那是歷史紀錄，不應刪除），
+ * 但客人不該看到已經出發的團 —— 否則會對著上個月的日期詢價。
+ *
+ * @param showAll 開發者模式傳 true，保留全部梯次以便檢視與編輯
+ * @param today   由呼叫端傳入而非讀系統時鐘，否則此函式無法測試
+ *
+ * 當天出發視為「未過期」（用 >=）：早上還沒出發的團仍可詢問。
+ * departure_date 為空的梯次一律保留 —— 資料不完整不代表過期，
+ * 濾掉會讓它從畫面上無聲消失。
+ */
+export const filterUpcomingDepartures = (
+  dates: DepartureDate[],
+  showAll: boolean,
+  today: string,
+): DepartureDate[] =>
+  showAll ? dates : dates.filter((d) => !d.departure_date || d.departure_date >= today);
+
 export const formatDisplayPrice = (price: number | null) => (price ? `NT$ ${price.toLocaleString('zh-TW')}` : '尚未設定');
 
 export const formatPriceText = (text: string) => {

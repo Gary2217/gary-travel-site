@@ -33,6 +33,8 @@ import {
   getScheduleLabel,
   parsePriceDetail,
   buildDepartureInfoPayload as buildDepartureInfoPayloadPure,
+  filterUpcomingDepartures,
+  todayLocalISO,
 } from "@/lib/trip-format";
 
 type ScrapeChange = {
@@ -229,6 +231,17 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   const [pdfSelectedFields, setPdfSelectedFields] = useState<Set<string>>(new Set());
 
   const banner = trip?.trip_banner ?? EMPTY_TRIP_BANNER;
+
+  /**
+   * 客人可見的梯次：濾掉已出發的。開發者模式保留全部以便檢視與編輯。
+   * DB 資料完全不動 —— 過期梯次是歷史紀錄，之後查帳或參考都還需要。
+   *
+   * 原則：客人只會看到未來梯次的資料，一致到底（含航班區塊）。
+   * 例外只有兩處，皆為開發者專用而非客人可見：
+   *   - selectedDeparture 的查找仍用完整清單（dev 可能選到過期梯次）
+   *   - PDF 抓取預覽的「將更新 N 個出發日期」（dev 操作對象是全部梯次）
+   */
+  const visibleDepartureDates = filterUpcomingDepartures(departureDates, isDevMode, todayLocalISO());
   const selectedDeparture = departureDates.find((date) => date.id === selectedDepartureId) ?? null;
   const selectedDepartureInfo = selectedDepartureId
     ? banner.departure_info_map?.[selectedDepartureId] ?? EMPTY_DEPARTURE_INFO
@@ -748,27 +761,30 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   }, [trip]);
 
   useEffect(() => {
-    if (departureDates.length === 0) {
+    // 在 effect 內重算而非用 visibleDepartureDates：後者每次 render 都是新陣列，
+    // 放進 deps 會導致此 effect 每次 render 都重跑。
+    const pool = filterUpcomingDepartures(departureDates, isDevMode, todayLocalISO());
+    if (pool.length === 0) {
       setSelectedDepartureId(null);
       return;
     }
 
     setSelectedDepartureId((current) => {
-      if (requestedDepartureId && departureDates.some((date) => date.id === requestedDepartureId)) {
+      if (requestedDepartureId && pool.some((date) => date.id === requestedDepartureId)) {
         return requestedDepartureId;
       }
 
-      if (current && departureDates.some((date) => date.id === current)) {
+      if (current && pool.some((date) => date.id === current)) {
         return current;
       }
 
       // 優先選有航班資料的梯次
-      const withFlight = departureDates.find(d =>
+      const withFlight = pool.find(d =>
         (d.flight_segments && d.flight_segments.length > 0) || d.outbound_flight || d.airline
       );
-      return (withFlight || departureDates[0]).id;
+      return (withFlight || pool[0]).id;
     });
-  }, [departureDates, requestedDepartureId]);
+  }, [departureDates, requestedDepartureId, isDevMode]);
 
   useEffect(() => {
     if (!selectedDeparture) {
@@ -1245,10 +1261,10 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   const { dayText: previewDayText, nightText: previewNightText } = toBannerDaysNights(editDayCount, editNightCount);
   const priceDetailPreview = parsePriceDetail(selectedDepartureInfo.price_detail || '');
 
-  // 出發日期表格：月份分組 & 篩選
+  // 出發日期表格：月份分組 & 篩選（用 visibleDepartureDates，否則會出現點了沒東西的空月份分頁）
   const departureMonthKeys = (() => {
     const map = new Map<string, boolean>();
-    departureDates.forEach(d => {
+    visibleDepartureDates.forEach(d => {
       if (!d.departure_date) return;
       const dt = new Date(d.departure_date + 'T00:00:00');
       map.set(`${dt.getFullYear()}-${dt.getMonth() + 1}`, true);
@@ -1256,8 +1272,8 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     return Array.from(map.keys()).sort();
   })();
   const filteredDepartures = tableActiveMonth === 'all'
-    ? departureDates
-    : departureDates.filter(d => {
+    ? visibleDepartureDates
+    : visibleDepartureDates.filter(d => {
         const dt = new Date(d.departure_date + 'T00:00:00');
         return `${dt.getFullYear()}-${dt.getMonth() + 1}` === tableActiveMonth;
       });
@@ -1270,7 +1286,10 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     d.return_flight || d.return_time ||
     d.return_from || d.return_to ||
     d.airline;
-  const flightFallback = departureDates.find(hasFlight) || null;
+  // 用 visibleDepartureDates：航班區塊會把來源梯次的出團日期印出來（見下方「出團日期：」），
+  // 若 fallback 到過期梯次，畫面會自相矛盾 —— 上方寫「尚未設定出團日期」，
+  // 下方卻顯示已經出發過的日期。寧可整個航班區塊不顯示。
+  const flightFallback = visibleDepartureDates.find(hasFlight) || null;
   const flightSource = (selectedDeparture && hasFlight(selectedDeparture)) ? selectedDeparture : flightFallback;
   const selectedFlightSegments = flightSource?.flight_segments;
   const hasFlightData = !!flightSource;
@@ -1455,7 +1474,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                   })()}
                 </div>
                 <div className="mt-3 flex gap-2">
-                  {departureDates.length > 1 && (
+                  {visibleDepartureDates.length > 1 && (
                     <button
                       type="button"
                       onClick={() => setShowMobileDatePicker(true)}
@@ -1686,7 +1705,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               )}
 
               {/* 手機版：選擇其他日期 + LINE 詢問 按鈕 */}
-              {departureDates.length > 1 && (
+              {visibleDepartureDates.length > 1 && (
                 <div className="flex gap-2 px-4 py-2.5 sm:hidden">
                   <button
                     type="button"
@@ -2132,7 +2151,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
         <DepartureDates
           tripId={tripId}
           tripTitle={trip.title}
-          dates={departureDates}
+          dates={visibleDepartureDates}
           isDevMode={isDevMode}
           onDatesChange={setDepartureDates}
           selectedDateId={selectedDepartureId}
@@ -2563,7 +2582,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       {/* 手機版出發日期選擇 Modal（仿易飛網全螢幕樣式） */}
       <MobileDatePickerModal
         open={showMobileDatePicker}
-        departureDates={departureDates}
+        departureDates={visibleDepartureDates}
         selectedDepartureId={selectedDepartureId}
         onSelect={(id, label) => {
           setSelectedDepartureId(id);

@@ -3,6 +3,7 @@ import {
   parsePriceDetail,
   stringifyPriceDetail,
   buildDepartureInfoPayload,
+  filterUpcomingDepartures,
   DEFAULT_PRICE_DETAIL,
   displayAdultUnit,
   displayChildPrice,
@@ -222,5 +223,50 @@ describe('buildDepartureInfoPayload — 寫入 DB 的售價 payload', () => {
     const p = buildDepartureInfoPayload(draft(), null);
     const d = JSON.parse(p.price_detail);
     expect(Object.keys(d).sort()).toEqual(Object.keys(DEFAULT_PRICE_DETAIL).sort());
+  });
+});
+
+describe('filterUpcomingDepartures — 濾掉已出發的梯次', () => {
+  const d = (departure_date: string, id = departure_date) => ({ id, departure_date }) as never;
+  const TODAY = '2026-07-17';
+
+  it('濾掉過去的日期', () => {
+    const dates = [d('2026-06-17'), d('2026-07-16'), d('2026-08-01')];
+    expect(filterUpcomingDepartures(dates, false, TODAY).map((x) => x.departure_date))
+      .toEqual(['2026-08-01']);
+  });
+
+  it('當天出發視為未過期（用 >= 而非 >）', () => {
+    // 早上還沒飛的團仍應可詢問
+    expect(filterUpcomingDepartures([d(TODAY)], false, TODAY)).toHaveLength(1);
+  });
+
+  it('開發者模式（showAll）保留全部，含過期', () => {
+    const dates = [d('2026-06-17'), d('2026-08-01')];
+    expect(filterUpcomingDepartures(dates, true, TODAY)).toHaveLength(2);
+  });
+
+  it('departure_date 為空的梯次一律保留 —— 資料不完整不等於過期', () => {
+    // 濾掉的話它會從畫面上無聲消失，開發者永遠不知道有這筆
+    const dates = [{ id: 'x', departure_date: '' }, { id: 'y', departure_date: null }] as never[];
+    expect(filterUpcomingDepartures(dates, false, TODAY)).toHaveLength(2);
+  });
+
+  it('全部過期時回傳空陣列（呼叫端須自行處理空狀態）', () => {
+    expect(filterUpcomingDepartures([d('2026-06-01'), d('2026-07-16')], false, TODAY)).toEqual([]);
+  });
+
+  it('不改動原陣列，也不改變順序', () => {
+    const dates = [d('2026-08-03'), d('2026-08-01'), d('2026-06-01')];
+    const out = filterUpcomingDepartures(dates, false, TODAY);
+    expect(out.map((x) => x.departure_date)).toEqual(['2026-08-03', '2026-08-01']);
+    expect(dates).toHaveLength(3); // 原陣列未被 mutate
+  });
+
+  it('字串比較對跨年/跨月正確（YYYY-MM-DD 可直接字典序比較）', () => {
+    expect(filterUpcomingDepartures([d('2026-12-31'), d('2027-01-01')], false, TODAY)).toHaveLength(2);
+    expect(filterUpcomingDepartures([d('2025-12-31')], false, TODAY)).toHaveLength(0);
+    // 2026-07-9 這種沒補零的格式無法正確比較，但 DB 為 date 型別必為補零格式
+    expect(filterUpcomingDepartures([d('2026-07-09')], false, TODAY)).toHaveLength(0);
   });
 });
