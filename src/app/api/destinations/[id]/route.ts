@@ -167,6 +167,47 @@ export async function DELETE(
       }
     }
 
+    // 反查此目的地以外的資料是否仍在引用同一個 R2 檔案。
+    // 早期「複製卡片」會讓副本與原卡共用同一份 R2 檔（已於 503ab86 改為複製新檔），
+    // 且共用可能跨目的地 —— 例如杜拜的 banner 同時被「中東」與「高雄出發」的卡片使用。
+    // 若不做此反查，刪除一個目的地會讓其他目的地仍上架的行程變成破圖。
+    // 必須在任何刪除動作之前算完，否則被刪的資料就查不到了。
+    const sharedKeys = new Set<string>();
+    if (storagePaths.size > 0) {
+      const tripIdSet = new Set(tripIds);
+      const [{ data: otherTrips }, { data: allMedia }, { data: otherDestinations }] = await Promise.all([
+        supabase.from('trips').select('cover_image_url, document_url, trip_banner').neq('destination_id', params.id),
+        supabase.from('trip_side_media').select('trip_id, url'),
+        supabase.from('destinations').select('image_url').neq('id', params.id),
+      ]);
+
+      const referencedElsewhere = new Set<string>();
+      for (const other of otherTrips || []) {
+        const otherBanner = other.trip_banner as Record<string, unknown> | null;
+        for (const url of [other.cover_image_url, other.document_url, otherBanner?.side_image_url]) {
+          const key = r2KeyFromUrl(String(url || ''));
+          if (key) referencedElsewhere.add(key);
+        }
+      }
+      for (const media of allMedia || []) {
+        // 只算「不屬於此目的地」的側邊媒體 —— 屬於此目的地的正要被刪除
+        if (tripIdSet.has(media.trip_id)) continue;
+        const key = r2KeyFromUrl(String(media.url || ''));
+        if (key) referencedElsewhere.add(key);
+      }
+      for (const other of otherDestinations || []) {
+        const key = r2KeyFromUrl(String(other.image_url || ''));
+        if (key) referencedElsewhere.add(key);
+      }
+
+      for (const key of [...storagePaths]) {
+        if (referencedElsewhere.has(key)) {
+          sharedKeys.add(key);
+          storagePaths.delete(key);
+        }
+      }
+    }
+
     if (tripIds.length > 0) {
       await Promise.all([
         supabase.from('trip_departure_dates').delete().in('trip_id', tripIds),
@@ -192,12 +233,16 @@ export async function DELETE(
       return API_ERRORS.dbError(deleteDestinationError);
     }
 
+    // 清理 R2 檔案（僅限沒有其他目的地／行程引用的）。
     if (storagePaths.size > 0) {
       try {
         await r2Delete([...storagePaths]);
       } catch (removeErr) {
         console.error('Failed to remove destination-related R2 files:', removeErr instanceof Error ? removeErr.message : removeErr);
       }
+    }
+    if (sharedKeys.size > 0) {
+      console.warn(`Kept ${sharedKeys.size} R2 file(s) still referenced elsewhere:`, [...sharedKeys]);
     }
 
     return NextResponse.json({ success: true, deleted_trip_count: tripIds.length });
