@@ -22,24 +22,6 @@ export type PriceDetailContent = {
   visaNote: string;
 };
 
-export const EMPTY_PRICE_DETAIL: PriceDetailContent = {
-  title: "",
-  subtitle: "",
-  adultPrice: "",
-  childWithBedPrice: "",
-  childNoBedPrice: "",
-  childExtraBedPrice: "",
-  infantPrice: "",
-  pricingNote: "",
-  deposit: "",
-  singleRoom: "",
-  visaFee: "",
-  surcharge: "",
-  groupNote: "",
-  quoteNote: "",
-  visaNote: "",
-};
-
 export const DEFAULT_PRICE_DETAIL: PriceDetailContent = {
   title: '團費與售價說明',
   subtitle: '依航空與房型不同，價格略有調整',
