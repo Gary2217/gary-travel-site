@@ -246,6 +246,30 @@ npm test          # 執行全部測試（CI 會在 type-check 之後、build 之
 npx vitest        # watch 模式（本機開發用）
 ```
 
+> ### ⚠️ 動到 package.json 時必讀：lockfile 一律用 npm 10 產生
+>
+> CI 的 `.nvmrc` 是 Node 20，內建 **npm 10**。若你的本機是 npm 11（Node 22+ 內建），
+> 直接跑 `npm install` 會產生 **npm 10 讀不懂的 lockfile**，CI 會在
+> `Install dependencies` 這一步就掛掉，連測試都跑不到：
+>
+> ```
+> npm error `npm ci` can only install packages when your package.json and
+> npm error package-lock.json are in sync.
+> npm error Missing: @emnapi/core@1.11.1 from lock file
+> ```
+>
+> 原因：npm 11 會把巢狀相依去重，npm 10 卻要求那些條目必須存在。
+> lockfile 必須由**會消費它的最舊 npm** 產生（npm 10 產的 npm 11 讀得懂，反之不行）。
+>
+> **正確做法**（先確認 `npm -v`，是 11 才需要這樣做）：
+> ```bash
+> npx -y npm@10 install              # 用 npm 10 產生 lockfile
+> npx -y npm@10 ci --dry-run         # 用 CI 的版本驗證，exit 0 才算過
+> ```
+>
+> **不要用 `npm install` 成功當作 CI 會過的證據** —— 兩者用的是不同的 npm，
+> 而 `npm install` 容忍不一致、`npm ci` 不容忍。
+
 > **這是「不要引入不必要依賴」的唯一例外**，經使用者明確同意後導入。
 > 不要因為看到該規則就移除 vitest。
 
