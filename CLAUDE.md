@@ -220,12 +220,52 @@ src/
 │   ├── ScrapeCompareModal.tsx                # 變更比對 Modal（Admin）
 │   ├── ScrapeSettings.tsx                    # 抓取設定（Admin）
 │   └── trip/                                 # 行程詳情頁子元件
-│       └── PriceInfoModal.tsx                # 售價說明 Modal（使用者端）
+│       ├── PriceInfoModal.tsx                # 售價說明 Modal（使用者端）
+│       ├── DownloadGateModal.tsx             # 下載行程檔前的社群追蹤門檻
+│       ├── ShareGateModal.tsx                # 分享前的社群追蹤門檻
+│       ├── SourceUrlModal.tsx                # 設定朋威來源網址（Dev）
+│       └── MobileDatePickerModal.tsx         # 手機版全螢幕出發日期選擇
 └── lib/
     ├── supabase.ts                           # 型別定義 + fetch 輔助函式 + 社群連結常數
     ├── trip-format.ts                        # 行程頁共用純函式（售價/日期格式化）+ 售價明細型別
+    ├── trip-format.test.ts                   # ↑ 的測試（含 86 筆真實資料快照）
+    ├── __fixtures__/price-detail-real.json   # 正式 DB 的真實 price_detail（測試用）
+    ├── __snapshots__/                        # vitest 快照 — 內容變動代表顯示輸出被改變
+    ├── r2.ts                                 # Cloudflare R2 上傳/刪除/列表 + URL↔key 轉換
+    ├── r2.test.ts                            # ↑ 的測試（r2KeyFromUrl 決定刪哪個檔，必須鎖死）
+    ├── storage.ts                            # Supabase Storage path 解析（僅 cleanup-orphan-images 使用）
     └── external-link.ts                      # 外部連結安全開啟工具
 ```
+
+---
+
+## 3.5 測試（vitest）
+
+```bash
+npm test          # 執行全部測試（CI 會在 type-check 之後、build 之前跑）
+npx vitest        # watch 模式（本機開發用）
+```
+
+> **這是「不要引入不必要依賴」的唯一例外**，經使用者明確同意後導入。
+> 不要因為看到該規則就移除 vitest。
+
+### 為什麼有測試
+
+`src/lib/trip-format.ts` 的售價解析曾有 bug：用 `||` 導致空字串被預設值蓋掉，
+售價欄位永遠清不掉。修這個 bug 的前提是能證明「客人看到的畫面沒變」——
+這就是 `__fixtures__/price-detail-real.json`（正式 DB 的 86 筆真實 price_detail）
+與 `__snapshots__/` 的用途。
+
+### 規則
+
+| 規則 | 說明 |
+|------|------|
+| 只測純函式 | 目前僅測 `src/lib/*.ts` 的純函式。不裝 jsdom / testing-library，不測元件渲染 |
+| 測試必須 import 本體 | **絕不可另抄一份邏輯來測**。副本必然與本體漂移，等同 `a280bb7` 的覆轍（複製 762 行卻從未接上），毫無價值 |
+| 測試必須封閉 | 不讀 `.env`、不連 DB、不打網路。CI 沒有這些 |
+| 改 `trip-format.ts` 前先跑 `npm test` | 若 `__snapshots__/` 有變動，代表**客人看到的顯示輸出被你改變了**。除非那正是你的意圖，否則回退 |
+| 改動高風險邏輯的順序 | **先寫測試固化現況 → 再改 → 快照不動才算過**。順序顛倒的話，測試固化的是壞掉的結果 |
+| 重產 fixture | `node scripts/dump-price-detail-fixture.mjs`（會連正式 DB，需 `.env.local`） |
 
 ---
 
@@ -441,7 +481,7 @@ export async function GET(
 - **不要**加上你覺得「順便改比較好」的東西，只做被要求的事
 - **不要**跳過 API 直接在前端處理資料
 - **不要**hardcode 關鍵資料
-- **不要**引入不必要依賴
+- **不要**引入不必要依賴（唯一例外：vitest，見 §3.5。不要移除它）
 - **不要**修改與任務無關的檔案
 
 ---
