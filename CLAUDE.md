@@ -235,7 +235,16 @@ src/
     ├── r2.test.ts                            # ↑ 的測試（r2KeyFromUrl 決定刪哪個檔，必須鎖死）
     ├── storage.ts                            # Supabase Storage path 解析（僅 cleanup-orphan-images 使用）
     └── external-link.ts                      # 外部連結安全開啟工具
+
+scripts/                                      # 一次性工具，不會被 app 引用
+├── auto-scrape.mjs                           # 核心爬蟲（GitHub Actions 執行）— 見 §16
+├── check-secrets.mjs                         # 硬編碼金鑰掃描（CI 第一步）— 見 §9
+├── dump-price-detail-fixture.mjs             # 重產測試 fixture（連正式 DB）
+└── （其餘為歷史性的一次性修補／匯入腳本，多數已無用途）
 ```
+
+> **`scripts/` 的金鑰規則跟 `src/` 完全一樣** —— 一律 `getEnv()` 從 `.env.local` 讀。
+> 「這只是一次性腳本」不是硬編碼的理由：2026-07 的 R2 金鑰外洩就是這樣發生的（§9）。
 
 ---
 
@@ -273,6 +282,13 @@ npx vitest        # watch 模式（本機開發用）
 > **這是「不要引入不必要依賴」的唯一例外**，經使用者明確同意後導入。
 > 不要因為看到該規則就移除 vitest。
 
+### 現有測試（34 個，2 檔）
+
+| 檔案 | 測什麼 |
+|------|--------|
+| `src/lib/trip-format.test.ts` | 售價解析／顯示、寫入 DB 的 payload、過期梯次過濾。含 **86 筆正式資料的顯示快照** |
+| `src/lib/r2.test.ts` | `r2KeyFromUrl` —— 它決定「刪除時要刪哪個 R2 檔」，解析錯就是刪錯且不可復原 |
+
 ### 為什麼有測試
 
 `src/lib/trip-format.ts` 的售價解析曾有 bug：用 `||` 導致空字串被預設值蓋掉，
@@ -287,9 +303,21 @@ npx vitest        # watch 模式（本機開發用）
 | 只測純函式 | 目前僅測 `src/lib/*.ts` 的純函式。不裝 jsdom / testing-library，不測元件渲染 |
 | 測試必須 import 本體 | **絕不可另抄一份邏輯來測**。副本必然與本體漂移，等同 `a280bb7` 的覆轍（複製 762 行卻從未接上），毫無價值 |
 | 測試必須封閉 | 不讀 `.env`、不連 DB、不打網路。CI 沒有這些 |
+| 需要「現在幾點」的函式，時間要用參數傳入 | 否則相依系統時鐘而無法測試（`filterUpcomingDepartures` 的 `today` 參數即為此） |
 | 改 `trip-format.ts` 前先跑 `npm test` | 若 `__snapshots__/` 有變動，代表**客人看到的顯示輸出被你改變了**。除非那正是你的意圖，否則回退 |
 | 改動高風險邏輯的順序 | **先寫測試固化現況 → 再改 → 快照不動才算過**。順序顛倒的話，測試固化的是壞掉的結果 |
 | 重產 fixture | `node scripts/dump-price-detail-fixture.mjs`（會連正式 DB，需 `.env.local`） |
+
+### ⚠️ 綠燈不等於有效 —— 測試本身也要被測
+
+寫完檢查工具後，**必須拿一個「應該被抓到」的真實案例去試，確認它真的會紅**。
+
+實例：`scripts/check-secrets.mjs` 初版跑「現況掃描」是綠的，看起來能用。
+但拿 git 歷史還原真正的外洩檔去測 —— **它完全沒抓到**。原因是變數名的字元類
+寫成 `[A-Za-z_]*` 不含數字，而外洩的變數正好叫 `R2_ACCESS_KEY_ID`，
+那個「2」讓整條比對失敗。修好後它立刻抓到另一個先前用 grep 漏掉的檔案。
+
+**「現況通過」只證明現在沒東西可抓，不證明它有能力抓。**
 
 ---
 
@@ -307,6 +335,49 @@ npx vitest        # watch 模式（本機開發用）
 | 圖片必須存 Cloudflare R2 | 從朋威或任何外部來源抓取的圖片，**必須下載後上傳 Cloudflare R2**（bucket：`gary-travel-media`），`cover_image_url` 只能存 R2 公開 URL（`https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/...`），**禁止直接引用外部 CDN 連結**（如 `dcimg.travel.net.tw`）。所有上傳／爬取路由（含 `scrape/apply`）皆透過 `src/lib/r2.ts` 上傳至 R2，物件 key 一律含 `images/` 前綴。 |
 | next.config.mjs 白名單 | `remotePatterns` 與 CSP `img-src` 已含 `*.r2.dev`，新增其他圖片來源時需同步更新這兩處 |
 | 前端只負責顯示 | 不持有核心資料邏輯 |
+| 過期梯次只在顯示層過濾 | 見 §4.1 |
+| 刪 R2 檔前必須反查引用 | 見 §4.2 |
+
+### 4.1 過期出團梯次：只過濾顯示，不刪資料
+
+客人不該看到已經出發的團（否則會對著上個月的日期詢價），但**過期梯次是歷史紀錄，
+不可從 DB 刪除** —— 查帳與參考都還需要，刪了拿不回來。
+
+- 統一用 `filterUpcomingDepartures(dates, isDevMode, todayLocalISO())`（`src/lib/trip-format.ts`）
+- **開發者模式傳 `isDevMode` 保留全部**，否則你會看不到、也改不了過期梯次
+- 當天出發視為未過期（用 `>=`）；`departure_date` 為空的一律保留
+- 新增任何顯示梯次的地方（清單、月份分頁、日期選擇器、航班區塊）都要用過濾後的清單，
+  **只漏一處就會讓過期日期從那裡漏出來**
+
+> 2026-07-17 修復前實測：178 個上架行程中有 74 筆已出發的梯次仍顯示給客人，
+> 影響 27 個行程，最舊的是一個月前。不只是「完全沒有未來梯次」的行程 ——
+> 有 26 筆可報名梯次的卡片同時混著 8 筆過期的。
+
+### 4.2 🔴 R2 檔案刪除：兩個必須反查的前提
+
+**寫任何刪除 R2 檔案的程式前，這兩點沒搞懂就會刪掉正在用的檔案。**
+
+**(1) 有三個資料夾是「R2 即資料來源」，DB 完全不會引用它們**
+
+| 前綴 | 誰在用 |
+|---|---|
+| `images/site/` | `api/site-logo` — 用 `r2List()` 直接列 R2 |
+| `images/document-services*` | `api/document-service-images` — 同上 |
+| `images/mini-transit-tickets` | `api/mini-transit-ticket-images` — 同上 |
+
+這些功能**檔案本身就是資料**。任何「DB 沒引用就刪」的邏輯都會把它們全部刪光。
+
+**(2) 檔案可能被多個行程／目的地共用**
+
+早期「複製卡片」會讓副本與原卡共用同一份 R2 檔（已於 `503ab86` 改為複製新檔，
+但在那之前產生的卡片仍共用）。刪除前必須反查其他行程／目的地／side_media
+是否仍在引用，**只刪無人引用的 key**。
+
+`api/trips/[id]` 與 `api/destinations/[id]` 的 DELETE 都已實作此反查，可作為範本。
+兩者也示範了「反查必須在任何刪除動作之前算完」—— 資料刪掉了就查不到了。
+
+> `api/admin/cleanup-orphan-images` 目前掃的是已清空的 Supabase Storage bucket，
+> 對 R2 完全瞎眼，是個無害但也無用的空殼。要讓它真的能用，必須先處理上面兩點。
 
 ---
 
@@ -435,12 +506,27 @@ export async function GET(
 
 ## 8. 環境變數
 
+> 正式環境設在 **Vercel → Settings → Environment Variables**；本機設在 `.env.local`
+> （已被 `.gitignore` 排除且從未被提交過）。**任何一個都不可寫進程式碼** — 見 §9。
+
+### 公開（`NEXT_PUBLIC_*`，會被打包進前端，非機密）
+
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase 專案 URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key（受 RLS 保護）
 - `NEXT_PUBLIC_LINE_ID` — LINE 官方帳號 ID
 - `NEXT_PUBLIC_FB_URL` — Facebook 粉專連結
 - `NEXT_PUBLIC_IG_URL` — Instagram 連結
 - `NEXT_PUBLIC_DEV_PASSWORD` — 開發者模式密碼
+
+### 機密（只在 server 端讀取，外洩即須撤銷重發）
+
+- `SUPABASE_SERVICE_ROLE_KEY` — 繞過 RLS 的完全存取權
+- `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` — Cloudflare R2 憑證
+  （由 `src/lib/r2.ts` 以 `process.env` 讀取；scripts 用 `getEnv()` 從 `.env.local` 讀）
+- `DEV_AUTH_SECRET` — 開發者模式 cookie 的 HMAC 簽章金鑰
+- `LINE_LOGIN_CHANNEL_ID` / `LINE_LOGIN_CHANNEL_SECRET` — LINE 登入
+- `DEV_LINE_USER_ID` — 允許進入開發者模式的 LINE user id
+- `GH_PAT` — GitHub token（觸發 Actions 抓取用）
 
 ---
 
@@ -952,10 +1038,29 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 
 ## 21. 已知待處理事項
 
+> 最後更新：2026-07-17
+
+### 需要程式處理
+
 | 項目 | 說明 | 優先度 |
 |------|------|--------|
 | R2 bucket CORS（PDF 直傳） | `upload-trip-document` 用 R2 presigned PUT 讓瀏覽器直傳，需在 Cloudflare 為 `gary-travel-media` 設定 CORS（允許 production/localhost 的 PUT），否則 PDF 上傳被瀏覽器擋 | 高 |
-| Supabase Storage 空間監控 | 已清空 `images` bucket，但帳單週期警告仍存在，下個週期應自動恢復 | 低 |
+| 訂金欄位清不掉 | `buildDepartureInfoPayload` 的 deposit 走 `草稿 \|\| banner.deposit_label \|\| 預設值`，空字串會穿透。**客人看不到此欄位**（售價彈窗不渲染 deposit，客人看到的訂金來自 `trip_banner.deposit_label`），故僅為開發者困擾。行為已由測試釘住 | 低 |
+| `cleanup-orphan-images` 是空殼 | 掃已清空的 Supabase bucket，對 R2 瞎眼。要讓它能用必須先處理 §4.2 的兩個前提，否則會刪光 logo／文件服務／迷你轉機票的圖 | 低 |
+| R2 孤兒檔 1,424 個（約 1 GB） | 佔 bucket 的 70%。**但帳單 $0.00**（免費額度 10 GB，現用 1.65 GB），且刪除行程／目的地的清理已於 2026-07-17 修好，不會再累積。逼近 10 GB 再處理 | 低 |
+| 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
+| `destination/[id]/page.tsx` 1,861 行 | 結構比 trip 頁單純（33 個 useState、僅 1 個彈窗）。可比照 trip 頁手法拆分 | 低 |
+| Node 20 deprecation | GitHub 警告 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 執行環境將淘汰。**注意 `.nvmrc` 同時影響 Vercel 建置**，升版前需確認 | 低 |
+
+### 需要使用者決定／操作
+
+| 項目 | 說明 |
+|------|------|
+| 12 個上架行程無未來出團日 | 7 個是梯次全過期、5 個從未設過（含 2 張高球卡）。修復後客人會看到「尚未設定出團日期」。要補梯次還是下架？ |
+| 6 個目的地無封面圖 | 中亞三國、中亞五國、長江三峽遊輪、星光列車、張家界、九寨溝 |
+| 13 筆待確認的抓取變更 | Admin 頁「待確認變更」列表 |
+| 「童趣阿聯酋」封面是 LINE 廣告圖 | 2026-07-17 測試上傳時覆蓋，原圖已被自動清除。用卡片上的「抓取此行程」可從朋威還原 |
+| Google Ads ↔ GA4 CSP 錯誤 | Analytics 介面顯示已解除連結，但 CSP 錯誤仍在，未再確認 |
 
 ---
 
