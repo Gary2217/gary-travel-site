@@ -165,7 +165,6 @@ describe('buildDepartureInfoPayload — 寫入 DB 的售價 payload', () => {
   it('所有欄位都會被 trim', () => {
     const p = buildDepartureInfoPayload(
       draft({ adultPrice: '  49900  ', groupNote: '\t備註\n' }, { groupCode: '  ABC123  ' }),
-      null,
     );
     expect(p.group_code).toBe('ABC123');
     const d = JSON.parse(p.price_detail);
@@ -174,53 +173,47 @@ describe('buildDepartureInfoPayload — 寫入 DB 的售價 payload', () => {
   });
 
   it('waitlist 空字串 → 0（不是 null，也不是 NaN）', () => {
-    expect(buildDepartureInfoPayload(draft({}, { waitlist: '' }), null).waitlist_count).toBe(0);
-    expect(buildDepartureInfoPayload(draft({}, { waitlist: '5' }), null).waitlist_count).toBe(5);
+    expect(buildDepartureInfoPayload(draft({}, { waitlist: '' })).waitlist_count).toBe(0);
+    expect(buildDepartureInfoPayload(draft({}, { waitlist: '5' })).waitlist_count).toBe(5);
   });
 
   it('round-trip：寫進去的 payload 讀回來要一致', () => {
     const detail: PriceDetailContent = { ...DEFAULT_PRICE_DETAIL, adultPrice: '49900', infantPrice: '10000' };
-    const p = buildDepartureInfoPayload(draft(detail), null);
+    const p = buildDepartureInfoPayload(draft(detail));
     const readBack = parsePriceDetail(p.price_detail);
     expect(readBack.adultPrice).toBe('49900');
     expect(readBack.infantPrice).toBe('10000');
   });
 
-  describe('deposit 的三層 fallback（既有行為，非期望行為）', () => {
+  describe('deposit 與其他售價欄位一致：可清空（原三層 fallback 已移除）', () => {
     /**
-     * deposit 走 `草稿 || banner的deposit_label || 預設值`。
-     * 用 || 意即空字串會穿透到下一層 —— 訂金欄位「清不掉」。
-     * 這與 parsePriceDetail 讀取端曾有的問題同類，但兩者獨立。
-     * 此處僅釘住現況；要修需另案處理（會改變既有行程的訂金顯示）。
+     * 舊行為：deposit 走 `草稿 || banner.deposit_label || 預設值`，空字串被蓋回，
+     * 訂金欄位「清不掉」。已移除 fallback，改為與其他 14 個欄位一致的純 trim。
+     * 此欄客人看不到（PriceInfoModal 不渲染 deposit），故修正無客人可見影響。
      */
-    it('草稿有值 → 用草稿', () => {
-      const p = buildDepartureInfoPayload(draft({ deposit: '5000' }), '9999');
+    it('草稿有值 → 原樣保留', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '5000' }));
       expect(JSON.parse(p.price_detail).deposit).toBe('5000');
     });
 
-    it('草稿為空 → 落到 banner 的 deposit_label（← 清不掉的原因）', () => {
-      const p = buildDepartureInfoPayload(draft({ deposit: '' }), '9999');
-      expect(JSON.parse(p.price_detail).deposit).toBe('9999');
+    it('草稿清空 → 保留空字串（不再被蓋回）', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '' }));
+      expect(JSON.parse(p.price_detail).deposit).toBe('');
     });
 
-    it('草稿與 banner 皆空 → 落到預設值', () => {
-      const p = buildDepartureInfoPayload(draft({ deposit: '' }), null);
-      expect(JSON.parse(p.price_detail).deposit).toBe(DEFAULT_PRICE_DETAIL.deposit);
+    it('round-trip：清空後寫入再讀回仍是空字串（訂金真的清得掉了）', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '' }));
+      expect(parsePriceDetail(p.price_detail).deposit).toBe('');
     });
 
-    it('depositLabel 為數字型別也能處理（DB 可能存 number）', () => {
-      const p = buildDepartureInfoPayload(draft({ deposit: '' }), 8000);
-      expect(JSON.parse(p.price_detail).deposit).toBe('8000');
-    });
-
-    it('depositLabel 為 0 時視為未設定（|| 的既有行為）', () => {
-      const p = buildDepartureInfoPayload(draft({ deposit: '' }), 0);
-      expect(JSON.parse(p.price_detail).deposit).toBe(DEFAULT_PRICE_DETAIL.deposit);
+    it('deposit 一律 trim', () => {
+      const p = buildDepartureInfoPayload(draft({ deposit: '  5000  ' }));
+      expect(JSON.parse(p.price_detail).deposit).toBe('5000');
     });
   });
 
   it('產出的 price_detail 是合法 JSON 且含全部 15 個欄位', () => {
-    const p = buildDepartureInfoPayload(draft(), null);
+    const p = buildDepartureInfoPayload(draft());
     const d = JSON.parse(p.price_detail);
     expect(Object.keys(d).sort()).toEqual(Object.keys(DEFAULT_PRICE_DETAIL).sort());
   });

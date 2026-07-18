@@ -653,10 +653,6 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     return () => { if (scrapeTimerRef.current) clearTimeout(scrapeTimerRef.current); };
   }, []);
 
-  // 用 ref 讀取 deposit_label，避免其加入 useEffect 依賴而觸發欄位重置
-  const depositLabelRef = useRef(editTripBanner.deposit_label);
-  depositLabelRef.current = editTripBanner.deposit_label;
-
   const showSaveSuccess = (message = '儲存成功') => {
     setSaveSuccessMessage(message);
     window.setTimeout(() => {
@@ -828,7 +824,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     setDetailChildExtraBedPrice(parsedDetail.childExtraBedPrice);
     setDetailInfantPrice(parsedDetail.infantPrice);
     setDetailPricingNote(parsedDetail.pricingNote);
-    setDetailDeposit(parsedDetail.deposit || String(depositLabelRef.current || '').trim() || DEFAULT_PRICE_DETAIL.deposit);
+    setDetailDeposit(parsedDetail.deposit);
     setDetailSingleRoom(parsedDetail.singleRoom);
     setDetailVisaFee(parsedDetail.visaFee || '免簽證');
     setDetailSurcharge(parsedDetail.surcharge || '售價已內含');
@@ -939,7 +935,6 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
           visaNote: detailVisaNote,
         },
       },
-      editTripBanner.deposit_label,
     );
 
   const saveSelectedDepartureInfo = async (): Promise<boolean> => {

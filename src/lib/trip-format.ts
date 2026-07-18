@@ -237,7 +237,10 @@ export const parsePriceDetail = (detail: string): PriceDetailContent => {
         childExtraBedPrice: parsed.childExtraBedPrice ?? DEFAULT_PRICE_DETAIL.childExtraBedPrice,
         infantPrice: parsed.infantPrice ?? DEFAULT_PRICE_DETAIL.infantPrice,
         pricingNote: parsed.pricingNote || DEFAULT_PRICE_DETAIL.pricingNote,
-        deposit: parsed.deposit || DEFAULT_PRICE_DETAIL.deposit,
+        // deposit 與 6 個售價欄位同列：用 ?? 保留使用者刻意清空的空字串，
+        // 讓「訂金清不掉」得以修正。此欄客人看不到（PriceInfoModal 不渲染 deposit，
+        // 客人的訂金來自 trip_banner.deposit_label），故改動無客人可見影響。
+        deposit: parsed.deposit ?? DEFAULT_PRICE_DETAIL.deposit,
         singleRoom: parsed.singleRoom ?? DEFAULT_PRICE_DETAIL.singleRoom,
         visaFee: parsed.visaFee || DEFAULT_PRICE_DETAIL.visaFee,
         surcharge: parsed.surcharge || DEFAULT_PRICE_DETAIL.surcharge,
@@ -270,19 +273,16 @@ export type DepartureInfoDraft = {
  * 由編輯器草稿組出要寫入 trip_banner.departure_info_map[depId] 的內容。
  *
  * 這是「什麼售價資料會被寫進 DB」的唯一決策點，寫錯會靜默污染正式資料，
- * 故抽為純函式以便測試。行為與抽出前完全一致，包含下列既有 quirk：
+ * 故抽為純函式以便測試。
  *
- * - 所有欄位一律 trim()
+ * - 所有欄位一律 trim()，且原樣保留（含空字串）—— 15 個欄位一致。
  * - waitlist 空字串 → 0（不是 null）
- * - deposit 走 `草稿 || banner 的 deposit_label || 預設值` 的三層 fallback，
- *   意即**訂金欄位清空後會被 banner 值或預設值蓋回**，無法真正清成空字串。
- *   這與 parsePriceDetail 讀取端曾有的問題同類，但兩者互相獨立；
- *   此處維持原行為，僅以測試將其釘住（見 trip-format.test.ts）。
+ * - deposit 曾有 `草稿 || banner.deposit_label || 預設值` 的三層 fallback，
+ *   導致訂金欄位清空後被蓋回、無法清成空字串。已於此移除，改為與其他售價
+ *   欄位一致的純 trim。此欄客人看不到（PriceInfoModal 不渲染 deposit），
+ *   且正式資料中無任何有意義的 deposit 值，故移除 fallback 無客人可見影響。
  */
-export function buildDepartureInfoPayload(
-  draft: DepartureInfoDraft,
-  depositLabelFallback: string | number | null | undefined,
-): DepartureBannerInfo {
+export function buildDepartureInfoPayload(draft: DepartureInfoDraft): DepartureBannerInfo {
   const d = draft.detail;
   return {
     group_code: draft.groupCode.trim(),
@@ -296,7 +296,7 @@ export function buildDepartureInfoPayload(
       childExtraBedPrice: d.childExtraBedPrice.trim(),
       infantPrice: d.infantPrice.trim(),
       pricingNote: d.pricingNote.trim(),
-      deposit: (d.deposit.trim() || String(depositLabelFallback || '').trim() || DEFAULT_PRICE_DETAIL.deposit),
+      deposit: d.deposit.trim(),
       singleRoom: d.singleRoom.trim(),
       visaFee: d.visaFee.trim(),
       surcharge: d.surcharge.trim(),
