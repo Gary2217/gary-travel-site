@@ -1060,7 +1060,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 | ~~6 個目的地無封面圖~~ ✅ 2026-07-18 已補 | 6 個空封面用旗下行程封面補齊；另 21 個原本用外部 Unsplash 連結（違反 §4）的目的地一併轉存至 R2。全 66 個上架目的地現皆為 R2 封面、HTTP 實測 0 破圖 |
 | ~~13 筆待確認的抓取變更~~ ✅ 已清空 | 2026-07-18 實查 `pending_changes` 的 pending = 0 |
 | 「童趣阿聯酋」封面是 LINE 廣告圖 | 2026-07-17 測試上傳時覆蓋，原圖已被自動清除。用卡片上的「抓取此行程」可從朋威還原 |
-| Google Ads ↔ GA4 CSP 錯誤 | Analytics 介面顯示已解除連結，但 CSP 錯誤仍在，未再確認 |
+| ~~Google Ads ↔ GA4 CSP 錯誤~~ ✅ 2026-07-18 已修 | 實際是 GA4 Consent Mode 的回報端點 `https://www.google.com/ccm/collect`（非 Google Ads 廣告網域）被 CSP 擋下，連帶一張追蹤像素圖也被擋。已將 `https://www.google.com` 加入 `next.config.mjs` 的 `connect-src` 與 `img-src`。瀏覽器實測 console 由 3 條錯誤變 0 |
 
 ### 21.1 R2 孤兒檔清理 — 已評估的修法設計（2026-07-18，尚未實作）
 
