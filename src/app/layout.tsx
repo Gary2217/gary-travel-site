@@ -82,9 +82,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
           id="ga-config"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            // 未投放 Google 廣告：關閉廣告訊號/個人化，停止向 doubleclick 等發送再行銷請求
+            // 未投放 Google 廣告：關閉廣告訊號/個人化與 Conversion Linker，
+            // 停止向 doubleclick 等發送再行銷／轉換比對請求
             // （消除被 CSP 擋下的無用請求；不影響 GA4 流量統計）
-            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MWGKSWE0Q8',{allow_google_signals:false,allow_ad_personalization_signals:false});`,
+            //
+            // 2026-07-18 追記：allow_google_signals/allow_ad_personalization_signals
+            // 只關閉「訊號」與「個人化」，不會停止 Conversion Linker —— 它是獨立機制，
+            // 預設開啟，會定期 ping ad.doubleclick.net/ccm/s/ 比對廣告點擊、寫入
+            // _gcl_* cookie，與 allow_google_signals 設什麼無關。此前只關了前兩者，
+            // doubleclick 請求其實從未真正停止，只是恰好沒被截圖抓到。
+            // 須額外加 conversion_linker:false 才會真正停止。
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MWGKSWE0Q8',{allow_google_signals:false,allow_ad_personalization_signals:false,conversion_linker:false});`,
           }}
         />
         <Script

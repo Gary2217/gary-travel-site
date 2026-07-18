@@ -1060,7 +1060,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 | ~~6 個目的地無封面圖~~ ✅ 2026-07-18 已補 | 6 個空封面用旗下行程封面補齊；另 21 個原本用外部 Unsplash 連結（違反 §4）的目的地一併轉存至 R2。全 66 個上架目的地現皆為 R2 封面、HTTP 實測 0 破圖 |
 | ~~13 筆待確認的抓取變更~~ ✅ 已清空 | 2026-07-18 實查 `pending_changes` 的 pending = 0 |
 | 「童趣阿聯酋」封面是 LINE 廣告圖 | 2026-07-17 測試上傳時覆蓋，原圖已被自動清除。用卡片上的「抓取此行程」可從朋威還原 |
-| ~~Google Ads ↔ GA4 CSP 錯誤~~ ✅ 2026-07-18 已修 | 實際是 GA4 Consent Mode 的回報端點 `https://www.google.com/ccm/collect`（非 Google Ads 廣告網域）被 CSP 擋下，連帶一張追蹤像素圖也被擋。已將 `https://www.google.com` 加入 `next.config.mjs` 的 `connect-src` 與 `img-src`。瀏覽器實測 console 由 3 條錯誤變 0 |
+| ~~Google Ads ↔ GA4 CSP 錯誤~~ ✅ 2026-07-18 分兩階段修好 | **第一階段**：GA4 Consent Mode 回報端點 `www.google.com/ccm/collect` 被 CSP 擋，已加入 `next.config.mjs` 的 `connect-src`/`img-src`。**第二階段**：使用者截圖顯示仍有 `ad.doubleclick.net/ccm/s/...` 被擋 —— 根因是 `layout.tsx` 只關了 `allow_google_signals`/`allow_ad_personalization_signals`，這兩者不控制 Conversion Linker（獨立機制，預設開啟，會 ping doubleclick 同步 `_gcl_*` cookie）。已加 `conversion_linker:false`（官方文件證實的正確關閉方式）。⚠️ **意外發現**：GA4 collect 請求中帶有真實的 `AW-11027271481`（Google Ads 帳戶 ID），代表 GA4 後台**確實連結了 Google Ads 帳戶**，並非單純殘留設定 —— 與程式註解「未投放 Google 廣告」的假設矛盾，此為帳戶層級設定，需使用者自行到 GA4 後台的「Google Ads 連結」確認是否要保留 |
 
 ### 21.1 R2 孤兒檔清理 — 已評估的修法設計（2026-07-18，尚未實作）
 
