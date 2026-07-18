@@ -378,6 +378,7 @@ npx vitest        # watch 模式（本機開發用）
 
 > `api/admin/cleanup-orphan-images` 目前掃的是已清空的 Supabase Storage bucket，
 > 對 R2 完全瞎眼，是個無害但也無用的空殼。要讓它真的能用，必須先處理上面兩點。
+> **修法已於 2026-07-18 評估設計完成，見 §21.1** —— 實作時照那份設計做，不要重新發明。
 
 ---
 
@@ -1046,8 +1047,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 |------|------|--------|
 | R2 bucket CORS（PDF 直傳） | `upload-trip-document` 用 R2 presigned PUT 讓瀏覽器直傳，需在 Cloudflare 為 `gary-travel-media` 設定 CORS（允許 production/localhost 的 PUT），否則 PDF 上傳被瀏覽器擋 | 高 |
 | 訂金欄位清不掉 | `buildDepartureInfoPayload` 的 deposit 走 `草稿 \|\| banner.deposit_label \|\| 預設值`，空字串會穿透。**客人看不到此欄位**（售價彈窗不渲染 deposit，客人看到的訂金來自 `trip_banner.deposit_label`），故僅為開發者困擾。行為已由測試釘住 | 低 |
-| `cleanup-orphan-images` 是空殼 | 掃已清空的 Supabase bucket，對 R2 瞎眼。要讓它能用必須先處理 §4.2 的兩個前提，否則會刪光 logo／文件服務／迷你轉機票的圖 | 低 |
-| R2 孤兒檔 1,424 個（約 1 GB） | 佔 bucket 的 70%。**但帳單 $0.00**（免費額度 10 GB，現用 1.65 GB），且刪除行程／目的地的清理已於 2026-07-17 修好，不會再累積。逼近 10 GB 再處理 | 低 |
+| R2 孤兒檔清理（含 `cleanup-orphan-images` 空殼） | **2026-07-18 已完成評估與修法設計，見 §21.1**。刻意不執行：帳單 $0.00（免費額度 10 GB，現用 1.58 GB），且不會再累積。逼近 10 GB 時照 §21.1 的設計實作 | 低 |
 | 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
 | `destination/[id]/page.tsx` 1,861 行 | 結構比 trip 頁單純（33 個 useState、僅 1 個彈窗）。可比照 trip 頁手法拆分 | 低 |
 | Node 20 deprecation | GitHub 警告 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 執行環境將淘汰。**注意 `.nvmrc` 同時影響 Vercel 建置**，升版前需確認 | 低 |
@@ -1056,11 +1056,61 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 
 | 項目 | 說明 |
 |------|------|
-| 12 個上架行程無未來出團日 | 7 個是梯次全過期、5 個從未設過（含 2 張高球卡）。修復後客人會看到「尚未設定出團日期」。要補梯次還是下架？ |
+| 12 個上架行程無未來出團日 | 7 個梯次全過期、5 個從未設過（含 2 張高球卡）。使用者已決定（2026-07-18）：不下架，之後自行補日期。客人目前看到「尚未設定出團日期」 |
 | ~~6 個目的地無封面圖~~ ✅ 2026-07-18 已補 | 6 個空封面用旗下行程封面補齊；另 21 個原本用外部 Unsplash 連結（違反 §4）的目的地一併轉存至 R2。全 66 個上架目的地現皆為 R2 封面、HTTP 實測 0 破圖 |
-| 13 筆待確認的抓取變更 | Admin 頁「待確認變更」列表 |
+| ~~13 筆待確認的抓取變更~~ ✅ 已清空 | 2026-07-18 實查 `pending_changes` 的 pending = 0 |
 | 「童趣阿聯酋」封面是 LINE 廣告圖 | 2026-07-17 測試上傳時覆蓋，原圖已被自動清除。用卡片上的「抓取此行程」可從朋威還原 |
 | Google Ads ↔ GA4 CSP 錯誤 | Analytics 介面顯示已解除連結，但 CSP 錯誤仍在，未再確認 |
+
+### 21.1 R2 孤兒檔清理 — 已評估的修法設計（2026-07-18，尚未實作）
+
+> 使用者要求「先評估查清楚、確認不會修壞」。評估已完成（全程唯讀），
+> 結論：**設計可行且已驗證安全，但現在不值得執行** —— 帳單 $0.00、
+> 清 1 GB 省不到錢，而孤兒的成因（刪行程／目的地不清 R2）已於 2026-07-17 修好，
+> 不會再累積。逼近 10 GB 免費額度時再照此設計實作。
+
+#### 現況數字（2026-07-18 全 DB 徹底稽核）
+
+| 分類 | 數量 | 大小 |
+|---|---|---|
+| R2 物件總數 | 2,072 | 1,576 MB |
+| 被 DB 引用（在用） | 628 | — |
+| R2 即資料來源（受保護，見 §4.2） | 20 | 22.8 MB |
+| **孤兒（可刪候選）** | **1,424** | **1,008 MB（64%）** |
+| DB 引用但 R2 不存在（破圖） | 0 | ✅ |
+
+孤兒分佈：`images/trips` 1,088、`images/trips/banner` 178、
+`images/trip-documents/*` 98（372 MB，舊版 PDF 路徑）、`images/flights` 45
+（廢棄航班圖，flight_routes 引用 0 次）、`images/documents` 13、`images/destinations` 2。
+
+#### 為什麼現有的 `cleanup-orphan-images` 不能用
+
+整支 route 操作的是 **Supabase Storage**（已清空的舊 bucket）：列檔用
+`supabase.storage.list()`（列到 0 個）、認引用用 `getStoragePathFromPublicUrl()`
+（對 R2 網址一律回 null）。跑起來永遠「0 孤兒、什麼都沒刪」。
+它的「site／document-services／mini-transit-tickets 只留最新」骨架方向正確，
+但用寫死的 ID 清單（roc0001…），新增服務就會漏 → 誤刪。
+
+#### 修法設計（實作時照此做）
+
+1. **列 R2**：`r2List` 分頁列出全部物件
+2. **收集引用**：掃**每一張 DB 表的完整列 JSON**，正則抓所有 `r2.dev/<key>` ——
+   不靠列舉欄位，新增表／欄位也不會漏
+3. **保護 §4.2 的三個前綴**：`images/site/`、`images/document-services`、
+   `images/mini-transit-tickets` 整個不碰（R2 即資料來源，DB 必然不引用）
+4. **時間過濾**：只考慮 LastModified 在 **7 天前**的檔 —— 防「剛上傳、引用還沒寫進 DB」的 race
+5. **永遠先 dry-run** 輸出完整清單，人工確認後才刪
+6. **刪除前重新收集一次引用**（double-check）＋ 數量上限 ＋ 分批刪
+
+#### 安全性驗證紀錄（為什麼確信不會刪錯）
+
+- 結構化欄位收集 vs 全 JSON 掃描，孤兒數**完全一致（1,424）** → 引用收集無遺漏
+- 全 DB 每張表都掃過：trips／destinations／site_settings 有引用；
+  trip_departure_dates、flight_routes、regions、pending_changes、analytics_events、
+  click_analytics、contact_forms、scrape_logs 全部 **0 個 R2 網址**
+- DB 引用的 628 個 key **全部存在於 R2**（0 破圖）→ 引用集正確性的反向證明
+- 殘留風險（誠實記錄）：理論上仍可能有「想不到的地方存了網址」，
+  由時間過濾＋dry-run 人工審查＋數量上限三層兜底
 
 ---
 
