@@ -134,15 +134,29 @@ export default function SocialCta({
                 聯絡我們
               </button>
             </div>
-            <p className="mt-2 text-[9px] text-gray-400 sm:text-[10px]">
-              © {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.
-            </p>
           </div>
         </div>
       </div>
 
       {/* 3. 免責聲明 */}
       <LegalNotice className="mt-6" />
+
+      {/* 4. 公司資訊 */}
+      <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="flex flex-col justify-between gap-1 text-center text-[10px] text-gray-400 sm:flex-row sm:text-left">
+          <p>
+            <span className="font-semibold text-gray-500">朋威旅行社 / 點點旅遊（通用旅行社）</span>
+            ．交觀綜2219號．品保編號：北2175．統一編號：42629833
+          </p>
+          <p>
+            旅遊蓋瑞哥：0966163777．LINE ID：@sc666555．信箱：sc666555@gmail.com
+          </p>
+        </div>
+        <div className="mt-1 flex flex-col justify-between gap-1 text-center text-[10px] text-gray-400 sm:flex-row sm:text-left">
+          <p>TEL (02)2581-3373．FAX (02)2581-2883．台北市松山區復興北路181號10樓之1</p>
+          <p className="text-[9px]">© {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.</p>
+        </div>
+      </div>
 
       <ContactFormModal isOpen={showContactForm} onClose={() => setShowContactForm(false)} />
     </div>
