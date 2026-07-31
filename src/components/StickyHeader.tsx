@@ -142,7 +142,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-gray-200/30 bg-white/50 backdrop-blur-[20px]">
+      <header className="fixed inset-x-0 top-0 z-header h-header border-b border-gray-200/30 bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)] backdrop-blur-[20px]">
         <div className="mx-auto flex h-full max-w-site items-center justify-between px-4 md:px-6">
 
           {/* 左側：返回 + Logo */}
@@ -160,7 +160,15 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
             )}
             <Link href="/" className="flex min-h-10 shrink items-center gap-2 transition hover:opacity-90" aria-label="回到首頁">
               {logoReady ? (
-                <img src={displayLogoUrl} alt="旅行沒有終點" className="h-10 w-auto max-w-[180px] object-contain sm:h-[72px] sm:max-w-[480px]" />
+                <img
+                  src={displayLogoUrl}
+                  alt="旅行沒有終點"
+                  className="h-10 w-auto max-w-[180px] object-contain sm:h-[72px] sm:max-w-[480px]"
+                  onError={() => {
+                    try { localStorage.removeItem('site_logo_url'); } catch { /* ignore */ }
+                    setDisplayLogoUrl('/travel-logo.svg');
+                  }}
+                />
               ) : (
                 <div className="h-10 w-32 bg-gray-100 sm:h-[72px] sm:w-72" />
               )}
@@ -343,7 +351,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                       key={area}
                       href={`/destination/${firstDestId}?tab=${encodeURIComponent(area)}`}
                       onClick={() => setHoveredNavId(null)}
-                      className="rounded-full border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 px-5 py-2 text-[13px] font-bold tracking-wide text-gray-600 shadow-sm ring-1 ring-sky-100/50 transition hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                      className="rounded-full border border-sky-600/20 bg-gradient-to-b from-sky-500 to-sky-600 px-5 py-2 text-[13px] font-bold tracking-wide text-white shadow-sm transition hover:from-sky-600 hover:to-sky-700 hover:shadow-md"
                     >
                       {area}
                     </Link>
@@ -387,7 +395,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                         key={d.id}
                         href={`/destination/${d.id}?all=1`}
                         onClick={() => setHoveredNavId(null)}
-                        className="rounded-full border border-sky-100 bg-gradient-to-b from-white to-sky-50/80 px-5 py-2 text-[13px] font-bold tracking-wide text-gray-600 shadow-sm ring-1 ring-sky-100/50 transition hover:border-sky-200 hover:from-sky-50 hover:to-sky-100/60 hover:text-sky-700 hover:shadow-md"
+                        className="rounded-full border border-sky-600/20 bg-gradient-to-b from-sky-500 to-sky-600 px-5 py-2 text-[13px] font-bold tracking-wide text-white shadow-sm transition hover:from-sky-600 hover:to-sky-700 hover:shadow-md"
                       >
                         {d.sub_region || d.title}
                       </Link>
