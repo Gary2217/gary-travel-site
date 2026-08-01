@@ -305,7 +305,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
       {/* 深色導航列（所有頁面） */}
       {navSections.length > 0 && (
         <div
-          className="fixed inset-x-0 z-[99] bg-[#354559]/85 backdrop-blur-md"
+          className="fixed inset-x-0 z-[99] bg-gradient-to-r from-[#1c2b3f] via-[#2d425c] to-[#1c2b3f] shadow-md backdrop-blur-md"
           style={{ top: '5rem' }}
           onMouseLeave={() => { navTimeoutRef.current = setTimeout(() => setHoveredNavId(null), 150); }}
         >
@@ -351,7 +351,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                       key={area}
                       href={`/destination/${firstDestId}?tab=${encodeURIComponent(area)}`}
                       onClick={() => setHoveredNavId(null)}
-                      className="rounded-full border border-sky-600/20 bg-gradient-to-b from-sky-500 to-sky-600 px-5 py-2 text-[13px] font-bold tracking-wide text-white shadow-sm transition hover:from-sky-600 hover:to-sky-700 hover:shadow-md"
+                      className="rounded-full border border-[#d4a853]/40 bg-white px-5 py-2 text-[13px] font-bold tracking-wide text-gray-700 shadow-sm transition hover:border-[#d4a853] hover:bg-[#fdf6e8] hover:text-[#a9822f] hover:shadow-md"
                     >
                       {area}
                     </Link>
@@ -395,7 +395,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
                         key={d.id}
                         href={`/destination/${d.id}?all=1`}
                         onClick={() => setHoveredNavId(null)}
-                        className="rounded-full border border-sky-600/20 bg-gradient-to-b from-sky-500 to-sky-600 px-5 py-2 text-[13px] font-bold tracking-wide text-white shadow-sm transition hover:from-sky-600 hover:to-sky-700 hover:shadow-md"
+                        className="rounded-full border border-[#d4a853]/40 bg-white px-5 py-2 text-[13px] font-bold tracking-wide text-gray-700 shadow-sm transition hover:border-[#d4a853] hover:bg-[#fdf6e8] hover:text-[#a9822f] hover:shadow-md"
                       >
                         {d.sub_region || d.title}
                       </Link>
