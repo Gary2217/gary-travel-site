@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { lineHref, fbHref, igHref, fbGroupHref, lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
+import { lineHref, fbHref, igHref, lineGroupHref, tiktokHref, lineDmHref, fbDmHref, igDmHref } from "@/lib/supabase";
 import { openExternalLink } from "@/lib/external-link";
 import ContactFormModal from "./ContactFormModal";
 import LegalNotice from "./LegalNotice";
@@ -42,7 +42,7 @@ export default function SocialCta({
           <div className="mx-auto mt-2 mb-2.5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#06C755] via-sky-500 to-[#E4405F]" />
           <p className="text-sm text-gray-500">關注最新旅遊資訊、優惠行程、出團動態</p>
         </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
           <a href={lineHref} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#06C755]/30 hover:shadow-lg hover:shadow-[#06C755]/10">
             <div className="absolute inset-0 bg-gradient-to-br from-[#06C755]/[0.04] via-transparent to-[#06C755]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -73,20 +73,20 @@ export default function SocialCta({
             </div>
             <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#1877F2]/60 via-[#1877F2] to-[#1877F2]/60 transition-all duration-300 group-hover:w-3/4" />
           </a>
-          <a href={fbGroupHref} target="_blank" rel="noopener noreferrer"
-            className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#1877F2]/30 hover:shadow-lg hover:shadow-[#1877F2]/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1877F2]/[0.04] via-transparent to-[#1877F2]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          <a href={lineGroupHref} target="_blank" rel="noopener noreferrer"
+            className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#06C755]/30 hover:shadow-lg hover:shadow-[#06C755]/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#06C755]/[0.04] via-transparent to-[#06C755]/[0.02] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="relative">
-              <div className="absolute -inset-2 rounded-full bg-[#1877F2]/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#1877F2]/15" />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#1877F2] to-[#1565d8] text-white shadow-md shadow-[#1877F2]/30 transition-transform duration-300 group-hover:scale-105">
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+              <div className="absolute -inset-2 rounded-full bg-[#06C755]/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#06C755]/15" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#06C755] to-[#05a348] text-white shadow-md shadow-[#06C755]/30 transition-transform duration-300 group-hover:scale-105">
+                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
               </div>
             </div>
             <div className="relative text-center">
-              <p className="text-sm font-bold text-[#1877F2]">FB 社團</p>
-              <span className="mt-1 inline-block rounded-full border border-[#1877F2]/20 bg-[#1877F2]/10 px-3 py-0.5 text-[10px] font-bold text-[#1877F2] transition-all duration-300 group-hover:border-transparent group-hover:bg-[#1877F2] group-hover:text-white">加入</span>
+              <p className="text-sm font-bold text-[#06C755]">優惠LINE社群</p>
+              <span className="mt-1 inline-block rounded-full border border-[#06C755]/20 bg-[#06C755]/10 px-3 py-0.5 text-[10px] font-bold text-[#06C755] transition-all duration-300 group-hover:border-transparent group-hover:bg-[#06C755] group-hover:text-white">加入</span>
             </div>
-            <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#1877F2]/60 via-[#1877F2] to-[#1877F2]/60 transition-all duration-300 group-hover:w-3/4" />
+            <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#06C755]/60 via-[#06C755] to-[#06C755]/60 transition-all duration-300 group-hover:w-3/4" />
           </a>
           <a href={igHref} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E4405F]/30 hover:shadow-lg hover:shadow-[#E4405F]/10">
@@ -103,6 +103,21 @@ export default function SocialCta({
             </div>
             <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#E4405F]/60 via-[#E4405F] to-[#E4405F]/60 transition-all duration-300 group-hover:w-3/4" />
           </a>
+          <a href={tiktokHref} target="_blank" rel="noopener noreferrer"
+            className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-gray-200/80 bg-white px-3 py-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-lg hover:shadow-black/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-black/[0.04] via-transparent to-[#25F4EE]/[0.03] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="relative">
+              <div className="absolute -inset-2 rounded-full bg-black/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-black/15" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-black to-[#1a1a1a] text-white shadow-md shadow-black/30 transition-transform duration-300 group-hover:scale-105">
+                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 448 512"><path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z" /></svg>
+              </div>
+            </div>
+            <div className="relative text-center">
+              <p className="text-sm font-bold text-black">TikTok</p>
+              <span className="mt-1 inline-block rounded-full border border-black/20 bg-black/5 px-3 py-0.5 text-[10px] font-bold text-black transition-all duration-300 group-hover:border-transparent group-hover:bg-black group-hover:text-white">追蹤</span>
+            </div>
+            <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-black/60 via-black to-black/60 transition-all duration-300 group-hover:w-3/4" />
+          </a>
         </div>
       </section>
 
@@ -112,7 +127,7 @@ export default function SocialCta({
           <img
             src={logoUrl}
             alt="旅行沒有終點"
-            className="h-12 w-auto shrink-0 object-contain sm:h-16"
+            className="h-16 w-auto shrink-0 object-contain sm:h-24"
             onError={() => {
               try { localStorage.removeItem('site_logo_url'); } catch { /* ignore */ }
               setLogoUrl('/travel-logo.svg');

@@ -86,8 +86,10 @@ export const fbDmHref = _fbPageId ? `https://m.me/${_fbPageId}` : fbHref;
 const _igUrl = process.env.NEXT_PUBLIC_IG_URL || "";
 const _igUsername = _igUrl.replace(/https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "");
 export const igDmHref = _igUsername ? `https://www.instagram.com/${_igUsername}/` : igHref;
-// FB 社團連結
-export const fbGroupHref = process.env.NEXT_PUBLIC_FB_GROUP_URL || "#";
+// 優惠 LINE 社群連結
+export const lineGroupHref = process.env.NEXT_PUBLIC_LINE_GROUP_URL || "https://line.me/ti/g2/SlerhhkcZQAO1grDbO6wQwDnA1zylQduSsInrQ?utm_source=invitation&utm_medium=link_copy&utm_campaign=default";
+// TikTok 連結
+export const tiktokHref = process.env.NEXT_PUBLIC_TIKTOK_URL || "https://www.tiktok.com/@qq22176655?_r=1&_t=ZS-97HXDS5vzHw";
 
 // LINE 帶預填訊息的連結（開啟聊天框並自動填入文字）
 export function lineMessageHref(message: string) {
