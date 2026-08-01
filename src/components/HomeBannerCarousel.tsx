@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export interface HomeBanner {
   url: string;
@@ -151,10 +152,14 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               key={banner.url}
               className={`${i === 0 ? 'relative' : 'absolute inset-0'} w-full transition-opacity duration-700 ${i === current ? 'opacity-100 z-[1]' : 'opacity-0 z-0'}`}
             >
-              <img
+              <Image
                 src={banner.url}
                 alt={`Banner ${i + 1}`}
-                className="block w-full h-auto select-none pointer-events-none"
+                width={1200}
+                height={340}
+                priority={i === 0}
+                sizes="100vw"
+                className="block h-auto w-full select-none pointer-events-none"
                 draggable={false}
               />
               {/* 非 DevMode 時，有連結則可點擊導向 */}

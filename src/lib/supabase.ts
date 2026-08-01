@@ -50,6 +50,30 @@ function cacheSet(key: string, data: unknown, ttlMs: number) {
   }
 }
 
+// 進行中請求去重：同一個 key 若已有請求在飛行中，後來者直接共用同一個 Promise，
+// 避免同一頁多個元件（如 StickyHeader 與頁面本體）同時呼叫同一支 API 造成重複請求。
+const _pending = new Map<string, Promise<unknown>>();
+
+async function dedupeFetch<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
+  const hit = cacheGet<T>(key);
+  if (hit) return hit;
+
+  const inFlight = _pending.get(key);
+  if (inFlight) return inFlight as Promise<T>;
+
+  const promise = fetcher()
+    .then((data) => {
+      cacheSet(key, data, ttlMs);
+      return data;
+    })
+    .finally(() => {
+      _pending.delete(key);
+    });
+
+  _pending.set(key, promise);
+  return promise;
+}
+
 /** 清除指定前綴或全部快取（寫入後呼叫） */
 export function invalidateCache(prefix?: string) {
   if (!prefix) {
@@ -269,69 +293,49 @@ export type PdfScrapeResult = {
 
 // 取得所有啟用的區域和目的地
 export async function getRegionsWithDestinations() {
-  const KEY = 'regions';
-  const hit = cacheGet(KEY);
-  if (hit) return hit;
-
-  const res = await fetch('/api/regions');
-  if (!res.ok) throw new Error(`Failed to fetch regions: ${res.status}`);
-  const data = await res.json();
-  cacheSet(KEY, data, 10 * 60_000); // 10 min（區域資料變動少）
-  return data;
+  return dedupeFetch('regions', 10 * 60_000, async () => {
+    const res = await fetch('/api/regions');
+    if (!res.ok) throw new Error(`Failed to fetch regions: ${res.status}`);
+    return res.json();
+  });
 }
 
 // 取得單一目的地資訊
 export async function getDestination(destinationId: string) {
-  const KEY = `dest:${destinationId}`;
-  const hit = cacheGet(KEY);
-  if (hit) return hit;
-
-  const res = await fetch(`/api/destinations/${destinationId}`);
-  if (!res.ok) throw new Error(`Failed to fetch destination: ${res.status}`);
-  const data = await res.json();
-  cacheSet(KEY, data, 10 * 60_000); // 10 min（目的地資料變動少）
-  return data;
+  return dedupeFetch(`dest:${destinationId}`, 10 * 60_000, async () => {
+    const res = await fetch(`/api/destinations/${destinationId}`);
+    if (!res.ok) throw new Error(`Failed to fetch destination: ${res.status}`);
+    return res.json();
+  });
 }
 
 // 取得目的地的所有行程
 export async function getDestinationTrips(destinationId: string) {
-  const KEY = `dest-trips:${destinationId}`;
-  const hit = cacheGet(KEY);
-  if (hit) return hit;
-
-  const res = await fetch(`/api/destinations/${destinationId}/trips`);
-  if (!res.ok) throw new Error(`Failed to fetch trips: ${res.status}`);
-  const data = await res.json();
-  cacheSet(KEY, data, 5 * 60_000); // 5 min
-  return data;
+  return dedupeFetch(`dest-trips:${destinationId}`, 5 * 60_000, async () => {
+    const res = await fetch(`/api/destinations/${destinationId}/trips`);
+    if (!res.ok) throw new Error(`Failed to fetch trips: ${res.status}`);
+    return res.json();
+  });
 }
 
 // 依日期搜尋行程
 export async function searchTripsByDate(date: string, city?: string) {
   const qs = new URLSearchParams({ date });
   if (city) qs.set('city', city);
-  const KEY = `search:${qs.toString()}`;
-  const hit = cacheGet(KEY);
-  if (hit) return hit;
-
-  const res = await fetch(`/api/search-trips?${qs.toString()}`);
-  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-  const data = await res.json();
-  cacheSet(KEY, data, 60_000); // 1 min
-  return data;
+  return dedupeFetch(`search:${qs.toString()}`, 60_000, async () => {
+    const res = await fetch(`/api/search-trips?${qs.toString()}`);
+    if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+    return res.json();
+  });
 }
 
 // 取得單一行程（含每日明細）
 export async function getTripWithDays(tripId: string) {
-  const KEY = `trip:${tripId}`;
-  const hit = cacheGet(KEY);
-  if (hit) return hit;
-
-  const res = await fetch(`/api/trips/${tripId}`);
-  if (!res.ok) throw new Error(`Failed to fetch trip: ${res.status}`);
-  const data = await res.json();
-  cacheSet(KEY, data, 5 * 60_000); // 5 min
-  return data;
+  return dedupeFetch(`trip:${tripId}`, 5 * 60_000, async () => {
+    const res = await fetch(`/api/trips/${tripId}`);
+    if (!res.ok) throw new Error(`Failed to fetch trip: ${res.status}`);
+    return res.json();
+  });
 }
 
 // 取得同地區 + 同類別相關行程（目的地無行程時使用）
@@ -344,15 +348,11 @@ export async function getRelatedTrips(
     category_label: categoryLabel,
     exclude_destination_id: excludeDestinationId,
   });
-  const KEY = `related:${regionId}:${qs}`;
-  const hit = cacheGet<{ regionTrips: Trip[]; categoryTrips: Trip[] }>(KEY);
-  if (hit) return hit;
-
-  const res = await fetch(`/api/regions/${regionId}/related-trips?${qs}`);
-  if (!res.ok) throw new Error('Failed to fetch related trips');
-  const data = await res.json();
-  cacheSet(KEY, data, 3 * 60_000); // 3 min
-  return data;
+  return dedupeFetch<{ regionTrips: Trip[]; categoryTrips: Trip[] }>(`related:${regionId}:${qs}`, 3 * 60_000, async () => {
+    const res = await fetch(`/api/regions/${regionId}/related-trips?${qs}`);
+    if (!res.ok) throw new Error('Failed to fetch related trips');
+    return res.json();
+  });
 }
 
 // 記錄點擊事件（使用 sendBeacon 避免阻塞頁面跳轉）
