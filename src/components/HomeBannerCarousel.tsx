@@ -83,6 +83,27 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
     setCurrent(0);
   };
 
+  // 調整順序（往前/往後移動目前這張）
+  const moveBanner = async (direction: -1 | 1) => {
+    const targetIndex = current + direction;
+    if (targetIndex < 0 || targetIndex >= banners.length) return;
+    const updated = [...banners];
+    [updated[current], updated[targetIndex]] = [updated[targetIndex], updated[current]];
+    try {
+      const res = await fetch('/api/home-banners', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ banners: updated }),
+      });
+      if (!res.ok) { alert('順序調整失敗'); return; }
+      onBannersChange?.(updated);
+      setCurrent(targetIndex);
+    } catch {
+      alert('順序調整失敗');
+    }
+  };
+
   // 儲存連結
   const saveLink = async () => {
     if (savingLink) return;
@@ -176,18 +197,42 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
                   </span>
                 </Link>
               )}
-              {/* DevMode 刪除按鈕 */}
+              {/* DevMode 排序 + 刪除按鈕 */}
               {isDevMode && i === current && (
-                <button
-                  type="button"
-                  onClick={() => void deleteBanner(banner.url)}
-                  className="absolute right-3 top-12 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
-                  title="刪除此 Banner"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="absolute right-3 top-12 z-30 flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => void moveBanner(-1)}
+                    disabled={current === 0}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-500 text-white shadow-md transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="往前移"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void moveBanner(1)}
+                    disabled={current === total - 1}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-500 text-white shadow-md transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="往後移"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteBanner(banner.url)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
+                    title="刪除此 Banner"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               )}
             </div>
           ))
