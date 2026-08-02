@@ -183,19 +183,15 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
                 className="block h-auto w-full select-none pointer-events-none"
                 draggable={false}
               />
-              {/* 非 DevMode 時，有連結則可點擊導向 */}
+              {/* 非 DevMode 時，有連結則整張圖可點擊導向 */}
               {!isDevMode && banner.link && (
-                <Link
-                  href={banner.link}
-                  className="absolute inset-0 z-[1] flex items-end justify-end p-4 sm:p-6"
-                >
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-5 py-2.5 text-sm font-bold text-sky-700 shadow-lg backdrop-blur-sm transition hover:bg-white hover:shadow-xl sm:text-base">
-                    立即查看
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </Link>
+                <Link href={banner.link} className="absolute inset-0 z-[1]" aria-label="查看詳情" />
+              )}
+              {/* DevMode 目前位置標籤 */}
+              {isDevMode && i === current && total > 1 && (
+                <div className="absolute left-3 top-3 z-30 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                  第 {current + 1} 張／共 {total} 張
+                </div>
               )}
               {/* DevMode 排序 + 刪除按鈕 */}
               {isDevMode && i === current && (
