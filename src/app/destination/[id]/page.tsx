@@ -138,6 +138,22 @@ export default function DestinationPage() {
     if (typeof window === 'undefined') return false;
     return new URL(window.location.href).searchParams.get('all') === '1';
   };
+  // 多-destination sub_region 內選中的特定 destination（如「新疆」群組下的「南疆」），
+  // 讓返回上一頁時能還原到當初點進行程卡片時的確切篩選狀態，而不是退回整個群組的合併列表。
+  const setDestFilterParam = (destId: string | null) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (destId) {
+      url.searchParams.set('dest', destId);
+    } else {
+      url.searchParams.delete('dest');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
+  const getDestFilterParam = () => {
+    if (typeof window === 'undefined') return '';
+    return new URL(window.location.href).searchParams.get('dest') || '';
+  };
 
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(null);
   const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
@@ -377,6 +393,8 @@ export default function DestinationPage() {
       // 初次進頁的 URL restore 狀態（供 Phase 2 補齊資料集合）
       let restoredGroup: { subRegion: string; destinations: { id: string; label: string }[] } | null = null;
       let shouldRestoreAll = false;
+      // 與 render 時的 useMergedMode 判斷一致（allSingleDest && 白名單），避免 Phase 2 選錯資料載入分支
+      let allSingleDestLocal = false;
       try {
         setPopularFallback(null);
         setSubRegionTrips(null);
@@ -428,6 +446,7 @@ export default function DestinationPage() {
           }
           const groups = Array.from(groupMap.entries()).map(([subRegion, destinations]) => ({ subRegion, destinations }));
           setSubRegionGroups(groups);
+          allSingleDestLocal = groups.length > 0 && groups.every(g => g.destinations.length === 1);
           // 從 URL query param 恢復 tab，否則用 currentSR
           const savedTab = getTabParam();
           const hasSavedSubRegion = Boolean(savedTab && groups.some(g => g.subRegion === savedTab));
@@ -489,7 +508,7 @@ export default function DestinationPage() {
         // Phase 2（背景載入，不阻塞頁面顯示）
         const hasRelated = destData.region_id && destData.regions?.category_label;
         if (hasRelated) setRelatedLoading(true);
-        const isMergedRegion = ['港澳大陸', '日本'].includes(rCat);
+        const isMergedRegion = allSingleDestLocal && ['港澳大陸', '日本'].includes(rCat);
 
         // 所有 Phase 2 請求並行
         const relatedP = hasRelated
@@ -566,8 +585,12 @@ export default function DestinationPage() {
             const groupIds = new Set(restoredGroup.destinations.map(d => d.id));
             const filteredForGroup = allRegionTrips.filter(t => groupIds.has(t.destination_id)).sort(compareTrips);
             setSubRegionTrips(filteredForGroup);
-            setActiveDestFilter(null);
-            const firstDest = siblingDestsDataRef.current.get(restoredGroup.destinations[0].id);
+            // 還原 group 內選中的特定 destination（如新疆群組下的南疆），確保返回上一頁時篩選狀態一致
+            const savedDestId = getDestFilterParam();
+            const restoredDestId = savedDestId && restoredGroup.destinations.some(d => d.id === savedDestId) ? savedDestId : null;
+            setActiveDestFilter(restoredDestId);
+            const heroId = restoredDestId || restoredGroup.destinations[0].id;
+            const firstDest = siblingDestsDataRef.current.get(heroId);
             if (firstDest) setHeroDest(firstDest);
           } else if (restoredGroup && restoredGroup.destinations.length === 1 && restoredGroup.destinations[0].id !== destinationId) {
             // URL 帶 tab=某單-destination sub_region（西伯利亞/高雄出發等）：載入該 destination 行程
@@ -1170,6 +1193,7 @@ export default function DestinationPage() {
                     onClick={async () => {
                       setActiveSubRegion("全部");
                       setActiveDestFilter(null);
+                      setDestFilterParam(null);
                       resetSubAreaState();
                       setHeroDest(null);
                       setTabParam("全部");
@@ -1200,6 +1224,7 @@ export default function DestinationPage() {
                       onClick={async () => {
                         setActiveSubRegion(group.subRegion);
                         setActiveDestFilter(null);
+                        setDestFilterParam(null);
                         setTabParam(group.subRegion);
                         if (group.destinations.length === 1) {
                           const destId = group.destinations[0].id;
@@ -1267,6 +1292,7 @@ export default function DestinationPage() {
                           onClick={async () => {
                             const newFilter = activeDestFilter === dest.id ? null : dest.id;
                             setActiveDestFilter(newFilter);
+                            setDestFilterParam(newFilter);
                             // subRegionTrips 未載入時先載入，否則篩選無效
                             if (!subRegionTrips && activeGroup) {
                               const allTrips = await Promise.all(
