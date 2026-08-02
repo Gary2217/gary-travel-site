@@ -22,9 +22,15 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   const [editLink, setEditLink] = useState('');
   const [savingLink, setSavingLink] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [reorderList, setReorderList] = useState<HomeBanner[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dragCounterRef = useRef(0);
+  const reorderListRef = useRef<HomeBanner[]>([]);
+  useEffect(() => { reorderListRef.current = reorderList; }, [reorderList]);
 
   // 同步當前 banner 的 link 到編輯欄
   useEffect(() => {
@@ -83,26 +89,63 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
     setCurrent(0);
   };
 
-  // 調整順序（往前/往後移動目前這張）
-  const moveBanner = async (direction: -1 | 1) => {
-    const targetIndex = current + direction;
-    if (targetIndex < 0 || targetIndex >= banners.length) return;
-    const updated = [...banners];
-    [updated[current], updated[targetIndex]] = [updated[targetIndex], updated[current]];
+  // 開啟排序視窗
+  const openReorderModal = () => {
+    setReorderList([...banners]);
+    setShowReorderModal(true);
+  };
+
+  // 儲存排序結果
+  const saveOrder = useCallback(async () => {
+    const list = reorderListRef.current;
+    setSavingOrder(true);
     try {
       const res = await fetch('/api/home-banners', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ banners: updated }),
+        body: JSON.stringify({ banners: list }),
       });
       if (!res.ok) { alert('順序調整失敗'); return; }
-      onBannersChange?.(updated);
-      setCurrent(targetIndex);
+      onBannersChange?.(list);
     } catch {
       alert('順序調整失敗');
+    } finally {
+      setSavingOrder(false);
     }
-  };
+  }, [onBannersChange]);
+
+  // 拖曳排序：追蹤指標移動，即時交換項目位置
+  useEffect(() => {
+    if (dragIndex === null) return;
+
+    const handleMove = (e: PointerEvent) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const row = el?.closest('[data-reorder-index]') as HTMLElement | null;
+      if (!row) return;
+      const overIndex = Number(row.dataset.reorderIndex);
+      if (Number.isNaN(overIndex) || overIndex === dragIndex) return;
+      setReorderList((prev) => {
+        const updated = [...prev];
+        const [moved] = updated.splice(dragIndex, 1);
+        updated.splice(overIndex, 0, moved);
+        return updated;
+      });
+      setDragIndex(overIndex);
+    };
+
+    const handleUp = () => {
+      setDragIndex(null);
+      void saveOrder();
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+  }, [dragIndex, saveOrder]);
 
   // 儲存連結
   const saveLink = async () => {
@@ -187,48 +230,18 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               {!isDevMode && banner.link && (
                 <Link href={banner.link} className="absolute inset-0 z-[1]" aria-label="查看詳情" />
               )}
-              {/* DevMode 目前位置標籤 */}
-              {isDevMode && i === current && total > 1 && (
-                <div className="absolute left-3 top-3 z-30 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-                  第 {current + 1} 張／共 {total} 張
-                </div>
-              )}
-              {/* DevMode 排序 + 刪除按鈕 */}
+              {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
-                <div className="absolute right-3 top-12 z-30 flex flex-col gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => void moveBanner(-1)}
-                    disabled={current === 0}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-500 text-white shadow-md transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
-                    title="往前移"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void moveBanner(1)}
-                    disabled={current === total - 1}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-500 text-white shadow-md transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
-                    title="往後移"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void deleteBanner(banner.url)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
-                    title="刪除此 Banner"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => void deleteBanner(banner.url)}
+                  className="absolute right-3 top-12 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
+                  title="刪除此 Banner"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               )}
             </div>
           ))
@@ -306,6 +319,18 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               </>
             )}
           </button>
+          {total > 1 && (
+            <button
+              type="button"
+              onClick={openReorderModal}
+              className="flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:border-sky-400 hover:text-sky-600"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              調整順序
+            </button>
+          )}
           <span className="text-xs text-gray-400">{total} 張 · 建議尺寸 1200×340px（JPG/PNG/WebP，8MB 以內）</span>
         </div>
       )}
@@ -352,6 +377,75 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
           e.target.value = '';
         }}
       />
+
+      {/* 調整順序視窗 */}
+      {showReorderModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowReorderModal(false)}
+        >
+          <div
+            className="flex max-h-[80vh] w-full max-w-sm flex-col rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h3 className="text-sm font-bold text-gray-900">調整 Banner 順序</h3>
+              <button
+                type="button"
+                onClick={() => setShowReorderModal(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 space-y-2 overflow-y-auto p-3">
+              {reorderList.map((banner, i) => (
+                <div
+                  key={banner.url}
+                  data-reorder-index={i}
+                  className={`flex touch-none items-center gap-3 rounded-xl border p-2 transition ${
+                    dragIndex === i ? 'border-sky-400 bg-sky-50 shadow-md' : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div
+                    onPointerDown={(e) => { e.preventDefault(); setDragIndex(i); }}
+                    className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center text-gray-400 active:cursor-grabbing"
+                    title="按住拖曳排序"
+                  >
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M7 4a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2zM7 9a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2zm-6 5a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2z" />
+                    </svg>
+                  </div>
+                  <Image
+                    src={banner.url}
+                    alt={`Banner ${i + 1}`}
+                    width={80}
+                    height={48}
+                    className="h-12 w-20 shrink-0 rounded-lg object-cover"
+                    draggable={false}
+                  />
+                  <div className="min-w-0 flex-1 truncate text-xs text-gray-500">
+                    {banner.link || '（無連結）'}
+                  </div>
+                  <span className="shrink-0 text-xs font-bold text-gray-400">{i + 1}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+              <span className="text-xs text-gray-400">{savingOrder ? '儲存中...' : '拖曳把手調整順序，自動儲存'}</span>
+              <button
+                type="button"
+                onClick={() => setShowReorderModal(false)}
+                className="rounded-lg bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500"
+              >
+                完成
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );
