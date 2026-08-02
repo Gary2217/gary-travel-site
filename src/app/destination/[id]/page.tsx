@@ -1122,7 +1122,7 @@ export default function DestinationPage() {
             /* merged mode（港澳大陸/日本）：直接用 sub_area tabs */
             <div>
               <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,max-content))] justify-center gap-2 px-1 pb-1">
                   {mergedSubAreaTabs.map((tab) => (
                     <button
                       key={tab.label}
@@ -1164,7 +1164,7 @@ export default function DestinationPage() {
             /* multi-dest sub_regions（中東亞非等）：sub_region tabs + destination tabs */
             <>
               <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div className="flex flex-wrap justify-center gap-2 px-1 pb-1">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,max-content))] justify-center gap-2 px-1 pb-1">
                   <button
                     type="button"
                     onClick={async () => {
