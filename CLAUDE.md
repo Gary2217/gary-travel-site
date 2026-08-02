@@ -163,6 +163,7 @@ src/
 │       ├── popular-trips/route.ts
 │       ├── popular-order/route.ts
 │       ├── home-banners/route.ts
+│       ├── customer-stories/route.ts         # 真實旅客花絮（照片存R2／IG影片連結，存 site_settings）
 │       ├── reorder/route.ts
 │       ├── upload-image/route.ts
 │       ├── upload-trip-image/route.ts
@@ -202,7 +203,9 @@ src/
 │   ├── TripCard.tsx                          # 行程卡片
 │   ├── DayItinerary.tsx                      # 每日行程摺疊面板
 │   ├── DepartureDates.tsx                    # 出發日期選擇
-│   ├── HomeBannerCarousel.tsx                # 首頁 Banner 輪播
+│   ├── HomeBannerCarousel.tsx                # 首頁 Banner 輪播（next/image，首張 priority）
+│   ├── CustomerStories.tsx                   # 真實旅客花絮牆（首頁，熱門推薦下方）
+│   ├── InstagramEmbed.tsx                    # IG 貼文嵌入播放器（花絮影片用）
 │   ├── SideMediaCarousel.tsx                 # 側邊媒體輪播
 │   ├── TravelSearchBar.tsx                   # 旅遊搜尋列
 │   ├── Skeleton.tsx                          # 骨架屏元件
@@ -226,7 +229,7 @@ src/
 │       ├── SourceUrlModal.tsx                # 設定朋威來源網址（Dev）
 │       └── MobileDatePickerModal.tsx         # 手機版全螢幕出發日期選擇
 └── lib/
-    ├── supabase.ts                           # 型別定義 + fetch 輔助函式 + 社群連結常數
+    ├── supabase.ts                           # 型別定義 + fetch 輔助函式（`dedupeFetch` 進行中請求去重）+ 社群連結常數
     ├── trip-format.ts                        # 行程頁共用純函式（售價/日期格式化）+ 售價明細型別
     ├── trip-format.test.ts                   # ↑ 的測試（含 86 筆真實資料快照）
     ├── __fixtures__/price-detail-real.json   # 正式 DB 的真實 price_detail（測試用）
@@ -394,8 +397,16 @@ npx vitest        # watch 模式（本機開發用）
 搜尋區塊背景：
   bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)]
 
-Header / Region Tabs：
-  bg-white/95 backdrop-blur-[12px] border-b border-gray-200
+頂部 Header（StickyHeader）與底部 CTA/公司資訊區塊（SocialCta）：
+  同一組粉彩漸層，前後呼應：
+  bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)]
+  （文字用深色 text-gray-900 / text-gray-500，不是白字）
+
+深色導航列（Header 正下方，地區 Tab 列）：
+  bg-gradient-to-r from-[#1c2b3f] via-[#2d425c] to-[#1c2b3f]
+  Hover 下拉選單裡的地區按鈕：白底金框
+  rounded-full border border-[#d4a853]/40 bg-white text-gray-700
+  hover:border-[#d4a853] hover:bg-[#fdf6e8] hover:text-[#a9822f]
 
 白底卡片：
   rounded-xl border border-gray-200 bg-white shadow-sm
@@ -517,6 +528,8 @@ export async function GET(
 - `NEXT_PUBLIC_LINE_ID` — LINE 官方帳號 ID
 - `NEXT_PUBLIC_FB_URL` — Facebook 粉專連結
 - `NEXT_PUBLIC_IG_URL` — Instagram 連結
+- `NEXT_PUBLIC_LINE_GROUP_URL` — 優惠 LINE 社群連結（未設定時 fallback 到 `src/lib/supabase.ts` 內寫死的網址）
+- `NEXT_PUBLIC_TIKTOK_URL` — TikTok 連結（未設定時同上有 fallback）
 - `NEXT_PUBLIC_DEV_PASSWORD` — 開發者模式密碼
 
 ### 機密（只在 server 端讀取，外洩即須撤銷重發）
@@ -977,12 +990,13 @@ Admin 頁面「待確認變更」列表
 
 ### 結構
 
-- **半透明深色導航列**：`bg-[#354559]/85 backdrop-blur-md`，全寬延展
+- **深色導航列**：`bg-gradient-to-r from-[#1c2b3f] via-[#2d425c] to-[#1c2b3f]`，全寬延展
 - **文字色**：`text-white/80`，hover 金色 `text-[#d4a853]`
-- **Hover 下拉選單**：半透明深色 `bg-[#354559]/80 backdrop-blur-md`
+- **Hover 下拉選單**：白底 `bg-white shadow-xl`
+  - 地區按鈕：白底金框 `border-[#d4a853]/40`，hover `border-[#d4a853] bg-[#fdf6e8] text-[#a9822f]`
   - 有 sub_region 的區域：分組顯示（北海道/東北/關東...）+ 金色分隔線
   - 無 sub_region 的區域：直接列出 destination 連結
-- **Header**：`bg-white/50 backdrop-blur-[20px]` 半透明毛玻璃
+- **Header**：粉彩漸層 `bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)]`，跟底部 CTA 區塊同一組配色前後呼應，logo 不再需要白底卡片襯底（背景已經夠淺）
 
 ### 導航列項目（與朋威一致）
 
@@ -1039,7 +1053,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 
 ## 21. 已知待處理事項
 
-> 最後更新：2026-07-17
+> 最後更新：2026-08-02
 
 ### 需要程式處理
 
@@ -1051,6 +1065,8 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 | 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
 | `destination/[id]/page.tsx` 1,861 行 | 結構比 trip 頁單純（33 個 useState、僅 1 個彈窗）。可比照 trip 頁手法拆分 | 低 |
 | Node 20 deprecation | GitHub 警告 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 執行環境將淘汰。**注意 `.nvmrc` 同時影響 Vercel 建置**，升版前需確認 | 低 |
+| 部分朋威頁面 Puppeteer fallback 會卡死（2026-08-01 發現） | 越南北越／沙壩芽莊大叻、泰國／印尼／菲律賓／紐澳美加的多數行程，`auto-scrape.mjs` 的 Puppeteer fallback 在 `page.goto` 階段完全卡住（連 60 秒手動測試都不會 timeout 返回，需強制砍 process）。純 curl 抓同一頁只要 0.7 秒，確認不是網路問題，該頁面的出發日期表格本來就是 client-side AJAX 渲染（原始 HTML 沒有 `#search-table`），懷疑是朋威的反爬蟲機制針對無頭瀏覽器卡住。目前無法自動抓這些頁面的出發日期，只能等 timeout 後跳過（不影響已抓到的其他資料正確性）| 中 |
+| 高爾夫頁面（`/golf/`）抓取抓不到任何區塊 | `auto-scrape.mjs --regions=golf` 回傳「找到 0 個區塊，0 筆行程」，頁面結構可能跟其他 tab 頁不同，需另外分析 | 低 |
 
 ### 需要使用者決定／操作
 
@@ -1111,6 +1127,31 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 - DB 引用的 628 個 key **全部存在於 R2**（0 破圖）→ 引用集正確性的反向證明
 - 殘留風險（誠實記錄）：理論上仍可能有「想不到的地方存了網址」，
   由時間過濾＋dry-run 人工審查＋數量上限三層兜底
+
+---
+
+## 22. 真實旅客花絮功能（2026-08-02 新增）
+
+首頁「熱門推薦」下方、地區列表上方，展示真實客人出遊照片與 IG 影片，建立信任感。
+
+### 資料存放
+
+- 存在 `site_settings` 表，key = `customer_stories`，value 是 JSON 陣列，**沒有另外建 DB 表**（跟 `home_banners` 同一種做法）
+- 每筆結構：`{ id, type: 'photo'|'video', media_url, caption, trip_id, created_at }`
+- `type='photo'`：`media_url` 是上傳到 R2 的網址（`images/customer-stories/` 前綴）
+- `type='video'`：`media_url` 是 Instagram 貼文網址（**必須是公開貼文**，`/api/customer-stories` 的 POST 會驗證網址開頭是 `https://www.instagram.com/`）
+
+### 設計決策（不要事後加回被拿掉的東西）
+
+- **沒有星等、沒有假心得引言**：因為照片影片是蓋瑞自己跟客人要來的，客人不會主動上網站留言/評分，硬做評價系統只會變成造假展示，故意拿掉
+- **caption 是蓋瑞自己打的描述文字**（慣例格式：`行程名稱．出發年月`），不是客人的原話，不用引號包起來假裝是客戶語錄
+- **影片用 IG 嵌入、不用檔案上傳**：Vercel Serverless Function 對表單上傳有大小限制，手機拍的影片檔案很容易超過，直接上傳會失敗。討論後選 IG（不是 YouTube）是因為蓋瑞本來就在經營個人 IG，嵌入順便導流；如果之後要改成「不想公開曝光」的影片，才需要考慮 YouTube 不公開列出 + 另外處理直傳 R2 的 CORS 問題（跟 §21 PDF 直傳是同一個技術限制）
+- **「看此行程」連結是挑既有行程、不是貼 URL**：管理介面用 `/api/search?q=` 即時搜尋行程標題，選到之後存 `trip_id`，前台按鈕連到 `/trip/{trip_id}`。這樣行程改標題、換頁面都不會連結失效
+
+### IG 嵌入技術細節
+
+- `InstagramEmbed.tsx` 用官方 blockquote + `embed.js` 的公開嵌入法，不需要 IG API 金鑰或 OAuth
+- CSP（`next.config.mjs`）已開放 `frame-src`／`script-src`／`img-src`／`connect-src` 給 `instagram.com`、`cdninstagram.com`、`fbcdn.net`，**改 CSP 時不要把這些移除**，否則 IG 影片會整個失效且沒有明顯錯誤訊息（只是空白）
 
 ---
 
