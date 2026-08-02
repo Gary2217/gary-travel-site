@@ -1335,7 +1335,11 @@ export default function DestinationPage() {
             <div className="mb-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 sm:flex-row sm:px-5">
               <div className="text-center sm:text-left">
                 <p className="text-sm font-bold text-gray-900">
-                  {destination.title}目前暫無現成行程，可客製行程
+                  {(() => {
+                    const targetId = activeDestFilter || heroDest?.id || destinationId;
+                    const targetDest = siblingDestsDataRef.current.get(targetId) || heroDest || destination;
+                    return targetDest.title;
+                  })()}目前暫無現成行程，可客製行程
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">
                   免費諮詢 · 不收服務費 · 讓蓋瑞為您量身打造專屬行程
