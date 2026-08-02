@@ -12,6 +12,7 @@ import SocialCta from "@/components/SocialCta";
 import StickyHeader from "@/components/StickyHeader";
 import TravelSearchBar from "@/components/TravelSearchBar";
 import HomeBannerCarousel, { type HomeBanner } from "@/components/HomeBannerCarousel";
+import CustomerStories from "@/components/CustomerStories";
 
 const ImageEditor = dynamic(() => import("@/components/ImageEditor"), { ssr: false });
 const LogoUploader = dynamic(() => import("@/components/LogoUploader"), { ssr: false });
@@ -997,6 +998,8 @@ export default function HomePage() {
              </div>
           </section>
         )}
+
+        <CustomerStories isDevMode={isDevMode} />
 
         {(() => {
           let filtered = sections;
