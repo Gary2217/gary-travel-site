@@ -324,20 +324,12 @@ export default function HomePage() {
             trip_count: dest.trip_count ?? 0,
             min_price: dest.min_price ?? null,
           }));
-          // 同 sub_region 只顯示第一個（display_order 最小的），避免首頁展開子分類
-          const seenSubRegions = new Set<string>();
-          const uniqueDests = allDests.filter((d: { sub_region: string }) => {
-            if (!d.sub_region) return true;
-            if (seenSubRegions.has(d.sub_region)) return false;
-            seenSubRegions.add(d.sub_region);
-            return true;
-          });
           return {
             id: region.id,
             categoryLabel: region.category_label,
             title: region.title,
             description: region.description || '',
-            destinations: uniqueDests,
+            destinations: allDests,
           };
         });
         setSections(formattedSections);
