@@ -2761,14 +2761,13 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                 }}
                 title="分享行程"
                 aria-label="分享行程"
-                className="flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-0 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98] sm:w-auto sm:px-3.5"
+                className="flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 px-0 text-sm font-bold text-white transition hover:bg-sky-500 sm:w-auto sm:px-4"
               >
-                <svg className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 4H4v16h16V11" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14c0-4 3-7 7-7h3" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 4h4v4" />
+                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 10.5L12 6m0 0l4.5 4.5M12 6v10.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 16.5v2A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5v-2" />
                 </svg>
-                <span className="hidden text-xs font-semibold sm:inline sm:text-sm">分享行程</span>
+                <span className="hidden sm:inline">分享行程</span>
               </button>
 
               {trip.document_url && (
@@ -2780,12 +2779,13 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                   }}
                   title="下載行程"
                   aria-label="下載行程"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-0 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98] sm:w-auto sm:px-3.5"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-slate-700 px-0 text-sm font-bold text-white transition hover:bg-slate-600 sm:w-auto sm:px-4"
                 >
-                  <svg className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v10.5m0 0l-4-4m4 4l4-4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 16.5v2A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5v-2" />
                   </svg>
-                  <span className="hidden text-xs font-semibold sm:inline sm:text-sm">下載行程</span>
+                  <span className="hidden sm:inline">下載行程</span>
                 </button>
               )}
 
