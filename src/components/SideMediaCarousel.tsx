@@ -111,6 +111,24 @@ export default function SideMediaCarousel({
   const goPrev = () => goTo((currentIndex - 1 + mediaList.length) % mediaList.length);
   const goNext = () => goTo((currentIndex + 1) % mediaList.length);
 
+  // 觸控滑動切換
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || mediaList.length <= 1) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) goNext();
+    else goPrev();
+  };
+
   // 新增 IG 影片
   const handleAddIg = async () => {
     if (!igUrl.trim() || adding) return;
@@ -205,7 +223,11 @@ export default function SideMediaCarousel({
 
   return (
     <div ref={containerRef}>
-      <div className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 ${isVideo ? "" : "aspect-[4/3]"}`}>
+      <div
+        className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 ${isVideo ? "" : "aspect-[4/3]"}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {loading ? (
           <div className="flex aspect-[4/3] items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />

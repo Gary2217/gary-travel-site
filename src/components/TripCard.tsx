@@ -144,7 +144,7 @@ function TripCard({
         <div className={`group relative flex flex-row md:flex-col overflow-hidden rounded-xl border ${isDevMode && isSelected ? 'border-purple-400 ring-2 ring-purple-300' : 'border-gray-200'} bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md`}>
         {/* 封面圖：手機垂直 / PC 水平左側 */}
         <div
-          className={`relative min-h-[160px] w-[140px] shrink-0 self-stretch overflow-hidden sm:min-h-[200px] sm:w-48 md:w-full md:h-[200px]${isDevMode || !isCustomTour ? ' cursor-pointer' : ''}`}
+          className={`relative h-[160px] w-[140px] shrink-0 self-start overflow-hidden sm:h-[200px] sm:w-48 md:h-[200px] md:w-full md:self-auto${isDevMode || !isCustomTour ? ' cursor-pointer' : ''}`}
           onClick={handleCoverClick}
           {...(!isDevMode && !isCustomTour ? { role: 'link', 'aria-label': title } : {})}
         >

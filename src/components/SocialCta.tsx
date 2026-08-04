@@ -137,7 +137,7 @@ export default function SocialCta({
           <h3 className="text-sm font-bold text-gray-900 sm:text-lg">{title}</h3>
           <p className="mt-1 hidden text-xs text-gray-500 sm:block">{description}</p>
           <p className="mt-1 hidden text-[11px] text-gray-500 sm:block">免費諮詢 · 不收服務費 · 即時回覆</p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:mt-3">
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
             <button type="button" onClick={() => openExternalLink(lineDmHref)}
               className="whitespace-nowrap rounded-lg bg-[#06C755] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-85 sm:px-4 sm:py-2 sm:text-[13px]">
               LINE 諮詢
@@ -164,20 +164,12 @@ export default function SocialCta({
         </div>
 
         {/* 公司資訊 */}
-        <div className="mt-5 border-t border-gray-200/60 pt-3">
-          <div className="flex flex-col justify-between gap-1 text-center text-[10px] text-gray-500 sm:flex-row sm:text-left">
-            <p>
-              <span className="font-semibold text-gray-600">朋威旅行社 / 點點旅遊（通用旅行社）</span>
-              ．交觀綜2219號．品保編號：北2175．統一編號：42629833
-            </p>
-            <p>
-              旅遊蓋瑞哥：0966163777．LINE ID：@sc666555．信箱：sc666555@gmail.com
-            </p>
-          </div>
-          <div className="mt-1 flex flex-col justify-between gap-1 text-center text-[10px] text-gray-500 sm:flex-row sm:text-left">
-            <p>TEL (02)2581-3373．FAX (02)2581-2883．台北市松山區復興北路181號10樓之1</p>
-            <p className="text-[9px] text-gray-400">© {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.</p>
-          </div>
+        <div className="mt-5 space-y-1 border-t border-gray-200/60 pt-3 text-center text-[10px] leading-relaxed text-gray-500 sm:text-left">
+          <p className="font-semibold text-gray-600">朋威旅行社 / 點點旅遊（通用旅行社）</p>
+          <p>交觀綜2219號．品保編號：北2175．統一編號：42629833</p>
+          <p>旅遊蓋瑞哥：0966163777．LINE ID：@sc666555．信箱：sc666555@gmail.com</p>
+          <p>TEL (02)2581-3373．FAX (02)2581-2883．台北市松山區復興北路181號10樓之1</p>
+          <p className="pt-1 text-[9px] text-gray-400">© {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.</p>
         </div>
       </div>
 
