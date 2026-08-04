@@ -1291,6 +1291,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       ? `NT$ ${selectedPriceValue.toLocaleString('zh-TW')}`
       : trip.price_range?.trim() || (parsedTripPrice ? `NT$ ${parsedTripPrice.toLocaleString('zh-TW')}` : '歡迎詢問最新價格');
   const ctaDateText = !isCustomTour && selectedDeparture?.departure_date ? formatFullDate(selectedDeparture.departure_date) : '';
+  const ctaGroupCode = banner.code_label?.trim() || selectedDepartureInfo.group_code?.trim() || '';
 
   return (
     <main className="min-h-screen bg-transparent pb-28 text-gray-900 sm:pb-32">
@@ -2734,59 +2735,68 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
 
       <div className="fixed bottom-0 left-0 right-0 z-[55] px-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 sm:pb-4">
         <div className="mx-auto w-full max-w-[1000px] overflow-hidden bg-white/95 shadow-lg backdrop-blur-md border-t border-gray-200 sm:rounded-2xl sm:border">
-          <div className="flex items-center justify-center gap-2 border-b border-gray-100 px-4 py-2">
-            <button
-              type="button"
-              onClick={() => {
-                track({ event_type: 'trip_share', platform: 'LINE', trip_id: tripId, trip_title: trip.title });
-                handleShare();
-              }}
-              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 active:scale-[0.98] sm:text-sm"
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 4H4v16h16V11" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14c0-4 3-7 7-7h3" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 4h4v4" />
-              </svg>
-              分享行程
-            </button>
-
-            {trip.document_url && (
-              <button
-                type="button"
-                onClick={() => {
-                  track({ event_type: 'trip_download', platform: 'direct', trip_id: tripId, trip_title: trip.title });
-                  window.open(`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || '')}&name=${encodeURIComponent(trip.title)}`, '_blank');
-                }}
-                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 active:scale-[0.98] sm:text-sm"
-              >
-                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                下載行程
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-sky-600">立即詢價</p>
-              <div className="mt-1 flex flex-col gap-0.5 sm:flex-row sm:items-end sm:gap-2">
-                <span className="truncate text-lg font-black text-gray-900 sm:text-2xl">{ctaPriceText}</span>
+          <div className="flex items-center justify-between gap-2 px-4 py-3 sm:px-5">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold text-gray-900 sm:text-sm">{trip.title}</p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
+                <span className="text-[10px] font-semibold tracking-[0.15em] text-sky-600">立即詢價</span>
+                {ctaGroupCode && (
+                  <span className="text-[10px] text-gray-400">團號 {ctaGroupCode}</span>
+                )}
+              </div>
+              <div className="mt-0.5 flex items-baseline gap-2">
+                <span className="truncate text-base font-black text-gray-900 sm:text-2xl">{ctaPriceText}</span>
                 {!isCustomTour && ctaDateText && (
-                  <span className="truncate text-xs text-gray-500 sm:mb-0.5">{ctaDateText}</span>
+                  <span className="truncate text-[11px] text-gray-500 sm:text-xs">{ctaDateText}</span>
                 )}
               </div>
             </div>
-            <a
-              href={lineHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
-              className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#06C755] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#05b64d] sm:min-w-[140px]"
-            >
-              LINE 諮詢
-            </a>
+
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  track({ event_type: 'trip_share', platform: 'LINE', trip_id: tripId, trip_title: trip.title });
+                  handleShare();
+                }}
+                title="分享行程"
+                aria-label="分享行程"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98]"
+              >
+                <svg className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 4H4v16h16V11" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14c0-4 3-7 7-7h3" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 4h4v4" />
+                </svg>
+              </button>
+
+              {trip.document_url && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    track({ event_type: 'trip_download', platform: 'direct', trip_id: tripId, trip_title: trip.title });
+                    window.open(`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || '')}&name=${encodeURIComponent(trip.title)}`, '_blank');
+                  }}
+                  title="下載行程"
+                  aria-label="下載行程"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98]"
+                >
+                  <svg className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
+              )}
+
+              <a
+                href={lineHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
+                className="flex h-10 shrink-0 items-center justify-center rounded-full bg-[#06C755] px-4 text-sm font-bold text-white transition hover:bg-[#05b64d]"
+              >
+                LINE 諮詢
+              </a>
+            </div>
           </div>
         </div>
       </div>
