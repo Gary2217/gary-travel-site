@@ -1302,35 +1302,22 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     <main className="min-h-screen bg-transparent pb-28 text-gray-900 sm:pb-32">
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
-      {/* 常駐底部工具列：分享 / LINE 詢問 / 下載 */}
-      <div className="fixed inset-x-0 bottom-0 z-floating border-t border-gray-100 bg-white/95 py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm">
-        <div className="mx-auto flex max-w-site items-center justify-center gap-2.5 px-4">
+      {/* 常駐底部工具列：分享 / 下載 / LINE 詢問（三顆同款按鈕） */}
+      <div className="fixed inset-x-0 bottom-0 z-floating border-t border-gray-100 bg-white/95 py-2.5 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm">
+        <div className="mx-auto flex max-w-site items-center justify-center gap-2 px-4 sm:gap-3">
           <button
             type="button"
             onClick={() => {
               track({ event_type: 'trip_share', platform: 'LINE', trip_id: tripId, trip_title: trip.title });
               handleShare();
             }}
-            aria-label="分享行程"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sky-600 transition hover:bg-sky-100 active:scale-95"
+            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 text-sm font-bold text-sky-700 transition hover:bg-sky-100 active:scale-[0.98]"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
+            分享
           </button>
-
-          <a
-            href={ctaLineHref}
-            onClick={(e) => {
-              e.preventDefault();
-              track({ event_type: "trip_inquiry", platform: "LINE", trip_id: tripId, trip_title: trip.title });
-              openExternalLink(ctaLineHref);
-            }}
-            className="flex w-full max-w-xs flex-1 items-center justify-center gap-2 rounded-full bg-[#06C755] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-[0.98]"
-          >
-            <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
-            LINE 詢問
-          </a>
 
           {trip.document_url && (
             <button
@@ -1339,14 +1326,27 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                 track({ event_type: 'trip_download', platform: 'direct', trip_id: tripId, trip_title: trip.title });
                 window.open(`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || '')}&name=${encodeURIComponent(trip.title)}`, '_blank');
               }}
-              aria-label="下載行程檔"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100 active:scale-95"
+              className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
+              下載
             </button>
           )}
+
+          <a
+            href={ctaLineHref}
+            onClick={(e) => {
+              e.preventDefault();
+              track({ event_type: "trip_inquiry", platform: "LINE", trip_id: tripId, trip_title: trip.title });
+              openExternalLink(ctaLineHref);
+            }}
+            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#06C755] px-3 text-sm font-bold text-white shadow-md transition hover:bg-[#05b64d] active:scale-[0.98]"
+          >
+            <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+            LINE 詢問
+          </a>
         </div>
       </div>
 
