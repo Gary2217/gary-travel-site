@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, scrapeTripPdf, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, type PdfScrapeResult, lineHref } from "@/lib/supabase";
+import { getTripWithDays, getDestination, getRelatedTrips, getSiteLogo, getRegionsWithDestinations, uploadTripBannerImage, uploadTripDocument, deleteTripDocument, invalidateCache, scrapeTripPdf, type Trip, type TripBanner, type DepartureDate, type DepartureBannerInfo, type Region, type PdfScrapeResult, lineHref, lineMessageHref } from "@/lib/supabase";
 import TripCard from "@/components/TripCard";
 import dynamic from "next/dynamic";
 import StickyHeader from "@/components/StickyHeader";
@@ -1292,6 +1292,10 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       : trip.price_range?.trim() || (parsedTripPrice ? `NT$ ${parsedTripPrice.toLocaleString('zh-TW')}` : '歡迎詢問最新價格');
   const ctaDateText = !isCustomTour && selectedDeparture?.departure_date ? formatFullDate(selectedDeparture.departure_date) : '';
   const ctaGroupCode = banner.code_label?.trim() || selectedDepartureInfo.group_code?.trim() || '';
+  const ctaLineMessage = isCustomTour
+    ? `您好，我想詢問「${trip.title}」${ctaGroupCode ? `\n團號：${ctaGroupCode}` : ''}\n歡迎詢問出團資訊`
+    : `您好，我想詢問「${trip.title}」${ctaGroupCode ? `\n團號：${ctaGroupCode}` : ''}${ctaDateText ? `\n出發日期：${ctaDateText}` : ''}\n價格：${ctaPriceText}`;
+  const ctaLineHref = lineMessageHref(ctaLineMessage);
 
   return (
     <main className="min-h-screen bg-transparent pb-28 text-gray-900 sm:pb-32">
@@ -2790,7 +2794,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               )}
 
               <a
-                href={lineHref}
+                href={ctaLineHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
