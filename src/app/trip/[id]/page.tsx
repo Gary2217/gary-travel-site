@@ -2761,13 +2761,14 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                 }}
                 title="分享行程"
                 aria-label="分享行程"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98]"
+                className="flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-0 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98] sm:w-auto sm:px-3.5"
               >
                 <svg className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 4H4v16h16V11" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14c0-4 3-7 7-7h3" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 4h4v4" />
                 </svg>
+                <span className="hidden text-xs font-semibold sm:inline sm:text-sm">分享行程</span>
               </button>
 
               {trip.document_url && (
@@ -2779,11 +2780,12 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                   }}
                   title="下載行程"
                   aria-label="下載行程"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-0 text-gray-600 transition hover:bg-gray-100 active:scale-[0.98] sm:w-auto sm:px-3.5"
                 >
                   <svg className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
+                  <span className="hidden text-xs font-semibold sm:inline sm:text-sm">下載行程</span>
                 </button>
               )}
 
