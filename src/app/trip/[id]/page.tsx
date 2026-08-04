@@ -14,14 +14,13 @@ import InquiryButtons from "@/components/InquiryButtons";
 import DevModeToggle from "@/components/DevModeToggle";
 import SocialCta from "@/components/SocialCta";
 import PriceInfoModal from "@/components/trip/PriceInfoModal";
-import DownloadGateModal from "@/components/trip/DownloadGateModal";
-import ShareGateModal from "@/components/trip/ShareGateModal";
 import SourceUrlModal from "@/components/trip/SourceUrlModal";
 import MobileDatePickerModal from "@/components/trip/MobileDatePickerModal";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
 const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel"), { ssr: false });
 import { track } from "@/lib/analytics";
+import { openExternalLink } from "@/lib/external-link";
 import {
   DEFAULT_PRICE_DETAIL,
   parseDeparturePrice,
@@ -145,9 +144,6 @@ export default function TripPage() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDownloadGate, setShowDownloadGate] = useState(false);
-  const [downloadReady, setDownloadReady] = useState(false);
-  const [showShareGate, setShowShareGate] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('/travel-logo.svg');
   const [isDevMode, setIsDevMode] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
@@ -247,8 +243,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     ? banner.departure_info_map?.[selectedDepartureId] ?? EMPTY_DEPARTURE_INFO
     : EMPTY_DEPARTURE_INFO;
 
-  const handleFollowAndShare = async (socialUrl: string) => {
-    setShowShareGate(false);
+  const handleShare = async () => {
     const pageUrl = typeof window !== "undefined" ? window.location.href : "";
 
     // 先觸發原生分享（必須在用戶手勢的同步 context 內呼叫，iOS 才允許）
@@ -1307,8 +1302,23 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
     <main className="min-h-screen bg-transparent pb-28 text-gray-900 sm:pb-32">
       <StickyHeader showBackButton backHref={from || "/"} logoUrl={siteLogoUrl} devModeSlot={<DevModeToggle onToggle={setIsDevMode} />} />
 
-      {/* 浮動詢問按鈕 */}
-      <InquiryButtons tripTitle={trip.title} tripId={tripId} variant="floating" selectedDate={selectedDeparture?.departure_date} />
+      {/* 常駐底部 LINE 詢問按鈕 */}
+      <div className="fixed inset-x-0 bottom-0 z-floating border-t border-gray-200 bg-white/95 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+        <div className="mx-auto max-w-site px-4 py-3">
+          <a
+            href={ctaLineHref}
+            onClick={(e) => {
+              e.preventDefault();
+              track({ event_type: "trip_inquiry", platform: "LINE", trip_id: tripId, trip_title: trip.title });
+              openExternalLink(ctaLineHref);
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#06C755] px-6 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-[#05b64d] active:scale-[0.98]"
+          >
+            <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" /></svg>
+            LINE 詢問
+          </a>
+        </div>
+      </div>
 
       <div id="trip-content" />
 
@@ -2503,12 +2513,8 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
         <div className="mt-8 flex flex-row gap-2 sm:gap-3">
           <button
             onClick={() => {
-              if (typeof window !== 'undefined' && localStorage.getItem('social_followed')) {
-                track({ event_type: 'trip_share', platform: 'LINE', trip_id: tripId, trip_title: trip.title });
-                handleFollowAndShare(lineHref);
-                return;
-              }
-              setShowShareGate(true);
+              track({ event_type: 'trip_share', platform: 'LINE', trip_id: tripId, trip_title: trip.title });
+              handleShare();
             }}
             className="flex flex-1 items-center justify-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 active:scale-[0.98] md:py-3"
           >
@@ -2520,14 +2526,10 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
 
           {trip.document_url && (
             <button
-                  onClick={() => {
-                    if (typeof window !== 'undefined' && localStorage.getItem('social_followed')) {
-                      // 已追蹤過，直接下載
-                      window.open(`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || '')}&name=${encodeURIComponent(trip.title)}`, '_blank');
-                      return;
-                    }
-                    setShowDownloadGate(true);
-                  }}
+              onClick={() => {
+                track({ event_type: 'trip_download', platform: 'direct', trip_id: tripId, trip_title: trip.title });
+                window.open(`/api/download-trip-pdf?url=${encodeURIComponent(trip.document_url || '')}&name=${encodeURIComponent(trip.title)}`, '_blank');
+              }}
               className="flex flex-1 items-center justify-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] md:py-3"
             >
               <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2546,26 +2548,6 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
         <SocialCta className="mt-10" title="喜歡這個行程嗎？" description="聯繫旅遊規劃師蓋瑞 GARY，為您量身打造專屬行程" />
 
       </div>
-
-      {/* 下載門檻彈窗 */}
-      <DownloadGateModal
-        open={showDownloadGate}
-        downloadReady={downloadReady}
-        tripId={tripId}
-        tripTitle={trip.title}
-        documentUrl={trip.document_url}
-        onReady={() => setDownloadReady(true)}
-        onClose={() => { setShowDownloadGate(false); setDownloadReady(false); }}
-      />
-
-      {/* 分享門檻彈窗 */}
-      <ShareGateModal
-        open={showShareGate}
-        tripId={tripId}
-        tripTitle={trip.title}
-        onShare={handleFollowAndShare}
-        onClose={() => setShowShareGate(false)}
-      />
 
       {/* 售價說明彈窗（用戶端） */}
       <PriceInfoModal
