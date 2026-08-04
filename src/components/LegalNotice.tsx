@@ -12,9 +12,8 @@ export default function LegalNotice({ className = "", variant = "light" }: Legal
 
   return (
     <section className={className}>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2">
         <span className={`text-[10px] font-semibold uppercase tracking-wide ${isDark ? "text-white/70" : "text-gray-400"}`}>免責聲明與防詐提醒</span>
-        <Link href="/privacy" className={isDark ? "text-[10px] text-white/80 hover:text-white" : "text-[10px] text-sky-500 hover:text-sky-400"}>隱私權政策</Link>
       </div>
 
       <p className={`text-[10px] leading-relaxed ${isDark ? "text-white/70" : "text-gray-400"}`}>
