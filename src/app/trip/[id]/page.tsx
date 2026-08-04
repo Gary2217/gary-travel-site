@@ -1750,15 +1750,6 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     </div>
                   </div>
                 )}
-                <a
-                  href={lineHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track({ event_type: 'line_inquiry', trip_id: tripId, trip_title: trip.title })}
-                  className="hidden shrink-0 rounded-full bg-[#06C755] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#05b64d] sm:inline-flex"
-                >
-                  LINE 詢問
-                </a>
               </div>
             </div>
 
