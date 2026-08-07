@@ -9,6 +9,18 @@ export interface HomeBanner {
   link: string;
 }
 
+// Banner 連結可能被填成完整網址（如 https://gary-travel-site.vercel.app/trip/xxx），
+// 這裡轉成相對路徑，避免點擊時跳出 SPA 觸發整頁重新載入、或本機測試時被導去正式站
+function toRelativeLink(link: string): string {
+  try {
+    const u = new URL(link, 'https://placeholder.invalid');
+    if (link.startsWith('http')) return u.pathname + u.search + u.hash;
+    return link;
+  } catch {
+    return link;
+  }
+}
+
 interface HomeBannerCarouselProps {
   banners: HomeBanner[];
   isDevMode?: boolean;
@@ -228,7 +240,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
               />
               {/* 非 DevMode 時，有連結則整張圖可點擊導向 */}
               {!isDevMode && banner.link && (
-                <Link href={banner.link} className="absolute inset-0 z-[1]" aria-label="查看詳情" />
+                <Link href={toRelativeLink(banner.link)} className="absolute inset-0 z-[1]" aria-label="查看詳情" />
               )}
               {/* DevMode 刪除按鈕 */}
               {isDevMode && i === current && (
