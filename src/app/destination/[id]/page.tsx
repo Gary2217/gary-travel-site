@@ -318,8 +318,18 @@ export default function DestinationPage() {
       setCurrentTabLabel(validTab.label);
       setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
     }
+    // 同步 hero 區塊：URL 帶的 sub_area（如沖繩）若對應到另一個實際 destination，
+    // hero 圖／標題／副標要跟著換，否則會停留在網址路徑本身那個 destination（如北海道）
+    if (savedTab) {
+      const heroCandidate = Array.from(siblingDestsDataRef.current.values()).find(
+        (d) => d.sub_region === savedTab || d.title === savedTab
+      );
+      if (heroCandidate && heroCandidate.id !== destinationId) {
+        setHeroDest(heroCandidate);
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTabLabel, getParentSubArea, mergedSubAreaTabs, subAreaFilter, useMergedMode]);
+  }, [currentTabLabel, destinationId, getParentSubArea, mergedSubAreaTabs, subAreaFilter, useMergedMode]);
 
   // 行程列表：如果有 sub_region 合併行程就用它（可再按 destination 篩選），否則用當前 destination 的行程
   const displayTrips = useMemo(() => {
@@ -848,6 +858,7 @@ export default function DestinationPage() {
       setSubAreaFilter("");
       setCurrentTabLabel("全部");
       setTabParam("全部");
+      setHeroDest(null);
     }
   };
 
