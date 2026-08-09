@@ -5,30 +5,26 @@ interface InstagramEmbedProps {
   height?: number;
 }
 
-// 從 IG 網址取得嵌入用的短碼
-function getIgPostId(url: string): string | null {
-  const match = url.match(/instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/);
-  return match ? match[1] : null;
-}
-
 /**
- * 用 IG 原生 iframe embed（非官方 blockquote widget）並裁切，
- * 只留貼文本身內容，不顯示大頭貼/追蹤按鈕/留言框等 IG 自帶的大塊 UI。
+ * 小尺寸縮圖卡片不適合塞入 IG 的可互動 iframe（畫面會被裁切、沒辦法放大，
+ * 點裡面的「在 Instagram 觀看」也是 IG 自己 iframe 內的連結，不會跳出到新分頁）。
+ * 改成單純的可點擊海報卡片，點擊直接開新分頁到 Instagram 原生播放。
  */
 export default function InstagramEmbed({ url, height = 240 }: InstagramEmbedProps) {
-  const postId = getIgPostId(url);
-  if (!postId) return null;
-
   return (
-    <div className="relative w-full overflow-hidden bg-black" style={{ height }}>
-      <iframe
-        src={`https://www.instagram.com/p/${postId}/embed/?autoplay=1&hidecaption=true`}
-        className="absolute border-0"
-        style={{ top: -64, left: -1, width: "calc(100% + 2px)", height: "calc(100% + 300px)" }}
-        allow="autoplay; encrypted-media"
-        allowFullScreen
-        scrolling="no"
-      />
-    </div>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group relative flex w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]"
+      style={{ height }}
+    >
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition group-hover:scale-110 group-hover:bg-white">
+        <svg className="ml-1 h-6 w-6 text-[#ee2a7b]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+      </span>
+      <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+        在 Instagram 觀看
+      </span>
+    </a>
   );
 }
