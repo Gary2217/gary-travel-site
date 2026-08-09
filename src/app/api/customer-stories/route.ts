@@ -16,6 +16,7 @@ interface CustomerStory {
   id: string;
   type: 'photo' | 'video';
   media_url: string; // photo: R2 網址；video: IG 貼文網址
+  thumbnail_url?: string; // video 專用：手動上傳的縮圖（R2 網址），IG 無公開縮圖 API 可抓
   caption: string;
   trip_id: string | null;
   created_at: string;
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
     const tripId = (formData.get('trip_id') as string) || null;
     const file = formData.get('file') as File | null;
     const videoUrl = (formData.get('video_url') as string) || '';
+    const thumbnailFile = formData.get('thumbnail') as File | null;
 
     if (!caption) return apiError('請輸入說明文字', 400);
 
@@ -98,10 +100,26 @@ export async function POST(request: NextRequest) {
       if (!/^https:\/\/(www\.)?instagram\.com\//.test(videoUrl)) {
         return apiError('影片連結必須是 Instagram 貼文網址', 400);
       }
+
+      let thumbnailUrl: string | undefined;
+      if (thumbnailFile) {
+        if (!ALLOWED_TYPES.includes(thumbnailFile.type)) return apiError('縮圖僅支援 JPG、PNG、WebP', 400);
+        if (thumbnailFile.size > MAX_SIZE) return apiError('縮圖檔案過大（最大 8MB）', 400);
+
+        const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
+        if (!validateFileSignature(buffer, thumbnailFile.type)) return apiError('縮圖檔案內容與類型不符', 400);
+
+        const ext = thumbnailFile.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const filePath = `images/${PHOTO_DIR}/story-thumb-${Date.now()}.${ext}`;
+        await r2Upload(filePath, buffer, thumbnailFile.type);
+        thumbnailUrl = `${r2PublicUrl(filePath)}?v=${Date.now()}`;
+      }
+
       story = {
         id: crypto.randomUUID(),
         type: 'video',
         media_url: videoUrl,
+        ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
         caption,
         trip_id: tripId,
         created_at: new Date().toISOString(),
@@ -142,6 +160,12 @@ export async function DELETE(request: NextRequest) {
     if (target?.type === 'photo') {
       try {
         const key = r2KeyFromUrl(target.media_url);
+        if (key) await r2Delete([key]);
+      } catch { /* 靜默失敗 */ }
+    }
+    if (target?.thumbnail_url) {
+      try {
+        const key = r2KeyFromUrl(target.thumbnail_url);
         if (key) await r2Delete([key]);
       } catch { /* 靜默失敗 */ }
     }

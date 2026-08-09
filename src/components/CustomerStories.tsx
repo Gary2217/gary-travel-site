@@ -9,6 +9,7 @@ interface CustomerStory {
   id: string;
   type: "photo" | "video";
   media_url: string;
+  thumbnail_url?: string;
   caption: string;
   trip_id: string | null;
   created_at: string;
@@ -31,6 +32,7 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
   const [mediaKind, setMediaKind] = useState<"photo" | "video">("photo");
   const [file, setFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [tripQuery, setTripQuery] = useState("");
   const [tripResults, setTripResults] = useState<TripSearchResult[]>([]);
@@ -41,6 +43,7 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const tripSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reorderListRef = useRef<CustomerStory[]>([]);
   useEffect(() => { reorderListRef.current = reorderList; }, [reorderList]);
@@ -73,11 +76,13 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
   const resetForm = useCallback(() => {
     setFile(null);
     setVideoUrl("");
+    setThumbnailFile(null);
     setCaption("");
     setTripQuery("");
     setTripResults([]);
     setSelectedTrip(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
   }, []);
 
   // 開啟排序視窗
@@ -149,7 +154,10 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
       fd.append("caption", caption.trim());
       if (selectedTrip) fd.append("trip_id", selectedTrip.id);
       if (mediaKind === "photo" && file) fd.append("file", file);
-      if (mediaKind === "video") fd.append("video_url", videoUrl.trim());
+      if (mediaKind === "video") {
+        fd.append("video_url", videoUrl.trim());
+        if (thumbnailFile) fd.append("thumbnail", thumbnailFile);
+      }
 
       const res = await fetch("/api/customer-stories", { method: "POST", credentials: "include", body: fd });
       if (!res.ok) {
@@ -248,13 +256,23 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
               className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700"
             />
           ) : (
-            <input
-              type="text"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="貼上 Instagram 貼文網址，例如 https://www.instagram.com/p/xxxxx/"
-              className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-sky-400"
-            />
+            <>
+              <input
+                type="text"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="貼上 Instagram 貼文網址，例如 https://www.instagram.com/p/xxxxx/"
+                className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-sky-400"
+              />
+              <p className="mb-1 text-[11px] text-gray-500">影片縮圖（選填）：IG 沒有公開縮圖可抓，建議截一張影片畫面上傳，卡片會更好看</p>
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+                className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700"
+              />
+            </>
           )}
 
           <input
@@ -334,7 +352,7 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
                   <Image src={story.media_url} alt={story.caption} fill sizes="240px" className="object-cover" />
                 </div>
               ) : (
-                <InstagramEmbed url={story.media_url} />
+                <InstagramEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} />
               )}
               <div className="p-3">
                 <p className="line-clamp-2 text-xs text-gray-600">{story.caption}</p>
@@ -396,6 +414,15 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
                   {story.type === "photo" ? (
                     <Image
                       src={story.media_url}
+                      alt={story.caption}
+                      width={64}
+                      height={48}
+                      className="h-12 w-16 shrink-0 rounded-lg object-cover"
+                      draggable={false}
+                    />
+                  ) : story.thumbnail_url ? (
+                    <Image
+                      src={story.thumbnail_url}
                       alt={story.caption}
                       width={64}
                       height={48}
