@@ -36,8 +36,14 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
   const [tripResults, setTripResults] = useState<TripSearchResult[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<TripSearchResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [reorderList, setReorderList] = useState<CustomerStory[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tripSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reorderListRef = useRef<CustomerStory[]>([]);
+  useEffect(() => { reorderListRef.current = reorderList; }, [reorderList]);
 
   useEffect(() => {
     fetch("/api/customer-stories", { cache: "no-store" })
@@ -73,6 +79,64 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
     setSelectedTrip(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
+
+  // 開啟排序視窗
+  const openReorderModal = () => {
+    setReorderList([...stories]);
+    setShowReorderModal(true);
+  };
+
+  // 儲存排序結果
+  const saveOrder = useCallback(async () => {
+    const list = reorderListRef.current;
+    setSavingOrder(true);
+    try {
+      const res = await fetch("/api/customer-stories", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stories: list }),
+      });
+      if (!res.ok) { alert("順序調整失敗"); return; }
+      setStories(list);
+    } catch {
+      alert("順序調整失敗");
+    } finally {
+      setSavingOrder(false);
+    }
+  }, []);
+
+  // 拖曳排序：追蹤指標移動，即時交換項目位置
+  useEffect(() => {
+    if (dragIndex === null) return;
+
+    const handleMove = (e: PointerEvent) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const row = el?.closest("[data-reorder-index]") as HTMLElement | null;
+      if (!row) return;
+      const overIndex = Number(row.dataset.reorderIndex);
+      if (Number.isNaN(overIndex) || overIndex === dragIndex) return;
+      setReorderList((prev) => {
+        const updated = [...prev];
+        const [moved] = updated.splice(dragIndex, 1);
+        updated.splice(overIndex, 0, moved);
+        return updated;
+      });
+      setDragIndex(overIndex);
+    };
+
+    const handleUp = () => {
+      setDragIndex(null);
+      void saveOrder();
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, [dragIndex, saveOrder]);
 
   const handleSubmit = async () => {
     if (!caption.trim()) { alert("請輸入說明文字（例如：杜拜7日團．2026年6月）"); return; }
@@ -135,13 +199,24 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
           <p className="mt-1 text-xs text-gray-500">參團客人實拍的照片與影片，帶你一起感受現場氛圍</p>
         </div>
         {isDevMode && (
-          <button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            className="shrink-0 rounded-full bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-sky-400"
-          >
-            {showForm ? "取消" : "+ 新增花絮"}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {stories.length > 1 && (
+              <button
+                type="button"
+                onClick={openReorderModal}
+                className="rounded-full border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
+              >
+                調整順序
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowForm((v) => !v)}
+              className="rounded-full bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-sky-400"
+            >
+              {showForm ? "取消" : "+ 新增花絮"}
+            </button>
+          </div>
         )}
       </div>
 
@@ -275,6 +350,81 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 調整順序視窗 */}
+      {showReorderModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowReorderModal(false)}
+        >
+          <div
+            className="flex max-h-[80vh] w-full max-w-sm flex-col rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h3 className="text-sm font-bold text-gray-900">調整花絮順序</h3>
+              <button
+                type="button"
+                onClick={() => setShowReorderModal(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 space-y-2 overflow-y-auto p-3">
+              {reorderList.map((story, i) => (
+                <div
+                  key={story.id}
+                  data-reorder-index={i}
+                  className={`flex touch-none items-center gap-3 rounded-xl border p-2 transition ${
+                    dragIndex === i ? "border-sky-400 bg-sky-50 shadow-md" : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <div
+                    onPointerDown={(e) => { e.preventDefault(); setDragIndex(i); }}
+                    className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center text-gray-400 active:cursor-grabbing"
+                    title="按住拖曳排序"
+                  >
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M7 4a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2zM7 9a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2zm-6 5a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2z" />
+                    </svg>
+                  </div>
+                  {story.type === "photo" ? (
+                    <Image
+                      src={story.media_url}
+                      alt={story.caption}
+                      width={64}
+                      height={48}
+                      className="h-12 w-16 shrink-0 rounded-lg object-cover"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white">
+                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1 truncate text-xs text-gray-500">
+                    {story.caption}
+                  </div>
+                  <span className="shrink-0 text-xs font-bold text-gray-400">{i + 1}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+              <span className="text-xs text-gray-400">{savingOrder ? "儲存中..." : "拖曳把手調整順序，自動儲存"}</span>
+              <button
+                type="button"
+                onClick={() => setShowReorderModal(false)}
+                className="rounded-lg bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500"
+              >
+                完成
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>
