@@ -264,7 +264,7 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
                 placeholder="貼上 Instagram 貼文網址，例如 https://www.instagram.com/p/xxxxx/"
                 className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-sky-400"
               />
-              <p className="mb-1 text-[11px] text-gray-500">影片縮圖（選填）：IG 沒有公開縮圖可抓，建議截一張影片畫面上傳，卡片會更好看</p>
+              <p className="mb-1 text-[11px] text-gray-500">影片縮圖（選填）：不上傳會自動顯示 IG 貼文本身的畫面；想換成別的截圖才需要上傳</p>
               <input
                 ref={thumbnailInputRef}
                 type="file"
