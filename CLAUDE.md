@@ -984,6 +984,68 @@ Admin 頁面「待確認變更」列表
 - **分組**：按 `region_label` 分地區顯示
 - **圖片**：從 `scraped_data.cover_image_url` 顯示縮圖
 
+### 16.1 Claude Code 無法登入網頁後台時：直接跑腳本比對＋套用
+
+> 2026-08-16 實測整理。用途：使用者要求「比對朋威跟我的網站、抓出差異、我決定要不要更新」
+> 這類任務時，不要用瀏覽器手動一頁一頁點（慢、看不到 client-side 渲染的出發日期表），
+> 也不要嘗試登入網頁後台（Claude Code 沒有真實 LINE session，登不進去）。
+> 直接在終端機跑腳本，繞過網頁層，效果與使用者自己在後台按按鈕完全一致。
+
+**Step 1：跑抓取（產生 pending_changes，不寫入正式行程資料）**
+
+```bash
+# 單一目的地（例如新增/比對某個 destination 底下的行程）
+node scripts/auto-scrape.mjs --destination-id=<destination_id>
+
+# 多個/全部區域完整比對——⚠️ 三個常見誤區：
+# 1. 沒帶 --regions 參數 = 進入「智慧輪轉」模式，只抓「最久沒更新的 1 個區域」，不是全部
+# 2. --regions=all 這個值不存在，會直接噴錯「找不到區域設定：all」
+# 3. 要抓全部區域，必須明確列出全部 17 個 key（逗號分隔，不能有空格）：
+node scripts/auto-scrape.mjs --regions=asia,japan,south-korea,thailand,vietnam,indonesia,malaysia,philippines,europe,china,southasia,new,kinmen,mazu,penghu,freetour,golf
+```
+
+跑全部區域耗時很長（部分朋威頁面 Puppeteer fallback 會卡 30 秒才 timeout，詳見 §21 已知問題），
+用 `run_in_background: true` 背景執行，`log_id`（開頭會印出來）記下來，下一步要用。
+
+**Step 2：套用（實際寫入正式行程資料——這一步有風險，套用前務必先看清單）**
+
+`/api/scrape/apply` 跟其他寫入 API 一樣需要 `requireDevAuth()`，但 Claude Code 沒有瀏覽器登入
+session、無法拿到真的 cookie。解法：`DEV_AUTH_SECRET` 和 `DEV_LINE_USER_ID` 都在 `.env.local`
+裡（本來就是給伺服器端讀的密鑰），可以直接照 `src/lib/dev-auth.ts` 的簽章邏輯在腳本裡自己組一個
+合法 cookie：
+
+```js
+import crypto from 'crypto';
+const timestamp = Date.now().toString();
+const payload = `${userId}.${timestamp}`;  // userId = process.env.DEV_LINE_USER_ID
+const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex'); // secret = DEV_AUTH_SECRET
+const cookie = `dev_auth=${payload}.${signature}`;
+// 之後 fetch('http://localhost:3000/api/scrape/apply', { headers: { Cookie: cookie }, ... })
+```
+
+**套用前一定要做的檢查（順序不可跳過）：**
+
+1. **先查 `pending_changes` 表內容給使用者看，不要盲套**——用 `scrape_log_id` 篩選只看這次抓的，
+   排除 `change_type='warning'`（那是資料品質警告，如「售價明細不足5欄」，套用了也沒意義，
+   留給使用者自己去朋威官網確認後手動補）
+2. **多目的地區域（如「中東」同時有杜拜/埃及/土耳其/伊朗）跑出來的 `new_trip`，套用後必須
+   反查是否在其他 destination 底下已經有相同標題/code_label 的行程**——2026-08-16 實測踩過：
+   套用「漫步埃及10日」「滿漢波斯假期~伊朗10日」這兩筆 new_trip 時，被誤判目的地複製到「杜拜/
+   阿布達比」底下，但這兩個行程其實早就存在於「埃及」「伊朗」，變成同一團兩份紀錄。發現後用
+   `/api/trips/[id]` 的 DELETE（會自動查 R2 圖片引用，安全）把誤植的那份刪掉，正確那份留著。
+   **單一目的地的 `--destination-id=` 抓取沒有這個風險**（只會對應到一個 destination，不會混）。
+3. **套用 `new_trip` 後檢查 `display_order`**——新行程目前會從 1 開始編號，不會接續在既有行程
+   後面，容易跟原本的行程撞號（如既有行程 order=1，新行程也給 order=1）。套用完要手動查一次
+   `GET /api/destinations/[id]/trips`，照朋威頁面實際的卡片順序（掃描 log 裡 `[1/N]` `[2/N]`
+   的順序）重新排 `display_order`。
+4. **套用完務必用直連 Supabase 的查詢驗證，不要只信任 `/api/search` 這類走 `createAnonClient()`
+   （非 NoCache 版本）的 API 回應**——本機開發環境下這條路徑偶爾會回傳套用前的舊資料（疑似
+   Next fetch 快取，`force-dynamic` 沒有完全避開），直接查 `/api/trips/[id]`（單筆詳情）或
+   用腳本以 service role client 查 DB 本身最準。
+
+**清理**：腳本執行過程中若建立暫時性的 `.mjs` 檔案輔助查詢/套用，用完務必刪除
+（`scripts/` 目錄不留一次性除錯腳本），`git status` 確認乾淨再結束。
+
 ---
 
 ## 17. 首頁導航列
