@@ -68,6 +68,8 @@ interface HomeDestinationCardProps {
     onMoveDown: () => void;
   };
   priority?: boolean;
+  /** 首頁收合預覽卡片專用：該目的地屬於多目的地 sub_region 時，顯示代表整組的名稱（不影響實際可編輯的 destination.title） */
+  displayTitle?: string;
 }
 
 async function handleReorder<T extends { id: string; display_order: number }>(
@@ -110,7 +112,7 @@ async function handleReorder<T extends { id: string; display_order: number }>(
   }
 }
 
-function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDragging = false, isDragOver = false, onDragStart, onDragOver, onDragEnd, onDrop, onImageUpdate, onTextUpdate, onDelete, onSaveSuccess, reorderControls, priority = false }: HomeDestinationCardProps) {
+function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDragging = false, isDragOver = false, onDragStart, onDragOver, onDragEnd, onDrop, onImageUpdate, onTextUpdate, onDelete, onSaveSuccess, reorderControls, priority = false, displayTitle }: HomeDestinationCardProps) {
   const [tripCount, setTripCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -259,7 +261,7 @@ function HomeDestinationCard({ destination, isDevMode, isDraggable = false, isDr
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-3">
         <>
-          <h3 className="text-sm font-bold text-white [text-shadow:_0_1px_6px_rgba(0,0,0,0.9)] sm:text-base">{destination.title}</h3>
+          <h3 className="text-sm font-bold text-white [text-shadow:_0_1px_6px_rgba(0,0,0,0.9)] sm:text-base">{displayTitle || destination.title}</h3>
           <p className="mt-0.5 text-[11px] text-white/90 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">{destination.subtitle}</p>
           {destination.min_price && destination.min_price > 0 ? (
             <p className="mt-0.5 text-[11px] font-bold text-amber-300 [text-shadow:_0_1px_4px_rgba(0,0,0,0.9)]">
@@ -1124,13 +1126,24 @@ export default function HomePage() {
 
                 const hasMore = section.destinations.length > 4;
 
-                const renderCard = (destination: Destination, cardIdx: number) => {
+                // sub_region -> 該分組內目的地數量，用來判斷收合預覽卡片是否該顯示分組名稱而非單一目的地名稱
+                const subRegionCounts = new Map<string, number>();
+                section.destinations.forEach((d) => {
+                  if (!d.sub_region) return;
+                  subRegionCounts.set(d.sub_region, (subRegionCounts.get(d.sub_region) || 0) + 1);
+                });
+
+                const renderCard = (destination: Destination, cardIdx: number, useGroupTitle = false) => {
                   const destinationIndex = section.destinations.findIndex((item) => item.id === destination.id);
+                  const groupTitle = useGroupTitle && destination.sub_region && (subRegionCounts.get(destination.sub_region) || 0) > 1
+                    ? destination.sub_region
+                    : undefined;
 
                   return (
                   <HomeDestinationCard
                     key={destination.id}
                     destination={destination}
+                    displayTitle={groupTitle}
                     isDevMode={isDevMode}
                     isDraggable={isDevMode && isPC}
                     isDragging={dragSectionId === section.id && dragIndex === destinationIndex}
@@ -1165,19 +1178,29 @@ export default function HomePage() {
                               <h3 className="mb-2 px-1 text-sm font-bold text-sky-600">{group.label}</h3>
                             )}
                             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
-                              {group.destinations.map(renderCard)}
+                              {group.destinations.map((d, i) => renderCard(d, i))}
                             </div>
                           </div>
                         ))
                       ) : (
                         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
-                          {section.destinations.map(renderCard)}
+                          {section.destinations.map((d, i) => renderCard(d, i))}
                         </div>
                       )
                     ) : (
-                      // 收合：固定只顯示前 4 張，不分組
+                      // 收合：固定只顯示前 4 張。同一個多目的地 sub_region（如泰國：曼谷/泰北/普吉島/曼芭）
+                      // 只留第一筆當代表、顯示分組名稱，避免同分組擠出好幾張卡片、看起來像重複
                       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
-                        {section.destinations.slice(0, 4).map(renderCard)}
+                        {(() => {
+                          const seenSubRegions = new Set<string>();
+                          const preview = section.destinations.filter((d) => {
+                            if (!d.sub_region) return true;
+                            if (seenSubRegions.has(d.sub_region)) return false;
+                            seenSubRegions.add(d.sub_region);
+                            return true;
+                          });
+                          return preview.slice(0, 4).map((d, i) => renderCard(d, i, true));
+                        })()}
                       </div>
                     )}
                     {hasMore && (
