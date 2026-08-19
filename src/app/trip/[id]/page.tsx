@@ -2252,41 +2252,47 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     <div className="border-b border-r border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">起飛時間及機場</div>
                     <div className="border-b border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">抵達時間及機場</div>
                   </div>
-                  {flightLegGroups.flatMap((group, gi) => {
+                  {flightLegGroups.map((group, gi) => {
                     const isFirst = group.label === '去程';
                     const isLast = group.label === '回程';
                     const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
-                    const groupSize = group.segs.length;
+                    const groupBg = isFirst ? "bg-sky-50/50" : isLast ? "bg-amber-50/50" : "bg-violet-50/50";
                     const segDate = group.date ? (() => { const sd = new Date(group.date + 'T00:00:00'); if (isNaN(sd.getTime())) return null; const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
-                    return group.segs.map((seg, si) => (
-                      <div key={`${gi}-${si}`} className={`grid grid-cols-[84px_1.4fr_1fr_1fr] items-stretch border-gray-200 ${si === groupSize - 1 ? 'border-b' : ''}`}>
-                        <div className="flex items-center justify-center gap-2 border-r border-gray-200 px-3 py-3">
-                          {si === 0 && (
-                            <>
-                              <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                              <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{group.label}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-center justify-center border-r border-gray-200 px-3 py-3 text-center leading-tight">
-                          {si === 0 && segDate && <div className="text-xs text-gray-500">{segDate}</div>}
-                          <div className="text-base font-bold text-gray-900">{seg.isTransfer && <span className="mr-1.5 rounded bg-violet-100 px-1.5 py-0.5 align-middle text-[10px] font-bold text-violet-600">轉機</span>}{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-600">{seg.flight_number}</span>}</div>
-                        </div>
-                        <div className="flex flex-col justify-center border-r border-gray-200 px-3 py-3">
-                          <div className="flex items-baseline gap-2">
-                            {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
-                            {seg.dep_airport && <span className="text-sm text-gray-600">{seg.dep_airport}</span>}
+                    return (
+                      // 每一組（去程／回程）用底色區塊框起來，組內每個航班選項之間有分隔線，
+                      // 組跟組之間有較粗的邊框，避免多家航空公司選項全部黏在一起分不清楚
+                      <div key={gi} className={`${groupBg} ${gi < flightLegGroups.length - 1 ? 'border-b-2 border-gray-300' : 'border-b border-gray-200'}`}>
+                        {group.segs.map((seg, si) => (
+                          <div key={si} className={`grid grid-cols-[84px_1.4fr_1fr_1fr] items-stretch ${si > 0 ? 'border-t border-dashed border-gray-200' : ''}`}>
+                            <div className="flex items-center justify-center gap-2 border-r border-gray-200 px-3 py-3">
+                              {si === 0 && (
+                                <>
+                                  <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                  <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{group.label}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-center justify-center border-r border-gray-200 px-3 py-3 text-center leading-tight">
+                              {si === 0 && segDate && <div className="text-xs text-gray-500">{segDate}</div>}
+                              <div className="text-base font-bold text-gray-900">{seg.isTransfer && <span className="mr-1.5 rounded bg-violet-100 px-1.5 py-0.5 align-middle text-[10px] font-bold text-violet-600">轉機</span>}{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-600">{seg.flight_number}</span>}</div>
+                            </div>
+                            <div className="flex flex-col justify-center border-r border-gray-200 px-3 py-3">
+                              <div className="flex items-baseline gap-2">
+                                {seg.dep_time && <span className="text-base font-bold text-gray-900">{seg.dep_time}</span>}
+                                {seg.dep_airport && <span className="text-sm text-gray-600">{seg.dep_airport}</span>}
+                              </div>
+                            </div>
+                            <div className="flex flex-col justify-center px-3 py-3">
+                              <div className="flex items-baseline gap-2">
+                                {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
+                                {seg.arr_airport && <span className="text-sm text-gray-600">{seg.arr_airport}</span>}
+                                {seg.next_day && <span className="ml-1 text-base font-bold text-amber-600">+1天</span>}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex flex-col justify-center px-3 py-3">
-                          <div className="flex items-baseline gap-2">
-                            {seg.arr_time && <span className="text-base font-bold text-gray-900">{seg.arr_time}</span>}
-                            {seg.arr_airport && <span className="text-sm text-gray-600">{seg.arr_airport}</span>}
-                            {seg.next_day && <span className="ml-1 text-base font-bold text-amber-600">+1天</span>}
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ));
+                    );
                   })}
                 </div>
                 {/* 手機版航班（仿易飛網） */}
@@ -2294,52 +2300,55 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                   <div className="border-b border-gray-200 py-2.5 text-center text-sm font-bold text-gray-900">
                     參考航班
                   </div>
-                  {flightLegGroups.flatMap((group, gi) => {
-                    const totalGroups = flightLegGroups.length;
+                  {flightLegGroups.map((group, gi) => {
                     const isFirst = group.label === '去程';
                     const isLast = group.label === '回程';
                     const labelColor = isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600";
-                    const groupSize = group.segs.length;
-                    const isLastGroup = gi === totalGroups - 1;
+                    const groupBg = isFirst ? "bg-sky-50/50" : isLast ? "bg-amber-50/50" : "bg-violet-50/50";
                     const segDate = group.date ? (() => { const sd = new Date(group.date + 'T00:00:00'); if (isNaN(sd.getTime())) return null; const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
-                    return group.segs.map((seg, si) => (
-                      <div key={`m-${gi}-${si}`} className={`px-4 py-3 ${!(isLastGroup && si === groupSize - 1) ? 'border-b border-gray-200' : ''}`}>
-                        <div className="flex items-center gap-2 text-xs text-gray-700">
-                          <span className={`font-bold ${labelColor}`}>{group.label}</span>
-                          <span className="text-gray-300">|</span>
-                          {si === 0 && segDate && <span>{segDate}</span>}
-                          <span className="ml-1">{seg.isTransfer && <span className="mr-1 rounded bg-violet-100 px-1 text-[10px] font-bold text-violet-600">轉機</span>}{seg.airline}{seg.flight_number && ` ${seg.flight_number}`}</span>
-                        </div>
-                        <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-start">
-                          <div>
-                            <div className="text-xl font-bold text-gray-900">{seg.dep_time || '—'}</div>
-                            <div className="mt-0.5 text-xs text-gray-500">{seg.dep_airport || ''}</div>
-                          </div>
-                          <div className="flex items-center justify-center px-1 pt-2">
-                            {isLast ? (
-                              <div className="flex w-24 items-center">
-                                <svg className="h-5 w-5 -ml-1 shrink-0 -rotate-90 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                                <div className="h-px flex-1 border-t-2 border-dashed border-sky-400" />
-                                <svg className="h-3 w-3 -mr-0.5 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z" /></svg>
-                              </div>
-                            ) : (
-                              <div className="flex w-24 items-center">
-                                <svg className="h-3 w-3 -ml-0.5 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 7l-5 5 5 5V7z" /></svg>
-                                <div className="h-px flex-1 border-t-2 border-dashed border-sky-400" />
-                                <svg className="h-5 w-5 -mr-1 shrink-0 rotate-90 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xl font-bold text-gray-900">
-                              {seg.arr_time || '—'}
-                              {seg.next_day && <span className="ml-1 text-base font-bold text-amber-600">+1天</span>}
+                    return (
+                      // 每一組（去程／回程）用底色區塊框起來，組跟組之間有較粗的邊框
+                      <div key={gi} className={`${groupBg} ${gi < flightLegGroups.length - 1 ? 'border-b-2 border-gray-300' : ''}`}>
+                        {group.segs.map((seg, si) => (
+                          <div key={si} className={`px-4 py-3 ${si > 0 ? 'border-t border-dashed border-gray-200' : ''}`}>
+                            <div className="flex items-center gap-2 text-xs text-gray-700">
+                              <span className={`font-bold ${labelColor}`}>{group.label}</span>
+                              <span className="text-gray-300">|</span>
+                              {si === 0 && segDate && <span>{segDate}</span>}
+                              <span className="ml-1">{seg.isTransfer && <span className="mr-1 rounded bg-violet-100 px-1 text-[10px] font-bold text-violet-600">轉機</span>}{seg.airline}{seg.flight_number && ` ${seg.flight_number}`}</span>
                             </div>
-                            <div className="mt-0.5 text-xs text-gray-500">{seg.arr_airport || ''}</div>
+                            <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-start">
+                              <div>
+                                <div className="text-xl font-bold text-gray-900">{seg.dep_time || '—'}</div>
+                                <div className="mt-0.5 text-xs text-gray-500">{seg.dep_airport || ''}</div>
+                              </div>
+                              <div className="flex items-center justify-center px-1 pt-2">
+                                {isLast ? (
+                                  <div className="flex w-24 items-center">
+                                    <svg className="h-5 w-5 -ml-1 shrink-0 -rotate-90 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                    <div className="h-px flex-1 border-t-2 border-dashed border-sky-400" />
+                                    <svg className="h-3 w-3 -mr-0.5 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z" /></svg>
+                                  </div>
+                                ) : (
+                                  <div className="flex w-24 items-center">
+                                    <svg className="h-3 w-3 -ml-0.5 shrink-0 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 7l-5 5 5 5V7z" /></svg>
+                                    <div className="h-px flex-1 border-t-2 border-dashed border-sky-400" />
+                                    <svg className="h-5 w-5 -mr-1 shrink-0 rotate-90 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xl font-bold text-gray-900">
+                                  {seg.arr_time || '—'}
+                                  {seg.next_day && <span className="ml-1 text-base font-bold text-amber-600">+1天</span>}
+                                </div>
+                                <div className="mt-0.5 text-xs text-gray-500">{seg.arr_airport || ''}</div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ));
+                    );
                   })}
                   <div className="border-t border-gray-100 px-4 py-2">
                     <p className="text-center text-[10px] text-amber-600">*航班時間僅供參考，最終確定的航班，以說明會資料為準！</p>
