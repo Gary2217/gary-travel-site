@@ -202,6 +202,10 @@ export default function DestinationPage() {
   const siblingTripsCache = useRef<Map<string, Trip[]>>(new Map());
   const destsListCache = useRef<{ id: string; title: string; region_id: string; display_order: number; sub_region?: string }[] | null>(null);
   const originalRegionTabsRef = useRef<{ label: string; destId: string }[]>([]);
+  // sub_region tab 切換的請求序號：async fetch 回來時若序號已不是最新一次點擊，
+  // 代表使用者已經切到別的 tab，直接丟棄這次結果，避免「動作較慢的舊請求」
+  // 蓋掉「後點的新 tab」的資料（畫面上會出現 tab 高亮對了、行程卻是舊分頁的）
+  const subRegionRequestIdRef = useRef(0);
 
   // 所有 sub_region 是否都只有 1 個 destination（港澳大陸等：直接用 sub_area tabs 取代 sub_region tabs）
   const allSingleDest = subRegionGroups.length > 0 && subRegionGroups.every(g => g.destinations.length === 1);
@@ -1202,6 +1206,7 @@ export default function DestinationPage() {
                   <button
                     type="button"
                     onClick={async () => {
+                      const requestId = ++subRegionRequestIdRef.current;
                       setActiveSubRegion("全部");
                       setActiveDestFilter(null);
                       setDestFilterParam(null);
@@ -1216,9 +1221,10 @@ export default function DestinationPage() {
                           const cached = siblingTripsCache.current.get(id);
                           return cached ? Promise.resolve(cached) : getDestinationTrips(id).catch(() => []);
                         }));
+                        if (subRegionRequestIdRef.current !== requestId) return; // 使用者已切到別的 tab，丟棄這次結果
                         setSubRegionTrips(results.flat());
-                      } catch { setSubRegionTrips(null); }
-                      setSubRegionLoading(false);
+                      } catch { if (subRegionRequestIdRef.current === requestId) setSubRegionTrips(null); }
+                      if (subRegionRequestIdRef.current === requestId) setSubRegionLoading(false);
                     }}
                     className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
                       activeSubRegion === "全部"
@@ -1233,6 +1239,7 @@ export default function DestinationPage() {
                       key={group.subRegion}
                       type="button"
                       onClick={async () => {
+                        const requestId = ++subRegionRequestIdRef.current;
                         setActiveSubRegion(group.subRegion);
                         setActiveDestFilter(null);
                         setDestFilterParam(null);
@@ -1249,6 +1256,7 @@ export default function DestinationPage() {
                             // 從預快取瞬間切換，無快取時才 fetch
                             const cachedTrips = siblingTripsCache.current.get(destId);
                             const tripData = cachedTrips || await getDestinationTrips(destId).catch(() => []);
+                            if (subRegionRequestIdRef.current !== requestId) return; // 使用者已切到別的 tab，丟棄這次結果
                             setSubRegionTrips(tripData as Trip[]);
                             // 計算新 destination 的 sub_area tabs
                             const sibAreas: string[] = Array.from(new Set(
@@ -1271,11 +1279,12 @@ export default function DestinationPage() {
                             const allTrips = await Promise.all(
                               group.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
                             );
+                            if (subRegionRequestIdRef.current !== requestId) return; // 使用者已切到別的 tab，丟棄這次結果
                             setSubRegionTrips(allTrips.flat().sort(compareTrips));
                             const cached = siblingDestsDataRef.current.get(group.destinations[0].id);
                             if (cached) setHeroDest(cached);
-                          } catch { setSubRegionTrips(null); }
-                          setSubRegionLoading(false);
+                          } catch { if (subRegionRequestIdRef.current === requestId) setSubRegionTrips(null); }
+                          if (subRegionRequestIdRef.current === requestId) setSubRegionLoading(false);
                         }
                       }}
                       className={`shrink-0 rounded-full px-5 py-2 text-[13px] font-bold tracking-wide transition-all ${
@@ -1301,6 +1310,7 @@ export default function DestinationPage() {
                           key={dest.id}
                           type="button"
                           onClick={async () => {
+                            const requestId = ++subRegionRequestIdRef.current;
                             const newFilter = activeDestFilter === dest.id ? null : dest.id;
                             setActiveDestFilter(newFilter);
                             setDestFilterParam(newFilter);
@@ -1309,6 +1319,7 @@ export default function DestinationPage() {
                               const allTrips = await Promise.all(
                                 activeGroup.destinations.map(d => getDestinationTrips(d.id).catch(() => []))
                               );
+                              if (subRegionRequestIdRef.current !== requestId) return; // 使用者已切到別的 tab，丟棄這次結果
                               setSubRegionTrips(allTrips.flat());
                             }
                           }}
