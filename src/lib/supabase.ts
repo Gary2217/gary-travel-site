@@ -184,6 +184,8 @@ export type FlightSegment = {
   next_day: boolean;
   /** 第幾天（如「第1天」），用來判斷同一段路線的多家航空公司選項該歸在去程還是回程 */
   day_text?: string;
+  /** 顯示層計算欄位（不存 DB）：同一天內是否為銜接上一段的轉機續程，而非平行可選的另一個完整航班 */
+  isTransfer?: boolean;
 };
 
 export type DepartureDate = {

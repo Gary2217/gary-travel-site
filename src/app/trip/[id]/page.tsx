@@ -1316,6 +1316,22 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
       buckets = raw;
     }
 
+    // 同一個 day_text 桶內可能混著兩種情況：(1) 多家航空公司平行可選的完整航班
+    // （如真航空/濟州航空/易斯達航空都從桃園飛，德威航空則改飛大邱機場，各自獨立、
+    // 出發地不一定相同）、(2) 真正的轉機續程（如高雄→香港→阿布達比，香港那段的
+    // 出發地正好銜接上一段的抵達地）。用「這段出發地是否等於緊鄰前一段的抵達地」
+    // 判斷才準確——不能只看是否等於本桶第一段出發地，否則像德威航空飛大邱這種
+    // 平行可選但出發地不同的航班會被誤判成轉機。
+    buckets = buckets.map((b) => {
+      if (b.segs.length <= 1) return b;
+      const marked = b.segs.map((seg, i) => {
+        if (i === 0) return seg;
+        const prev = b.segs[i - 1];
+        return seg.dep_airport === prev.arr_airport ? { ...seg, isTransfer: true } : seg;
+      });
+      return { ...b, segs: marked };
+    });
+
     const total = buckets.length;
     return buckets.map((b, i) => {
       const isFirst = i === 0;
@@ -2254,7 +2270,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                         </div>
                         <div className="flex flex-col items-center justify-center border-r border-gray-200 px-3 py-3 text-center leading-tight">
                           {si === 0 && segDate && <div className="text-xs text-gray-500">{segDate}</div>}
-                          <div className="text-base font-bold text-gray-900">{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-600">{seg.flight_number}</span>}</div>
+                          <div className="text-base font-bold text-gray-900">{seg.isTransfer && <span className="mr-1.5 rounded bg-violet-100 px-1.5 py-0.5 align-middle text-[10px] font-bold text-violet-600">轉機</span>}{seg.airline}{seg.flight_number && <span className="ml-1.5 text-gray-600">{seg.flight_number}</span>}</div>
                         </div>
                         <div className="flex flex-col justify-center border-r border-gray-200 px-3 py-3">
                           <div className="flex items-baseline gap-2">
@@ -2292,7 +2308,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                           <span className={`font-bold ${labelColor}`}>{group.label}</span>
                           <span className="text-gray-300">|</span>
                           {si === 0 && segDate && <span>{segDate}</span>}
-                          <span className="ml-1">{seg.airline}{seg.flight_number && ` ${seg.flight_number}`}</span>
+                          <span className="ml-1">{seg.isTransfer && <span className="mr-1 rounded bg-violet-100 px-1 text-[10px] font-bold text-violet-600">轉機</span>}{seg.airline}{seg.flight_number && ` ${seg.flight_number}`}</span>
                         </div>
                         <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-start">
                           <div>
