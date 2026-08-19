@@ -1281,21 +1281,48 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   const flightFallback = visibleDepartureDates.find(hasFlight) || null;
   const flightSource = (selectedDeparture && hasFlight(selectedDeparture)) ? selectedDeparture : flightFallback;
   const selectedFlightSegments = flightSource?.flight_segments;
-  // 航段依「日期＋出發地＋目的地」分組：同一段路線有多家航空公司可選時（如長榮/中華都飛同班次），
-  // 分成上下多列顯示，但仍算同一個航段（去程/回程），不會被誤標成轉機
+  // 航段分組：同一段路線（去程／回程）可能有多家航空公司可選（如長榮/中華同班次、或真航空/濟州航空/
+  // 易斯達航空/德威航空等多種選擇，甚至進出機場不同如大邱機場），分成上下多列顯示但仍算同一段，不誤標轉機。
+  // 有 day_text（第幾天，抓取資料才有）時依此分桶最準確：同樣「第1天」的都算去程，不論它們彼此之間出發地／
+  // 目的地是否相同，也不論它們在陣列中是否相鄰（抓取資料是 去/回/去/回... 交錯排列，而非去去去回回回）。
+  // 沒有 day_text 的手動資料（如客製行程）才退回用「日期＋出發地＋目的地」合併相鄰航段。
   const flightLegGroups = (() => {
     const segs = selectedFlightSegments;
     if (!segs || segs.length === 0) return [];
-    const groups: { date: string; dep_airport: string; arr_airport: string; segs: typeof segs }[] = [];
-    segs.forEach((seg) => {
-      const last = groups[groups.length - 1];
-      if (last && last.date === seg.date && last.dep_airport === seg.dep_airport && last.arr_airport === seg.arr_airport) {
-        last.segs.push(seg);
-      } else {
-        groups.push({ date: seg.date, dep_airport: seg.dep_airport, arr_airport: seg.arr_airport, segs: [seg] });
-      }
+    type Seg = (typeof segs)[number];
+    const allHaveDayText = segs.every((s) => !!s.day_text);
+
+    let buckets: { key: string; segs: Seg[] }[];
+    if (allHaveDayText) {
+      const order: string[] = [];
+      const map = new Map<string, Seg[]>();
+      segs.forEach((seg) => {
+        const key = seg.day_text!;
+        if (!map.has(key)) { map.set(key, []); order.push(key); }
+        map.get(key)!.push(seg);
+      });
+      buckets = order.map((key) => ({ key, segs: map.get(key)! }));
+    } else {
+      const raw: { key: string; segs: Seg[] }[] = [];
+      segs.forEach((seg) => {
+        const key = `${seg.date}|${seg.dep_airport}|${seg.arr_airport}`;
+        const last = raw[raw.length - 1];
+        if (last && last.key === key) {
+          last.segs.push(seg);
+        } else {
+          raw.push({ key, segs: [seg] });
+        }
+      });
+      buckets = raw;
+    }
+
+    const total = buckets.length;
+    return buckets.map((b, i) => {
+      const isFirst = i === 0;
+      const isLast = i === total - 1 && total > 1;
+      const label: '去程' | '回程' | '轉機' = isFirst ? '去程' : isLast ? '回程' : '轉機';
+      return { label, date: b.segs[0]?.date, segs: b.segs };
     });
-    return groups;
   })();
   const hasFlightData = !!flightSource;
   const isCustomTour = !!banner.custom_tour;
@@ -2210,11 +2237,9 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     <div className="border-b border-gray-200 px-3 py-2.5 text-center text-sm font-bold text-gray-600">抵達時間及機場</div>
                   </div>
                   {flightLegGroups.flatMap((group, gi) => {
-                    const totalGroups = flightLegGroups.length;
-                    const isFirst = gi === 0;
-                    const isLast = gi === totalGroups - 1 && totalGroups > 1;
+                    const isFirst = group.label === '去程';
+                    const isLast = group.label === '回程';
                     const iconColor = isFirst ? "text-sky-500" : isLast ? "text-amber-500" : "text-violet-500";
-                    const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
                     const groupSize = group.segs.length;
                     const segDate = group.date ? (() => { const sd = new Date(group.date + 'T00:00:00'); if (isNaN(sd.getTime())) return null; const w = ['日','一','二','三','四','五','六'][sd.getDay()]; return `${sd.getFullYear()}/${String(sd.getMonth()+1).padStart(2,'0')}/${String(sd.getDate()).padStart(2,'0')}（${w}）`; })() : null;
                     return group.segs.map((seg, si) => (
@@ -2223,7 +2248,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                           {si === 0 && (
                             <>
                               <svg className={`h-3.5 w-3.5 shrink-0 ${iconColor} ${isLast ? "rotate-180" : ""}`} fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>
-                              <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{segmentLabel}</span>
+                              <span className={`text-sm font-bold ${isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600"}`}>{group.label}</span>
                             </>
                           )}
                         </div>
@@ -2255,9 +2280,8 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                   </div>
                   {flightLegGroups.flatMap((group, gi) => {
                     const totalGroups = flightLegGroups.length;
-                    const isFirst = gi === 0;
-                    const isLast = gi === totalGroups - 1 && totalGroups > 1;
-                    const segmentLabel = isFirst ? "去程" : isLast ? "回程" : "轉機";
+                    const isFirst = group.label === '去程';
+                    const isLast = group.label === '回程';
                     const labelColor = isFirst ? "text-sky-600" : isLast ? "text-amber-600" : "text-violet-600";
                     const groupSize = group.segs.length;
                     const isLastGroup = gi === totalGroups - 1;
@@ -2265,7 +2289,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
                     return group.segs.map((seg, si) => (
                       <div key={`m-${gi}-${si}`} className={`px-4 py-3 ${!(isLastGroup && si === groupSize - 1) ? 'border-b border-gray-200' : ''}`}>
                         <div className="flex items-center gap-2 text-xs text-gray-700">
-                          <span className={`font-bold ${labelColor}`}>{segmentLabel}</span>
+                          <span className={`font-bold ${labelColor}`}>{group.label}</span>
                           <span className="text-gray-300">|</span>
                           {si === 0 && segDate && <span>{segDate}</span>}
                           <span className="ml-1">{seg.airline}{seg.flight_number && ` ${seg.flight_number}`}</span>

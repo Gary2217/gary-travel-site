@@ -182,6 +182,8 @@ export type FlightSegment = {
   arr_time: string;
   arr_airport: string;
   next_day: boolean;
+  /** 第幾天（如「第1天」），用來判斷同一段路線的多家航空公司選項該歸在去程還是回程 */
+  day_text?: string;
 };
 
 export type DepartureDate = {
