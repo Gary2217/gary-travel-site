@@ -116,6 +116,7 @@ const REGION_PAGES = [
   { key: 'penghu', url: '/penghu/', tabs: ['澎湖'] },
   { key: 'freetour', url: '/freetour/', tabs: [] },
   { key: 'golf', url: '/golf/', tabs: [] },
+  { key: 'brunei', url: '/brunei/', tabs: [] },
 ];
 
 const CITY_BY_AIRPORT = {
