@@ -38,7 +38,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.instagram.com https://*.cdninstagram.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' https://*.supabase.co https://*.r2.dev https://images.unsplash.com https://www.google.com https://*.cdninstagram.com https://*.fbcdn.net data: blob:",
+              "img-src 'self' https://*.supabase.co https://*.r2.dev https://images.unsplash.com https://www.google.com https://*.cdninstagram.com https://*.fbcdn.net https://i.ytimg.com data: blob:",
               "connect-src 'self' https://*.supabase.co https://*.r2.dev https://*.r2.cloudflarestorage.com https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://www.instagram.com",
               "font-src 'self'",
               "worker-src 'self' blob:",

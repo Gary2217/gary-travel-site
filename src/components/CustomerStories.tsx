@@ -4,6 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import InstagramEmbed from "./InstagramEmbed";
+import YouTubeEmbed from "./YouTubeEmbed";
+
+const isYouTubeUrl = (url: string) => /^https:\/\/(www\.)?(youtube\.com\/|youtu\.be\/)/.test(url);
 
 interface CustomerStory {
   id: string;
@@ -146,7 +149,7 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
   const handleSubmit = async () => {
     if (!caption.trim()) { alert("請輸入說明文字（例如：杜拜7日團．2026年6月）"); return; }
     if (mediaKind === "photo" && !file) { alert("請選擇照片檔案"); return; }
-    if (mediaKind === "video" && !videoUrl.trim()) { alert("請輸入 Instagram 貼文網址"); return; }
+    if (mediaKind === "video" && !videoUrl.trim()) { alert("請輸入 Instagram 貼文網址或 YouTube 影片網址"); return; }
 
     setSubmitting(true);
     try {
@@ -243,7 +246,7 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
               onClick={() => setMediaKind("video")}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${mediaKind === "video" ? "bg-sky-500 text-white" : "bg-white text-gray-500 border border-gray-200"}`}
             >
-              IG 影片連結
+              IG / YouTube 影片連結
             </button>
           </div>
 
@@ -261,10 +264,10 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
                 type="text"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="貼上 Instagram 貼文網址，例如 https://www.instagram.com/p/xxxxx/"
+                placeholder="貼上 IG 貼文或 YouTube 影片網址，例如 https://www.instagram.com/p/xxxxx/ 或 https://www.youtube.com/watch?v=xxxxx"
                 className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-sky-400"
               />
-              <p className="mb-1 text-[11px] text-gray-500">影片縮圖（選填）：不上傳會自動顯示 IG 貼文本身的畫面；想換成別的截圖才需要上傳</p>
+              <p className="mb-1 text-[11px] text-gray-500">影片縮圖（選填）：不上傳的話，IG 貼文會自動顯示畫面本身，YouTube 會自動用官方縮圖；想換成別的截圖才需要上傳</p>
               <input
                 ref={thumbnailInputRef}
                 type="file"
@@ -351,6 +354,8 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
                 <div className="relative h-[240px] w-full bg-gray-100">
                   <Image src={story.media_url} alt={story.caption} fill sizes="240px" className="object-cover" />
                 </div>
+              ) : isYouTubeUrl(story.media_url) ? (
+                <YouTubeEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} />
               ) : (
                 <InstagramEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} />
               )}

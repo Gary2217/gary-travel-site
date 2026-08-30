@@ -97,8 +97,10 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString(),
       };
     } else if (videoUrl) {
-      if (!/^https:\/\/(www\.)?instagram\.com\//.test(videoUrl)) {
-        return apiError('影片連結必須是 Instagram 貼文網址', 400);
+      const isInstagram = /^https:\/\/(www\.)?instagram\.com\//.test(videoUrl);
+      const isYouTube = /^https:\/\/(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)/.test(videoUrl);
+      if (!isInstagram && !isYouTube) {
+        return apiError('影片連結必須是 Instagram 貼文網址或 YouTube 影片網址', 400);
       }
 
       let thumbnailUrl: string | undefined;
