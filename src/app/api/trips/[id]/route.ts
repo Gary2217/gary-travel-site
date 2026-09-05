@@ -17,7 +17,7 @@ export async function GET(
     const supabase = createAnonClientNoCache();
 
     const [{ data, error }, daysResult, datesResult] = await Promise.all([
-      supabase.from('trips').select('*, destinations (*)').eq('id', params.id).single(),
+      supabase.from('trips').select('*, destinations (*, regions (category_label))').eq('id', params.id).single(),
       supabase.from('trip_days').select('*').eq('trip_id', params.id).order('day_number', { ascending: true }),
       supabase.from('trip_departure_dates').select('*').eq('trip_id', params.id).order('departure_date', { ascending: true }),
     ]);

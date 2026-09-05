@@ -16,6 +16,7 @@ import SocialCta from "@/components/SocialCta";
 import PriceInfoModal from "@/components/trip/PriceInfoModal";
 import SourceUrlModal from "@/components/trip/SourceUrlModal";
 import MobileDatePickerModal from "@/components/trip/MobileDatePickerModal";
+import JapanInquiryBar from "@/components/JapanInquiryBar";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
 const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel"), { ssr: false });
@@ -1342,6 +1343,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
   })();
   const hasFlightData = !!flightSource;
   const isCustomTour = !!banner.custom_tour;
+  const isJapanTrip = (trip.destinations as { regions?: { category_label?: string } } | undefined)?.regions?.category_label === '日本';
   const parsedTripPrice = trip.price_range ? Number(trip.price_range.replace(/\D/g, '')) || null : null;
   const selectedPriceValue = selectedDeparture?.price ?? null;
   const ctaPriceText = isCustomTour
@@ -2796,7 +2798,9 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
         </button>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-[55] px-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 sm:pb-4">
+      <div className="fixed bottom-0 left-0 right-0 z-[55] flex flex-col">
+        {isJapanTrip && <JapanInquiryBar />}
+        <div className="px-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 sm:pb-4">
         <div className="mx-auto w-full max-w-[1000px] overflow-hidden bg-white/95 shadow-lg backdrop-blur-md border-t border-gray-200 sm:rounded-2xl sm:border">
           <div className="flex items-center justify-between gap-2 px-4 py-3 sm:px-5">
             <div className="min-w-0 flex-1">
@@ -2863,6 +2867,7 @@ const [savingSourceUrl, setSavingSourceUrl] = useState(false);
               </a>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

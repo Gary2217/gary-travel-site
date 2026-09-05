@@ -12,6 +12,7 @@ import StickyHeader from "@/components/StickyHeader";
 import TripCard from "@/components/TripCard";
 import DevModeToggle from "@/components/DevModeToggle";
 import Toast from "@/components/Toast";
+import JapanInquiryBar from "@/components/JapanInquiryBar";
 
 type DestScrapeChange = {
   id: string;
@@ -1907,6 +1908,11 @@ export default function DestinationPage() {
           </div>
         </div>,
         document.body
+      )}
+      {destination?.regions?.category_label === '日本' && (
+        <div className="fixed inset-x-0 bottom-0 z-[60] pb-[env(safe-area-inset-bottom)]">
+          <JapanInquiryBar />
+        </div>
       )}
     </main>
   );
