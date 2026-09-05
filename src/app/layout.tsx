@@ -25,10 +25,10 @@ export const metadata: Metadata = {
     url: BASE_URL,
     images: [
       {
-        url: `${BASE_URL}/api/og`,
-        width: 1200,
-        height: 630,
-        alt: '蓋瑞旅遊 GARY Travel',
+        url: 'https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/site/logo-1779445005490.png',
+        width: 1440,
+        height: 720,
+        alt: '旅行沒有終點',
       },
     ],
   },
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '「旅行沒有終點」旅遊網站',
     description: '專業旅遊規劃師蓋瑞，提供日本、韓國、東南亞、歐洲等全球團體旅遊行程，免費諮詢、不收服務費',
-    images: [`${BASE_URL}/api/og`],
+    images: ['https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/site/logo-1779445005490.png'],
   },
 };
 
