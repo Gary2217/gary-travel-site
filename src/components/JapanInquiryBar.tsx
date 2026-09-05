@@ -10,9 +10,9 @@ import { openExternalLink } from "@/lib/external-link";
  */
 export default function JapanInquiryBar() {
   return (
-    <div className="border-t border-gray-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-3">
-        <p className="min-w-0 flex-1 truncate text-xs font-semibold text-gray-800 sm:text-sm">
+    <div className="border-t border-gray-200 bg-gradient-to-r from-sky-600 to-sky-500 px-4 py-2.5 shadow-lg">
+      <div className="mx-auto flex max-w-[1000px] items-center justify-center gap-4">
+        <p className="truncate text-xs font-semibold text-white sm:text-sm">
           日本行程數量多，請洽詢蓋瑞詢問
         </p>
         <button
