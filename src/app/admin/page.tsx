@@ -471,7 +471,7 @@ export default function AdminPage() {
             </svg>
           </button>
           <a href="/" className="shrink-0" title="回首頁">
-            <img src="/travel-logo.svg" alt="旅行沒有終點" className="h-8 w-auto opacity-80 transition hover:opacity-100" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img src="/travel-logo.svg" alt="旅遊沒有終點" className="h-8 w-auto opacity-80 transition hover:opacity-100" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </a>
           <div>
             <h1 className="text-sm font-bold text-white sm:text-base">蓋瑞旅遊 後台數據</h1>

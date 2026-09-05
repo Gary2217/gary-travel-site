@@ -126,7 +126,7 @@ export default function SocialCta({
         <div className="mx-auto flex max-w-[640px] items-center gap-3 sm:gap-5">
           <img
             src={logoUrl}
-            alt="旅行沒有終點"
+            alt="旅遊沒有終點"
             className="h-16 w-auto shrink-0 object-contain sm:h-24"
             onError={() => {
               try { localStorage.removeItem('site_logo_url'); } catch { /* ignore */ }
@@ -169,7 +169,7 @@ export default function SocialCta({
           <p>交觀綜2219號．品保編號：北2175．統一編號：42629833</p>
           <p>旅遊蓋瑞哥：0966163777．LINE ID：@sc666555．信箱：sc666555@gmail.com</p>
           <p>TEL (02)2581-3373．FAX (02)2581-2883．台北市松山區復興北路181號10樓之1</p>
-          <p className="pt-1 text-[9px] text-gray-400">© {new Date().getFullYear()} 旅行沒有終點 All Rights Reserved.</p>
+          <p className="pt-1 text-[9px] text-gray-400">© {new Date().getFullYear()} 旅遊沒有終點 All Rights Reserved.</p>
         </div>
       </div>
 

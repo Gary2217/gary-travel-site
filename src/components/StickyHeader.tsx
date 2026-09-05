@@ -162,7 +162,7 @@ export default function StickyHeader({ showBackButton, backHref, devModeSlot, lo
               {logoReady ? (
                 <img
                   src={displayLogoUrl}
-                  alt="旅行沒有終點"
+                  alt="旅遊沒有終點"
                   className="h-10 w-auto max-w-[180px] object-contain sm:h-[72px] sm:max-w-[480px]"
                   onError={() => {
                     try { localStorage.removeItem('site_logo_url'); } catch { /* ignore */ }

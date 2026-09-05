@@ -21,7 +21,7 @@ export default function LegalNotice({ className = "", variant = "light" }: Legal
       </p>
 
       <p className={`mt-2 text-[10px] leading-relaxed ${isDark ? "text-white/70" : "text-gray-400"}`}>
-        ⚠️ 我們不會以「旅行沒有終點」或本站名義要求匯款／轉帳至私人帳戶，也不會要求提供 ATM 操作、銀行密碼、驗證碼或信用卡完整資訊；如遇可疑訊息請先透過官方管道確認或撥打 165。
+        ⚠️ 我們不會以「旅遊沒有終點」或本站名義要求匯款／轉帳至私人帳戶，也不會要求提供 ATM 操作、銀行密碼、驗證碼或信用卡完整資訊；如遇可疑訊息請先透過官方管道確認或撥打 165。
       </p>
 
       <p className={`mt-2 text-[10px] leading-relaxed ${isDark ? "text-white/70" : "text-gray-400"}`}>

@@ -7,7 +7,7 @@ const BASE_URL = 'https://gary-travel-site.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
-  title: '「旅行沒有終點」旅遊網站',
+  title: '「旅遊沒有終點」旅遊網站',
   description: '專業旅遊規劃師蓋瑞，提供日本、韓國、東南亞、歐洲等全球團體旅遊行程，免費諮詢、不收服務費',
   icons: {
     icon: '/travel-logo.svg',
@@ -17,24 +17,24 @@ export const metadata: Metadata = {
     canonical: BASE_URL,
   },
   openGraph: {
-    title: '「旅行沒有終點」旅遊網站',
+    title: '「旅遊沒有終點」旅遊網站',
     description: '專業旅遊規劃師蓋瑞，提供日本、韓國、東南亞、歐洲等全球團體旅遊行程，免費諮詢、不收服務費',
     type: 'website',
     locale: 'zh_TW',
-    siteName: '「旅行沒有終點」旅遊網站',
+    siteName: '「旅遊沒有終點」旅遊網站',
     url: BASE_URL,
     images: [
       {
         url: 'https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/site/logo-1779445005490.png',
         width: 1440,
         height: 720,
-        alt: '旅行沒有終點',
+        alt: '旅遊沒有終點',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '「旅行沒有終點」旅遊網站',
+    title: '「旅遊沒有終點」旅遊網站',
     description: '專業旅遊規劃師蓋瑞，提供日本、韓國、東南亞、歐洲等全球團體旅遊行程，免費諮詢、不收服務費',
     images: ['https://pub-3881231e994f4158b5d05c0ec109b3ef.r2.dev/images/site/logo-1779445005490.png'],
   },

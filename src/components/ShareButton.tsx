@@ -16,7 +16,7 @@ export default function ShareButton({ title, url, small = false }: ShareButtonPr
   const menuRef = useRef<HTMLDivElement>(null);
 
   const baseUrl = `https://gary-travel-site.vercel.app${url}`;
-  const shareText = `${title} - 旅行沒有終點`;
+  const shareText = `${title} - 旅遊沒有終點`;
 
   function withUtm(source: string) {
     const u = new URL(baseUrl);
