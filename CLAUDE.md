@@ -341,11 +341,15 @@ npx vitest        # watch 模式（本機開發用）
 | 過期梯次只在顯示層過濾 | 見 §4.1 |
 | 刪 R2 檔前必須反查引用 | 見 §4.2 |
 
-> **例外**：`src/app/trip/[id]/page.tsx` 因 SEO／首次渲染效能（LCP）需求，改為 async Server Component，
-> 只負責伺服器端查 Supabase 拿初始資料（跟 `api/trips/[id]/route.ts` 的 `GET` 同一個查詢）後傳給
-> `TripPageClient.tsx`（維持 100% 原有 client 邏輯與互動不變，client 端仍會自己重新 fetch 一次）。
-> 這是目前唯一的頁面級 Server Component，經使用者明確同意後導入（2026-09-06）。
-> `destination/[id]/page.tsx` 有相同的可優化空間，但尚未套用同樣手法。
+> **例外**：以下兩個頁面因 SEO／首次渲染效能（LCP）需求，改為 async Server Component，
+> 只負責伺服器端查 Supabase 拿初始資料後傳給對應的 `*Client.tsx`（維持 100% 原有 client
+> 邏輯與互動不變，client 端仍會自己重新 fetch 一次）。經使用者明確同意後導入（2026-09-06）。
+> 目前僅此兩例，其餘頁面仍一律 client component。
+>
+> | 頁面 | Server 端查詢範圍 | Client 元件 |
+> |---|---|---|
+> | `src/app/trip/[id]/page.tsx` | 跟 `api/trips/[id]/route.ts` 的 `GET` 同一個查詢 | `TripPageClient.tsx` |
+> | `src/app/destination/[id]/page.tsx` | 跟 `api/destinations/[id]` + `api/destinations/[id]/trips` 的 `GET` 同一組查詢（僅 Phase 1：目的地本身 + 行程列表；跨目的地 sub_region／sub_area 分頁 tab 仍由 client effect 抓取計算，未搬到伺服器端，避免重複一份分頁邏輯） | `DestinationPageClient.tsx` |
 
 ### 4.1 過期出團梯次：只過濾顯示，不刪資料
 
@@ -629,7 +633,7 @@ Secret Access Key **明文硬編碼**在程式碼裡，推上 public repo，**�
 
 ## 12. 禁止清單（嚴格）
 
-- **不要**用 Server Components 做頁面（唯一例外見 §4 附註：`trip/[id]/page.tsx`）
+- **不要**用 Server Components 做頁面（例外見 §4 附註：`trip/[id]/page.tsx`、`destination/[id]/page.tsx`）
 - **不要**在元件裡直接 import Supabase client
 - **不要**硬編碼社群連結 URL
 - **不要**跳過 loading / error 狀態處理
@@ -1131,7 +1135,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 | 訂金欄位清不掉 | `buildDepartureInfoPayload` 的 deposit 走 `草稿 \|\| banner.deposit_label \|\| 預設值`，空字串會穿透。**客人看不到此欄位**（售價彈窗不渲染 deposit，客人看到的訂金來自 `trip_banner.deposit_label`），故僅為開發者困擾。行為已由測試釘住 | 低 |
 | R2 孤兒檔清理（含 `cleanup-orphan-images` 空殼） | **2026-07-18 已完成評估與修法設計，見 §21.1**。刻意不執行：帳單 $0.00（免費額度 10 GB，現用 1.58 GB），且不會再累積。逼近 10 GB 時照 §21.1 的設計實作 | 低 |
 | 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
-| `destination/[id]/page.tsx` 1,861 行 | 結構比 trip 頁單純（33 個 useState、僅 1 個彈窗）。可比照 trip 頁手法拆分 | 低 |
+| `destination/[id]/page.tsx` sub_region／sub_area 分頁 tab 仍是純 client 端計算 | 2026-09-06 已把 Phase 1（目的地本身＋行程列表）比照 trip 頁拆成 Server Component（見 §4 附註），Hero 圖與行程卡片首次渲染已可見。但跨目的地分頁 tab 需要額外查全部目的地清單＋分組邏輯，範圍較大，暫不搬到伺服器端；tab 仍會在頁面出現後一小段時間才 pop 上來 | 低 |
 | Node 20 deprecation | GitHub 警告 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 執行環境將淘汰。**注意 `.nvmrc` 同時影響 Vercel 建置**，升版前需確認 | 低 |
 | 部分朋威頁面 Puppeteer fallback 會卡死（2026-08-01 發現） | 越南北越／沙壩芽莊大叻、泰國／印尼／菲律賓／紐澳美加的多數行程，`auto-scrape.mjs` 的 Puppeteer fallback 在 `page.goto` 階段完全卡住（連 60 秒手動測試都不會 timeout 返回，需強制砍 process）。純 curl 抓同一頁只要 0.7 秒，確認不是網路問題，該頁面的出發日期表格本來就是 client-side AJAX 渲染（原始 HTML 沒有 `#search-table`），懷疑是朋威的反爬蟲機制針對無頭瀏覽器卡住。目前無法自動抓這些頁面的出發日期，只能等 timeout 後跳過（不影響已抓到的其他資料正確性）| 中 |
 | 高爾夫頁面（`/golf/`）抓取抓不到任何區塊 | `auto-scrape.mjs --regions=golf` 回傳「找到 0 個區塊，0 筆行程」，頁面結構可能跟其他 tab 頁不同，需另外分析 | 低 |
