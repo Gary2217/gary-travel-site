@@ -7,6 +7,8 @@ import Image from "next/image";
 export interface HomeBanner {
   url: string;
   link: string;
+  /** 圖片說明文字：畫面上不顯示，作為 <img> 的 alt 文字，讓搜尋引擎與螢幕報讀器讀得懂這張圖在講什麼 */
+  caption?: string;
 }
 
 // Banner 連結可能被填成完整網址（如 https://gary-travel-site.vercel.app/trip/xxx），
@@ -32,6 +34,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [editLink, setEditLink] = useState('');
+  const [editCaption, setEditCaption] = useState('');
   const [savingLink, setSavingLink] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -44,9 +47,10 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
   const reorderListRef = useRef<HomeBanner[]>([]);
   useEffect(() => { reorderListRef.current = reorderList; }, [reorderList]);
 
-  // 同步當前 banner 的 link 到編輯欄
+  // 同步當前 banner 的 link/caption 到編輯欄
   useEffect(() => {
     setEditLink(banners[current]?.link || '');
+    setEditCaption(banners[current]?.caption || '');
   }, [current, banners]);
 
   const total = banners.length;
@@ -159,11 +163,12 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
     };
   }, [dragIndex, saveOrder]);
 
-  // 儲存連結
+  // 儲存連結＋說明文字
   const saveLink = async () => {
     if (savingLink) return;
     const nextLink = editLink.trim();
-    const updated = banners.map((b, i) => i === current ? { ...b, link: nextLink } : b);
+    const nextCaption = editCaption.trim();
+    const updated = banners.map((b, i) => i === current ? { ...b, link: nextLink, caption: nextCaption } : b);
     setSavingLink(true);
     try {
       const res = await fetch('/api/home-banners', {
@@ -172,13 +177,13 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ banners: updated }),
       });
-      if (!res.ok) { alert('連結儲存失敗'); return; }
+      if (!res.ok) { alert('儲存失敗'); return; }
       onBannersChange?.(updated);
       // 儲存成功，畫面中間顯示提示
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 1800);
     } catch {
-      alert('連結儲存失敗');
+      alert('儲存失敗');
     } finally {
       setSavingLink(false);
     }
@@ -230,7 +235,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
             >
               <Image
                 src={banner.url}
-                alt={`Banner ${i + 1}`}
+                alt={banner.caption || `首頁輪播圖 ${i + 1}`}
                 width={1200}
                 height={340}
                 priority={i === 0}
@@ -348,23 +353,35 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
       )}
       {/* DevMode 連結設定 */}
       {isDevMode && total > 0 && (
-        <div className="flex items-center gap-2 border-t border-gray-100 bg-gray-50 px-3 py-1.5">
-          <span className="shrink-0 text-xs text-gray-400">🔗 點擊導向</span>
-          <input
-            value={editLink}
-            onChange={(e) => setEditLink(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveLink(); } }}
-            placeholder="輸入連結（如 /destination/xxx 或 https://...）"
-            className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 outline-none focus:border-sky-400"
-          />
-          <button
-            type="button"
-            onClick={() => void saveLink()}
-            disabled={savingLink}
-            className="shrink-0 rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-          >
-            {savingLink ? '儲存中...' : '確定'}
-          </button>
+        <div className="space-y-1.5 border-t border-gray-100 bg-gray-50 px-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-xs text-gray-400">🔗 點擊導向</span>
+            <input
+              value={editLink}
+              onChange={(e) => setEditLink(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveLink(); } }}
+              placeholder="輸入連結（如 /destination/xxx 或 https://...）"
+              className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 outline-none focus:border-sky-400"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-xs text-gray-400">📝 說明文字</span>
+            <input
+              value={editCaption}
+              onChange={(e) => setEditCaption(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveLink(); } }}
+              placeholder="這張圖在講什麼（畫面上不會顯示，給搜尋引擎跟螢幕報讀器看）"
+              className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 outline-none focus:border-sky-400"
+            />
+            <button
+              type="button"
+              onClick={() => void saveLink()}
+              disabled={savingLink}
+              className="shrink-0 rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
+            >
+              {savingLink ? '儲存中...' : '確定'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -432,7 +449,7 @@ export default function HomeBannerCarousel({ banners, isDevMode, onBannersChange
                   </div>
                   <Image
                     src={banner.url}
-                    alt={`Banner ${i + 1}`}
+                    alt={banner.caption || `首頁輪播圖 ${i + 1}`}
                     width={80}
                     height={48}
                     className="h-12 w-20 shrink-0 rounded-lg object-cover"

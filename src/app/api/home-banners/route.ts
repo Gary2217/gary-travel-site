@@ -15,6 +15,7 @@ const SETTINGS_KEY = 'home_banners';
 interface HomeBanner {
   url: string;
   link: string;
+  caption?: string;
 }
 
 async function getBanners(supabase: ReturnType<typeof createServiceClient>): Promise<HomeBanner[]> {
@@ -89,7 +90,8 @@ export async function POST(request: NextRequest) {
 
     const url = `${r2PublicUrl(filePath)}?v=${Date.now()}`;
     const link = (formData.get('link') as string) || '';
-    const banner: HomeBanner = { url, link };
+    const caption = (formData.get('caption') as string) || '';
+    const banner: HomeBanner = { url, link, caption };
 
     const existing = await getBanners(supabase);
     const updated = [...existing, banner];
