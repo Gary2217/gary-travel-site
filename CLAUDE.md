@@ -1139,7 +1139,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 
 | 項目 | 說明 | 優先度 |
 |------|------|--------|
-| R2 bucket CORS（PDF 直傳） | `upload-trip-document` 用 R2 presigned PUT 讓瀏覽器直傳，需在 Cloudflare 為 `gary-travel-media` 設定 CORS（允許 production/localhost 的 PUT），否則 PDF 上傳被瀏覽器擋 | 高 |
+~~R2 bucket CORS（PDF 直傳）~~ ✅ 2026-09-06 已設定 | Cloudflare `gary-travel-media` bucket 的 CORS Policy 已加上 `https://gary-travel-site.vercel.app` + `http://localhost:3000`（PUT，headers `*`）。已用真實瀏覽器 fetch 對 presigned PUT URL 實測 200 OK（測試檔案已刪除，不留痕跡） | — |
 | 訂金欄位清不掉 | `buildDepartureInfoPayload` 的 deposit 走 `草稿 \|\| banner.deposit_label \|\| 預設值`，空字串會穿透。**客人看不到此欄位**（售價彈窗不渲染 deposit，客人看到的訂金來自 `trip_banner.deposit_label`），故僅為開發者困擾。行為已由測試釘住 | 低 |
 | R2 孤兒檔清理（含 `cleanup-orphan-images` 空殼） | **2026-07-18 已完成評估與修法設計，見 §21.1**。刻意不執行：帳單 $0.00（免費額度 10 GB，現用 1.58 GB），且不會再累積。逼近 10 GB 時照 §21.1 的設計實作 | 低 |
 | 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
