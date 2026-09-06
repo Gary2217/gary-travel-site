@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { getDestination, getDestinationTrips, getRelatedTrips, getSiteLogo, createTrip, deleteTrip, cloneTrip, lineDmHref, invalidateCache, type Destination, type Trip } from "@/lib/supabase";
+import { computeDestinationTabState, type DestinationListItem } from "@/lib/destination-tabs";
 import Image from "next/image";
 import { openExternalLink } from "@/lib/external-link";
 import FloatingContact from "@/components/FloatingContact";
@@ -114,12 +115,21 @@ async function handleReorder<T extends { id: string; display_order: number }>(
   }
 }
 
+interface InitialTabState {
+  subRegionGroups: { subRegion: string; destinations: { id: string; label: string }[] }[];
+  activeSubRegion: string;
+  regionTabs: { label: string; destId: string }[];
+  currentTabLabel: string;
+  subAreaFilter: string;
+}
+
 interface DestinationPageClientProps {
   initialDestination: (Destination & { regions?: { category_label: string; title: string } }) | null;
   initialTrips: Trip[];
+  initialTabState: InitialTabState | null;
 }
 
-export default function DestinationPageClient({ initialDestination, initialTrips }: DestinationPageClientProps) {
+export default function DestinationPageClient({ initialDestination, initialTrips, initialTabState }: DestinationPageClientProps) {
   const params = useParams();
   const router = useRouter();
   const destinationId = params.id as string;
@@ -162,10 +172,10 @@ export default function DestinationPageClient({ initialDestination, initialTrips
   };
 
   const [destination, setDestination] = useState<Destination & { regions?: { category_label: string; title: string } } | null>(initialDestination ?? null);
-  const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>([]);
-  const [currentTabLabel, setCurrentTabLabel] = useState("");
-  const [subRegionGroups, setSubRegionGroups] = useState<{ subRegion: string; destinations: { id: string; label: string }[] }[]>([]);
-  const [activeSubRegion, setActiveSubRegion] = useState("");
+  const [regionTabs, setRegionTabs] = useState<{ label: string; destId: string }[]>(initialTabState?.regionTabs ?? []);
+  const [currentTabLabel, setCurrentTabLabel] = useState(initialTabState?.currentTabLabel ?? "");
+  const [subRegionGroups, setSubRegionGroups] = useState<{ subRegion: string; destinations: { id: string; label: string }[] }[]>(initialTabState?.subRegionGroups ?? []);
+  const [activeSubRegion, setActiveSubRegion] = useState(initialTabState?.activeSubRegion ?? "");
   const [subRegionTrips, setSubRegionTrips] = useState<Trip[] | null>(null);
   const [activeDestFilter, setActiveDestFilter] = useState<string | null>(null);
   const [subRegionLoading, setSubRegionLoading] = useState(false);
@@ -194,7 +204,7 @@ export default function DestinationPageClient({ initialDestination, initialTrips
   // 抓取完成後要查哪些 destination 的 pending changes（全部 tab 時查所有 sibling）
   const scrapeTargetDestsRef = useRef<string[]>([destinationId]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [subAreaFilter, setSubAreaFilter] = useState<string>("");
+  const [subAreaFilter, setSubAreaFilter] = useState<string>(initialTabState?.subAreaFilter ?? "");
   const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
 
   // 重設第三排 sub_area 篩選狀態（避免跨頁/切換 tab 時殘留舊篩選）
@@ -442,7 +452,7 @@ export default function DestinationPageClient({ initialDestination, initialTrips
 
         const isDevOn = typeof window !== 'undefined' && localStorage.getItem('dev_mode_enabled') === '1';
 
-        // 建立同區域兄弟目的地清單
+        // 建立同區域兄弟目的地清單（siblingDestsRef／Phase 2 用）
         const siblings = (destsData as { id: string; title: string; region_id: string; display_order: number; sub_region?: string }[])
           .filter((d) => d.region_id === destData.region_id)
           .sort((a, b) => a.display_order - b.display_order);
@@ -451,76 +461,30 @@ export default function DestinationPageClient({ initialDestination, initialTrips
         const siblingIds = allSiblingIds.filter(id => id !== destinationId);
         const hasSiblings = siblings.length > 1;
 
-        // 建立 sub_region 兩層導航（第一排 sub_region 分組，第二排該分組下的 destinations）
-        if (hasSiblings) {
-          // 用當前 destData 的 sub_region 覆蓋列表中的值（列表 API 可能被 CDN 快取返回舊值）
-          const currentSR = destData.sub_region || destData.title;
-          const enrichedSiblings = siblings.map(s =>
-            s.id === destinationId ? { ...s, sub_region: currentSR } : s
-          );
-          const groupMap = new Map<string, { id: string; label: string }[]>();
-          for (const s of enrichedSiblings) {
-            const sr = s.sub_region || s.title;
-            if (!groupMap.has(sr)) groupMap.set(sr, []);
-            groupMap.get(sr)!.push({ id: s.id, label: s.title });
-          }
-          const groups = Array.from(groupMap.entries()).map(([subRegion, destinations]) => ({ subRegion, destinations }));
-          setSubRegionGroups(groups);
-          allSingleDestLocal = groups.length > 0 && groups.every(g => g.destinations.length === 1);
-          // 從 URL query param 恢復 tab，否則用 currentSR
-          const savedTab = getTabParam();
-          const hasSavedSubRegion = Boolean(savedTab && groups.some(g => g.subRegion === savedTab));
-          const hasSavedSubArea = Boolean(savedTab && (tripsData as Trip[]).some(
-            t => getTripSubArea(t) === savedTab
-          ));
-          const restoredSR = hasSavedSubRegion ? savedTab : currentSR;
-          // sub_area tab（如富國島）也阻止 all=1 覆蓋，確保子標籤深層連結有效
-          shouldRestoreAll = !hasSavedSubRegion && !hasSavedSubArea && getAllParam();
-          restoredGroup = groups.find(g => g.subRegion === restoredSR) || null;
-          setActiveSubRegion(shouldRestoreAll ? '全部' : restoredSR);
-        } else {
-          setSubRegionGroups([]);
-          setActiveSubRegion("");
-        }
-
-        // sub_area tabs 在 Phase 2 await 之前就計算好（避免 React render 時序問題）
+        // sub_region／sub_area tab 推導（分組、排序、URL query param 深層連結還原）跟伺服器端
+        // page.tsx 共用同一支函式（src/lib/destination-tabs.ts），不是各自維護一份邏輯
         const currentTrips = tripsData as Trip[];
-        const CHINA_ORDER = ['張家界', '九寨溝', '張家界+九寨溝', '重慶', '長江三峽', '貴州', '桂林', '甘南', '新疆', '江南', '廈門', '金廈', '武夷山', '黃山', '青島', '洛陽', '哈爾濱', '高雄出發'];
-        const JAPAN_ORDER = ['北海道', '仙台', '東京', '名古屋', '京都/大阪/神戶/奈良', '四國', '北九州/福岡/熊本', '沖繩', '台中出發', '高雄出發'];
-        const areas: string[] = Array.from(new Set(
-          currentTrips.map(getTripSubArea).filter(Boolean)
-        ));
-        const rCat = destData.regions?.category_label || '';
-        const orderList = rCat === '港澳大陸' ? CHINA_ORDER : rCat === '日本' ? JAPAN_ORDER : null;
-        if (orderList) {
-          areas.sort((a, b) => {
-            const ai = orderList.indexOf(a);
-            const bi = orderList.indexOf(b);
-            if (ai === -1 && bi === -1) return a.localeCompare(b);
-            if (ai === -1) return 1;
-            if (bi === -1) return -1;
-            return ai - bi;
-          });
-        }
-        const areaTabs = areas.length >= 2
-          ? [{ label: "全部", destId: "all" }, ...areas.map(a => ({ label: a, destId: `filter:${a}` }))]
-          : [];
+        const tabState = computeDestinationTabState({
+          destinationId,
+          destData,
+          trips: currentTrips,
+          allDestinations: destsData as DestinationListItem[],
+          savedTab: getTabParam(),
+          savedAll: getAllParam(),
+        });
+        setSubRegionGroups(tabState.subRegionGroups);
+        setActiveSubRegion(tabState.activeSubRegion);
+        setRegionTabs(tabState.regionTabs);
+        originalRegionTabsRef.current = tabState.regionTabs;
+        setCurrentTabLabel(tabState.currentTabLabel);
+        setSubAreaFilter(tabState.subAreaFilter);
+        restoredGroup = tabState.restoredGroup;
+        shouldRestoreAll = tabState.shouldRestoreAll;
+        allSingleDestLocal = tabState.allSingleDest;
+
         // 排序：有出發日行程排前面，請洽詢（無出發日或 custom_tour）排最後，同組依 display_order
         const sortedTrips = [...currentTrips].sort(compareTrips);
         setTrips(sortedTrips);
-        setRegionTabs(areaTabs);
-        originalRegionTabsRef.current = areaTabs;
-        if (areaTabs.length > 0) {
-          // 從 URL query param 恢復 tab（merged mode 用 currentTabLabel）
-          const savedTab = getTabParam();
-          const validTab = areaTabs.find(t => t.label === savedTab);
-          if (validTab && savedTab !== '全部') {
-            setCurrentTabLabel(validTab.label);
-            setSubAreaFilter(validTab.destId.startsWith('filter:') ? validTab.destId.slice(7) : '');
-          } else {
-            setCurrentTabLabel("全部");
-          }
-        }
 
         // ★ Phase 1 完成 — 立即顯示頁面，不等 Phase 2
         setLoading(false);
@@ -528,6 +492,7 @@ export default function DestinationPageClient({ initialDestination, initialTrips
         // Phase 2（背景載入，不阻塞頁面顯示）
         const hasRelated = destData.region_id && destData.regions?.category_label;
         if (hasRelated) setRelatedLoading(true);
+        const rCat = destData.regions?.category_label || '';
         const isMergedRegion = allSingleDestLocal && ['港澳大陸', '日本'].includes(rCat);
 
         // 所有 Phase 2 請求並行
