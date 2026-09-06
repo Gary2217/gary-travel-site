@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { DOCUMENT_SERVICE_ITEMS } from '@/lib/document-services';
+import { MINI_TRANSIT_TICKET_ITEMS } from '@/lib/mini-transit-tickets';
 
 const BASE_URL = 'https://gary-travel-site.vercel.app';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -28,6 +30,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 1,
     },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/document-services`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    ...DOCUMENT_SERVICE_ITEMS.map((item) => ({
+      url: `${BASE_URL}/document-services/${item.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    })),
+    {
+      url: `${BASE_URL}/mini-transit-tickets`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    ...MINI_TRANSIT_TICKET_ITEMS.map((item) => ({
+      url: `${BASE_URL}/mini-transit-tickets/${item.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    })),
   ];
 
   const destinationRoutes: MetadataRoute.Sitemap = (destinationsResult.data ?? []).map((destination) => ({
