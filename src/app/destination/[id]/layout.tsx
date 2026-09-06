@@ -22,7 +22,7 @@ async function getDestinationSeoData(id: string) {
       .single(),
     supabase
       .from('trips')
-      .select('title, price_range')
+      .select('id, title, price_range')
       .eq('destination_id', id)
       .eq('is_active', true)
       .order('display_order', { ascending: true })
@@ -94,8 +94,21 @@ export default async function DestinationLayout({ children, params }: LayoutProp
             '@type': 'ListItem',
             position: i + 1,
             name: t.title,
+            url: `${BASE_URL}/trip/${t.id}`,
           })),
         },
+      }
+    : null;
+
+  // 麵包屑：首頁 → 目的地，讓 Google 搜尋結果能顯示路徑列
+  const breadcrumbLd = destination
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: '首頁', item: BASE_URL },
+          { '@type': 'ListItem', position: 2, name: `${destination.title} ${regionTitle}行程`, item: `${BASE_URL}/destination/${params.id}` },
+        ],
       }
     : null;
 
@@ -105,6 +118,12 @@ export default async function DestinationLayout({ children, params }: LayoutProp
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      {breadcrumbLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
         />
       )}
       {/*
@@ -120,9 +139,11 @@ export default async function DestinationLayout({ children, params }: LayoutProp
           {trips.length > 0 && (
             <ul>
               {trips.map((t) => (
-                <li key={t.title}>
-                  {t.title}
-                  {t.price_range ? `（${t.price_range}）` : ''}
+                <li key={t.id}>
+                  <a href={`/trip/${t.id}`}>
+                    {t.title}
+                    {t.price_range ? `（${t.price_range}）` : ''}
+                  </a>
                 </li>
               ))}
             </ul>

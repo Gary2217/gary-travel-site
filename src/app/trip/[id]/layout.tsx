@@ -16,7 +16,7 @@ async function getTripSeoData(id: string) {
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { data } = await supabase
     .from('trips')
-    .select('title, subtitle, price_range, duration, cover_image_url, trip_banner, destinations (title)')
+    .select('title, subtitle, price_range, duration, cover_image_url, trip_banner, destinations (id, title)')
     .eq('id', id)
     .single();
   return data;
@@ -58,7 +58,8 @@ export default async function TripLayout({ children, params }: LayoutProps) {
   const data = await getTripSeoData(params.id).catch(() => null);
 
   const tags: string[] = Array.isArray(data?.trip_banner?.tags) ? data.trip_banner.tags : [];
-  const destinationTitle = (data?.destinations as { title?: string } | null)?.title || '';
+  const destination = data?.destinations as { id?: string; title?: string } | null;
+  const destinationTitle = destination?.title || '';
   const priceNumber = data?.price_range ? Number(data.price_range.replace(/\D/g, '')) || undefined : undefined;
 
   const jsonLd = data
@@ -70,6 +71,11 @@ export default async function TripLayout({ children, params }: LayoutProps) {
         ...(data.cover_image_url ? { image: data.cover_image_url } : {}),
         touristType: '團體旅遊',
         ...(destinationTitle ? { itinerary: { '@type': 'Place', name: destinationTitle } } : {}),
+        provider: {
+          '@type': 'TravelAgency',
+          name: '旅遊沒有終點 GARY Travel',
+          url: BASE_URL,
+        },
         ...(priceNumber
           ? {
               offers: {
@@ -84,12 +90,33 @@ export default async function TripLayout({ children, params }: LayoutProps) {
       }
     : null;
 
+  // 麵包屑：首頁 → 目的地 → 行程，讓 Google 搜尋結果能顯示路徑列，也幫助建立頁面之間的關聯
+  const breadcrumbLd = data
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: '首頁', item: BASE_URL },
+          ...(destination?.id
+            ? [{ '@type': 'ListItem', position: 2, name: destinationTitle, item: `${BASE_URL}/destination/${destination.id}` }]
+            : []),
+          { '@type': 'ListItem', position: destination?.id ? 3 : 2, name: data.title, item: `${BASE_URL}/trip/${params.id}` },
+        ],
+      }
+    : null;
+
   return (
     <>
       {jsonLd && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      {breadcrumbLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
         />
       )}
       {/*
