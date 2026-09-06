@@ -1144,7 +1144,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 | R2 孤兒檔清理（含 `cleanup-orphan-images` 空殼） | **2026-07-18 已完成評估與修法設計，見 §21.1**。刻意不執行：帳單 $0.00（免費額度 10 GB，現用 1.58 GB），且不會再累積。逼近 10 GB 時照 §21.1 的設計實作 | 低 |
 | 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
 ~~`destination/[id]/page.tsx` sub_region／sub_area 分頁 tab 仍是純 client 端計算~~ ✅ 2026-09-06 已解決 | Phase 1（目的地本身＋行程列表＋sub_region/sub_area 分頁 tab）已全部搬到 Server Component（見 §4 附註），推導邏輯抽成共用的 `computeDestinationTabState()`。Hero 圖、行程卡片、分頁 tab 首次渲染皆已可見。僅 Phase 2（相關推薦、隱藏行程、合併行程 subRegionTrips）仍是背景載入，不影響首次可見內容 | — |
-| Node 20 deprecation | GitHub 警告 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 執行環境將淘汰。**注意 `.nvmrc` 同時影響 Vercel 建置**，升版前需確認 | 低 |
+~~Node 20 deprecation~~ ✅ 2026-09-06 已解決 | `actions/checkout` 升到 `v5`、`actions/setup-node` 升到 `v7`（見 [ci.yml](.github/workflows/ci.yml)、[scrape-trips.yml](.github/workflows/scrape-trips.yml)），解決的是這兩個 **action 自己內部執行用**的 Node 版本（node20→node24 runtime），**跟 `.nvmrc`="20"（我們自己 build 用的 Node 版本，同時影響 Vercel）完全是兩件事，這次沒有動 `.nvmrc`**，所以不會觸發 §3.5 提過的 npm10/npm11 lockfile 不相容問題 | — |
 | 部分朋威頁面 Puppeteer fallback 會卡死（2026-08-01 發現） | 越南北越／沙壩芽莊大叻、泰國／印尼／菲律賓／紐澳美加的多數行程，`auto-scrape.mjs` 的 Puppeteer fallback 在 `page.goto` 階段完全卡住（連 60 秒手動測試都不會 timeout 返回，需強制砍 process）。純 curl 抓同一頁只要 0.7 秒，確認不是網路問題，該頁面的出發日期表格本來就是 client-side AJAX 渲染（原始 HTML 沒有 `#search-table`），懷疑是朋威的反爬蟲機制針對無頭瀏覽器卡住。目前無法自動抓這些頁面的出發日期，只能等 timeout 後跳過（不影響已抓到的其他資料正確性）| 中 |
 | 高爾夫頁面（`/golf/`）抓取抓不到任何區塊 | `auto-scrape.mjs --regions=golf` 回傳「找到 0 個區塊，0 筆行程」，頁面結構可能跟其他 tab 頁不同，需另外分析 | 低 |
 
