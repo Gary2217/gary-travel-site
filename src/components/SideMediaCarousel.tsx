@@ -34,7 +34,10 @@ export default function SideMediaCarousel({
 }: SideMediaCarouselProps) {
   const [mediaList, setMediaList] = useState<SideMedia[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  // 有 fallbackImageUrl（行程的真實封面圖）時，第一次渲染就直接顯示它，不用先轉圈圈——
+  // 這樣伺服器端渲染時封面圖就會是最終內容，不會被「載入中」擋住看不到，也改善首次載入速度。
+  // 背景仍會抓側邊媒體清單，抓到才會換成真正的媒體輪播；沒有 fallback 的情況（少見）維持原本先轉圈圈的行為。
+  const [loading, setLoading] = useState(!fallbackImageUrl);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [igUrl, setIgUrl] = useState("");
   const [adding, setAdding] = useState(false);

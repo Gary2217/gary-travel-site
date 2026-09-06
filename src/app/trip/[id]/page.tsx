@@ -19,7 +19,10 @@ import MobileDatePickerModal from "@/components/trip/MobileDatePickerModal";
 import JapanInquiryBar from "@/components/JapanInquiryBar";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
-const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel"), { ssr: false });
+// 這個元件是行程頁最主要的封面圖區塊（Largest Contentful Paint），沒有用到任何瀏覽器限定的
+// API，拿掉 ssr:false 讓它伺服器端就能渲染出封面圖（元件本身在資料抓完前就會顯示 fallbackImageUrl
+// 這個真實封面圖），改善首次載入速度，也讓封面圖能出現在 Google 讀到的原始碼裡
+const SideMediaCarousel = dynamic(() => import("@/components/SideMediaCarousel"));
 import { track } from "@/lib/analytics";
 import {
   DEFAULT_PRICE_DETAIL,
