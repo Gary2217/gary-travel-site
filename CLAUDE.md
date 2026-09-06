@@ -341,6 +341,12 @@ npx vitest        # watch 模式（本機開發用）
 | 過期梯次只在顯示層過濾 | 見 §4.1 |
 | 刪 R2 檔前必須反查引用 | 見 §4.2 |
 
+> **例外**：`src/app/trip/[id]/page.tsx` 因 SEO／首次渲染效能（LCP）需求，改為 async Server Component，
+> 只負責伺服器端查 Supabase 拿初始資料（跟 `api/trips/[id]/route.ts` 的 `GET` 同一個查詢）後傳給
+> `TripPageClient.tsx`（維持 100% 原有 client 邏輯與互動不變，client 端仍會自己重新 fetch 一次）。
+> 這是目前唯一的頁面級 Server Component，經使用者明確同意後導入（2026-09-06）。
+> `destination/[id]/page.tsx` 有相同的可優化空間，但尚未套用同樣手法。
+
 ### 4.1 過期出團梯次：只過濾顯示，不刪資料
 
 客人不該看到已經出發的團（否則會對著上個月的日期詢價），但**過期梯次是歷史紀錄，
@@ -623,7 +629,7 @@ Secret Access Key **明文硬編碼**在程式碼裡，推上 public repo，**�
 
 ## 12. 禁止清單（嚴格）
 
-- **不要**用 Server Components 做頁面
+- **不要**用 Server Components 做頁面（唯一例外見 §4 附註：`trip/[id]/page.tsx`）
 - **不要**在元件裡直接 import Supabase client
 - **不要**硬編碼社群連結 URL
 - **不要**跳過 loading / error 狀態處理
