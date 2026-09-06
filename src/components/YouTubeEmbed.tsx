@@ -6,6 +6,7 @@ interface YouTubeEmbedProps {
   url: string;
   thumbnailUrl?: string;
   height?: number;
+  alt?: string;
 }
 
 // 從 YouTube 網址取得影片 ID（支援 watch?v=、youtu.be/、shorts/）
@@ -20,7 +21,7 @@ export function getYouTubeVideoId(url: string): string | null {
  * 縮圖卡片：優先顯示手動上傳的縮圖；沒有的話用 YouTube 官方縮圖圖檔，
  * 整張卡片點擊一律開新分頁到 YouTube 原生播放（跟 InstagramEmbed 同一套視覺語言）。
  */
-export default function YouTubeEmbed({ url, thumbnailUrl, height = 240 }: YouTubeEmbedProps) {
+export default function YouTubeEmbed({ url, thumbnailUrl, height = 240, alt = "" }: YouTubeEmbedProps) {
   const videoId = getYouTubeVideoId(url);
 
   return (
@@ -32,11 +33,11 @@ export default function YouTubeEmbed({ url, thumbnailUrl, height = 240 }: YouTub
       style={{ height }}
     >
       {thumbnailUrl ? (
-        <Image src={thumbnailUrl} alt="" fill sizes="240px" className="object-cover" />
+        <Image src={thumbnailUrl} alt={alt} fill sizes="240px" className="object-cover" />
       ) : videoId ? (
         <Image
           src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
-          alt=""
+          alt={alt}
           fill
           sizes="240px"
           className="object-cover"

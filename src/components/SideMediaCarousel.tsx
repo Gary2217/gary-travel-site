@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import { uploadTripBannerImage } from "@/lib/supabase";
 
 export interface SideMedia {
@@ -238,10 +239,12 @@ export default function SideMediaCarousel({
         ) : hasMedia && currentMedia ? (
           <>
             {currentMedia.media_type === "image" ? (
-              <img
+              <Image
                 src={currentMedia.url}
-                alt={`${tripTitle} 圖片 ${currentIndex + 1}`}
-                className="h-full w-full object-cover"
+                alt={tripTitle}
+                fill
+                sizes="(max-width: 1024px) 100vw, 45vw"
+                className="object-cover"
               />
             ) : (
               <div
@@ -320,7 +323,14 @@ export default function SideMediaCarousel({
             )}
           </>
         ) : fallbackImageUrl ? (
-          <img src={fallbackImageUrl} alt={tripTitle} className="h-full w-full object-cover" />
+          <Image
+            src={fallbackImageUrl}
+            alt={tripTitle}
+            fill
+            sizes="(max-width: 1024px) 100vw, 45vw"
+            priority
+            className="object-cover"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-50 via-gray-50 to-amber-50 px-8 text-center">
             <div>

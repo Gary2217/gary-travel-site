@@ -355,9 +355,9 @@ export default function CustomerStories({ isDevMode = false }: CustomerStoriesPr
                   <Image src={story.media_url} alt={story.caption} fill sizes="240px" className="object-cover" />
                 </div>
               ) : isYouTubeUrl(story.media_url) ? (
-                <YouTubeEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} />
+                <YouTubeEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} alt={story.caption} />
               ) : (
-                <InstagramEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} />
+                <InstagramEmbed url={story.media_url} thumbnailUrl={story.thumbnail_url} alt={story.caption} />
               )}
               <div className="p-3">
                 <p className="line-clamp-2 text-xs text-gray-600">{story.caption}</p>

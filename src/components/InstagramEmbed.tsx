@@ -6,6 +6,7 @@ interface InstagramEmbedProps {
   url: string;
   thumbnailUrl?: string;
   height?: number;
+  alt?: string;
 }
 
 // 從 IG 網址取得嵌入用的短碼
@@ -19,7 +20,7 @@ function getIgPostId(url: string): string | null {
  * 真實畫面（裁切掉上下的大頭貼/留言等 IG 介面），iframe 本身不可互動
  * （pointer-events-none），整張卡片點擊一律開新分頁到 Instagram 原生播放。
  */
-export default function InstagramEmbed({ url, thumbnailUrl, height = 240 }: InstagramEmbedProps) {
+export default function InstagramEmbed({ url, thumbnailUrl, height = 240, alt = "" }: InstagramEmbedProps) {
   const postId = getIgPostId(url);
 
   return (
@@ -31,7 +32,7 @@ export default function InstagramEmbed({ url, thumbnailUrl, height = 240 }: Inst
       style={{ height }}
     >
       {thumbnailUrl ? (
-        <Image src={thumbnailUrl} alt="" fill sizes="240px" className="object-cover" />
+        <Image src={thumbnailUrl} alt={alt} fill sizes="240px" className="object-cover" />
       ) : postId ? (
         <iframe
           src={`https://www.instagram.com/p/${postId}/embed/?hidecaption=true`}
