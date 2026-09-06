@@ -1140,7 +1140,7 @@ Claude Code 已安裝以下 MCP，可直接呼叫：
 | 項目 | 說明 | 優先度 |
 |------|------|--------|
 ~~R2 bucket CORS（PDF 直傳）~~ ✅ 2026-09-06 已設定 | Cloudflare `gary-travel-media` bucket 的 CORS Policy 已加上 `https://gary-travel-site.vercel.app` + `http://localhost:3000`（PUT，headers `*`）。已用真實瀏覽器 fetch 對 presigned PUT URL 實測 200 OK（測試檔案已刪除，不留痕跡） | — |
-| 訂金欄位清不掉 | `buildDepartureInfoPayload` 的 deposit 走 `草稿 \|\| banner.deposit_label \|\| 預設值`，空字串會穿透。**客人看不到此欄位**（售價彈窗不渲染 deposit，客人看到的訂金來自 `trip_banner.deposit_label`），故僅為開發者困擾。行為已由測試釘住 | 低 |
+~~訂金欄位清不掉~~ ✅ 已解決（文件先前未同步更新） | `buildDepartureInfoPayload` 的 deposit 三層 fallback（`草稿 \|\| banner.deposit_label \|\| 預設值`）已移除，改成跟其他 15 個售價欄位一致的純 `trim()`，空字串可以正常清掉了。測試已同步更新固化新行為（`trip-format.test.ts` 的「deposit 與其他售價欄位一致：可清空」） | — |
 | R2 孤兒檔清理（含 `cleanup-orphan-images` 空殼） | **2026-07-18 已完成評估與修法設計，見 §21.1**。刻意不執行：帳單 $0.00（免費額度 10 GB，現用 1.58 GB），且不會再累積。逼近 10 GB 時照 §21.1 的設計實作 | 低 |
 | 4 組跨卡共用的 R2 檔 | 早期複製卡片所致。刪除路徑已有反查保護，不會出事。根本解是讓每張卡各持一份 | 低 |
 ~~`destination/[id]/page.tsx` sub_region／sub_area 分頁 tab 仍是純 client 端計算~~ ✅ 2026-09-06 已解決 | Phase 1（目的地本身＋行程列表＋sub_region/sub_area 分頁 tab）已全部搬到 Server Component（見 §4 附註），推導邏輯抽成共用的 `computeDestinationTabState()`。Hero 圖、行程卡片、分頁 tab 首次渲染皆已可見。僅 Phase 2（相關推薦、隱藏行程、合併行程 subRegionTrips）仍是背景載入，不影響首次可見內容 | — |
