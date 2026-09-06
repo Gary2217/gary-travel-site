@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 
 interface MaintenanceGuardProps {
   children: React.ReactNode;
+  /**
+   * 伺服器端已經先查好的維護模式狀態（見 layout.tsx 的 getInitialMaintenanceStatus）。
+   * 有這個值時第一次渲染就直接用它，不用顯示「載入中...」——這樣 Google 讀取頁面時
+   * 才看得到真正的內容。下面的 useEffect 仍會再問一次後端，是為了「網站開著的時候，
+   * 管理者臨時切換維護模式」這種即時生效的情境，不影響第一次渲染的內容。
+   */
+  initialStatus?: "ok" | "maintenance";
 }
 
-export default function MaintenanceGuard({ children }: MaintenanceGuardProps) {
-  const [status, setStatus] = useState<"loading" | "ok" | "maintenance">("loading");
+export default function MaintenanceGuard({ children, initialStatus }: MaintenanceGuardProps) {
+  const [status, setStatus] = useState<"loading" | "ok" | "maintenance">(initialStatus ?? "loading");
 
   useEffect(() => {
     async function check() {

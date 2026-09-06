@@ -437,6 +437,19 @@ export default function HomePage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-transparent pt-header text-gray-900">
+        {/*
+          首頁主標題：純靜態文字，不靠fetch資料。這個loading分支是伺服器端第一次渲染時
+          實際會輸出的內容（資料還沒抓完前一定會先走這條），靜態H1放這裡才會真的出現在
+          Google讀到的原始碼裡；放在資料載入完成後的畫面反而讀不到。sr-only視覺上隱藏。
+        */}
+        <div className="sr-only">
+          <h1>「旅遊沒有終點」旅遊網站 - 旅遊規劃師蓋瑞 GARY Travel</h1>
+          <p>
+            提供日本、韓國、東南亞、歐洲、港澳大陸、中東亞非、南亞、紐澳美加、台灣旅遊、
+            郵輪旅遊、高爾夫、客製旅遊等全球團體旅遊行程與自由行方案，旅遊規劃師蓋瑞為您
+            量身打造專屬行程，免費諮詢、不收服務費。
+          </p>
+        </div>
         <div className="mx-auto max-w-site px-4 py-6 md:px-5">
           <div className="mb-8">
             <Skeleton className="mb-2 h-5 w-32" />
@@ -776,6 +789,19 @@ export default function HomePage() {
         logoEditorSlot={isDevMode ? <LogoUploader currentLogoUrl={siteLogoUrl} onUpdate={setSiteLogoUrl} onSaveSuccess={showSaveSuccess} /> : null}
         devModeSlot={<DevModeToggle onToggle={setIsDevMode} />}
       />
+
+      {/*
+        首頁主標題：純靜態文字（不靠fetch資料），伺服器端渲染就會直接出現在原始碼裡，
+        Google 第一次讀取就看得到。視覺上用 sr-only 隱藏，不影響畫面設計。
+      */}
+      <div className="sr-only">
+        <h1>「旅遊沒有終點」旅遊網站 - 旅遊規劃師蓋瑞 GARY Travel</h1>
+        <p>
+          提供日本、韓國、東南亞、歐洲、港澳大陸、中東亞非、南亞、紐澳美加、台灣旅遊、
+          郵輪旅遊、高爾夫、客製旅遊等全球團體旅遊行程與自由行方案，旅遊規劃師蓋瑞為您
+          量身打造專屬行程，免費諮詢、不收服務費。
+        </p>
+      </div>
 
       {/* Search Section */}
       <section className="relative min-h-[220px] overflow-hidden bg-[linear-gradient(135deg,#e0f2fe_0%,#ecfdf5_35%,#fef9c3_65%,#fce7f3_100%)] px-4 pb-8 pt-6">

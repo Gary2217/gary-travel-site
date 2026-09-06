@@ -1,9 +1,39 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
+import { cookies } from 'next/headers';
 import MaintenanceGuard from '@/components/MaintenanceGuard';
+import { DEV_AUTH_COOKIE_NAME, verifyDevAuthCookie } from '@/lib/dev-auth';
+import { createServiceClient, hasServiceRoleConfig } from '@/lib/supabase-server';
 import './globals.css';
 
 const BASE_URL = 'https://gary-travel-site.vercel.app';
+
+/**
+ * 伺服器端先查好維護模式狀態（跟 /api/maintenance 同一套邏輯），讓頁面第一次送出去
+ * 就已經知道要不要顯示內容，不用等瀏覽器裡的程式跑完才知道——這樣 Google 讀取頁面時
+ * 才看得到真正的內容，不會卡在「載入中...」畫面。
+ */
+async function getInitialMaintenanceStatus(): Promise<'ok' | 'maintenance'> {
+  try {
+    const isDevUser = verifyDevAuthCookie(cookies().get(DEV_AUTH_COOKIE_NAME)?.value);
+    if (isDevUser) return 'ok';
+
+    if (!hasServiceRoleConfig()) return 'ok';
+
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'maintenance_mode')
+      .single();
+
+    const enabled = data?.value === true || data?.value === 'true';
+    return enabled ? 'maintenance' : 'ok';
+  } catch {
+    // 查詢失敗時預設不擋，與 /api/maintenance 的容錯行為一致
+    return 'ok';
+  }
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -51,7 +81,8 @@ type RootLayoutProps = Readonly<{
   children: React.ReactNode;
 }>;
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const initialMaintenanceStatus = await getInitialMaintenanceStatus();
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'TravelAgency',
@@ -102,7 +133,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             __html: `document.addEventListener('contextmenu',function(e){if(e.target.tagName==='IMG'){e.preventDefault()}});document.addEventListener('dragstart',function(e){if(e.target.tagName==='IMG'){e.preventDefault()}});`,
           }}
         />
-        <MaintenanceGuard>{children}</MaintenanceGuard>
+        <MaintenanceGuard initialStatus={initialMaintenanceStatus}>{children}</MaintenanceGuard>
       </body>
     </html>
   );
